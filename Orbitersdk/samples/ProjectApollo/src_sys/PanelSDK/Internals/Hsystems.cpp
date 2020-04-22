@@ -884,14 +884,16 @@ void h_Pipe::refresh(double dt) {
 		// as a "quick hack" it's proportional to the minimum size,
 		// but this has to be improved
 		double minSize = __min(in->size, out->size);
-		trQ = trQ * minSize;
+		double maxSize = __max(in->size, out->size);
+		//trQ = trQ * minSize;
+		trQ = trQ * ((maxSize + minSize) / 2); //takes the average of the valve sizes to proportion Q
 
 		if (in->parent->space.Q < trQ)
 			trQ = in->parent->space.Q / 10.0;
 		if (out->parent->space.Q < -trQ)
 			trQ = -out->parent->space.Q / 10.0;
 
-		in->thermic(-trQ);
+		in->thermic(-trQ); 
 		out->thermic(trQ);
 	}
 }
@@ -967,7 +969,7 @@ void h_Radiator::refresh(double dt) {
 
 	double Q = rad * size * 5.67e-8 * dt * pow(Temp - 3.0, 4);	//aditional cooling from the radiator??
 
-	// if (!strcmp(name, "LEM-LR-Antenna")) 
+	 //if (!strcmp(name, "LM-Hull")) 
 		//sprintf(oapiDebugString(), "Radiator %.3f Temp %.1f", Q / dt, GetTemp());
 
 	thermic(-Q);
@@ -1239,8 +1241,8 @@ void h_crew::refresh(double dt) {
 		SRC->space.GetQ();
 		SRC->space.GetMass();
 			
-		//double heat = 138.72 * number * dt;  //heat 1420 btu/hr (416.16092 W) total from CSM data book (Watts * number of crew * seconds = J/crew member/s)
-		double heat = 30.0 * number * dt;  //heat
+		double heat = 138.72 * number * dt;  //heat 1420 btu/hr (416.16092 W) total from CSM data book (Watts * number of crew * seconds = J/crew member/s)
+		//double heat = 30.0 * number * dt;  //heat
 		t->thermic(heat);
 	}
 }
