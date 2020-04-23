@@ -885,8 +885,8 @@ void h_Pipe::refresh(double dt) {
 		// but this has to be improved
 		double minSize = __min(in->size, out->size);
 		double maxSize = __max(in->size, out->size);
-		//trQ = trQ * minSize;
-		trQ = trQ * ((maxSize + minSize) / 2); //takes the average of the valve sizes to proportion Q
+		trQ = trQ * minSize;
+		//trQ = trQ * ((maxSize + minSize) / 2); //takes the average of the valve sizes to proportion Q
 
 		if (in->parent->space.Q < trQ)
 			trQ = in->parent->space.Q / 10.0;
@@ -1241,8 +1241,8 @@ void h_crew::refresh(double dt) {
 		SRC->space.GetQ();
 		SRC->space.GetMass();
 			
-		double heat = 138.72 * number * dt;  //heat 1420 btu/hr (416.16092 W) total from CSM data book (Watts * number of crew * seconds = J/crew member/s)
-		//double heat = 30.0 * number * dt;  //heat
+		//double heat = 138.72 * number * dt;  //heat 1420 btu/hr (416.16092 W) total from CSM data book (Watts * number of crew * seconds = J/crew member/s)
+		double heat = 30.0 * number * dt;  //heat
 		t->thermic(heat);
 	}
 }
