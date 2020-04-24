@@ -885,6 +885,7 @@ void h_Pipe::refresh(double dt) {
 		// but this has to be improved
 		double minSize = __min(in->size, out->size);
 		double maxSize = __max(in->size, out->size);
+
 		trQ = trQ * minSize;
 		//trQ = trQ * ((maxSize + minSize) / 2); //takes the average of the valve sizes to proportion Q
 
