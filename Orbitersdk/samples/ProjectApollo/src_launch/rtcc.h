@@ -306,6 +306,7 @@ struct LambertMan //Data for Lambert targeting
 	SV sv_A;		//Chaser state vector
 	SV sv_P;		//Target state vector
 	int ChaserVehicle = 1;	//1 = CSM, 3 = LEM
+	bool storesolns = false;
 
 	//For mode 1 and 2
 	double PhaseAngle = 0.0;
@@ -486,6 +487,9 @@ struct SPQResults
 	double DH;
 	VECTOR3 dV_CSI;
 	VECTOR3 dV_CDH;
+	SV sv_C[5];
+	SV sv_C_apo[5];
+	SV sv_T[5];
 };
 
 struct RTEMoonOpt
@@ -1060,17 +1064,35 @@ struct SPQOpt //Coelliptic Sequence Processor
 	SV sv_A;
 	SV sv_P;
 	double GETbase;
+	//Time of CSI maneuver (<= 0 if not scheduled)
 	double t_CSI;
+	//Time of CDH maneuver
 	double t_CDH;
 	double t_TPI;				// Only for calculation type = 0
 	double DH = 15.0*1852.0;	// Only for calculation type = 1
 	double E = 26.6*RAD;
-	//bool CDH = true;	//0 = No CDH scheduled, 1 = CDH scheduled 
-	//int I_CDH;			//CDH option.
-	int K_CDH;			//Height iteration. 0 = fixed TIG at TPI, 1 = fixed DH at CDH
+	double WT = 130.0*RAD;
+	//Height iteration. 0 = fixed TIG at TPI, 1 = fixed DH at CDH
+	int K_CDH;
 	int K_TPI = 0;		//-1 = Midpoint of darkness, 0 = on time, 1 = on longitude
 	int ChaserID = 1;
+	//0 = Plane change not requested, 1 = plane change requested
+	bool N_PC = false;
+	//Plane change threshold
+	double T_BNPC = 0.0;
+	//Initial phase angle (0 = -180° to 180°, 1 = 0 to 180°, 2 = -180° to 0)
+	int I_Theta = 0;
+	//0 = CDH not scheduled, 1 = CDH scheduled
+	bool CDH = true;
+	//1 = CDH at next apsis, 2 = CDH on time, 3 = angle from CSI
+	int I_CDH = 3;
+	//Number of apsis since CSI (for CDH at next apsis option)
+	int N_CDH = 1;
 	bool OptimumCSI = false;
+	//0 = CSI and CDH in-plane, 1 = CSI and CDH parallel to target
+	bool ParallelDVInd = false;
+	//Angle from CSI to CDH (for I_CDH = 3)
+	double DU_D = PI;
 };
 
 struct PDAPOpt //Powered Descent Abort Program
@@ -2607,8 +2629,18 @@ public:
 	bool PoweredDescentProcessor(VECTOR3 R_LS, double TLAND, SV sv, double GETbase, RTCCNIAuxOutputTable &aux, EphemerisDataTable *E, SV &sv_PDI, SV &sv_land, double &dv);
 	void EntryUpdateCalc(SV sv0, double GETbase, double entryrange, bool highspeed, EntryResults *res);
 	void PMMDKI(SPQOpt &opt, SPQResults &res);
+	//Velocity maneuver performer
+	void PCMVMR(VECTOR3 R_C, VECTOR3 V_C, VECTOR3 R_T, VECTOR3 V_T, double DELVX, double DELVY, double DELVZ, int I, VECTOR3 &V_C_apo, double &Pitch, double &Yaw);
+	//Elevation angle search subroutine
+	int PCTETR(SV sv_C, SV sv_T, double GETBase, double WT, double ESP, double &TESP, double &TR);
+	//Apogee, perigee, and offset determination
+	void PCPICK(SV sv_C, SV sv_T, double &DH, double &Phase, double &HA, double &HP);
+	//Apogee and perigee radius magnitude
+	void PCHAPE(double R1, double R2, double R3, double U1, double U2, double U3, double &RAP, double &RPE);
+	//Plane change time and velocity increments computations
+	void PMMPNE(AEGBlock sv_C, AEGBlock sv_T, double TREF, double FNPC, int KPC, int IPC, AEGBlock &SAVE, double &DI1, double &DH1);
 	bool DockingInitiationProcessor(DKIOpt opt, DKIResults &res);
-	void ConcentricRendezvousProcessor(const SPQOpt &opt, SPQResults &res);
+	int ConcentricRendezvousProcessor(const SPQOpt &opt, SPQResults &res);
 	void AGOPCislunarNavigation(SV sv, MATRIX3 REFSMMAT, int star, double yaw, VECTOR3 &IMUAngles, double &TA, double &SA);
 	VECTOR3 LOICrewChartUpdateProcessor(SV sv0, double GETbase, MATRIX3 REFSMMAT, double p_EMP, double LOI_TIG, VECTOR3 dV_LVLH_LOI, double p_T, double y_T);
 	SV coast(SV sv0, double dt);
@@ -2954,7 +2986,7 @@ public:
 		int ReplaceCode = 0; //1-15
 		int Thruster = RTCC_ENGINETYPE_CSMSPS; //Thruster for the maneuver
 		int Attitude = RTCC_ATTITUDE_PGNS_EXDV;		//Attitude option
-		double UllageDT = 0.0;	//Delta T of Ullage
+		double UllageDT = -1;	//Delta T of Ullage
 		bool UllageQuads = true;//false = 2 thrusters, true = 4 thrusters
 		bool Iteration = false; //false = do not iterate, true = iterate
 		double TenPercentDT = 26.0;	//Delta T of 10% thrust for the DPS
@@ -3588,33 +3620,65 @@ public:
 		DKIElementsBlock Block[7];
 	} PZDKIELM;
 
+	struct DKIDisplayBlock
+	{
+		double ManGMT = 0.0;
+		double dt = 0.0;
+		double dv = 0.0;
+		//Vehicle performing the maneuver
+		int VEH;
+		//Name of the maneuver
+		std::string Man_ID;
+		double PhaseAngle = 0.0;
+		double DH = 0.0;
+		double HA = 0.0;
+		double HP = 0.0;
+		double ManLine = 0.0;
+		VECTOR3 DV_LVLH = _V(0, 0, 0);
+		double Pitch = 0.0;
+		double Yaw = 0.0;
+	};
+
 	struct DKIDataBlock
 	{
-		int Plan_ID;
-		int Plan_M;
-		double ManGET[5];
-		double dt[5];
-		double dv[5];
-		//Vehicle performing the maneuver
-		int VEH[5];
-		//Name of the maneuver
-		std::string Man_ID[5];
-		double PhaseAngle[5];
-		double DH[5];
-		double HA[5];
-		double HP[5];
-		double ManLine[5];
-		int NumMan;
+		int Plan_M = 0;
+		DKIDisplayBlock Display[5];
+		int NumMan = 0;
+		//0 = No plan, 1 = DKI, 2 = SPQ
+		int PlanStatus = 0;
 	};
 
 	struct DKIDataTable
 	{
 		//Block 1
 		bool UpdatingIndicator = false;
+		//Number of plans that were generated (SPQ always 1)
 		int NumSolutions = 0;
 		//Block 2 (Information Block)
 		DKIDataBlock Block[7];
 	} PZDKIT;
+
+	struct RendezvousEvaluationDisplay
+	{
+		RendezvousEvaluationDisplay();
+		int ID;
+		int M;
+		int NumMans;
+		double GET[5];
+		double DT[4];
+		double DV[5];
+		std::string VEH[5];
+		std::string PURP[5];
+		double CODE[5];
+		double PHASE[5];
+		double HEIGHT[5];
+		double HA[5];
+		double HP[5];
+		double Pitch[5], Yaw[5];
+		VECTOR3 DVVector[5];
+		bool isDKI;
+		std::string ErrorMessage;
+	} PZREDT;
 
 	struct SkeletonFlightPlanTable
 	{
@@ -3688,6 +3752,7 @@ public:
 		double LandmarkDT = 0.0;
 		int LandmarkRef = 0;
 
+		//DMT
 		int DMT1Vehicle = 0;
 		int DMT1Number = 0;
 		int DMT1REFSMMATCode = 0;
@@ -3696,6 +3761,9 @@ public:
 		int DMT2Number = 0;
 		int DMT2REFSMMATCode = 0;
 		bool DMT2HeadsUpDownIndicator = false;
+
+		//RET
+		int RETPlan = 1;
 	} EZETVMED;
 
 	struct ExternalDVMakeupBuffer
@@ -3858,6 +3926,8 @@ private:
 	void PMDTRDFF(int med, unsigned page);
 	//Mission Plan Table Display
 	void PMDMPT();
+	//Rendezvous Evaluation Display Load Module
+	void PMDRET();
 	//GOST REFSMMAT Maintenance
 	void EMGSTGEN(int QUEID, int L1, int ID1, int L2, int ID2, double gmt, MATRIX3 *refs = NULL);
 	void EMGSTGENName(int ID, char *Buffer);
@@ -3910,6 +3980,8 @@ private:
 	double GLHTCS(double FLTHRS) { return FLTHRS * 360000.0; }
 	double GLCSTH(double FIXCSC) { return FIXCSC / 360000.0; }
 	double TJUDAT(int Y, int M, int D);
+	EphemerisData ConvertSVtoEphemData(SV sv);
+	SV ConvertEphemDatatoSV(EphemerisData sv);
 
 protected:
 	double TimeofIgnition;

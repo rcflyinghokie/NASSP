@@ -996,6 +996,24 @@ VECTOR3 elegant_lambert(VECTOR3 R1, VECTOR3 V1, VECTOR3 R2, double dt, int N, bo
 	}
 }
 
+bool oneclickcoast(VECTOR3 R0, VECTOR3 V0, double mjd0, double dt, VECTOR3 &R1, VECTOR3 &V1, int gravref, int &gravout)
+{
+	bool stop, soichange;
+	CoastIntegrator* coast;
+	coast = new CoastIntegrator(R0, V0, mjd0, dt, gravref, gravout);
+	stop = false;
+	while (stop == false)
+	{
+		stop = coast->iteration();
+	}
+	R1 = coast->R2;
+	V1 = coast->V2;
+	gravout = coast->outplanet;
+	soichange = coast->soichange;
+	delete coast;
+	return soichange;
+}
+
 bool oneclickcoast(VECTOR3 R0, VECTOR3 V0, double mjd0, double dt, VECTOR3 &R1, VECTOR3 &V1, OBJHANDLE gravref, OBJHANDLE &gravout)
 {
 	//Temporary
@@ -1020,18 +1038,9 @@ bool oneclickcoast(VECTOR3 R0, VECTOR3 V0, double mjd0, double dt, VECTOR3 &R1, 
 	{
 		go = BODY_MOON;
 	}
-	
-	bool stop, soichange;
-	CoastIntegrator* coast;
-	coast = new CoastIntegrator(R0, V0, mjd0, dt, gr, go);
-	stop = false;
-	while (stop == false)
-	{
-		stop = coast->iteration();
-	}
-	R1 = coast->R2;
-	V1 = coast->V2;
-	if (coast->outplanet == BODY_EARTH)
+
+	bool soichange = oneclickcoast(R0, V0, mjd0, dt, R1, V1, gr, go);
+	if (go == BODY_EARTH)
 	{
 		gravout = oapiGetObjectByName("Earth");
 	}
@@ -1040,9 +1049,6 @@ bool oneclickcoast(VECTOR3 R0, VECTOR3 V0, double mjd0, double dt, VECTOR3 &R1, 
 		gravout = oapiGetObjectByName("Moon");
 	}
 	
-	soichange = coast->soichange;
-	delete coast;
-	stop = false;
 	return soichange;
 }
 
@@ -7138,12 +7144,12 @@ CELEMENTS LyddaneOsculatingToMean(CELEMENTS arr_osc, int body)
 CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 {
 	CELEMENTS out;
-	double ae, am, Em, fm, J2, J3, J4, J5, R_e, cn, cn2, theta, theta2, theta4, eccdp2, sinI, sinI2, cosI2, adr, adr2, adr3;
+	double ae, am, Em, fm, J2, J3, J4, J5, R_e, cn, cn2, theta, theta2, theta4, eccdp2, sinI, sinI2, cosI2, adr, adr2, adr3, a;
 	double sinta, costa, costa2, sn2gta, cs2gta, sinGD, cosGD, sin2gd, cs2gd, sin3gd, cs3gd, sn3fgd, snf2gd, csf2gd, cs3fgd;
 	double k2, k3, k4, k5, gamma2, gamma3, gamma4, gamma5, gamma2_apo, gamma3_apo, gamma4_apo, gamma5_apo, g3dg2, g4dg2, g5dg2;
 	double A1_apo, A1, A2_apo, A2, A3, A4, A5, A6, A7, A8p, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A20, A21, A25, A26;
 	double B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15;
-	double delta1e, de, edl, di, sin_im2_dh, lagaha, lgh, a1, sinMADP, cosMADP, sinraandp, cosraandp;
+	double delta1e, de, edl, di, sin_im2_dh, lagaha, lgh, sinMADP, cosMADP, sinraandp, cosraandp;
 	bool pseudostate = false;
 
 	if (body == BODY_EARTH)
@@ -7274,7 +7280,7 @@ CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 	B14 = 5.0 / 64.0 * A5*cn2 * sinI + A7;
 	B15 = 35.0 / 384.0 * A8*cn2 * sinI;
 
-	a1 = am * (1.0 + gamma2 * ((3.0 * theta2 - 1.0)*arr.e / (cn2*cn2*cn2)*(arr.e*cn + arr.e / (1.0 + cn) + costa *(3.0 + 3.0 * arr.e*costa
+	a = am * (1.0 + gamma2 * ((3.0 * theta2 - 1.0)*arr.e / (cn2*cn2*cn2)*(arr.e*cn + arr.e / (1.0 + cn) + costa *(3.0 + 3.0 * arr.e*costa
 		+ eccdp2 * costa2)) + 3.0 * (1.0 - theta2)*adr3 * cs2gta));
 
 	delta1e = B13 * cs2gd + B14 * sinGD - B15 * sin3gd;
@@ -7362,7 +7368,63 @@ CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 	//
 	//out.a = (am + da)*R_Earth;
 	//double a1r = a1 * R_Earth;
-	out.a = a1 * R_e;
+
+	//Lyddane-Cohen improvement on the SMA (second attempt)
+	/*double beta = sin(arr.i);
+	double C1 = -1.0 + 5.0*theta2;
+	double C2 = -3.0 + 7.0*theta2;
+	double C3 = 3.0 - 5.0*theta2;
+	double C4 = 15.0 / 32.0*(1.0 - 18.0 / 5.0*theta2 + theta4);
+	double C5 = 3.0 / 8.0*(1.0 - 6.0*theta2 + 9.0*theta4);
+	double C6 = 15.0 / 32.0*(1.0 - 2.0*theta2 - 7.0*theta4);
+	double C7 = 3.0 / 2.0*(3.0*theta2 - 1.0);
+	double C8 = 9.0 / 4.0*(1.0 - 6.0*theta2 + 5.0*theta4);
+	double C9 = 3.0 / 16.0*(1.0 - 16.0*theta2 + 15.0*theta4);
+	double C10 = 5.0 / 2.0*beta*theta2;
+	double C11 = 3.0 / 2.0*beta;
+	double C12 = -3.0 / 8.0*beta*C1;
+	double C13 = 1.0 / 3.0*(35.0 - 70.0*theta2 + 35.0*theta4);
+	double C14 = 10.0 / 3.0*(4.0 - 11.0*theta2 + 7.0*theta4);
+	double C15 = 1.0 / 3.0*(8.0 - 40.0*theta2 + 35.0*theta4);
+	double C16 = 1.0 / 16.0*(3.0 - 30.0*theta2 + 35.0*theta4);
+	double C17 = 1.0 / 4.0*(5.0 - 40.0*theta2 + 35.0*theta4);
+	double f = MeanToTrueAnomaly(out.l, out.e);
+	double u = f + out.g;
+	double O1 = sin(f);
+	double O2 = cos(f);
+	double O3 = sin(u);
+	double O4 = cos(u);
+	double O5 = sin(2.0*u);
+	double O6 = cos(2.0*u);
+	double O7 = sin(out.g);
+	double O8 = cos(out.g);
+	double eta = sqrt(1.0 - arr.e*arr.e);
+	double I4 = cos(out.i);
+	double I5 = sin(out.i);
+	double a1 = -gamma2 * gamma2_apo*(C4*eta*eta + C5 * eta - C6);
+	double a2 = gamma2 * (1.0 - C7 * gamma2_apo*eta);
+	double a3 = -3.0 / 2.0*gamma2*gamma2_apo*eta;
+	double a4 = C8 * gamma2*gamma2_apo;
+	double a5 = 4.0 / 3.0*a4;
+	double a6 = 2.0 / 3.0*a4;
+	double a7 = -C9 * gamma2*gamma2_apo;
+	double a8 = C10 * gamma3;
+	double a9 = -C11 * gamma3;
+	double a10 = -eta * (C12*gamma3_apo);
+	double a11 = C13 * gamma4;
+	double a12 = C14 * gamma4;
+	double a13 = C15 * gamma4;
+	double a14 = -C16 * eta*gamma4_apo*(2.0 + 3.0*arr.e*arr.e);
+	double a15 = C17 * gamma4_apo*eta;
+	double a16 = (1.0 + arr.e*O2) / (1.0 - arr.e*arr.e);
+	double a17 = 0.5*(1.0 - 3.0*I4*I4) + (3.0 / 2.0*I5*I5*(1.0 - 2.0*O3*O3) - 0.5*(1.0 - 3.0*I4*I4))*pow(a16, 3)*pow(eta, 3);
+	double a18 = 1.0 / pow(eta, 3)*(a1 + a2 * a17 + a3 * a17*a17 + a4 * O6 + a5 * O6*O2*arr.e + a6 * O1*O5*arr.e + a7 * arr.e*arr.e*cos(2.0*out.g));
+	double a19 = (a8*O3*O3 + a9)*O3*pow(a16, 4) + a10 * arr.e*O7 + ((a11*O4*O4 + a12)*O4*O4 + a13)*pow(a16, 5) + a14 + a15 * arr.e*arr.e*O8*O8;
+	double da = am * (a18*(2.0 - 5.0*a18) + 2.0*a19);
+	out.a = (am + da)*R_e;
+	double a1r = a * R_e;*/
+
+	out.a = a * R_e;
 	return out;
 }
 
@@ -8061,6 +8123,25 @@ double THETR(double u1, double u2, double i1, double i2, double h1, double h2)
 	return u1 - u2 - 2.0*atan(tan((h1 - h2) / 2.0)*(sin(0.5*(i1 + i2 - PI)) / sin(0.5*(i1 - i2 + PI))));
 }
 
+double PHSANG(VECTOR3 R, VECTOR3 V, VECTOR3 R_D)
+{
+	VECTOR3 H1, H2, R_PROJ;
+	double theta;
+
+	H1 = crossp(R, V);
+	H2 = crossp(R_D, R);
+	R_PROJ = PROJCT(R, V, R_D);
+	theta = acos2(dotp(unit(R), unit(R_PROJ)));
+	return theta * sign(dotp(H1, H2));
+}
+
+VECTOR3 PROJCT(VECTOR3 U1, VECTOR3 U2, VECTOR3 X)
+{
+	VECTOR3 N = unit(crossp(U1, U2));
+	VECTOR3 X1 = X - N * dotp(X, N);
+	return unit(X1)*length(X);
+}
+
 void DROOTS(double A, double B, double C, double D, double E, int N, double *x, int &M, int &I)
 {
 	double eps, a, b, delta;
@@ -8485,17 +8566,21 @@ void PMMLAEG::CALL(AEGHeader &header, AEGDataBlock &in, AEGDataBlock &out)
 
 	double dt;
 
-	if (in.TIMA == 0 || in.TIMA == 4)
+	if (in.TIMA == 0 || in.TIMA >= 4)
 	{
 		if (in.TIMA == 0)
 		{
 			dt = in.TE - in.TS;
 		}
-		else
+		else if (in.TIMA == 4)
 		{
 			dt = tempblock.TE - in.TS;
 		}
-
+		else
+		{
+			dt = 0.0;
+		}
+	NewPMMLAEG_V1000:
 		coe_mean1.l = CurrentBlock.l_dot*dt + in.coe_mean.l;
 		coe_mean1.g = CurrentBlock.g_dot*dt + in.coe_mean.g;
 		coe_mean1.h = CurrentBlock.h_dot*dt + in.coe_mean.h;
@@ -8653,6 +8738,12 @@ void PMMLAEG::CALL(AEGHeader &header, AEGDataBlock &in, AEGDataBlock &out)
 		{
 			CurrentBlock.Item10 -= PI2;
 		}
+	}
+
+	if (in.TIMA >= 5)
+	{
+		dt = -CurrentBlock.Item10 / (CurrentBlock.l_dot + CurrentBlock.g_dot);
+		goto NewPMMLAEG_V1000;
 	}
 
 NewPMMLAEG_V1030:
