@@ -43,7 +43,7 @@ class therm_obj			//thermal object.an object that can receive thermal energy
   vector3 pos;				//position in ship (in centimeters.. 0,0,0 is offset from CG
   double  mass;				//total mass , in grams
   double Temp;				//duh!, in K (default constructor =273+ 12
-  virtual void thermic( double _en);//thermic function.. negative values, if this looses energy
+  virtual void thermic( double _en);//thermic function.. negative values, if this loses energy
   void SetTemp(double _t);	//this is a hack, shouldn't be used. Violates energy conservation
   double GetTemp();			//get temp
 };

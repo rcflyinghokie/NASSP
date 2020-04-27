@@ -161,7 +161,7 @@ public:
 	virtual void* GetComponent(char *component_name);
 };
 
-class h_Tank : public h_object, public therm_obj {	//tanks is just a basic receptacle of liquid or gas..
+class h_Tank : public h_object, public therm_obj {	//tanks are just a basic receptacle of liquid or gas..
 
 public:
 	int IN_FLOW_MASK[MAX_SUB];			//what is allowed in and out..
@@ -179,7 +179,7 @@ public:
 	virtual	void refresh(double dt);	//this called at each timestep
 	virtual int Flow(h_volume block);
 	h_volume GetFlow(double volume, double maxMass = 0);	//flow from a tank is defined in volume
-	virtual void thermic( double _en);  //tank has it's own termic function, to account for the h_volume
+	virtual void thermic( double _en);  //tank has it's own thermic function, to account for the h_volume
 	virtual void Load(FILEHANDLE scn);
 	virtual void Save(FILEHANDLE scn);
 	virtual void* GetComponent(char *component_name);
