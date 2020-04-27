@@ -1926,7 +1926,7 @@ void LEM::SystemsTimestep(double simt, double simdt)
 	//Heat Radiator Debug Tests
 	//sprintf(oapiDebugString(), "TLE Heat %lf Rad Temp %lf Prim Gly Temp %lf Sec Gly Temp %lf Prim HX Power %lf Sec HX Power %lf", *TLEHeat, KelvinToFahrenheit(*TLERadTemp), KelvinToFahrenheit(*primloop1temp), KelvinToFahrenheit(*secloop1temp), *PrimTLEHXPower, *SecTLEHXPower);
 
-	sprintf(oapiDebugString(), "SGDTemp %lf FlowIn %lf CabTemp %lf FlowOut %lf CO2ManTemp %lf ", KelvinToFahrenheit(*suitGasDiverterTemp), *CabFlowIn, KelvinToFahrenheit(*CabinTemp), *CabFlowOut, KelvinToFahrenheit(*CO2ManifoldTemp));
+	//sprintf(oapiDebugString(), "SGDTemp %lf FlowIn %lf CabTemp %lf FlowOut %lf CO2ManTemp %lf ", KelvinToFahrenheit(*suitGasDiverterTemp), *CabFlowIn, KelvinToFahrenheit(*CabinTemp), *CabFlowOut, KelvinToFahrenheit(*CO2ManifoldTemp));
 	//sprintf(oapiDebugString(), "RadT %lf CabinQ %lf Pwr %lf GlyCTmp %lf HXCTmp %lf HXCPwr %lf L2Tmp %lf GlyHTmp %lf HXHTmp %lf HXHPwr %lf CabHXPwr %lf", KelvinToFahrenheit(*HeatLossTemp), *CabinEnergy, *HeatLossPower, KelvinToFahrenheit(*glycolsuitcooltemp), KelvinToFahrenheit(*hxcoolingTemp), *hxcoolingPower, KelvinToFahrenheit(*primloop2temp), KelvinToFahrenheit(*glycolsuitheattemp), KelvinToFahrenheit(*hxheatingTemp), *hxheatingPower, *SuitCabHXPower);
 
 	//sprintf(oapiDebugString(), "CabinP %lf CabinT %lf CabinQ %lf CabinHeat %lf", ecs.GetCabinPressurePSI(), ecs.GetCabinTempF(), *CabinEnergy, *CabinHeat);
