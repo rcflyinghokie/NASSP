@@ -2205,7 +2205,7 @@ void Saturn::CabinFansSystemTimestep()
 	else {
 		PrimCabinHeatExchanger->SetPumpOff();
 		SecCabinHeatExchanger->SetPumpOff();
-		CabinHeater->SetPumpOff(); 
+		//CabinHeater->SetPumpOff(); 
 
 		StopCabinFanSound();
 	}

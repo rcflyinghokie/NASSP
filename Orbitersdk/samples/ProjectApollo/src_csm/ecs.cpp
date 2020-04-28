@@ -1111,6 +1111,7 @@ void SaturnGlycolCoolingController::SystemTimestep(double simdt) {
 		saturn->SecSuitCircuitHeatExchanger->SetPumpOff();
 	}
 
+	/*
 	// "Dummy" heaters are active, when either loop is active
 	if (saturn->SuitHeatExchangerPrimaryGlycolRotary.GetState() == 0 ||
 		saturn->SuitHeatExchangerSecondaryGlycolRotary.GetState() == 0) {
@@ -1121,6 +1122,7 @@ void SaturnGlycolCoolingController::SystemTimestep(double simdt) {
 		suitHeater->SetPumpOff();
 		suitCircuitHeater->SetPumpOff();
 	}
+	*/
 
 	// Prim. evaporator inlet temp
 	saturn->PrimaryGlycolEvapInletTempRotary.SoundEnabled(false);
