@@ -2198,7 +2198,7 @@ void Saturn::CabinFansSystemTimestep()
 
 		PrimCabinHeatExchanger->SetPumpAuto();
 		SecCabinHeatExchanger->SetPumpAuto();
-		CabinHeater->SetPumpAuto(); 
+		//CabinHeater->SetPumpAuto(); 
 
 		CabinFanSound();
 	} 
