@@ -789,7 +789,7 @@ void CrewStatus::Timestep(double simdt) {
 	AtmosStatus atm;
 	saturn->GetAtmosStatus(atm);
 
-	// Pressure in suit lower than 2.8 psi for 10 minutes
+	// Pressure in suit lower than 2.8 psi for 10 minutes or 0.5 psi for 30 seconds
 	if (atm.SuitPressurePSI < 2.8) {
 		if (suitPressureLowTime <= 0) {
 			status = ECS_CREWSTATUS_DEAD;
@@ -798,7 +798,11 @@ void CrewStatus::Timestep(double simdt) {
 
 		} else {
 			status = ECS_CREWSTATUS_CRITICAL;
-			suitPressureLowTime -= simdt;
+			if (atm.SuitPressurePSI < 0.5) {
+				suitPressureLowTime -= simdt * 20;
+			} else {
+				suitPressureLowTime -= simdt;
+			}
 		}
 	} else {
 		suitPressureLowTime = 600;

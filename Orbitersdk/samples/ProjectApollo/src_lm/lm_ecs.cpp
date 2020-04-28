@@ -77,7 +77,7 @@ void LEMCrewStatus::Timestep(double simdt) {
 
 	status = ECS_CREWSTATUS_OK;
 
-	// Suit/Cabin Pressure lower than 2.8 psi for 10 minutes
+	// Suit/Cabin Pressure lower than 2.8 psi for 10 minutes or 0.5 psi for 30 seconds
 	if ((lem->ecs.GetECSSuitPSI() < 2.8) && (lem->CDRSuited->number + lem->LMPSuited->number > 0)) {
 			if (SuitPressureLowTime <= 0) {
 				status = ECS_CREWSTATUS_DEAD;
@@ -85,9 +85,13 @@ void LEMCrewStatus::Timestep(double simdt) {
 				return;
 			} else {
 				status = ECS_CREWSTATUS_CRITICAL;
-				SuitPressureLowTime -= simdt;
+				if (lem->ecs.GetECSSuitPSI() < 0.5) {
+					SuitPressureLowTime -= simdt * 20;
+				} else {
+					SuitPressureLowTime -= simdt;
+				}
 			}
-		} else {
+	} else {
 		SuitPressureLowTime = 600;
 	}
 
@@ -98,7 +102,11 @@ void LEMCrewStatus::Timestep(double simdt) {
 			return;
 		} else {
 			status = ECS_CREWSTATUS_CRITICAL;
-			PressureLowTime -= simdt;
+			if (lem->ecs.GetECSCabinPSI() < 0.5) {
+				PressureLowTime -= simdt * 20;
+			} else {
+				PressureLowTime -= simdt;
+			}
 		}
 	} else {
 		PressureLowTime = 600;
@@ -144,8 +152,8 @@ void LEMCrewStatus::Timestep(double simdt) {
 		} else {
 		SuitTemperatureTime = 12 * 3600;
 	}
-	// **Disabled for now until cabin temperatures are more stable
-	/*if ((lem->ecs.GetCabinTempF() > 113 || lem->ecs.GetCabinTempF() < 32) && lem->CrewInCabin->number > 0) {
+
+	if ((lem->ecs.GetCabinTempF() > 113 || lem->ecs.GetCabinTempF() < 32) && lem->CrewInCabin->number > 0) {
 		if (TemperatureTime <= 0) {
 			status = ECS_CREWSTATUS_DEAD;
 			crewDeadSound.play();
@@ -156,7 +164,7 @@ void LEMCrewStatus::Timestep(double simdt) {
 		}
 	} else {
 		TemperatureTime = 12 * 3600;
-	}*/
+	}
 
 	// Suit/Cabin CO2 above 10 mmHg for 30 minutes
 	if (lem->ecs.GetECSSensorCO2MMHg() > 10 && (lem->CrewInCabin->number > 0 || (lem->CDRSuited->number + lem->LMPSuited->number > 0))) {
@@ -193,9 +201,9 @@ void LEMCrewStatus::Timestep(double simdt) {
 		accelerationTime = 10;
 	}
 
-	// Touchdown speed exceeds 15 m/s (= about 50 ft/s)
+	// Touchdown speed exceeds 4 m/s (= about 13 ft/s)
 	if (lem->GroundContact()) {
-		if (fabs(lastVerticalVelocity) > 15) {
+		if (fabs(lastVerticalVelocity) > 4) {
 			status = ECS_CREWSTATUS_DEAD;
 			crewDeadSound.play();
 			return;
