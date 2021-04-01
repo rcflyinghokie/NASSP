@@ -616,7 +616,7 @@ void Battery::UpdateFlow(double dt)
 	batheat = (internal_resistance * (Amperes * Amperes));
 	//batheat = 10000;
 
-	SRC->DrawPower(batheat * dt); //Power loss to heat
+	//SRC->DrawPower(batheat * dt); //Power loss to heat // SRC IS PROBABLY NULLPTR UNLESS THERE'S A CHARGER HOOKED TO THE BATTERY. THIS LINE IS DRAWING POWER, FROM THE CHARGER; THAT'S ALREADY DONE IN Battery::refresh(). DONT DO IT TWICE.
 	thermic(batheat * dt); //1 joule = 1 watt * dt
 
 	// Reset power load
@@ -651,6 +651,7 @@ void Battery::refresh(double dt)
 		} else {
 			p = Volts * 2.2 / 0.01 * (max_voltage - Volts) / max_voltage;
 		}
+		thermic(p * dt); //1 joule = 1 watt * dt //THIS IS THE HEAT GENERATED FROM CHARGING. DO THIS HERE NOT IN Battery::UpdateFlow()
 		SRC->DrawPower(p);
 		power += p * dt;
 	}
