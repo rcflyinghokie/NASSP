@@ -287,19 +287,11 @@ int AR_GCore::MPTTrajectoryUpdate(VESSEL *ves, bool csm)
 	if (ves == NULL) return 1;
 
 	bool landed = ves->GroundContact();
-	EphemerisData sv2;
 
-	if (landed)
-	{
-		double lat, lng, rad;
-		ves->GetEquPos(lng, lat, rad);
+	//CSM state vector can't be landed of course...
+	if (csm && landed) return 1;
 
-		rtcc->BZLAND.lat[RTCC_LMPOS_BEST] = lat;
-		rtcc->BZLAND.lng[RTCC_LMPOS_BEST] = lng;
-		rtcc->BZLAND.rad[RTCC_LMPOS_BEST] = rad;
-	}
 	EphemerisData sv = rtcc->StateVectorCalcEphem(ves);
-	sv2 = sv;
 
 	int id;
 	char letter;
@@ -319,7 +311,7 @@ int AR_GCore::MPTTrajectoryUpdate(VESSEL *ves, bool csm)
 		rtcc->BZUSEVEC.data[id].ID = 0;
 	}
 	rtcc->BZUSEVEC.data[id].ID++;
-	rtcc->BZUSEVEC.data[id].Vector = sv2;
+	rtcc->BZUSEVEC.data[id].Vector = sv;
 	if (landed)
 	{
 		rtcc->BZUSEVEC.data[id].LandingSiteIndicator = true;
@@ -847,6 +839,24 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	NodeConvGET = 0.0;
 	NodeConvResLat = 0.0;
 	NodeConvResLng = 0.0;
+
+	SpaceDigitalsOption = 1;
+	SpaceDigitalsGET = 0.0;
+
+	for (int i = 0;i < 2;i++)
+	{
+		AGCClockTime[i] = 0.0;
+		RTCCClockTime[i] = 0.0;
+		DeltaClockTime[i] = 0.0;
+		DesiredRTCCLiftoffTime[i] = 0.0;
+	}
+
+	LUNTAR_lat = 0.0;
+	LUNTAR_lng = 0.0;
+	LUNTAR_bt_guess = 10.0;
+	LUNTAR_pitch_guess = 0.0;
+	LUNTAR_yaw_guess = 0.0;
+	LUNTAR_TIG = 0.0;
 }
 
 ARCore::~ARCore()
@@ -960,11 +970,6 @@ void ARCore::DeorbitCalc()
 	startSubthread(17);
 }
 
-void ARCore::MoonRTECalc()
-{
-	startSubthread(11);
-}
-
 void ARCore::SPQcalc()
 {
 	startSubthread(2);
@@ -1074,6 +1079,16 @@ void ARCore::SpaceDigitalsMSKRequest()
 	{
 		startSubthread(30);
 	}
+}
+
+void ARCore::GenerateSpaceDigitalsNoMPT()
+{
+	startSubthread(11);
+}
+
+void ARCore::LUNTARCalc()
+{
+	startSubthread(50);
 }
 
 void ARCore::CycleNextStationContactsDisplay()
@@ -1527,7 +1542,7 @@ void ARCore::GetStateVectorFromAGC(bool csm)
 		V.z *= pow(2, 7);
 	}
 
-	Rot = OrbMech::J2000EclToBRCS(GC->rtcc->SystemParameters.AGCEpoch);
+	Rot = GC->rtcc->SystemParameters.MAT_J2000_BRCS;
 
 	EphemerisData sv;
 	sv.R = tmul(Rot, R);
@@ -1732,7 +1747,7 @@ void ARCore::StateVectorCalc(int type)
 			get = SVDesiredGET;
 		}
 
-		GC->rtcc->CMMCMNAV(uplveh, mptveh, get);
+		GC->rtcc->CMMCMNAV(uplveh, mptveh, get, 0); //TBD
 	}
 	else
 	{
@@ -2014,8 +2029,53 @@ void ARCore::TLANDUplink(void)
 	UplinkData2(false); // Go for uplink
 }
 
+
+void ARCore::AGCClockIncrementUplink(bool csm)
+{
+	RTCC::AGCTimeIncrementMakeupTableBlock *block;
+
+	if (csm)
+	{
+		block = &GC->rtcc->CZTMEINC.Blocks[0];
+	}
+	else
+	{
+		block = &GC->rtcc->CZTMEINC.Blocks[1];
+	}
+
+	for (int i = 0;i < 2;i++)
+	{
+		g_Data.emem[i] = block->Octals[i];
+	}
+
+	UplinkDataV70V73(false, csm);
+}
+
+void ARCore::AGCLiftoffTimeIncrementUplink(bool csm)
+{
+	RTCC::AGCLiftoffTimeUpdateMakeupTableBlock *block;
+
+	if (csm)
+	{
+		block = &GC->rtcc->CZLIFTFF.Blocks[0];
+	}
+	else
+	{
+		block = &GC->rtcc->CZLIFTFF.Blocks[1];
+	}
+
+	for (int i = 0;i < 2;i++)
+	{
+		g_Data.emem[i] = block->Octals[i];
+	}
+
+	UplinkDataV70V73(true, csm);
+}
+
 void ARCore::EMPP99Uplink(int i)
 {
+	if (vesseltype < 2 || vesseltype > 3) return;
+
 	if (i == 0)
 	{
 		g_Data.emem[0] = 24;
@@ -2244,6 +2304,66 @@ void ARCore::UplinkData2(bool isCSM)
 		int cnt = (g_Data.emem[0] - (cnt2 * 10)) + cnt2 * 8;
 
 		while (g_Data.uplinkState < cnt && cnt <= 20 && cnt >= 3)
+		{
+			sprintf(buffer, "%ld", g_Data.emem[g_Data.uplinkState]);
+			uplink_word(buffer, isCSM);
+			g_Data.uplinkState++;
+		}
+		send_agc_key('V', isCSM);
+		send_agc_key('3', isCSM);
+		send_agc_key('3', isCSM);
+		send_agc_key('E', isCSM);
+		g_Data.connStatus = 1;
+		g_Data.uplinkState = 0;
+		//g_Data.uplinkBufferSimt = oapiGetSimTime() + 5.0; //6 second delay
+	}
+}
+
+void ARCore::UplinkDataV70V73(bool v70, bool isCSM)
+{
+	if (g_Data.connStatus == 0) {
+		int bytesRecv = SOCKET_ERROR;
+		char addr[256];
+		char buffer[8];
+		m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		if (m_socket == INVALID_SOCKET) {
+			//g_Data.uplinkDataReady = 0;
+			sprintf(debugWinsock, "ERROR AT SOCKET(): %ld", WSAGetLastError());
+			closesocket(m_socket);
+			return;
+		}
+		sprintf(addr, "127.0.0.1");
+		clientService.sin_family = AF_INET;
+		clientService.sin_addr.s_addr = inet_addr(addr);
+		if (isCSM)
+		{
+			clientService.sin_port = htons(14242);
+		}
+		else
+		{
+			clientService.sin_port = htons(14243);
+		}
+		if (connect(m_socket, (SOCKADDR*)&clientService, sizeof(clientService)) == SOCKET_ERROR) {
+			//g_Data.uplinkDataReady = 0;
+			sprintf(debugWinsock, "FAILED TO CONNECT, ERROR %ld", WSAGetLastError());
+			closesocket(m_socket);
+			return;
+		}
+		sprintf(debugWinsock, "CONNECTED");
+		g_Data.uplinkState = 0;
+		send_agc_key('V', isCSM);
+		send_agc_key('7', isCSM);
+		if (v70)
+		{
+			send_agc_key('0', isCSM);
+		}
+		else
+		{
+			send_agc_key('3', isCSM);
+		}
+		send_agc_key('E', isCSM);
+
+		while (g_Data.uplinkState < 2)
 		{
 			sprintf(buffer, "%ld", g_Data.emem[g_Data.uplinkState]);
 			uplink_word(buffer, isCSM);
@@ -2826,8 +2946,8 @@ int ARCore::subThread()
 				opt.RV_MCC.MJD = OrbMech::MJDfromGET(EPHEM.GMT, GC->rtcc->GetGMTBase());
 				opt.RV_MCC.gravref = GC->rtcc->GetGravref(EPHEM.RBI);
 
-				RTCC::PLAWDTInput pin;
-				RTCC::PLAWDTOutput pout;
+				PLAWDTInput pin;
+				PLAWDTOutput pout;
 				pin.T_UP = GMT;
 				pin.TableCode = mptveh;
 				GC->rtcc->PLAWDT(pin, pout);
@@ -2851,8 +2971,8 @@ int ARCore::subThread()
 				opt.RV_MCC.MJD = OrbMech::MJDfromGET(tab->mantable.back().GMT_BO, GC->rtcc->GetGMTBase());
 				opt.RV_MCC.gravref = GC->rtcc->GetGravref(tab->mantable.back().RefBodyInd);
 
-				RTCC::PLAWDTInput pin;
-				RTCC::PLAWDTOutput pout;
+				PLAWDTInput pin;
+				PLAWDTOutput pout;
 				pin.T_UP = tab->mantable.back().GMT_BO;
 				pin.TableCode = mptveh;
 				GC->rtcc->PLAWDT(pin, pout);
@@ -3070,8 +3190,8 @@ int ARCore::subThread()
 			sv_A.MJD = OrbMech::MJDfromGET(EPHEM.GMT, GC->rtcc->GetGMTBase());
 			sv_A.gravref = GC->rtcc->GetGravref(EPHEM.RBI);
 
-			RTCC::PLAWDTInput pin;
-			RTCC::PLAWDTOutput pout;
+			PLAWDTInput pin;
+			PLAWDTOutput pout;
 			pin.T_UP = GMT;
 			pin.TableCode = mptveh;
 			GC->rtcc->PLAWDT(pin, pout);
@@ -3179,8 +3299,11 @@ int ARCore::subThread()
 		Result = 0;
 	}
 	break;
-	case 11: //Spare
+	case 11: //Space Digitals without MPT
 	{
+		SV sv0 = GC->rtcc->StateVectorCalc(vessel);
+		GC->rtcc->EMDSPACENoMPT(sv0, SpaceDigitalsOption + 2, GC->rtcc->GMTfromGET(SpaceDigitalsGET));
+
 		Result = 0;
 	}
 	break;
@@ -3341,8 +3464,8 @@ int ARCore::subThread()
 
 			sv0 = EPHEM;
 
-			RTCC::PLAWDTInput pin;
-			RTCC::PLAWDTOutput pout;
+			PLAWDTInput pin;
+			PLAWDTOutput pout;
 			pin.T_UP = GMT;
 			pin.TableCode = RTCC_MPT_CSM;
 			GC->rtcc->PLAWDT(pin, pout);
@@ -3517,8 +3640,8 @@ int ARCore::subThread()
 				break;
 			}
 
-			RTCC::PLAWDTInput pin;
-			RTCC::PLAWDTOutput pout;
+			PLAWDTInput pin;
+			PLAWDTOutput pout;
 			pin.T_UP = GMT;
 			pin.TableCode = RTCC_MPT_CSM;
 			GC->rtcc->PLAWDT(pin, pout);
@@ -3652,8 +3775,8 @@ int ARCore::subThread()
 			sv_CSM.MJD = OrbMech::MJDfromGET(EPHEM.GMT, GC->rtcc->GetGMTBase());
 			sv_CSM.gravref = GC->rtcc->GetGravref(EPHEM.RBI);
 
-			RTCC::PLAWDTInput pin;
-			RTCC::PLAWDTOutput pout;
+			PLAWDTInput pin;
+			PLAWDTOutput pout;
 			pin.T_UP = GMT;
 			pin.TableCode = RTCC_MPT_LM;
 			GC->rtcc->PLAWDT(pin, pout);
@@ -4055,6 +4178,10 @@ int ARCore::subThread()
 		else
 		{
 			sv0 = GC->rtcc->StateVectorCalc(vessel);
+			if (mapUpdateGET > 0)
+			{
+				sv0 = GC->rtcc->coast(sv0, mapUpdateGET - OrbMech::GETfromMJD(sv0.MJD, GC->rtcc->CalcGETBase()));
+			}
 		}
 
 		if (mappage == 0)
@@ -4157,33 +4284,56 @@ int ARCore::subThread()
 	break;
 	case 37: //Recovery Target Selection Display
 	{
-		EphemerisDataTable tab;
-		EphemerisDataTable *tab2;
-		double gmt = GC->rtcc->GMTfromGET(GC->rtcc->RZJCTTC.R20GET);
+		EphemerisDataTable2 tab;
+		EphemerisDataTable2 *tab2;
+		double gmt_guess, gmt_min, gmt_max;
+		
+		gmt_guess = GC->rtcc->GMTfromGET(GC->rtcc->RZJCTTC.R20GET);
+		gmt_min = gmt_guess;
+		gmt_max = gmt_guess + 2.75*60.0*60.0;
 
 		if (GC->MissionPlanningActive)
 		{
-			tab2 = &GC->rtcc->EZEPH1.EPHEM;
+			unsigned int NumVec;
+			int TUP;
+			ManeuverTimesTable MANTIMES;
+			LunarStayTimesTable LUNSTAY;
+
+			GC->rtcc->ELNMVC(gmt_min, gmt_max, RTCC_MPT_CSM, NumVec, TUP);
+			GC->rtcc->ELFECH(gmt_min, NumVec, 0, RTCC_MPT_CSM, tab, MANTIMES, LUNSTAY);
+
+			if (tab.Header.NumVec < 9 || GC->rtcc->DetermineSVBody(tab.table[0]) != BODY_EARTH)
+			{
+				Result = 0;
+				break;
+			}
 		}
 		else
 		{
 			EphemerisData sv = GC->rtcc->StateVectorCalcEphem(vessel);
 
+			if (sv.RBI != BODY_EARTH)
+			{
+				Result = 0;
+				break;
+			}
+
 			EMSMISSInputTable intab;
 
 			intab.AnchorVector = sv;
 			intab.EphemerisBuildIndicator = true;
-			intab.EphemerisLeftLimitGMT = gmt - 20.0*60.0;
-			intab.EphemerisRightLimitGMT = gmt + 2.5*60.0*60.0;
-			intab.EphemTableIndicator = &tab;
+			intab.ECIEphemerisIndicator = true;
+			intab.ECIEphemTableIndicator = &tab;
+			intab.EphemerisLeftLimitGMT = gmt_min;
+			intab.EphemerisRightLimitGMT = gmt_max;
+			intab.ManCutoffIndicator = false;
+			intab.VehicleCode = RTCC_MPT_CSM;
 
-			GC->rtcc->EMSMISS(intab);
+			GC->rtcc->NewEMSMISS(&intab);
 			tab.Header.TUP = 1;
-
-			tab2 = &tab;
 		}
-
-		GC->rtcc->RMDRTSD(*tab2, 1, gmt, GC->rtcc->RZJCTTC.R20_lng);
+		tab2 = &tab;
+		GC->rtcc->RMDRTSD(*tab2, 1, gmt_guess, GC->rtcc->RZJCTTC.R20_lng);
 
 		Result = 0;
 	}
@@ -4533,8 +4683,68 @@ int ARCore::subThread()
 		Result = 0;
 	}
 	break;
-	case 50: //Spare
+	case 50: //Lunar Targeting Program (S-IVB Lunar Impact)
 	{
+		if (target == NULL)
+		{
+			Result = 0;
+			break;
+		}
+
+		IU *iu = NULL;
+		LVDCSV * lvdc = NULL;
+
+		bool uplinkaccepted = false;
+
+		if (!stricmp(target->GetClassName(), "ProjectApollo\\Saturn5") ||
+			!stricmp(target->GetClassName(), "ProjectApollo/Saturn5")) {
+			Saturn *iuv = (Saturn *)target;
+
+			iu = iuv->GetIU();
+		}
+		else if (!stricmp(target->GetClassName(), "ProjectApollo\\sat5stg3") ||
+			!stricmp(target->GetClassName(), "ProjectApollo/sat5stg3"))
+		{
+			SIVB *iuv = (SIVB *)target;
+
+			iu = iuv->GetIU();
+		}
+		if (iu == NULL)
+		{
+			Result = 0;
+			break;
+		}
+		lvdc = (LVDCSV*)((IUSV*)iu)->GetLVDC();
+
+		if (lvdc == NULL)
+		{
+			Result = 0;
+			break;
+		}
+
+		if (lvdc->LVDC_Timebase != 8)
+		{
+			//TB8 not enabled yet
+			LUNTAR_Output.err = 3;
+			Result = 0;
+			break;
+		}
+
+		LunarTargetingProgramInput in;
+		
+		in.sv_in = GC->rtcc->StateVectorCalcEphem(target);
+		in.mass = target->GetMass();
+		in.lat_tgt = LUNTAR_lat;
+		in.lng_tgt = LUNTAR_lng;
+		in.bt_guess = LUNTAR_bt_guess;
+		in.pitch_guess = LUNTAR_pitch_guess;
+		in.yaw_guess = LUNTAR_yaw_guess;
+		in.tig_guess = GC->rtcc->GMTfromGET(LUNTAR_TIG);
+		in.TB8 = lvdc->TB8;
+
+		LunarTargetingProgram luntar(GC->rtcc);
+		luntar.Call(in, LUNTAR_Output);
+
 		Result = 0;
 	}
 	break;
@@ -4907,7 +5117,7 @@ void ARCore::AGCCorrectionVectors(double mjd_launch, double t_land, int mission,
 	VECTOR3 l;
 	double mjd_mid, brcsmjd, w_E, t0, B_0, Omega_I0, F_0, B_dot, Omega_I_dot, F_dot, cosI, sinI;
 	double A_Z, A_Z0, A_X, minA_Y, mjd_land;
-	int mem;
+	int mem, epoch;
 	char AGC[64];
 
 	mjd_mid = mjd_launch + 7.0;
@@ -4922,7 +5132,7 @@ void ARCore::AGCCorrectionVectors(double mjd_launch, double t_land, int mission,
 	{
 		if (mission < 11)
 		{
-			brcsmjd = 40221.525;    //Nearest Besselian Year 1969
+			epoch = 1969;    //Nearest Besselian Year 1969
 			w_E = 7.29211515e-5;
 			B_0 = 0.409164173;              
 			Omega_I0 = -6.03249419;
@@ -4948,7 +5158,7 @@ void ARCore::AGCCorrectionVectors(double mjd_launch, double t_land, int mission,
 		}
 		else if (mission < 14)
 		{
-			brcsmjd = 40586.767239; //Nearest Besselian Year 1970
+			epoch = 1970;			//Nearest Besselian Year 1970
 			w_E = 7.29211494e-5;    //Comanche 055 (Apollo 11 CM AGC)
 			B_0 = 0.40916190299;
 			Omega_I0 = 6.19653663041;
@@ -4963,7 +5173,7 @@ void ARCore::AGCCorrectionVectors(double mjd_launch, double t_land, int mission,
 		}
 		else if (mission < 15)
 		{
-			brcsmjd = 40952.009432; //Nearest Besselian Year 1971
+			epoch = 1971;			//Nearest Besselian Year 1971
 			w_E = 7.292115147e-5;	//Comanche 108 (Apollo 14 CM AGC)
 			B_0 = 0.40915963316;
 			Omega_I0 = 5.859196887;
@@ -4978,7 +5188,7 @@ void ARCore::AGCCorrectionVectors(double mjd_launch, double t_land, int mission,
 		}
 		else
 		{
-			brcsmjd = 41317.251625; //Nearest Besselian Year 1972
+			epoch = 1972;			//Nearest Besselian Year 1972
 			w_E = 7.29211514667e-5; //Artemis 072 (Apollo 15 CM AGC)
 			B_0 = 0.409157363336;
 			Omega_I0 = 5.52185714700;
@@ -4996,7 +5206,7 @@ void ARCore::AGCCorrectionVectors(double mjd_launch, double t_land, int mission,
 	{
 		if (mission < 11)
 		{
-			brcsmjd = 40221.525;    //Nearest Besselian Year 1969
+			epoch = 1969;		    //Nearest Besselian Year 1969
 			w_E = 7.29211515e-5;    //Luminary 069 (Apollo 10 LM AGC)
 			B_0 = 0.409164173;
 			Omega_I0 = -6.03249419;
@@ -5011,7 +5221,7 @@ void ARCore::AGCCorrectionVectors(double mjd_launch, double t_land, int mission,
 		}
 		else if (mission < 12)
 		{
-			brcsmjd = 40586.767239;		//Nearest Besselian Year 1970
+			epoch = 1970;				//Nearest Besselian Year 1970
 			w_E = 7.29211319606104e-5;  //Luminary 099 (Apollo 11 LM AGC)
 			B_0 = 0.40916190299;
 			Omega_I0 = 6.1965366255107;
@@ -5026,7 +5236,7 @@ void ARCore::AGCCorrectionVectors(double mjd_launch, double t_land, int mission,
 		}
 		else if (mission < 13)
 		{
-			brcsmjd = 40586.767239; //Nearest Besselian Year 1970
+			epoch = 1970;			//Nearest Besselian Year 1970
 			w_E = 7.29211494e-5;    //Luminary 116 (Apollo 12 LM AGC)
 			B_0 = 0.4091619030;
 			Omega_I0 = 6.196536640;
@@ -5041,7 +5251,7 @@ void ARCore::AGCCorrectionVectors(double mjd_launch, double t_land, int mission,
 		}
 		else if (mission < 14)
 		{
-			brcsmjd = 40586.767239;		//Nearest Besselian Year 1970
+			epoch = 1970;				//Nearest Besselian Year 1970
 			w_E = 7.292115145489943e-05;//Luminary 131 (Apollo 13 LM AGC)
 			B_0 = 0.4091619030;
 			Omega_I0 = 6.196536640;
@@ -5056,7 +5266,7 @@ void ARCore::AGCCorrectionVectors(double mjd_launch, double t_land, int mission,
 		}
 		else if (mission < 15)
 		{
-			brcsmjd = 40952.009432; //Nearest Besselian Year 1971
+			epoch = 1971;			//Nearest Besselian Year 1971
 			w_E = 7.292115147e-5;	//Luminary 178 (Apollo 14 LM AGC)
 			B_0 = 0.40915963316;
 			Omega_I0 = 5.859196887;
@@ -5071,7 +5281,7 @@ void ARCore::AGCCorrectionVectors(double mjd_launch, double t_land, int mission,
 		}
 		else
 		{
-			brcsmjd = 41317.251625; //Nearest Besselian Year 1972
+			epoch = 1972;			//Nearest Besselian Year 1972
 			w_E = 7.29211514667e-5; //Luminary 210 (Apollo 15 LM AGC)
 			B_0 = 0.409157363336;
 			Omega_I0 = 5.52185714700;
@@ -5087,7 +5297,8 @@ void ARCore::AGCCorrectionVectors(double mjd_launch, double t_land, int mission,
 	}
 
 	//EARTH ROTATIONS
-	J2000 = OrbMech::J2000EclToBRCS(brcsmjd);
+	brcsmjd = OrbMech::MJDOfNBYEpoch(epoch);
+	J2000 = OrbMech::J2000EclToBRCSMJD(brcsmjd);
 	R2 = mul(OrbMech::tmat(Rot2), mul(R, Rot2));
 	R3 = mul(J2000, R2);
 
@@ -5117,6 +5328,7 @@ void ARCore::AGCCorrectionVectors(double mjd_launch, double t_land, int mission,
 	//TBD: Print stuff here
 	FILE *file = fopen("PrecessionData.txt", "w");
 	fprintf(file, "------- AGC Correction Vectors for Apollo %d using %s -------\n", mission, AGC);
+	fprintf(file, "Epoch   = %d (Year) Epoch of Basic Reference Coordinate System\n", epoch);
 	fprintf(file, "Epoch   = %6.6f (MJD) Epoch of Basic Reference Coordinate System\n", brcsmjd);
 	fprintf(file, "TEphem0 = %6.6f (MJD) Ephemeris Time Zero\n", t0);
 	fprintf(file, "TEPHEM  = %6.6f (MJD) Mission launch time\n", mjd_launch);

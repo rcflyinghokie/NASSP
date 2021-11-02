@@ -25,6 +25,7 @@
 #pragma once
 
 #include <vector>
+#include <bitset>
 #include "Orbitersdk.h"
 
 struct EphemerisData
@@ -60,12 +61,6 @@ struct EphemerisHeader
 	double TL = 0.0;
 	//Time of last returned vector
 	double TR = 0.0;
-};
-
-struct EphemerisDataTable
-{
-	EphemerisHeader Header;
-	std::vector<EphemerisData> table;
 };
 
 struct EphemerisDataTable2
@@ -240,13 +235,86 @@ struct ManeuverTimesTable
 struct EMSMISSAuxOutputTable
 {
 	EphemerisData sv_cutoff;
+	bool landed;
+	//0 = no errors detected, 1 = input time cannot be referenced on sun/moon ephemeris, 2 = MPT is being updated, 3 = error from maneuver integrator
+	//5 = maneuver in interval maybe preventing the minimum number of points from being satisfied, 6 = ephemeris space filled before request was satisfied
 	int ErrorCode;
+	double InputArea;
+	double InputWeight;
+	double CutoffArea;
+	double CutoffWeight;
 	//1 = maximum time, 2 = radius, 3 = altitude, 4 = flight path angle, 5 = reference switch, 6 = beginning of maneuver, 7 = end of maneuver, 8 = ascending node
 	int TerminationCode;
 	//Maneuver number of last processed maneuver
 	unsigned ManeuverNumber;
 	double LunarStayBeginGMT;
 	double LunarStayEndGMT;
+};
+
+struct PLAWDTInput
+{
+	double T_UP;				//Option 1: Time of desired, areas/weights. Option 2: Time to stop adjustment
+	int Num = 0;				//Option 1: Maneuver number of last maneuver to be ignored (zero to consider all maneuvers). Option 2: Configuration code associated with input values (same format as MPT code)
+	bool KFactorOpt = false;	//0 = No K-factor desired, 1 = K-factor desired
+	int TableCode;		//1 = CSM, 3 = LM (MPT and Expandables Tables). Negative for option 2.
+	bool VentingOpt = false;	//0 = No venting, 1 = venting
+	double CSMArea;
+	double SIVBArea;
+	double LMAscArea;
+	double LMDscArea;
+	double CSMWeight;
+	double SIVBWeight;
+	double LMAscWeight;
+	double LMDscWeight;
+	//Time of input areas/weights
+	double T_IN;
+};
+
+struct PLAWDTOutput
+{
+	//0: No error
+	//1: Request time within a maneuver - previous maneuver values used
+	//2: Maneuver not current - last current values used
+	//3: Time to stop adjustment is before time of input areas/weights - input values returned as output
+	int Err;
+	std::bitset<4> CC;
+	double ConfigArea;
+	double ConfigWeight;
+	double CSMArea;
+	double SIVBArea;
+	double LMAscArea;
+	double LMDscArea;
+	double CSMWeight;
+	double SIVBWeight;
+	double LMAscWeight;
+	double LMDscWeight;
+	double KFactor;
+};
+
+struct EMSLSFInputTable
+{
+	bool ECIEphemerisIndicator = false;
+	bool ECTEphemerisIndicator = false;
+	bool MCIEphemerisIndicator = false;
+	bool MCTEphemerisIndicator = false;
+	//Left limit of ephemeris (time to begin ephemeris)
+	double EphemerisLeftLimitGMT;
+	//Right limit of ephemeris (time to end ephemeris)
+	double EphemerisRightLimitGMT;
+	EphemerisDataTable2 *ECIEphemTableIndicator = NULL;
+	EphemerisDataTable2 *ECTEphemTableIndicator = NULL;
+	EphemerisDataTable2 *MCIEphemTableIndicator = NULL;
+	EphemerisDataTable2 *MCTEphemTableIndicator = NULL;
+	//Storage interval for lunar surface ephemeris
+	double LunarEphemDT = 3.0*60.0;
+};
+
+struct ReferenceSwitchTable
+{
+	EphemerisData InputVector;
+	EphemerisData BeforeRefSwitchVector;
+	EphemerisData AfterRefSwitchVector;
+	EphemerisData LastVector;
 };
 
 struct EMSMISSInputTable
@@ -274,7 +342,7 @@ struct EMSMISSInputTable
 	//Reference frame of desired stopping parameter (0 = Earth, 1 = Moon, 2 = both)
 	int StopParamRefFrame = 2;
 	//Minimum number of points desired in ephemeris
-	unsigned MinNumEphemPoints;
+	unsigned MinNumEphemPoints = 9;
 	bool ECIEphemerisIndicator = false;
 	bool ECTEphemerisIndicator = false;
 	bool MCIEphemerisIndicator = false;
@@ -284,7 +352,7 @@ struct EMSMISSInputTable
 	//Maneuver cut-off indicator (0 = cut at begin of maneuver, 1 = cut at end of maneuver, 2 = don't cut off)
 	int ManCutoffIndicator;
 	//Descent burn indicator
-	bool DescentBurnIndicator;
+	bool DescentBurnIndicator = false;
 	//Cut-off indicator (1 = Time, 2 = radial distance, 3 = altitude above Earth or moon, 4 = flight-path angle, 5 = first reference switch)
 	int CutoffIndicator = 1;
 	//Integration direction indicator (+X-forward, -X-backward)
@@ -297,12 +365,12 @@ struct EMSMISSInputTable
 	//Density multiplication override indicator
 	bool DensityMultOverrideIndicator = false;
 	//Table of ephemeris addresses indicator
-	EphemerisDataTable *EphemTableIndicator = NULL; //Delete me
 	EphemerisDataTable2 *ECIEphemTableIndicator = NULL;
 	EphemerisDataTable2 *ECTEphemTableIndicator = NULL;
 	EphemerisDataTable2 *MCIEphemTableIndicator = NULL;
 	EphemerisDataTable2 *MCTEphemTableIndicator = NULL;
 	//Reference switch table indicator
+	ReferenceSwitchTable *RefSwitchTabIndicator = NULL;
 	//Maneuver times table indicator
 	ManeuverTimesTable *ManTimesIndicator = NULL;
 	//Runge-Kutta auxiliary output table indicator
@@ -313,6 +381,8 @@ struct EMSMISSInputTable
 	//Maneuver number of last maneuver to be ignored
 	unsigned IgnoreManueverNumber = 10000U;
 	EMSMISSAuxOutputTable NIAuxOutputTable;
+	bool useInputWeights = false;
+	PLAWDTOutput *WeightsTable = NULL;
 };
 
 struct RMMYNIInputTable
@@ -445,18 +515,21 @@ struct TimeConstraintsTable
 	double lng = 0.0;
 	double h = 0.0;
 	double T0 = 0.0;
-	double TA = 0.0;
+	double TA = 0.0; //True anomaly
+	double MA = 0.0; //Mean anomaly
 	double V = 0.0;
 	double azi = 0.0;
 	double AoP = 0.0;
 	double RA = 0.0;
-	double l = 0.0;
+	double l = 0.0;	//Semi-latus rectum
 	int OrbitNum = 0;
 	int RevNum = 0;
 	//EI time?
 	double GMTPI = 0.0;
 	std::string StationID;
 	int TUP = 0;
+	double h_a = 0.0;
+	double h_p = 0.0;
 };
 
 struct RetrofireTransferTableEntry
@@ -496,4 +569,12 @@ struct REFSMMATData
 struct REFSMMATLocker
 {
 	REFSMMATData data[12];
+};
+
+struct StateVectorTableEntry
+{
+	EphemerisData Vector;
+	int ID = -1;
+	std::string VectorCode;
+	bool LandingSiteIndicator = false;
 };

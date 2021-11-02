@@ -30,7 +30,9 @@ const double CoastIntegrator2::dt_lim = 1000.0;
 
 CoastIntegrator2::CoastIntegrator2(RTCC *r) : RTCCModule(r)
 {
-	
+	P_S = 0;
+	R_S = V_S = _V(0, 0, 0);
+	T_S = 0.0;
 }
 
 CoastIntegrator2::~CoastIntegrator2()
@@ -264,7 +266,10 @@ PMMCEN_Edit_4A:
 		//Now try to find TMAX
 		ISTOPS = 1;
 		STOPVA = TMAX;
-		RestoreVariables();
+		if (TMAX != 0.0)
+		{
+			RestoreVariables();
+		}
 		//Go back to find new dt
 		goto PMMCEN_Edit_3B;
 	}
@@ -425,9 +430,12 @@ VECTOR3 CoastIntegrator2::adfunc(VECTOR3 R)
 		if (INITF == false)
 		{
 			INITF = true;
+			//MATRIX3 Mat_J_B = SystemParameters.MAT_J2000_BRCS;
 			MATRIX3 obli = OrbMech::GetObliquityMatrix(P, pRTCC->GetGMTBase() + CurrentTime() / 24.0 / 3600.0);
-			U_Z = mul(obli, _V(0, 1, 0));
-			U_Z = _V(U_Z.x, U_Z.z, U_Z.y);
+			//Convert unit z-axis vector to ecliptic
+			U_Z = rhmul(obli, _V(0, 0, 1));
+			//TBD: Use this in the future
+			//U_Z = mul(Mat_J_B, rhmul(obli, _V(0, 0, 1)));
 		}
 
 		TS = tau;

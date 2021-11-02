@@ -45,19 +45,11 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 	//SPS engine gimbal plane
 	static const double K2 = 833.2*0.0254;
 	//Distance between SPS and DPS gimbal planes
-	static const double K3 = 13.2;//435.55*0.0254;
-	//Yaw
-	static const double K4 = -0.0829031395;
-	//Pitch
-	static const double K5 = 0.1876228946;
-
-	/*x1 = LMmass / (CSMmass + LMmass)*6.2;
-	p_T = atan2(-2.15 * RAD * 5.0, 5.0 + x1);
-	y_T = atan2(0.95 * RAD * 5.0, 5.0 + x1);*/
+	static const double K3 = 435.55*0.0254;
 
 	int IND;
-	double R, W[3];
-	VECTOR3 XCG[2], XI, K;
+	double R, W[3], K;
+	VECTOR3 XCG[2], XI;
 
 	//CSM only
 	if (IC == 1)
@@ -90,9 +82,9 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 			goto RTCC_GIMGBL_LABEL_3_5;
 		}
 		IND = 2;
-		K = _V(K1, 0, 0);
+		K = K1;
 		//Use LM DSC CG Table
-		XI = GIMGB2(SystemParameters.LMDSCCGTAB.Weight, SystemParameters.LMDSCCGTAB.CG, SystemParameters.LMDSCCGTAB.N, W[1]);
+		XI = GIMGB2(SystemParameters.MHVLCG.Weight, SystemParameters.MHVLCG.CG, SystemParameters.MHVLCG.N, W[1]);
 	}
 	else
 	{
@@ -108,13 +100,14 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 		{
 			IND = 1;
 		}
-		K = _V(K2, K4, K5);
+		K = K2;
 		//Use CSM CG Table
-		//GIMGB2();
-		XI = _V(26.16328, 0.0, 0.0);
+		XI = GIMGB2(SystemParameters.MHVCCG.Weight, SystemParameters.MHVCCG.CG, SystemParameters.MHVCCG.N, W[0]);
 	}
 
-	XCG[IND - 1] = XI - K;
+	XCG[IND - 1].x = XI.x - K;
+	XCG[IND - 1].y = XI.y;
+	XCG[IND - 1].z = XI.z;
 
 	//CSM or LM, but not docked?
 	if (IC <= 12 && IC != 5)
@@ -124,36 +117,30 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 	if (IND > 1)
 	{
 		//Use CSM CG Table
-		//GIMGB2();
+		XI = GIMGB2(SystemParameters.MHVCCG.Weight, SystemParameters.MHVCCG.CG, SystemParameters.MHVCCG.N, W[0]);
 		IND = 1;
-		K = _V(K2 + K3, 0, 0);
-		XI = _V(26.16328, 0.0, 0.0);
+		K = K2 + K3;
 	}
 	else
 	{
 		if (IJ != 0)
 		{
 			//Use LM w/o descent CG table
-			XI = GIMGB2(SystemParameters.LMASCCGTAB.Weight, SystemParameters.LMASCCGTAB.CG, SystemParameters.LMASCCGTAB.N, W[1]);
-			//XI = _V(7.6616, 0, 0);
+			XI = GIMGB2(SystemParameters.MHVACG.Weight, SystemParameters.MHVACG.CG, SystemParameters.MHVACG.N, W[1]);
 		}
 		else
 		{
 			//Use LM w/ descent CG table
-			XI = GIMGB2(SystemParameters.LMDSCCGTAB.Weight, SystemParameters.LMDSCCGTAB.CG, SystemParameters.LMDSCCGTAB.N, W[1]);
+			XI = GIMGB2(SystemParameters.MHVLCG.Weight, SystemParameters.MHVLCG.CG, SystemParameters.MHVLCG.N, W[1]);
 		}
 		IND = 2;
-		K = _V(K1 + K3, 0, 0);
+		K = K1 + K3;
 	}
 
-	XI = XI - K;
+	XI.x = XI.x - K;
 
 	XCG[IND - 1] = mul(_M(-1.0, 0.0, 0.0, 0.0, -cos(240.0*RAD - D), -sin(240.0*RAD - D), 0.0, -sin(240.0*RAD - D), cos(240.0*RAD - D)), XI);
-	//Remove this when SPS is centered again
-	if (ITC == 33)
-	{
-		XCG[IND - 1] -= _V(0, K4, K5);
-	}
+
 	XCG[1] = (XCG[0] * W[0] + XCG[1] * W[1]) / W[2];
 
 RTCC_GIMGBL_LABEL_3_2:
@@ -163,7 +150,7 @@ RTCC_GIMGBL_LABEL_3_2:
 		RZ = asin(XCG[1].y / R);
 		if (XCG[1].x > 10e-6)
 		{
-			RY = atan(XCG[1].z / XCG[1].x);
+			RY = atan(-XCG[1].z / XCG[1].x);
 		}
 		else
 		{
@@ -637,52 +624,78 @@ void RTCC::PIMCKC(VECTOR3 R, VECTOR3 V, int body, double &a, double &e, double &
 	}
 }
 
-void RTCC::PITFPC(double MU, int K, double AORP, double ECC, double rad, double &TIME, double &P)
+void RTCC::PITFPC(double MU, int K, double AORP, double ECC, double rad, double &TIME, double &P, bool erunits)
 {
 	//INPUT:
-	//MU: gravitational constant (er^3/hr^2)
+	//MU: gravitational constant
 	//K: outward leg (0.) and return lef (1.) flag. k is input as a floating point number
-	//AORP: semimajor axis of elliptic or hyperbolic conic or semilatus rectum of parabolic conic (er)
-	//e: eccentricity
-	//r: radial distance from focus (er)
+	//AORP: semimajor axis or semilatus rectum (abs(e-1) < 0.00001 is the deciding number)
+	//ECC: eccentricity
+	//rad: radial distance from focus
+	//erunits: Input units are Earth radii
+	//OUTPUT:
+	//TIME: Time from periapsis to the desired radial distance
+	//P: Orbital period, only calculared if orbit is eccentric
 
-	double XP = 0.0, E, TP, X, XAORP = AORP;
+	double eps;
 
-	//Parabolic case?
-	if (abs(ECC - 1.0) < 1.e-5) goto RTCC_PITFPC_2;
-RTCC_PITFPC_5:
-	//Eccentric or hyperbolic?
-	if (ECC < 1.0) goto RTCC_PITFPC_3;
-	//Hyperbolic
-	X = 1.0 / ECC * (1.0 - rad / XAORP);
-	E = log(X + sqrt(X*X - 1.0));
-	TP = XAORP * sqrt(abs(XAORP) / MU)*(E - ECC * (0.5*(exp(E) - exp(-E))));
-	goto RTCC_PITFPC_4;
-RTCC_PITFPC_2:
-	//Check if C3 is sufficiently large to use the non-parabolic calculations
-	double C3;
-	C3 = MU * (ECC*ECC - 1.0) / XAORP;
-	if (abs(C3) >= 10.e-5)
+	if (erunits)
 	{
-		XAORP = XAORP / (1.0 - ECC * ECC);
-		goto RTCC_PITFPC_5;
+		eps = 1.e-5;
 	}
-	//Parabolic
-	double ETAP = acos(XAORP / rad - 1.0);
-	double TEMP1 = sin(ETAP / 2.0) / cos(ETAP / 2.0);
-	TP = XAORP / 2.0*sqrt(XAORP / MU)*(TEMP1 + 1.0 / 3.0*pow(TEMP1, 3.0));
-	goto RTCC_PITFPC_4;
-RTCC_PITFPC_3:
-	//Eccentric
-	E = acos(1.0 / ECC * (1.0 - rad / XAORP));
-	XP = PI2 * XAORP*sqrt(XAORP / MU);
-	TP = XAORP * sqrt(XAORP / MU)*(E - ECC * sin(E));
-RTCC_PITFPC_4:
-	P = XP;
-	TIME = TP;
-	//Outward or return leg?
-	if (K)
+	else
 	{
-		TIME = -TP;
+		eps = 31.390;
+	}
+
+	//Parabolic case
+	if (abs(ECC - 1.0) < 0.00001)
+	{
+		double C3;
+
+		//Calculate characteristic energy
+		C3 = MU * (ECC*ECC - 1.0) / AORP;
+		if (abs(C3) < eps)
+		{
+			//Calculate true anomaly at given distance r
+			double eta_apo = acos(abs(AORP) / rad - 1.0);
+			double TEMP1 = tan(eta_apo / 2.0);
+			//Calculate time
+			TIME = abs(AORP) / 2.0*sqrt(abs(AORP) / MU)*(TEMP1 + 1.0 / 3.0*pow(TEMP1, 3.0));
+
+			if (K == false)
+			{
+				TIME = -TIME;
+			}
+			return;
+		}
+		else
+		{
+			//Calculate semi major axis, use non parabolic calculations
+			AORP = AORP / (1.0 - ECC * ECC);
+		}
+	}
+
+	double E;
+
+	//Elliptical case
+	if (ECC < 1.0)
+	{
+		E = acos(1.0 / ECC * (1.0 - rad / AORP));
+		P = PI2 * AORP*sqrt(AORP / MU);
+		TIME = AORP * sqrt(AORP / MU)*(E - ECC * sin(E));
+	}
+	//Hyperbolic case
+	else
+	{
+		double coshE;
+		coshE = 1.0 / ECC * (1.0 - rad / AORP);
+		E = log(coshE + sqrt(coshE*coshE - 1.0));
+		TIME = AORP * sqrt(abs(AORP) / MU)*(E - ECC * (exp(E) - exp(-E)) / 2.0);
+	}
+
+	if (K == false)
+	{
+		TIME = -TIME;
 	}
 }

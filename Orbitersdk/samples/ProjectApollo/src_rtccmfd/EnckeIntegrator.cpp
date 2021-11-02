@@ -35,6 +35,10 @@ EnckeFreeFlightIntegrator::EnckeFreeFlightIntegrator(RTCC *r) : RTCCModule(r)
 	{
 		pEph[i] = NULL;
 	}
+
+	P_S = 0;
+	SRTB = SRDTB = SY = SYP = _V(0, 0, 0);
+	STRECT = SDELT = 0.0;
 }
 
 EnckeFreeFlightIntegrator::~EnckeFreeFlightIntegrator()
@@ -53,7 +57,15 @@ void EnckeFreeFlightIntegrator::Propagate(EMMENIInputTable &in)
 	HMULT = in.IsForwardIntegration;
 	DRAG = in.DensityMultiplier;
 	CSA = -0.5*in.Area*pRTCC->SystemParameters.MCADRG;
-	WT = in.Weight;
+	if (in.Weight == 0.0)
+	{
+		//Might happen with uninitialized MPT
+		WT = 99999999.9;
+	}
+	else
+	{
+		WT = in.Weight;
+	}
 
 	SetBodyParameters(in.AnchorVector.RBI);
 	ISTOPS = in.CutoffIndicator;
@@ -288,7 +300,10 @@ EMMENI_Edit_4A:
 	{
 		//Now try to find TMAX
 		ISTOPS = 1;
-		RestoreVariables();
+		if (TMAX != 0.0)
+		{
+			RestoreVariables();
+		}
 		//Go back to find new dt
 		goto EMMENI_Edit_3B;
 	}
@@ -430,9 +445,12 @@ void EnckeFreeFlightIntegrator::adfunc()
 		if (INITF == false)
 		{
 			INITF = true;
+			//MATRIX3 Mat_J_B = SystemParameters.MAT_J2000_BRCS;
 			MATRIX3 obli = OrbMech::GetObliquityMatrix(P, pRTCC->GetGMTBase() + CurrentTime() / 24.0 / 3600.0);
-			U_Z = mul(obli, _V(0, 1, 0));
-			U_Z = _V(U_Z.x, U_Z.z, U_Z.y);
+			//Convert unit z-axis vector to ecliptic
+			U_Z = rhmul(obli, _V(0, 0, 1));
+			//TBD: Use this in the future
+			//U_Z = mul(Mat_J_B, rhmul(obli, _V(0, 0, 1)));
 		}
 
 		TS = tau;
@@ -601,7 +619,7 @@ void EnckeFreeFlightIntegrator::EphemerisStorage()
 	{
 		if (bStoreEphemeris[i] && pEph[i])
 		{
-			if (pEph[i]->table.size() == 0 || abs(pEph[i]->table.back().GMT - CurrentTime()) > 3.6e-11)
+			if (pEph[i]->table.size() == 0 || abs(pEph[i]->table.back().GMT - CurrentTime()) > 0.001)
 			{
 				if (P == BODY_EARTH)
 				{

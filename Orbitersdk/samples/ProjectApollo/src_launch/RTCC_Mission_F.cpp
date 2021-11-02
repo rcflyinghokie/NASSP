@@ -114,9 +114,14 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		med_m50.Table = RTCC_MPT_CSM;
 		med_m50.WeightGET = GETfromGMT(RTCCPresentTimeGMT());
 		PMMWTC(50);
+
 		//Trajectory Update
-		EphemerisData sv0 = StateVectorCalcEphem(calcParams.src);
-		PMSVCT(4, RTCC_MPT_CSM, &sv0, false, "APIC001");
+		StateVectorTableEntry sv0;
+		sv0.Vector = StateVectorCalcEphem(calcParams.src);
+		sv0.LandingSiteIndicator = false;
+		sv0.VectorCode = "APIC001";
+
+		PMSVCT(4, RTCC_MPT_CSM, &sv0);
 
 		//Add TLI to MPT
 		if (GETEval2(3.0*3600.0))
@@ -1537,13 +1542,13 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		TEPHEM0 = 40038.;
 
 		tephem = GetTEPHEMFromAGC(&lem->agc.vagc);
-		t_AGC = GetClockTimeFromAGC(&lem->agc.vagc);
+		t_AGC = GetClockTimeFromAGC(&lem->agc.vagc) / 100.0;
 
 		tephem = (tephem / 8640000.) + TEPHEM0;
-		t_actual = (oapiGetSimMJD() - tephem) * 8640000.;
+		t_actual = (oapiGetSimMJD() - tephem) * 86400.;
 		deltaT = t_actual - t_AGC;
 
-		IncrementAGCTime(clockupdate, deltaT);
+		IncrementAGCTime(clockupdate, RTCC_MPT_LM, deltaT);
 
 		opt.GETbase = GETbase;
 		opt.LSLat = BZLAND.lat[RTCC_LMPOS_BEST];
