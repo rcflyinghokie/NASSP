@@ -642,9 +642,7 @@ void Saturn::SetCSMStage ()
 	// *********************** thruster definitions ********************************
 
 	th_sps[0] = CreateThruster(_V(0.0, 0.0, -3.37472), _V(0, 0, 1), SPS_THRUST, ph_sps, SPS_ISP);
-
-	DelThrusterGroup(THGROUP_MAIN, true);
-	thg_sps = CreateThrusterGroup(th_sps, 1, THGROUP_MAIN);
+	thg_sps = CreateThrusterGroup(th_sps, 1, THGROUP_USER);
 
 	VECTOR3 spspos0 = _V(0.0, 0.0, -5);
 	EXHAUSTSPEC es_sps[1] = {
@@ -765,13 +763,7 @@ void Saturn::SetCSMStage ()
 	//
 	// Waste dump streams
 	//
-	wastewaterdump_spec.tex = oapiRegisterParticleTexture("ProjectApollo/WaterDump");
-	if (wastewaterdump) DelExhaustStream(wastewaterdump);
-	wastewaterdump = AddParticleStream(&wastewaterdump_spec, _V(-1.258, 1.282, 33.69 - CGOffset), _V(-0.57, 0.57, 0.59), WaterController.GetWasteWaterDumpLevelRef());
-
-	urinedump_spec.tex = oapiRegisterParticleTexture("ProjectApollo/UrineDump");
-	if (urinedump) DelExhaustStream(urinedump);
-	urinedump = AddParticleStream(&urinedump_spec, _V(-1.358, 1.192, 33.69 - CGOffset), _V(-0.57, 0.57, 0.59), WaterController.GetUrineDumpLevelRef());
+	SetWaterDumpParticleStreams(currentCoG + _V(0, 0, 32.3));
 
 	//
 	// Apollo 13 special handling
@@ -1194,13 +1186,7 @@ void Saturn::SetReentryStage (VECTOR3 cg_ofs)
 	// Waste dump streams
 	//
 
-	wastewaterdump_spec.tex = oapiRegisterParticleTexture("ProjectApollo/WaterDump");
-	if (wastewaterdump) DelExhaustStream(wastewaterdump);
-	wastewaterdump = AddParticleStream(&wastewaterdump_spec, _V(-1.258, 1.282, 33.69 - CGOffset), _V(-0.57, 0.57, 0.59), WaterController.GetWasteWaterDumpLevelRef());
-
-	urinedump_spec.tex = oapiRegisterParticleTexture("ProjectApollo/UrineDump");
-	if (urinedump) DelExhaustStream(urinedump);
-	urinedump = AddParticleStream(&urinedump_spec, _V(-1.358, 1.192, 33.69 - CGOffset), _V(-0.57, 0.57, 0.59), WaterController.GetUrineDumpLevelRef());
+	SetWaterDumpParticleStreams(_V(0, 0, CGOffset));
 }
 
 void Saturn::SetReentryMeshes() {
@@ -1335,6 +1321,8 @@ void Saturn::StageEight(double simt)
 
 	ClearThrusters();
 	AddRCS_CM(CM_RCS_THRUST, -1.2);
+
+	DefineCMAttachments();
 
 	SetView(-1.35);
 
@@ -1896,6 +1884,17 @@ void Saturn::ConfigTouchdownPoints(double mass, double ro, double tdph, double h
 	}
 
 	SetTouchdownPoints(td, 4);
+}
+
+void Saturn::SetWaterDumpParticleStreams(VECTOR3 ofs)
+{
+	wastewaterdump_spec.tex = oapiRegisterParticleTexture("ProjectApollo/WaterDump");
+	if (wastewaterdump) DelExhaustStream(wastewaterdump);
+	wastewaterdump = AddParticleStream(&wastewaterdump_spec, _V(-1.258, 1.282, 33.69) - ofs, _V(-0.57, 0.57, 0.59), WaterController.GetWasteWaterDumpLevelRef());
+
+	urinedump_spec.tex = oapiRegisterParticleTexture("ProjectApollo/UrineDump");
+	if (urinedump) DelExhaustStream(urinedump);
+	urinedump = AddParticleStream(&urinedump_spec, _V(-1.358, 1.192, 33.69) - ofs, _V(-0.57, 0.57, 0.59), WaterController.GetUrineDumpLevelRef());
 }
 
 void Saturn::LoadVC()

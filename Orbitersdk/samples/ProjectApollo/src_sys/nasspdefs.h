@@ -314,6 +314,17 @@ static inline double sign(double x)
 	else return -1.0;
 }
 
+// Functions to convert between coordinate systems
+static inline void OrbiterToCSMCoordinates(VECTOR3 &vec)
+{
+	vec = _V(vec.z, vec.x, -vec.y);
+}
+
+static inline void CSMToOrbiterCoordinates(VECTOR3 &vec)
+{
+	vec = _V(vec.y, -vec.z, vec.x);
+}
+
 //
 // Engine information.
 //
@@ -344,11 +355,12 @@ static inline double sign(double x)
 
 #define LM_RCS_FUEL_PER_TANK	133.084001
 
-#define S4B_APS_FUEL_PER_TANK	143.0
-#define S4B_APS_THRUST			670.0
-#define S4B_APS_ULL_THRUST		310.0
-#define S4B_APS_ISP				(290.0 * G)
-#define S4B_APS_ISP_SL			50.0
+#define S4B_APS_FUEL_PER_TANK_SV	143.0
+#define S4B_APS_FUEL_PER_TANK_SIB	29.71
+#define S4B_APS_THRUST				670.0
+#define S4B_APS_ULL_THRUST			310.0
+#define S4B_APS_ISP					(290.0 * G)
+#define S4B_APS_ISP_SL				50.0
 
 //
 // Mission times for specific events.
@@ -394,15 +406,15 @@ static inline double sign(double x)
 // Internal systems.
 //
 
-//#define CSM_H2TANK_CAPACITY 12700.58636		///< in g, 28 lb
-//#define CSM_O2TANK_CAPACITY 145149.5584		///< in g, 320 lb
-#define CSM_H2TANK_CAPACITY 19050.87954   ///< Extended stay tank config (for testing Apollo 15-17)
-#define CSM_O2TANK_CAPACITY 217724.3386	///< Extended stay tank config (for testing Apollo 15-17)
+#define CSM_H2TANK_CAPACITY 12700.58636		///< in g, 28 lb
+#define CSM_O2TANK_CAPACITY 145149.5584		///< in g, 320 lb
+//#define CSM_H2TANK_CAPACITY 19050.87954   ///< Extended stay tank config (for testing Apollo 15-17)
+//#define CSM_O2TANK_CAPACITY 217724.3386	///< Extended stay tank config (for testing Apollo 15-17)
 
 //#define LM_DES_H2O_CAPACITY 151046.2592		///< in g, 333 lb		//Quantity or 100% measurement of the h2o tanks needs to be adjusted based on pad fill
 //#define LM_ASC_H2O_CAPACITY 19277.67573		///< in g, 42.5 lb		//Quantity or 100% measurement of the h2o tanks needs to be adjusted based on pad fill
-//#define LM_DES_H2O_CAPACITY 114795.157			//Pad fill 76%
-#define LM_DES_H2O_CAPACITY 229590.3			//Pad fill 76% for J-Mission Conversion
+#define LM_DES_H2O_CAPACITY 114795.157			//Pad fill 76%
+//#define LM_DES_H2O_CAPACITY 229590.3			//Pad fill 76% for J-Mission Conversion
 #define LM_ASC_H2O_CAPACITY 14651.03355			//Pad fill 76%
 
 #endif
