@@ -770,13 +770,13 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 				SetCrewNumber(0);
 
 				// No leak
-				CabinPressureReliefValve1.SetLeakSize(0);
-				CabinPressureReliefValve2.SetLeakSize(0);
+				//CabinPressureReliefValve1.SetLeakSize(0);
+				//CabinPressureReliefValve2.SetLeakSize(0);
 
 				// Reset cabin pressure regulator and set to 14.7 psi
-				CabinPressureRegulator.Reset(); 
-				CabinPressureRegulator.ResetMaxFlow(); 
-				CabinPressureRegulator.SetPressurePSI(14.7);
+				//CabinPressureRegulator.Reset(); 
+				//CabinPressureRegulator.ResetMaxFlow(); 
+				//CabinPressureRegulator.SetPressurePSI(14.7);
 				
 				// ECS radiators in prelaunch configuration
 				PrimEcsRadiatorExchanger1->SetLength(8.0); //Why are these adjusted?
@@ -820,8 +820,8 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 					CabinPressureRegulator.Close();
 
 					// Suit compressors to prelaunch configuration
-					SuitCompressor1->fan_cap = 110000.0;
-					SuitCompressor2->fan_cap = 110000.0;
+					//SuitCompressor1->fan_cap = 110000.0;
+					//SuitCompressor2->fan_cap = 110000.0;
 
 					// Open suit relief valve and close O2 demand regulator in order to 
 					// equalize suit cabin pressure difference
@@ -890,8 +890,6 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 						//CSMCabin->space.ThermalComps(simdt);
 						CSMCabin->BoilAllAndSetTemp(293.15);
 						
-
-
 					// Next state
 					systemsState = SATSYSTEMS_GSECONNECTED_1;
 					lastSystemsMissionTime = MissionTime;
@@ -934,16 +932,16 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 			case SATSYSTEMS_READYTOLAUNCH:
 				if (GetAtmPressure() <= 8.5 / PSI) {					
 					// Cabin pressure regulator and relief pressure to boost configuration, disable max. flow
-					CabinPressureReliefValve1.SetReliefPressurePSI(4.82); // 5 psi - 5 inH2O
-					CabinPressureRegulator.SetPressurePSI(4.7);
-					CabinPressureRegulator.ResetMaxFlow();
+					//CabinPressureReliefValve1.SetReliefPressurePSI(4.82); // 5 psi - 5 inH2O
+					//CabinPressureRegulator.SetPressurePSI(4.7);
+					//CabinPressureRegulator.ResetMaxFlow();
 
 					// Cabin leak
 					CabinPressureReliefValve1.SetLeakSize(0.001);
 
 					// Suit compressors to flight configuration
-					SuitCompressor1->fan_cap = 65000.0;
-					SuitCompressor2->fan_cap = 65000.0;
+					//SuitCompressor1->fan_cap = 65000.0;
+					//SuitCompressor2->fan_cap = 65000.0;
 
 					// ECS radiators now working normally
 					PrimEcsRadiatorExchanger1->SetLength(10.0);
@@ -976,8 +974,8 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 			case SATSYSTEMS_FLIGHT:
 				if (GetAtmPressure() > 4. / PSI) {					
 					// Suit compressors to landing configuration
-					SuitCompressor1->fan_cap = 110000.0;
-					SuitCompressor2->fan_cap = 110000.0;
+					//SuitCompressor1->fan_cap = 110000.0;
+					//SuitCompressor2->fan_cap = 110000.0;
 
 					// Next state
 					systemsState = SATSYSTEMS_LANDING;

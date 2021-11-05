@@ -426,7 +426,7 @@ void CabinPressureReliefValve::SystemTimestep(double simdt) {
 				pipe->flowMax = 30./ LBH; // Value is guessed
 			// Boost
 			} else {
-				pipe->flowMax = 70./ LBH; // about 6 min from 3 psi to (almost) zero
+				pipe->flowMax = 150./ LBH; 
 			}
 			inlet->in->Close();
 			closed = false;
@@ -474,6 +474,8 @@ void CabinPressureReliefValve::SystemTimestep(double simdt) {
 			pipe->in->Close();
 		}
 	}
+
+	sprintf(oapiDebugString(), "CABP: %.2f ATMP: %.2f Relief: %.2f", (cabinPress)*PSI, (saturn->GetAtmPressure())*PSI, (pipe->flow)*LBH);
 }
 
 void CabinPressureReliefValve::SetLeakSize(double s) {
@@ -643,6 +645,7 @@ void O2SMSupply::SystemTimestep(double simdt) {
 			o2SMSupplyVoid = false;
 		}
 		o2SMSupply->BoilAllAndSetTemp(285);	//Needs to be done later by a heat exchanger
+
 		// O2 main regulator
 		if (mainRegulatorASwitch->GetState() && mainRegulatorBSwitch->GetState()) {
 			o2MainRegulator->IN_valve.Close();
