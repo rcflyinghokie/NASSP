@@ -274,10 +274,11 @@ int RTCC::PIATSU(AEGDataBlock AEGIN, AEGDataBlock &AEGOUT, double &isg, double &
 	KE = 0;
 	K = 1;
 RTCC_PIATSU_1A:
-	Rot = OrbMech::GetRotationMatrix(BODY_MOON, SystemParameters.GMTBASE + AEGOUT.TS / 24.0 / 3600.0);
+	//Rotate from selenocentric to selenographic
+	PLEFEM(1, AEGOUT.TS / 24.0 / 3600.0, 0, Rot);
 	OrbMech::PIVECT(AEGOUT.coe_osc.i, AEGOUT.coe_osc.g, AEGOUT.coe_osc.h, P, W);
-	P_apo = rhtmul(Rot, P);
-	W_apo = rhtmul(Rot, W);
+	P_apo = tmul(Rot, P);
+	W_apo = tmul(Rot, W);
 	OrbMech::PIVECT(P_apo, W_apo, isg, gsg, hsg);
 	if (isg < eps_i || isg > PI - eps_i)
 	{
@@ -604,12 +605,32 @@ void RTCC::PIMCKC(VECTOR3 R, VECTOR3 V, int body, double &a, double &e, double &
 	{
 		theta = PI2 - theta;
 	}
-	double EE = atan2(sqrt(1.0 - e * e)*sin(theta), e + cos(theta));
-	if (EE < 0)
+	if (e > 1.0)
 	{
-		EE += PI2;
+		//Hyperbolic
+		double F = log((sqrt(e + 1.0) + sqrt(e - 1.0)*tan(theta / 2.0)) / (sqrt(e + 1.0) - sqrt(e - 1.0)*tan(theta / 2.0)));
+		if (F < 0)
+		{
+			F += PI2;
+		}
+		l = e * sinh(F) - F;
 	}
-	l = EE - e * sin(EE);
+	else if (e == 1.0)
+	{
+		//Parabolic
+		double tan_theta2 = tan(theta / 2.0);
+		l = 0.5*tan_theta2 + 1.0 / 6.0*pow(tan_theta2 / 2.0, 3);
+	}
+	else
+	{
+		//Elliptic
+		double EE = atan2(sqrt(1.0 - e * e)*sin(theta), e + cos(theta));
+		if (EE < 0)
+		{
+			EE += PI2;
+		}
+		l = EE - e * sin(EE);
+	}
 	VECTOR3 K = _V(0, 0, 1);
 	VECTOR3 N = crossp(K, H);
 	g = acos2(dotp(unit(N), unit(E)));
@@ -698,4 +719,84 @@ void RTCC::PITFPC(double MU, int K, double AORP, double ECC, double rad, double 
 	{
 		TIME = -TIME;
 	}
+}
+
+int RTCC::PITCIR(AEGBlock in, double ht, AEGDataBlock &out)
+{
+	double R_E, R_CIR, cos_f_CI, f_CI, dt, sgn, ddt, eps_t;
+
+	eps_t = 0.01;
+
+	if (in.Header.AEGInd == BODY_EARTH)
+	{
+		R_E = OrbMech::R_Earth;
+	}
+	else
+	{
+		R_E = BZLAND.rad[RTCC_LMPOS_BEST];
+	}
+
+	R_CIR = R_E + ht;
+
+	if (in.Data.ENTRY == 0)
+	{
+		//Initialize
+		PMMAEGS(in.Header, in.Data, in.Data);
+		if (in.Header.ErrorInd)
+		{
+			return 3;
+		}
+	}
+
+	cos_f_CI = (in.Data.coe_osc.a*(1.0 - in.Data.coe_osc.e*in.Data.coe_osc.e) - R_CIR) / (in.Data.coe_osc.e*R_CIR);
+	if (abs(cos_f_CI) > 1.0)
+	{
+		cos_f_CI = cos_f_CI / abs(cos_f_CI);
+	}
+	f_CI = acos(cos_f_CI);
+	if (f_CI >= in.Data.f)
+	{
+		dt = (f_CI - in.Data.f) / (in.Data.g_dot+in.Data.l_dot);
+		sgn = 1.0;
+	}
+	else
+	{
+		if (PI2 - f_CI - in.Data.f > 0)
+		{
+			dt = (PI2 - f_CI - in.Data.f) / (in.Data.g_dot + in.Data.l_dot);
+			sgn = -1.0;
+		}
+		else
+		{
+			dt = (f_CI + PI2 + in.Data.f) / (in.Data.g_dot + in.Data.l_dot);
+			sgn = 1.0;
+		}
+	}
+	do
+	{
+		in.Data.TE = in.Data.TS + dt;
+		PMMAEGS(in.Header, in.Data, out);
+		if (in.Header.ErrorInd)
+		{
+			return 3;
+		}
+		cos_f_CI = (out.coe_osc.a*(1.0 - out.coe_osc.e*out.coe_osc.e) - R_CIR) / (out.coe_osc.e*R_CIR);
+		if (abs(cos_f_CI) > 1.0)
+		{
+			//Closest already
+			return 1;
+		}
+		f_CI = sgn*acos(cos_f_CI);
+		if (f_CI < 0)
+		{
+			f_CI += PI2;
+		}
+		ddt = (f_CI - out.f) / (out.g_dot + out.l_dot);
+		if (abs(ddt) > eps_t)
+		{
+			dt = dt + ddt;
+		}
+	} while (abs(ddt) > eps_t);
+
+	return 0;
 }

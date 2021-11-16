@@ -691,10 +691,8 @@ struct GMPOpt
 	//6 = Rotate line of apsides, perigee at specific longitude
 	//7 = Optimal node shift maneuver
 	int ManeuverCode;
-	double GETbase; //usually MJD at launch
 	SV RV_MCC;		//State vector as inputn or without
 	bool AltRef = 0;	//0 = use mean radius, 1 = use launchpad or landing site radius
-	double R_LLS;	//Landing site radius
 
 	//maneuver parameters
 
@@ -2610,7 +2608,7 @@ public:
 	void RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res);
 	void LunarOrbitMapUpdate(SV sv0, double GETbase, AP10MAPUPDATE &pad, double pm = -150.0*RAD);
 	void LandmarkTrackingPAD(LMARKTRKPADOpt *opt, AP11LMARKTRKPAD &pad);
-	SevenParameterUpdate TLICutoffToLVDCParameters(VECTOR3 R_TLI, VECTOR3 V_TLI, double GETbase, double P30TIG, double TB5, double mu, double T_RG);
+	SevenParameterUpdate TLICutoffToLVDCParameters(VECTOR3 R_TLI, VECTOR3 V_TLI, double P30TIG, double TB5, double mu, double T_RG);
 	void LVDCTLIPredict(LVDCTLIparam lvdc, double m0, SV sv_A, double GETbase, VECTOR3 &dV_LVLH, double &P30TIG, SV &sv_IG, SV &sv_TLI);
 	//S-IVB TLI IGM Pre-Thrust Targeting Module
 	int PMMSPT(PMMSPTInput &in);
@@ -2661,7 +2659,9 @@ public:
 	VECTOR3 HatchOpenThermalControl(VESSEL *v, MATRIX3 REFSMMAT);
 	VECTOR3 PointAOTWithCSM(MATRIX3 REFSMMAT, SV sv, int AOTdetent, int star, double dockingangle);
 	void DockingAlignmentProcessor(DockAlignOpt &opt);
+	AEGBlock SVToAEG(EphemerisData sv);
 	//Apsides Determination Subroutine
+	void PMMAPD(AEGBlock Z, int KAOP, double *INFO);
 	bool PMMAPD(SV sv0, SV &sv_a, SV &sv_p);
 	VECTOR3 HeightManeuverInteg(SV sv0, double dh);
 	VECTOR3 ApoapsisPeriapsisChangeInteg(SV sv0, double r_AD, double r_PD);
@@ -2949,7 +2949,8 @@ public:
 	int ELVCNV(std::vector<EphemerisData2> &svtab, int in, int out, std::vector<EphemerisData2> &svtab_out);
 	int ELVCNV(EphemerisData &sv, int out, EphemerisData &sv_out);
 	int ELVCNV(EphemerisData2 &sv, int in, int out, EphemerisData2 &sv_out);
-	int ELVCNV(VECTOR3 vec, double GMT, int in, int out, VECTOR3 &vec_out);
+	int ELVCNV(std::vector<VECTOR3> vec, double GMT, int type, int in, int out, std::vector<VECTOR3> &vec_out);
+	int ELVCNV(VECTOR3 vec, double GMT, int type, int in, int out, VECTOR3 &vec_out);
 	//Extended Interpolation Routine
 	void ELVCTR(const ELVCTRInputTable &in, ELVCTROutputTable2 &out);
 	void ELVCTR(const ELVCTRInputTable &in, ELVCTROutputTable2 &out, EphemerisDataTable2 &EPH, ManeuverTimesTable &mantimes, LunarStayTimesTable *LUNRSTAY = NULL);
@@ -3001,7 +3002,7 @@ public:
 	// MISSION PLANNING (P)
 	//Weight Determination at a Time
 	void PLAWDT(const PLAWDTInput &in, PLAWDTOutput &out);
-	bool PLEFEM(int IND, double HOUR, int YEAR, VECTOR3 &R_EM, VECTOR3 &V_EM, VECTOR3 &R_ES);
+	bool PLEFEM(int IND, double HOUR, int YEAR, VECTOR3 *R_EM, VECTOR3 *V_EM, VECTOR3 *R_ES, MATRIX3 *PNL);
 	bool PLEFEM(int IND, double HOUR, int YEAR, MATRIX3 &M_LIB);
 
 	// REENTRY COMPUTATIONS (R)
@@ -3070,6 +3071,8 @@ public:
 	void PIMCKC(VECTOR3 R, VECTOR3 V, int body, double &a, double &e, double &i, double &l, double &g, double &h);
 	//Time from perifocal pass to radius (TRW routine TFPCR)
 	void PITFPC(double MUE, int K, double AORP, double ECC, double rad, double &TIME, double &P, bool erunits = true);
+	//Determine time of arrival at specific height in orbit
+	int PITCIR(AEGBlock in, double ht, AEGDataBlock &out);
 
 	// ** MISCELLANEOUS UTILITY PROGRAMS**
 	//Sun/Moon ephemeris table from tape
@@ -3690,6 +3693,7 @@ public:
 	struct NutationPrecessionMatrices
 	{
 		MATRIX3 Mat[141];
+		//MJD of first matrix
 		double mjd0 = 0.0;
 	} EZNPMATX;
 
@@ -4568,14 +4572,9 @@ public:
 		int EPOCH;
 		//MJD of first entry
 		double MJD;
-		//Table of vectors pointing from Earth to Sun, in Er
-		VECTOR3 R_ES[71];
-		//Table of vectors pointing from Earth to Moon, in Er
-		VECTOR3 R_EM[71];
-		//Table of velocity vectors of the Moon relative to the Earth, in Er/hr
-		VECTOR3 V_EM[71];
-		//Libration matrices
-		MATRIX3 R_LIB[71];
+		//71 sets of data, 12 hours apart, covering 35 days, starting 5 days before midnight of launch day
+		//0-2: Sun position vector (Er), 3-5: Moon position vector (Er), 6-8: Moon velocity vector (Er/hr), 9-17: Moon libration vector
+		double data[71][18];
 	} MDGSUN;
 
 	//System parameters for PDI
@@ -4669,8 +4668,6 @@ private:
 	double CapeCrossingFirst(int L);
 	double CapeCrossingLast(int L);
 	void ECMPAY(EphemerisDataTable2 &EPH, ManeuverTimesTable &MANTIMES, double GMT, bool sun, double &Pitch, double &Yaw);
-	//Spherical to Inertial Conversion
-	int EMMXTR(double vel, double fpa, double azi, double lat, double lng, double h, VECTOR3 &R, VECTOR3 &V);
 	//PMMMPT Begin Burn Time Computation Subroutine
 	void PCBBT(double *DELT, double *WDI, double *TU, double W, double TIMP, double DELV, int NPHASE, double &T, double &GMTBB, double &GMTI, double &WA);
 	//PMMMPT Matrix Utility Subroutine
