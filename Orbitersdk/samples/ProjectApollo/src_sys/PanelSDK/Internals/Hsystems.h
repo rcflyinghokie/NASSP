@@ -133,6 +133,7 @@ class H_system:public ship_system
 	void Create_h_MixingPipe(char *line);
 	void Create_h_Valve(char *line);
 	void Create_h_CO2Scrubber(char *line);
+	void Create_h_WaterAccumulator(char* line);
 	void Create_h_WaterSeparator(char *line);
 	void Create_h_HeatLoad(char *line);
 	void Create_h_Accumulator(char* line);
@@ -350,6 +351,26 @@ public:
 	double co2removalrate;
 	double flow;	// in g/s
 	double flowMax;
+};
+
+class h_WaterAccumulator : public h_object {
+
+public:
+	h_WaterAccumulator(char* i_name, h_Tank* H2Osource_t, h_Valve* o2in_v, h_Valve* o2bleed_v, h_Valve* i_H2Owaste);
+
+	h_Tank* h2osource;
+	h_Valve* o2in;
+	h_Valve* o2bleedout;
+	h_Valve* H20waste;
+
+	virtual void refresh(double dt);
+	virtual void* GetComponent(char* component_name);
+	virtual void Save(FILEHANDLE scn);
+
+	double h2oremovalrate;
+	double h2oremovalratio;
+	double O2Press;
+	bool isRunning;
 };
 
 class h_WaterSeparator : public h_object {

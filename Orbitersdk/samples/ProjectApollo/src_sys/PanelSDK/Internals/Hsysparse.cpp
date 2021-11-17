@@ -347,6 +347,37 @@ void H_system::Create_h_CO2Scrubber(char *line) {
 	}
 }
 
+void H_system::Create_h_WaterAccumulator(char* line) {
+
+	h_Tank* h2osource;
+	h_Valve* o2in;
+	h_Valve* o2bleedout;
+	h_Valve* H20waste;
+
+	char name[100];
+	char h2osource_tank[100];
+	char o2in_valve[100];
+	char o2bleed_valve[100];
+	char h2o_valve[100];
+	double flowMax = 0;
+
+	sscanf(line + 8, " %s", name);
+
+	line = ReadConfigLine();
+	while (!Compare(line, "</H2OACCUM>")) {
+		sscanf(line, "%s %s %s", h2osource, o2in, o2bleedout, H20waste);
+
+		h2osource = (h_Tank*)GetPointerByString(h2osource_tank);
+		o2in = (h_Valve*)GetPointerByString(o2in_valve);
+		o2bleedout = (h_Valve*)GetPointerByString(o2bleed_valve);
+		H20waste = (h_Valve*)GetPointerByString(h2o_valve);
+
+		AddSystem(new h_WaterAccumulator(name, h2osource, o2in, o2bleedout, H20waste));
+
+		line = ReadConfigLine();
+	}
+}
+
 void H_system::Create_h_WaterSeparator(char *line) {
 
 	h_Valve *in;
@@ -676,6 +707,19 @@ void* h_CO2Scrubber::GetComponent(char *component_name) {
 		return (void*)&flow;
 	if (Compare(component_name, "CO2REMOVALRATE"))
 		return (void*)&co2removalrate;
+
+	BuildError(2);	//no such component
+	return NULL;
+}
+
+void* h_WaterAccumulator::GetComponent(char* component_name) {
+
+	if (Compare(component_name, "ISON"))
+		return (void*)&isRunning;
+	if (Compare(component_name, "O2PRESS"))
+		return (void*)&O2Press;
+	if (Compare(component_name, "H2OREMOVALRATE"))
+		return (void*)&h2oremovalrate;
 
 	BuildError(2);	//no such component
 	return NULL;

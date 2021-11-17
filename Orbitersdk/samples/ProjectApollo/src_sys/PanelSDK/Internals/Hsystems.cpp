@@ -1335,6 +1335,92 @@ void h_CO2Scrubber::refresh(double dt) {
 	}
 }
 
+h_WaterAccumulator::h_WaterAccumulator(char* i_name, h_Tank* H2Osource_t, h_Valve* o2in_v, h_Valve* o2bleed_v, h_Valve* i_H2Owaste)
+
+{
+	strcpy(name, i_name);
+	max_stage = 99;
+	h2osource = H2Osource_t;
+	o2in = o2in_v;
+	o2bleedout = o2bleed_v;
+	H20waste = i_H2Owaste;
+
+	h2oremovalrate = 0;
+	O2Press = 0;
+	h2oremovalratio = 0;
+	isRunning = 0;
+}
+
+void h_WaterAccumulator::refresh(double dt) {
+
+	h2oremovalrate = 0;
+
+	if (!h2osource || (!o2in)) return;
+
+	O2Press = o2in->GetPress();
+
+	double delta_p = o2in->GetPress() - o2bleedout->GetPress();
+	if (delta_p < 0)
+		delta_p = 0;
+
+	h_volume o2 = o2in->GetFlow(dt * delta_p, 0.55*LBH * dt);
+
+	if (O2Press > 0) {
+		isRunning = 1;
+	}
+	else
+		isRunning = 0;
+
+	if (isRunning) {
+
+			h2oremovalratio = (O2Press / 100*PSI);
+
+			if ((h2oremovalratio) > 1)
+				h2oremovalratio = 1;
+
+			h2oremovalrate = (h2osource->space.composition[SUBSTANCE_H2O].mass / dt) * (h2oremovalratio);
+
+			if (h2oremovalratio > 0)
+			{
+				double removedmass = h2osource->space.composition[SUBSTANCE_H2O].mass * h2oremovalratio;
+				double factor = 1 - h2oremovalratio;
+
+				// separate water
+				h_volume h2o_volume;
+				h2o_volume.Void();
+				h2o_volume.composition[SUBSTANCE_H2O].mass = removedmass;
+				h2o_volume.composition[SUBSTANCE_H2O].SetTemp(300.0);
+				h2o_volume.GetQ();
+
+				// ... and pump it to waste valve
+				H20waste->Flow(h2o_volume);
+
+				//Allow O2 bleed flow
+
+				h2osource->space.composition[SUBSTANCE_H2O].mass -= removedmass;
+				h2osource->space.composition[SUBSTANCE_H2O].vapor_mass -= removedmass;
+				//Can liquid water cause this to be below 0?
+				if (h2osource->space.composition[SUBSTANCE_H2O].vapor_mass < 0)
+					h2osource->space.composition[SUBSTANCE_H2O].vapor_mass = 0;
+				h2osource->space.composition[SUBSTANCE_H2O].Q = h2osource->space.composition[SUBSTANCE_H2O].Q * factor;
+
+				//if (!strcmp(name, "WATERACCUM1"))
+				//	sprintf(oapiDebugString(), "Rate %f Removed %f Remaining %f", h2oremovalratio, removedmass / dt, fanned.composition[SUBSTANCE_H2O].mass / dt);
+			}
+		}
+
+	o2bleedout->Flow(o2);
+
+	}
+
+void h_WaterAccumulator::Save(FILEHANDLE scn) {
+
+	char text[100];
+
+	sprintf(text, " %s %lf", name, isRunning);
+	oapiWriteScenario_string(scn, "   <H2OACCUM>", text);
+}
+
 h_WaterSeparator::h_WaterSeparator(char *i_name, double i_flowmax, h_Valve* in_v, h_Valve* out_v, h_Valve *i_H2Owaste)
 
 {
