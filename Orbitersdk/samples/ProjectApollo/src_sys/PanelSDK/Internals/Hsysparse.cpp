@@ -365,7 +365,7 @@ void H_system::Create_h_WaterAccumulator(char* line) {
 
 	line = ReadConfigLine();
 	while (!Compare(line, "</H2OACCUM>")) {
-		sscanf(line, "%s %s %s", h2osource, o2in, o2bleedout, H20waste);
+		sscanf(line, "%s %s %s %s", h2osource, o2in, o2bleedout, H20waste);
 
 		h2osource = (h_Tank*)GetPointerByString(h2osource_tank);
 		o2in = (h_Valve*)GetPointerByString(o2in_valve);
