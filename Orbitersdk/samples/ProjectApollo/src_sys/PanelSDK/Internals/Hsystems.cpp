@@ -1395,10 +1395,9 @@ void h_WaterAccumulator::refresh(double dt) {
 				// ... and pump it to waste valve
 				H20waste->Flow(h2o_volume);
 
-				//Allow O2 bleed flow
-
 				h2osource->space.composition[SUBSTANCE_H2O].mass -= removedmass;
 				h2osource->space.composition[SUBSTANCE_H2O].vapor_mass -= removedmass;
+
 				//Can liquid water cause this to be below 0?
 				if (h2osource->space.composition[SUBSTANCE_H2O].vapor_mass < 0)
 					h2osource->space.composition[SUBSTANCE_H2O].vapor_mass = 0;
@@ -1409,6 +1408,7 @@ void h_WaterAccumulator::refresh(double dt) {
 			}
 		}
 
+	//Allow O2 bleed flow
 	o2bleedout->Flow(o2);
 
 	}
