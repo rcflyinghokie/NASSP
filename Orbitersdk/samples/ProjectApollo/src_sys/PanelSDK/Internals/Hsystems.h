@@ -371,6 +371,7 @@ public:
 	double h2oremovalratio;
 	double O2Press;
 	bool isRunning;
+	double outflowmax;
 };
 
 class h_WaterSeparator : public h_object {

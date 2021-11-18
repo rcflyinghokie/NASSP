@@ -268,6 +268,10 @@ void H_system::Load(FILEHANDLE scn) {
 				valve->size = size1;
 			}
 		}
+		else if (!strnicmp(line, "<H2OACCUM>", 10)) {
+			sscanf(line + 10, "%s %lf", string1, &temp);
+			h_WaterAccumulator* h2osep = (h_WaterAccumulator*)GetSystemByName(string1);
+		}
 		else if (!strnicmp(line, "<H2OSEP>", 8)) {
 			sscanf(line + 8, "%s %lf", string1, &temp);
 			h_WaterSeparator *h2osep = (h_WaterSeparator*)GetSystemByName(string1);
@@ -1349,11 +1353,13 @@ h_WaterAccumulator::h_WaterAccumulator(char* i_name, h_Tank* H2Osource_t, h_Valv
 	O2Press = 0;
 	h2oremovalratio = 0;
 	isRunning = 0;
+	outflowmax = 0.55 * LBH;
 }
 
 void h_WaterAccumulator::refresh(double dt) {
 
 	h2oremovalrate = 0;
+
 
 	if (!h2osource || (!o2in)) return;
 
@@ -1363,7 +1369,7 @@ void h_WaterAccumulator::refresh(double dt) {
 	if (delta_p < 0)
 		delta_p = 0;
 
-	h_volume o2 = o2in->GetFlow(dt * delta_p, 0.55*LBH * dt);
+	h_volume o2 = o2in->GetFlow(dt * delta_p, outflowmax * dt);
 
 	if (O2Press > 0) {
 		isRunning = 1;
@@ -1408,7 +1414,8 @@ void h_WaterAccumulator::refresh(double dt) {
 			}
 		}
 
-	//Allow O2 bleed flow
+	//Allow O2 bleed flow and set flow control
+
 	o2bleedout->Flow(o2);
 
 	}

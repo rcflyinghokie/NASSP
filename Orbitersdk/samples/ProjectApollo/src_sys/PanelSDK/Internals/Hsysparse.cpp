@@ -361,7 +361,7 @@ void H_system::Create_h_WaterAccumulator(char* line) {
 	char h2o_valve[100];
 	double flowMax = 0;
 
-	sscanf(line + 8, " %s", name);
+	sscanf(line + 10, " %s", name);
 
 	line = ReadConfigLine();
 	while (!Compare(line, "</H2OACCUM>")) {
