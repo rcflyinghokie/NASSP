@@ -359,9 +359,9 @@ void Saturn::SystemsInit() {
 	
 	SuitCircuitReturnValve.Init((h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:SUITCIRCUITRETURNINLET"), &SuitCircuitReturnValveLever);
 	
-	O2SMSupply.Init((h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2SMSUPPLY"), (h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2MAINREGULATOR"), 
-		            (h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2SURGETANK"),(h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2REPRESSPACKAGE"), 
-					(h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2REPRESSPACKAGEOUTLET"), (h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:O2REPRESSPACKAGEOUTLETPIPE3"),
+	O2SMSupply.Init((h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2SMSUPPLY"), (h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2MAINREGULATORA"), 
+					(h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:O2MAINREGULATORB"), (h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2SURGETANK"),
+					(h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2REPRESSPACKAGE"), (h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:O2REPRESSPACKAGEOUTLET"),
 					&OxygenSMSupplyRotary, &OxygenSurgeTankRotary, &OxygenRepressPackageRotary, &O2MainRegulatorASwitch, &O2MainRegulatorBSwitch,
 					&HatchEmergencyO2ValveSwitch, &HatchRepressO2ValveSwitch);
 
@@ -369,8 +369,10 @@ void Saturn::SystemsInit() {
 
 	SetPipeMaxFlow("HYDRAULIC:CSMTUNNELUNDOCKED", 1000.0 / LBH);
 
-	SetPipeMaxFlow("HYDRAULIC:O2SMSUPPLYINLET1", 100./ LBH);
-	SetPipeMaxFlow("HYDRAULIC:O2SMSUPPLYINLET2", 100./ LBH);
+	SetPipeMaxFlow("HYDRAULIC:O2SMSUPPLYINLET1", 4.5/ LBH); //Flow regulator
+	SetPipeMaxFlow("HYDRAULIC:O2SMSUPPLYINLET2", 4.5/ LBH);	//Flow regulator
+
+
 	SetPipeMaxFlow("HYDRAULIC:O2SURGETANKINLET1", 100./ LBH);
 	SetPipeMaxFlow("HYDRAULIC:O2SURGETANKINLET2", 100./ LBH);
 	SetPipeMaxFlow("HYDRAULIC:O2SURGETANKOUTLET", 100./ LBH);

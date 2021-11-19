@@ -172,10 +172,10 @@ public:
 	
 protected:
 	h_Tank *o2SMSupply;
-	h_Tank *o2MainRegulator;
+	h_Tank *o2MainRegulatorA;
+	h_Tank* o2MainRegulatorB;
 	h_Tank *o2SurgeTank;
 	h_Tank *o2RepressPackage;
-	h_Tank *o2RepressPackageOutlet;
 	h_Pipe *o2RepressPackageOutletPipe;
 	RotationalSwitch *smSupplyValve;
 	RotationalSwitch *surgeTankValve;

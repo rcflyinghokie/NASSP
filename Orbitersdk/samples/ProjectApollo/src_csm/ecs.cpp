@@ -538,31 +538,30 @@ void SuitCircuitReturnValve::SystemTimestep(double simdt) {
 O2SMSupply::O2SMSupply() {
 
 	o2SMSupply = NULL;
-	o2MainRegulator = NULL;
+	o2MainRegulatorA = NULL;
+	o2MainRegulatorB = NULL;
 	o2SurgeTank = NULL;
 	o2RepressPackage = NULL;
 	smSupplyValve = NULL;
 	surgeTankValve = NULL;
 	repressPackageValve = NULL;
 	closed = false;
-	o2SMSupplyVoid = false;
-	o2MainRegulatorVoid = false;
 }
 
 O2SMSupply::~O2SMSupply() {
 
 }
 
-void O2SMSupply::Init(h_Tank *o2sm, h_Tank *o2mr, h_Tank *o2st, h_Tank *o2rp, h_Tank *o2rpo, h_Pipe *o2rpop,
+void O2SMSupply::Init(h_Tank *o2sm, h_Tank *o2mrA, h_Tank* o2mrB, h_Tank *o2st, h_Tank *o2rp, h_Pipe *o2rpop,
 					  RotationalSwitch *smv, RotationalSwitch *stv, RotationalSwitch *rpv,
 					  CircuitBrakerSwitch *mra, CircuitBrakerSwitch *mrb, PanelSwitchItem *eo2v,
 					  PanelSwitchItem *ro2v) {
 
 	o2SMSupply = o2sm;	
-	o2MainRegulator = o2mr;
+	o2MainRegulatorA = o2mrA;
+	o2MainRegulatorB = o2mrB;
 	o2SurgeTank = o2st;
 	o2RepressPackage = o2rp;
-	o2RepressPackageOutlet = o2rpo;
 	o2RepressPackageOutletPipe = o2rpop;
 	smSupplyValve = smv;	
 	surgeTankValve = stv;
@@ -575,114 +574,79 @@ void O2SMSupply::Init(h_Tank *o2sm, h_Tank *o2mr, h_Tank *o2st, h_Tank *o2rp, h_
 
 void O2SMSupply::SystemTimestep(double simdt) {
 
-	// Is something moving?
-	if (o2SMSupply->IN_valve.pz || o2SMSupply->OUT2_valve.pz || o2SMSupply->LEAK_valve.pz || 
-		o2SurgeTank->IN_valve.pz || o2RepressPackage->IN_valve.pz || o2MainRegulator->IN_valve.pz ||
-		o2SurgeTank->OUT_valve.pz || o2RepressPackageOutlet->OUT_valve.pz) return;
-
-	bool allClosed = true;
+	// Is something moving? TODO Need to add all extra valves
+	if (o2SMSupply->IN_valve.pz || o2SMSupply->OUT2_valve.pz || o2SMSupply->LEAK_valve.pz ||
+		o2SurgeTank->IN_valve.pz || o2RepressPackage->IN_valve.pz ||
+		o2SurgeTank->OUT_valve.pz) return;
 
 	// SM supply, forcibly closed after SM separation 
 	if (closed || smSupplyValve->GetState() == 0) {
-		o2SMSupply->IN_valve.Close();			
-	} else {
+		o2SMSupply->IN_valve.Close();
+	}
+
+	else {
 		o2SMSupply->IN_valve.Open();
-		allClosed = false;
 	}
 
 	// Surge tank
-	o2SurgeTank->BoilAllAndSetTemp(285);	//Needs to be done later by a heat exchanger
-
-	if (surgeTankValve->GetState() == 0) {
-		o2SurgeTank->OUT_valve.Close();
+	if (surgeTankValve->GetState() == 0) {		//Surge Tank Off
 		o2SurgeTank->IN_valve.Close();
-	} else {
-		// SM supply open? 
-		if (o2SMSupply->IN_valve.open) {
-			o2SurgeTank->IN_valve.Open();
-		} else {
-			o2SurgeTank->IN_valve.Close();
-		}
-		o2SurgeTank->OUT_valve.Open();
-		allClosed = false;
+	}
+	else {
+		o2SurgeTank->IN_valve.Open();		//Surge Tank On
 	}
 
 	// Repress package
-	if (repressPackageValve->GetState() == 1) {
-		o2SMSupply->LEAK_valve.Close();	
+
+	if (repressPackageValve->GetState() == 1) {			//Repress Package Off
 		o2RepressPackage->IN_valve.Close();
 		o2RepressPackage->OUT2_valve.Close();
-	} else {
-		// SM supply open? 
-		if (o2SMSupply->IN_valve.open) {
-			o2RepressPackage->IN_valve.Open();
-		} else {
-			o2RepressPackage->IN_valve.Close();
-		}
+	}
+	else if (repressPackageValve->GetState() == 2) {	//Repress Package On
+		o2RepressPackage->IN_valve.Close();
 		o2RepressPackage->OUT2_valve.Open();
-		// On or Fill?
-		if (repressPackageValve->GetState() == 2) {
-			o2SMSupply->LEAK_valve.Open();
-			allClosed = false;
-		} else {
-			o2SMSupply->LEAK_valve.Close();	
-		}
+	}
+	else {												//Repress Package Fill
+		o2RepressPackage->IN_valve.Open();
+		o2RepressPackage->OUT2_valve.Open();
 	}
 
-	// Purge "pipe tanks" in case of no supply
-	bool mainregvoid = false;
-	if (allClosed) {
-		if (!o2SMSupplyVoid) {
-			o2SMSupplyO2 = o2SMSupply->space.composition[SUBSTANCE_O2];
-			o2SMSupply->space.Void();
-			o2SMSupplyVoid = true;
-		}
-		mainregvoid = true;
-
-	} else {
-		if (o2SMSupplyVoid) {
-			*o2SMSupply += o2SMSupplyO2;
-			o2SMSupplyVoid = false;
-		}
-		o2SMSupply->BoilAllAndSetTemp(285);	//Needs to be done later by a heat exchanger
-
-		// O2 main regulator
-		if (mainRegulatorASwitch->GetState() && mainRegulatorBSwitch->GetState()) {
-			o2MainRegulator->IN_valve.Close();
-			mainregvoid = true;
-
-		} else {
-			o2MainRegulator->IN_valve.Open();
-		}
-	}
-	if (mainregvoid) {
-		if (!o2MainRegulatorVoid) {
-			o2MainRegulatorO2 = o2MainRegulator->space.composition[SUBSTANCE_O2];
-			o2MainRegulator->space.Void();
-			o2MainRegulatorVoid = true;
-		}
-	} else {
-		if (o2MainRegulatorVoid) {
-			*o2MainRegulator += o2MainRegulatorO2;
-			o2MainRegulatorVoid = false;
-		}
-	}
-
-	// Repress package outlet
-	o2RepressPackage->BoilAllAndSetTemp(285);	//Needs to be done later by a heat exchanger
-	o2RepressPackageOutlet->BoilAllAndSetTemp(285);	//Needs to be done later by a heat exchanger
+	// Repress O2 valve
 	if (repressO2Valve->GetState() == THREEPOSSWITCH_UP) {
-		o2RepressPackageOutlet->OUT_valve.Open();
-		o2RepressPackageOutletPipe->flowMax = 300. / LBH;	// cabin pressure 0 to 3 psi in about one minute
-	
-	} else if (emergencyO2Valve->GetState() == TOGGLESWITCH_UP)  {
-		o2RepressPackageOutlet->OUT_valve.Open();
-		o2RepressPackageOutletPipe->flowMax = 1. / LBH;		// real flow through the masks is unknown
-	
-	} else {
-		o2RepressPackageOutlet->OUT_valve.Close();
+		o2RepressPackage->OUT_valve.Open();
+		o2RepressPackageOutletPipe->flowMax = 300. / LBH;	// cabin pressure 0 to 3 psi in about one minute if PLSS valve is in FILL
 	}
-}
+	else {
+		o2RepressPackage->OUT_valve.Close();
+	}
+	
+	// Emergency O2 valve
+	if (emergencyO2Valve->GetState() == TOGGLESWITCH_UP) {		//Facemasks not implemented yet, outflow will go here
+		o2RepressPackage->LEAK_valve.Open();
+
+	}
+	else {
+		o2RepressPackage->LEAK_valve.Close();
+	}
+
+
+	// O2 main regulator A
+		if (mainRegulatorASwitch->GetState() == 0) {
+			o2MainRegulatorA->IN_valve.Close();
+
+		} else {
+			o2MainRegulatorA->IN_valve.Open();
+		}
+
+	// O2 main regulator B
+		if (mainRegulatorASwitch->GetState() == 0) {
+			o2MainRegulatorB->IN_valve.Close();
+
+		}
+		else {
+			o2MainRegulatorB->IN_valve.Open();
+		}
+	}
 
 void O2SMSupply::Close() {
 

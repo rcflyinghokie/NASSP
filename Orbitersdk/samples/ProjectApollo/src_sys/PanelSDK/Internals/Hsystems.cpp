@@ -1379,7 +1379,7 @@ void h_WaterAccumulator::refresh(double dt) {
 
 	if (isRunning) {
 
-			h2oremovalratio = (O2Press / 100*PSI);
+			h2oremovalratio = (O2Press / 100/PSI);
 
 			if ((h2oremovalratio) > 1)
 				h2oremovalratio = 1;
