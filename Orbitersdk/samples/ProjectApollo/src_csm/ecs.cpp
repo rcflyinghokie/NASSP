@@ -545,7 +545,6 @@ O2SMSupply::O2SMSupply() {
 	smSupplyValve = NULL;
 	surgeTankValve = NULL;
 	repressPackageValve = NULL;
-	closed = false;
 }
 
 O2SMSupply::~O2SMSupply() {
@@ -574,10 +573,9 @@ void O2SMSupply::Init(h_Tank *o2sm, h_Tank *o2mrA, h_Tank* o2mrB, h_Tank *o2st, 
 
 void O2SMSupply::SystemTimestep(double simdt) {
 
-	// Is something moving? TODO Need to add all extra valves
-	if (o2SMSupply->IN_valve.pz || o2SMSupply->OUT2_valve.pz || o2SMSupply->LEAK_valve.pz ||
-		o2SurgeTank->IN_valve.pz || o2RepressPackage->IN_valve.pz ||
-		o2SurgeTank->OUT_valve.pz) return;
+	// Is something moving?
+	if (o2SurgeTank->IN_valve.pz || o2RepressPackage->IN_valve.pz || o2RepressPackage->OUT_valve.pz || o2RepressPackage->OUT2_valve.pz
+		|| o2RepressPackage->LEAK_valve.pz || o2MainRegulatorA->IN_valve.pz || o2MainRegulatorB->IN_valve.pz) return;
 
 	// No O2 supply from SM after SM separation...need to add closing of O2 tanks to SM supply here
 
@@ -590,7 +588,6 @@ void O2SMSupply::SystemTimestep(double simdt) {
 	}
 
 	// Repress package
-
 	if (repressPackageValve->GetState() == 1) {			//Repress Package Off
 		o2RepressPackage->IN_valve.Close();
 		o2RepressPackage->OUT2_valve.Close();
@@ -621,7 +618,6 @@ void O2SMSupply::SystemTimestep(double simdt) {
 	else {
 		o2RepressPackage->LEAK_valve.Close();
 	}
-
 
 	// O2 main regulator A
 		if (mainRegulatorASwitch->GetState() == 0) {

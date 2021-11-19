@@ -1520,7 +1520,6 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	O2DemandRegulator.SaveState(scn);
 	CabinPressureReliefValve1.SaveState(1, scn);
 	CabinPressureReliefValve2.SaveState(2, scn);
-	O2SMSupply.SaveState(scn);
 	CrewStatus.SaveState(scn);
 	ForwardHatch.SaveState(scn);
 	SideHatch.SaveState(scn);
@@ -2204,9 +2203,6 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	    else if (!strnicmp (line, "CABINPRESSURERELIEFVALVE2", 25)) {
 		    CabinPressureReliefValve2.LoadState(line);
 	    }
-	    else if (!strnicmp (line, "O2SMSUPPLY", 10)) {
-		    O2SMSupply.LoadState(line);
-		}
 	    else if (!strnicmp (line, "CREWSTATUS", 10)) {
 		    CrewStatus.LoadState(line);
 	    }

@@ -353,13 +353,11 @@ void H_system::Create_h_WaterAccumulator(char* line) {
 	h_Valve* o2in;
 	h_Valve* o2bleedout;
 	h_Valve* H20waste;
-
 	char name[100];
 	char h2osource_tank[100];
 	char o2in_valve[100];
 	char o2bleed_valve[100];
 	char h2o_valve[100];
-	double flowMax = 0;
 
 	sscanf(line + 10, " %s", name);
 

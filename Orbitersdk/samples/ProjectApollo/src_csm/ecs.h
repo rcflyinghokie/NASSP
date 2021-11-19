@@ -166,9 +166,6 @@ public:
 			  CircuitBrakerSwitch *mra, CircuitBrakerSwitch *mrb, PanelSwitchItem *eo2v,
 			  PanelSwitchItem *ro2v);
 	void SystemTimestep(double simdt);
-	void Close();
-	void LoadState(char *line);
-	void SaveState(FILEHANDLE scn);
 	
 protected:
 	h_Tank *o2SMSupply;
@@ -185,11 +182,6 @@ protected:
 	PanelSwitchItem *emergencyO2Valve;
 	PanelSwitchItem *repressO2Valve;
 
-	bool closed;
-	bool o2SMSupplyVoid;
-	bool o2MainRegulatorVoid;
-	h_substance o2SMSupplyO2;
-	h_substance o2MainRegulatorO2;
 };
 
 ///

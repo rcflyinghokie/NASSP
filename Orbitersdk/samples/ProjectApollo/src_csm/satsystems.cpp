@@ -2538,9 +2538,6 @@ void Saturn::CheckSMSystemsState()
 		SecEcsRadiatorExchanger1->SetLength(0);
 		SecEcsRadiatorExchanger2->SetLength(0);
 
-		// Close O2 SM supply
-		O2SMSupply.Close();
-
 		//SM sensors
 		H2Tank1TempSensor.WireTo(NULL);
 		H2Tank2TempSensor.WireTo(NULL);
