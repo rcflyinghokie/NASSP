@@ -579,14 +579,7 @@ void O2SMSupply::SystemTimestep(double simdt) {
 		o2SurgeTank->IN_valve.pz || o2RepressPackage->IN_valve.pz ||
 		o2SurgeTank->OUT_valve.pz) return;
 
-	// SM supply, forcibly closed after SM separation 
-	if (closed || smSupplyValve->GetState() == 0) {
-		o2SMSupply->IN_valve.Close();
-	}
-
-	else {
-		o2SMSupply->IN_valve.Open();
-	}
+	// No O2 supply from SM after SM separation...need to add closing of O2 tanks to SM supply here
 
 	// Surge tank
 	if (surgeTankValve->GetState() == 0) {		//Surge Tank Off
@@ -647,33 +640,6 @@ void O2SMSupply::SystemTimestep(double simdt) {
 			o2MainRegulatorB->IN_valve.Open();
 		}
 	}
-
-void O2SMSupply::Close() {
-
-	closed = true;
-}
-
-void O2SMSupply::LoadState(char *line) {
-
-	int i, j, k;
-
-	sscanf(line + 10, "%i %i %i %i %lf %lf %lf %i %lf %lf %lf", &i, &j, &k,
-		&o2SMSupplyO2.subst_type, &o2SMSupplyO2.mass , &o2SMSupplyO2.vapor_mass, &o2SMSupplyO2.Q,
-		&o2MainRegulatorO2.subst_type, &o2MainRegulatorO2.mass , &o2MainRegulatorO2.vapor_mass, &o2MainRegulatorO2.Q);
-	closed = (i != 0);
-	o2SMSupplyVoid = (j != 0);
-	o2MainRegulatorVoid = (k != 0);
-}
-
-void O2SMSupply::SaveState(FILEHANDLE scn) {
-
-	char buffer[100];
-
-	sprintf(buffer, "%i %i %i %i %8.4f %8.4f %8.4f %i %8.4f %8.4f %8.4f", (closed ? 1 : 0), (o2SMSupplyVoid ? 1 : 0), (o2MainRegulatorVoid ? 1 : 0),
-		o2SMSupplyO2.subst_type, o2SMSupplyO2.mass , o2SMSupplyO2.vapor_mass, o2SMSupplyO2.Q,
-		o2MainRegulatorO2.subst_type, o2MainRegulatorO2.mass , o2MainRegulatorO2.vapor_mass, o2MainRegulatorO2.Q); 
-	oapiWriteScenario_string(scn, "O2SMSUPPLY", buffer);
-}
 
 
 CrewStatus::CrewStatus(Sound &crewdeadsound) : crewDeadSound(crewdeadsound) {
