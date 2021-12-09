@@ -449,21 +449,21 @@ void Saturn::SystemsInit() {
 
 	CabinPressSensor.Init(&ECSPressGroups2Feeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:CABIN"));
 	CabinTempSensor.Init(&ECSTempTransducerFeeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:CABIN"));
-	SuitCabinDeltaPressSensor.Init(&Panel276CB2, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:SUITCIRCUITRETURNVALVE"), (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:CABIN"));
-	CO2PartPressSensor.Init(&ECSPressGroups2Feeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:SUIT"));
+	SuitCabinDeltaPressSensor.Init(&Panel276CB2, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:SUITCIRCUITMANIFOLDDOWNSTREAM"), (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:CABIN"));
+	CO2PartPressSensor.Init(&ECSPressGroups2Feeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:SUITCIRCUITMANIFOLDUPSTREAM"));
 	O2SurgeTankPressSensor.Init(&Panel276CB2, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:O2SURGETANK"));
-	SuitTempSensor.Init(&ECSTempTransducerFeeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:SUIT"));
+	SuitTempSensor.Init(&ECSTempTransducerFeeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:SUITCIRCUITMANIFOLDUPSTREAM"));
 	WasteH2OQtySensor.Init(&ECSWastePotTransducerFeeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:WASTEH2OTANK"));
 	PotH2OQtySensor.Init(&ECSWastePotTransducerFeeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:POTABLEH2OTANK"));
-	SuitPressSensor.Init(&ECSPressGroups1Feeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:SUIT"));
-	SuitCompressorDeltaPSensor.Init(&ECSPressGroups1Feeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:SUIT"), (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:SUITCIRCUITRETURNVALVE"));
+	SuitPressSensor.Init(&ECSPressGroups1Feeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:SUITCIRCUITMANIFOLDDOWNSTREAM"));
+	SuitCompressorDeltaPSensor.Init(&ECSPressGroups1Feeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:SUITCIRCUITMANIFOLDDOWNSTREAM"), (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:CABIN"));
 	GlycolPumpOutPressSensor.Init(&ECSPressGroups1Feeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:PRIMRADIATORINLET"));
 	GlyEvapOutSteamTempSensor.Init(&ECSTempTransducerFeeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:PRIMEVAPORATOROUTLET")); //Should be steam, not glycol temperature
 	GlyEvapOutTempSensor.Init(&ECSTempTransducerFeeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:PRIMEVAPORATOROUTLET"));
 	GlycolAccumQtySensor.Init(&ECSPressGroups1Feeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:PRIMGLYCOLACCUMULATOR"));
 	ECSRadOutTempSensor.Init(&ECSTempTransducerFeeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:PRIMRADIATOROUTLET"));
 	GlyEvapBackPressSensor.Init(&ECSPressGroups2Feeder, (h_Evaporator *)Panelsdk.GetPointerByString("HYDRAULIC:PRIMEVAPORATOR"));
-	ECSO2FlowO2SupplyManifoldSensor.Init(&ECSPressGroups2Feeder, (h_Pipe *)Panelsdk.GetPointerByString("HYDRAULIC:O2MAINREGULATOROUTLET"));
+	ECSO2FlowO2SupplyManifoldSensor.Init(&ECSPressGroups2Feeder, (h_Pipe *)Panelsdk.GetPointerByString("HYDRAULIC:O2FLOWPIPE"));
 	O2SupplyManifPressSensor.Init(&ECSPressGroups2Feeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:O2SUPPLYMANIFOLD"));
 	SecGlyPumpOutPressSensor.Init(&ECSSecTransducersFeeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:SECRADIATORINLET"));
 	SecEvapOutLiqTempSensor.Init(&ECSTempTransducerFeeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:SECEVAPORATOROUTLET"));
