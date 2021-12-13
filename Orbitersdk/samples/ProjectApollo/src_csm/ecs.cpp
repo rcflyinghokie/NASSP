@@ -41,14 +41,12 @@
 
 #include "CM_VC_Resource.h"
 
-
+//INPROGRESS
 CabinPressureRegulator::CabinPressureRegulator() {
 
-	pipe = NULL;
+	cabinPressRegPipe = NULL;
 	cabinRepressValve = NULL;
-	emergencyCabinPressureRegulator = NULL;
 	cabinRepressValveSwitch = NULL;
-	emergencyCabinPressureSwitch = NULL;
 
 	closed = false;
 	press = 0;
@@ -58,54 +56,69 @@ CabinPressureRegulator::~CabinPressureRegulator() {
 
 }
 
-void CabinPressureRegulator::Init(h_Pipe* p, h_Pipe *crv, h_Pipe *ecpr, RotationalSwitch *crvs, RotationalSwitch *ecps, PushSwitch *ecpts) {
+void CabinPressureRegulator::Init(h_Pipe* pr, h_Pipe *crv, RotationalSwitch *crvs) {
 
-	pipe = p;	
+	cabinPressRegPipe = pr;
 	cabinRepressValve = crv;
-	emergencyCabinPressureRegulator = ecpr;
 	cabinRepressValveSwitch = crvs;
-	emergencyCabinPressureSwitch = ecps;
-	emergencyCabinPressureTestSwitch = ecpts;
 }
 
 void CabinPressureRegulator::SystemTimestep(double simdt) {
 	
-	if (!pipe) return;
+	if (!cabinPressRegPipe) return;
 	// Valve in motion
-	if (pipe->in->pz) return;
+	if (cabinPressRegPipe->in->pz) return;
 
-	// Forcibly closed?
-	if (closed) {
-		pipe->in->Close();
-		return;
-	} 
-	pipe->in->Open();
 	// Close, if cabin pressure below 3.5 psi
-	double cabinpress = pipe->out->parent->space.Press;
-	if (cabinpress < 3.5 / PSI) {
-		pipe->P_max = 0;
-	} else {
-		pipe->P_max = press / PSI;
+	double cabinpress = cabinPressRegPipe->out->parent->space.Press;
+	if (cabinpress < 3.5 / PSI || cabinpress > 5.0 / PSI) {
+		cabinPressRegPipe->in->Close();
+	} 
+	else
+		cabinPressRegPipe->in->Open();
+		cabinPressRegPipe->flowMax = 0.6 / LBH; //Each regulator can deliver approximately 0.6 lb/hr with the whole assembly up to 1.4 lb/hr
 	}
 
 	// Cabin repress valve
+{
+	if (cabinRepressValveSwitch->GetState() == 6) {
+		cabinRepressValve->in->Close();
+		Pipe->flowMax = 0;
+	}
+	else if (cabinRepressValveSwitch->GetState() == 5) {
+		cabinRepressValve->in->Open();
+		Pipe->flowMax = 6.0 / LBH;  //0.1 lb/min
+	}
+	else if (cabinRepressValveSwitch->GetState() == 4) {
+		cabinRepressValve->in->Open();
+		Pipe->flowMax = 0.78 / LBH;  //
+	}
+	else if (cabinRepressValveSwitch->GetState() == 3) {
+		cabinRepressValve->in->Open();
+		Pipe->flowMax = 1.56 / LBH;  //
+	}
+	else if (cabinRepressValveSwitch->GetState() == 2) {
+		cabinRepressValve->in->Open();
+		Pipe->flowMax = 24.6 / LBH;		//
+	}
+	else if (cabinRepressValveSwitch->GetState() == 1) {
+		cabinRepressValve->in->Open();
+		Pipe->flowMax = 31.8 / LBH;		//
+	}
+	else if (cabinRepressValveSwitch->GetState() == 0) {
+		cabinRepressValve->in->Open();
+		Pipe->flowMax = 40.2 / LBH;		// Max Flow
+	}
+}
+
+
+
 	if (cabinRepressValveSwitch->GetState() == 0) {
 		cabinRepressValve->P_max = 0;
 
 	} else {
 		cabinRepressValve->P_max = 1000. / PSI; // i.e. disabled
 		cabinRepressValve->flowMax = ((double) cabinRepressValveSwitch->GetState()) / LBH; // 6 lb/h max, see AOH
-	}
-
-	// Emergency Cabin Pressure Regulator
-	if (emergencyCabinPressureSwitch->GetState() == 3 || (cabinpress > 4.6 / PSI && emergencyCabinPressureTestSwitch->GetState() == 0)) {
-		emergencyCabinPressureRegulator->P_max = 0;
-	} else {
-		if (emergencyCabinPressureTestSwitch->GetState() != 0) 
-			emergencyCabinPressureRegulator->P_max = 1000. / PSI; // i.e. disabled
-		else
-			emergencyCabinPressureRegulator->P_max = 4.6 / PSI;	
-		emergencyCabinPressureRegulator->flowMax = 40.2 / LBH; // 0.67 lb/min max, see AOH
 	}
 }
 
@@ -126,15 +139,15 @@ void CabinPressureRegulator::SetPressurePSI(double p) {
 
 void CabinPressureRegulator::SetMaxFlowLBH(double f) {
 
-	if (!pipe) return;
-	pipe->flowMax = f / LBH;
+	if (!cabinPressRegPipe) return;
+	cabinPressRegPipe->flowMax = f / LBH;
 }
 
 void CabinPressureRegulator::ResetMaxFlow() {
 
-	// Real max. flow is 1.4 lb/h, see AOH
-	if (!pipe) return;
-	pipe->flowMax = 1.4 / LBH;
+
+	if (!cabinPressRegPipe) return;
+	cabinPressRegPipe->flowMax = 0.6 / LBH; //Each regulator can deliver approximately 0.6 lb/hr with the whole assembly up to 1.4 lb/hr
 }
 
 void CabinPressureRegulator::LoadState(char *line) {
@@ -155,7 +168,99 @@ void CabinPressureRegulator::SaveState(FILEHANDLE scn) {
 	oapiWriteScenario_string(scn, "CABINPRESSUREREGULATOR", buffer);
 }
 
+EmergencyCabinPressureRegulator::EmergencyCabinPressureRegulator() {
 
+	emergencyCabinPressRegPipe1 = NULL;
+	emergencyCabinPressRegPipe2 = NULL;
+	emergencyCabinPressTestValve = NULL;
+	emergencyCabinPressureSwitch = NULL;
+	emergencyCabinPressureTestSwitch = NULL;
+
+	closed = false;
+	press = 0;
+}
+
+EmergencyCabinPressureRegulator::~EmergencyCabinPressureRegulator() {
+
+}
+
+void EmergencyCabinPressureRegulator::Init(h_Pipe* ecpr1, h_Pipe* ecpr2, h_Pipe* ecprtv, RotationalSwitch* ecps, PushSwitch* ecpts) {
+
+	emergencyCabinPressRegPipe1 = ecpr1;
+	emergencyCabinPressRegPipe2 = ecpr2,
+	emergencyCabinPressTestValve = ecprtv;
+	emergencyCabinPressureSwitch = ecps;
+	emergencyCabinPressureTestSwitch = ecpts;
+}
+
+void EmergencyCabinPressureRegulator::SystemTimestep(double simdt) {
+
+	if (!emergencyCabinPressRegPipe1 || !emergencyCabinPressRegPipe2 || !emergencyCabinPressTestValve) return;
+	// Valve in motion
+	if (emergencyCabinPressRegPipe1->in->pz || emergencyCabinPressRegPipe2->in->pz || emergencyCabinPressTestValve->in->pz) return;
+
+
+	// Emergency Cabin Pressure Regulator
+	if (emergencyCabinPressureSwitch->GetState() == 3 || (cabinpress > 4.6 / PSI && emergencyCabinPressureTestSwitch->GetState() == 0)) {
+		emergencyCabinPressureRegulator->P_max = 0;
+	}
+	else {
+		if (emergencyCabinPressureTestSwitch->GetState() != 0)
+			emergencyCabinPressureRegulator->P_max = 1000. / PSI; // i.e. disabled
+		else
+			emergencyCabinPressureRegulator->P_max = 4.6 / PSI;
+		emergencyCabinPressureRegulator->flowMax = 40.2 / LBH; // 0.67 lb/min max, see AOH
+	}
+}
+
+void EmergencyCabinPressureRegulator::Reset() {
+
+	closed = false;
+}
+
+void EmergencyCabinPressureRegulator::Close() {
+
+	closed = true;
+}
+
+void EmergencyCabinPressureRegulator::SetPressurePSI(double p) {
+
+	press = p;
+}
+
+void EmergencyCabinPressureRegulator::SetMaxFlowLBH(double f) {
+
+	if (!pipe) return;
+	pipe->flowMax = f / LBH;
+}
+
+void EmergencyCabinPressureRegulator::ResetMaxFlow() {
+
+	// Real max. flow is 1.4 lb/h, see AOH
+	if (!pipe) return;
+	pipe->flowMax = 1.4 / LBH;
+}
+
+void EmergencyCabinPressureRegulator::LoadState(char* line) {
+
+	int i;
+	double d;
+
+	sscanf(line + 22, "%d %lf", &i, &d);
+	closed = (i != 0);
+	press = d;
+}
+
+void EmergencyCabinPressureRegulator::SaveState(FILEHANDLE scn) {
+
+	char buffer[256];
+
+	sprintf(buffer, "%i %lf", (closed ? 1 : 0), press);
+	oapiWriteScenario_string(scn, "CABINPRESSUREREGULATOR", buffer);
+}
+
+
+//TODO
 O2DemandRegulator::O2DemandRegulator() {
 
 	pipe = NULL;
@@ -296,6 +401,7 @@ void O2DemandRegulator::SaveState(FILEHANDLE scn) {
 }
 
 
+//TODO
 CabinPressureReliefValve::CabinPressureReliefValve(Sound &plventsound) : postLandingVentSound(plventsound) {
 
 	pipe = NULL;
@@ -502,7 +608,7 @@ void CabinPressureReliefValve::SaveState(int index, FILEHANDLE scn) {
 	oapiWriteLine(scn, buffer);
 }
 
-
+//TODO
 SuitCircuitReturnValve::SuitCircuitReturnValve() {
 
 	pipe = NULL;
@@ -546,7 +652,7 @@ O2SMSupply::O2SMSupply() {
 	surgeTankValve = NULL;
 	repressPackageValve = NULL;
 }
-
+//DONE
 O2SMSupply::~O2SMSupply() {
 
 }

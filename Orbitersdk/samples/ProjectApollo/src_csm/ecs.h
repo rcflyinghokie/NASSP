@@ -41,7 +41,7 @@ public:
 	CabinPressureRegulator();
 	virtual ~CabinPressureRegulator();
 
-	void Init(h_Pipe *p, h_Pipe *crv, h_Pipe *ecpr, RotationalSwitch *crvs, RotationalSwitch *ecps, PushSwitch *ecpts);
+	void Init(h_Pipe* pr, h_Pipe* crv, RotationalSwitch* crvs);
 	void SystemTimestep(double simdt);
 	void Close();
 	void Reset();
@@ -52,17 +52,43 @@ public:
 	void SaveState(FILEHANDLE scn);
 
 protected:
-	h_Pipe *pipe;
-	h_Pipe *cabinRepressValve;
-	h_Pipe *emergencyCabinPressureRegulator;
+	h_Pipe* cabinPressRegPipe;
+	h_Pipe* cabinRepressValve;
 
 	RotationalSwitch *cabinRepressValveSwitch;
-	RotationalSwitch *emergencyCabinPressureSwitch;
-	PushSwitch *emergencyCabinPressureTestSwitch;
 
 	bool closed;
 	double press;
 };
+
+class EmergencyCabinPressureRegulator {
+
+public:
+	EmergencyCabinPressureRegulator();
+	virtual ~EmergencyCabinPressureRegulator();
+
+	void Init(h_Pipe* ecpr1, h_Pipe* ecpr2, h_Pipe* ecprtv, RotationalSwitch* ecps, PushSwitch* ecpts);
+	void SystemTimestep(double simdt);
+	void Close();
+	void Reset();
+	void SetPressurePSI(double p);
+	void SetMaxFlowLBH(double f);
+	void ResetMaxFlow();
+	void LoadState(char* line);
+	void SaveState(FILEHANDLE scn);
+
+protected:
+	h_Pipe* emergencyCabinPressRegPipe1;
+	h_Pipe* emergencyCabinPressRegPipe2;
+	h_Pipe* emergencyCabinPressTestValve;
+
+	RotationalSwitch* emergencyCabinPressureSwitch;
+	PushSwitch* emergencyCabinPressureTestSwitch;
+
+	bool closed;
+	double press;
+};
+
 
 
 ///

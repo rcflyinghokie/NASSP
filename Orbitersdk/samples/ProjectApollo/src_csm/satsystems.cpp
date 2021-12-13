@@ -337,10 +337,18 @@ void Saturn::SystemsInit() {
 	eo = (e_object *) Panelsdk.GetPointerByString("ELECTRIC:SECGLYCOLPUMP");
 	eo->WireTo(&SecCoolantLoopPumpSwitch);
 
-	CabinPressureRegulator.Init((h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:CABINPRESSUREREGULATOR"), 
+	CabinPressureRegulator1.Init((h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:CABINPRESSREG1"),
 								(h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:CABINREPRESSVALVE"), 
-								(h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:EMERGENCYCABINPRESSUREREGULATOR"), 
-								&CabinRepressValveRotary, &EmergencyCabinPressureRotary, &EmergencyCabinPressureTestSwitch);
+								&CabinRepressValveRotary);
+
+	CabinPressureRegulator2.Init((h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:CABINPRESSREG2"),
+								(h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:CABINREPRESSVALVE"),
+								&CabinRepressValveRotary);
+
+	EmergencyCabinPressureRegulator.Init((h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSREG1"),
+										(h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSREG2")
+									 	(h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGPRESSREGTEST"),
+										&EmergencyCabinPressureRotary, &EmergencyCabinPressureTestSwitch);
 
 	O2DemandRegulator.Init((h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:O2DEMANDREGULATOR"), 
 		                   (h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:SUITRELIEFVALVE"), 
@@ -855,8 +863,8 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 				if ((scdp > 1.3 && MissionTime - lastSystemsMissionTime >= 10) || MissionTime >= -6000) {	// Suit Cabin delta p is established (changed to -6000 to allow next case to begin, needs to be looked at for correctness)
 
 					// Reset (i.e. open) cabin pressure regulator again, max flow to 0.25 lb/h  
-					CabinPressureRegulator.SetMaxFlowLBH(0.25);
-					CabinPressureRegulator.Reset(); 
+					//CabinPressureRegulator.SetMaxFlowLBH(0.25);
+					//CabinPressureRegulator.Reset(); 
 
 					// Cabin leak
 					CabinPressureReliefValve1.SetLeakSize(0.0002);
@@ -964,7 +972,7 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 					O2DemandRegulator.Reset();
 
 					// Cabin regulator and relief pressure to flight configuration
-					CabinPressureRegulator.SetPressurePSI(5.0);
+					//CabinPressureRegulator.SetPressurePSI(5.0);
 					CabinPressureReliefValve1.SetReliefPressurePSI(6.0); 
 
 					// Next state
@@ -1530,7 +1538,10 @@ void Saturn::SystemsInternalTimestep(double simdt)
 		ordeal.SystemTimestep(tFactor);
 		SPSPropellant.SystemTimestep(tFactor);
 		SPSEngine.SystemTimestep(tFactor);
-		CabinPressureRegulator.SystemTimestep(tFactor);
+		CabinPressureRegulator1.SystemTimestep(tFactor);
+		CabinPressureRegulator2.SystemTimestep(tFactor);
+		EmergencyCabinPressureRegulator1.SystemTimestep(tFactor);
+		EmergencyCabinPressureRegulator2.SystemTimestep(tFactor);
 		O2DemandRegulator.SystemTimestep(tFactor);
 		CabinPressureReliefValve1.SystemTimestep(tFactor);
 		CabinPressureReliefValve2.SystemTimestep(tFactor);
@@ -2926,7 +2937,7 @@ void Saturn::GetAtmosStatus(AtmosStatus &atm)
 	}
 
 	if (!pCabinRegulatorFlow) {
-		pCabinRegulatorFlow = (double*) Panelsdk.GetPointerByString("HYDRAULIC:CABINPRESSUREREGULATOR:FLOW");
+		pCabinRegulatorFlow = (double*) Panelsdk.GetPointerByString("HYDRAULIC:CABINPRESSUREREGULATOR:FLOW");//NEEDS FIXED
 	}
 	if (pCabinRegulatorFlow) {
 		atm.CabinRegulatorFlowLBH = (*pCabinRegulatorFlow) * LBH;
@@ -2954,14 +2965,14 @@ void Saturn::GetAtmosStatus(AtmosStatus &atm)
 	}
 
 	if (!pCabinRepressFlow) {
-		pCabinRepressFlow = (double*) Panelsdk.GetPointerByString("HYDRAULIC:CABINREPRESSVALVE:FLOW");
+		pCabinRepressFlow = (double*) Panelsdk.GetPointerByString("HYDRAULIC:CABINREPRESSVALVE:FLOW");//NEEDS FIXED
 	}
 	if (pCabinRepressFlow) {
 		atm.CabinRepressFlowLBH = (*pCabinRepressFlow) * LBH;
 	}
 
 	if (!pEmergencyCabinRegulatorFlow) {
-		pEmergencyCabinRegulatorFlow = (double*) Panelsdk.GetPointerByString("HYDRAULIC:EMERGENCYCABINPRESSUREREGULATOR:FLOW");
+		pEmergencyCabinRegulatorFlow = (double*) Panelsdk.GetPointerByString("HYDRAULIC:EMERGENCYCABINPRESSUREREGULATOR:FLOW");//NEEDS FIXED
 	}
 	if (pEmergencyCabinRegulatorFlow) {
 		atm.EmergencyCabinRegulatorFlowLBH = (*pEmergencyCabinRegulatorFlow) * LBH;
