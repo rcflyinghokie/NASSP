@@ -48,8 +48,6 @@ CabinPressureRegulator::CabinPressureRegulator() {
 	cabinRepressValve = NULL;
 	cabinRepressValveSwitch = NULL;
 
-	closed = false;
-	press = 0;
 }
 
 CabinPressureRegulator::~CabinPressureRegulator() {
@@ -64,7 +62,7 @@ void CabinPressureRegulator::Init(h_Pipe* pr, h_Pipe *crv, RotationalSwitch *crv
 }
 
 void CabinPressureRegulator::SystemTimestep(double simdt) {
-	
+
 	if (!cabinPressRegPipe) return;
 	// Valve in motion
 	if (cabinPressRegPipe->in->pz) return;
@@ -73,100 +71,45 @@ void CabinPressureRegulator::SystemTimestep(double simdt) {
 	double cabinpress = cabinPressRegPipe->out->parent->space.Press;
 	if (cabinpress < 3.5 / PSI || cabinpress > 5.0 / PSI) {
 		cabinPressRegPipe->in->Close();
-	} 
+	}
 	else
 		cabinPressRegPipe->in->Open();
-		cabinPressRegPipe->flowMax = 0.6 / LBH; //Each regulator can deliver approximately 0.6 lb/hr with the whole assembly up to 1.4 lb/hr
-	}
+	cabinPressRegPipe->flowMax = 0.6 / LBH; // Each regulator can deliver approximately 0.6 lb/hr with the whole assembly up to 1.4 lb/hr
 
-	// Cabin repress valve
-{
+
+// Cabin repress valve
+
 	if (cabinRepressValveSwitch->GetState() == 6) {
 		cabinRepressValve->in->Close();
-		Pipe->flowMax = 0;
+		cabinRepressValve->flowMax = 0;
 	}
 	else if (cabinRepressValveSwitch->GetState() == 5) {
 		cabinRepressValve->in->Open();
-		Pipe->flowMax = 6.0 / LBH;  //0.1 lb/min
+		cabinRepressValve->flowMax = 6.0 / LBH;  // 0.1 lb/min
 	}
 	else if (cabinRepressValveSwitch->GetState() == 4) {
 		cabinRepressValve->in->Open();
-		Pipe->flowMax = 0.78 / LBH;  //
+		cabinRepressValve->flowMax = 12.0 / LBH;  //
 	}
 	else if (cabinRepressValveSwitch->GetState() == 3) {
 		cabinRepressValve->in->Open();
-		Pipe->flowMax = 1.56 / LBH;  //
+		cabinRepressValve->flowMax = 18.0 / LBH;  //
 	}
 	else if (cabinRepressValveSwitch->GetState() == 2) {
 		cabinRepressValve->in->Open();
-		Pipe->flowMax = 24.6 / LBH;		//
+		cabinRepressValve->flowMax = 24.0 / LBH;		//
 	}
 	else if (cabinRepressValveSwitch->GetState() == 1) {
 		cabinRepressValve->in->Open();
-		Pipe->flowMax = 31.8 / LBH;		//
+		cabinRepressValve->flowMax = 30.0 / LBH;		//
 	}
 	else if (cabinRepressValveSwitch->GetState() == 0) {
 		cabinRepressValve->in->Open();
-		Pipe->flowMax = 40.2 / LBH;		// Max Flow
+		cabinRepressValve->flowMax = 36.0 / LBH;		// Max Flow unknown, this is a guess
 	}
 }
 
 
-
-	if (cabinRepressValveSwitch->GetState() == 0) {
-		cabinRepressValve->P_max = 0;
-
-	} else {
-		cabinRepressValve->P_max = 1000. / PSI; // i.e. disabled
-		cabinRepressValve->flowMax = ((double) cabinRepressValveSwitch->GetState()) / LBH; // 6 lb/h max, see AOH
-	}
-}
-
-void CabinPressureRegulator::Reset() {
-
-	closed = false;
-}
-
-void CabinPressureRegulator::Close() {
-
-	closed = true;
-}
-
-void CabinPressureRegulator::SetPressurePSI(double p) {
-
-	press = p;
-}
-
-void CabinPressureRegulator::SetMaxFlowLBH(double f) {
-
-	if (!cabinPressRegPipe) return;
-	cabinPressRegPipe->flowMax = f / LBH;
-}
-
-void CabinPressureRegulator::ResetMaxFlow() {
-
-
-	if (!cabinPressRegPipe) return;
-	cabinPressRegPipe->flowMax = 0.6 / LBH; //Each regulator can deliver approximately 0.6 lb/hr with the whole assembly up to 1.4 lb/hr
-}
-
-void CabinPressureRegulator::LoadState(char *line) {
-
-	int i;
-	double d;
-
-	sscanf(line + 22, "%d %lf", &i, &d);
-	closed = (i != 0);
-	press = d;
-}
-
-void CabinPressureRegulator::SaveState(FILEHANDLE scn) {
-
-	char buffer[256];
-
-	sprintf(buffer, "%i %lf", (closed ? 1 : 0), press);
-	oapiWriteScenario_string(scn, "CABINPRESSUREREGULATOR", buffer);
-}
 
 EmergencyCabinPressureRegulator::EmergencyCabinPressureRegulator() {
 
@@ -176,8 +119,6 @@ EmergencyCabinPressureRegulator::EmergencyCabinPressureRegulator() {
 	emergencyCabinPressureSwitch = NULL;
 	emergencyCabinPressureTestSwitch = NULL;
 
-	closed = false;
-	press = 0;
 }
 
 EmergencyCabinPressureRegulator::~EmergencyCabinPressureRegulator() {
@@ -199,8 +140,30 @@ void EmergencyCabinPressureRegulator::SystemTimestep(double simdt) {
 	// Valve in motion
 	if (emergencyCabinPressRegPipe1->in->pz || emergencyCabinPressRegPipe2->in->pz || emergencyCabinPressTestValve->in->pz) return;
 
+	double cabinpress = emergencyCabinPressTestValve->out->parent->space.Press;
 
 	// Emergency Cabin Pressure Regulator
+	if (emergencyCabinPressureSwitch->GetState() == 3) {
+		emergencyCabinPressRegPipe1->in->Open();
+		emergencyCabinPressRegPipe2->in->Open();
+	}
+	else if (emergencyCabinPressureSwitch->GetState() == 2) {
+		emergencyCabinPressRegPipe1->in->Open();
+		emergencyCabinPressRegPipe2->in->Close();
+	}
+	else if (emergencyCabinPressureSwitch->GetState() == 1) {
+		emergencyCabinPressRegPipe1->in->Close();
+		emergencyCabinPressRegPipe2->in->Open();
+	}
+	else if (emergencyCabinPressureSwitch->GetState() == 0) {
+		emergencyCabinPressRegPipe1->in->Close();
+		emergencyCabinPressRegPipe2->in->Close ();
+	}
+
+
+
+
+
 	if (emergencyCabinPressureSwitch->GetState() == 3 || (cabinpress > 4.6 / PSI && emergencyCabinPressureTestSwitch->GetState() == 0)) {
 		emergencyCabinPressureRegulator->P_max = 0;
 	}
@@ -211,52 +174,6 @@ void EmergencyCabinPressureRegulator::SystemTimestep(double simdt) {
 			emergencyCabinPressureRegulator->P_max = 4.6 / PSI;
 		emergencyCabinPressureRegulator->flowMax = 40.2 / LBH; // 0.67 lb/min max, see AOH
 	}
-}
-
-void EmergencyCabinPressureRegulator::Reset() {
-
-	closed = false;
-}
-
-void EmergencyCabinPressureRegulator::Close() {
-
-	closed = true;
-}
-
-void EmergencyCabinPressureRegulator::SetPressurePSI(double p) {
-
-	press = p;
-}
-
-void EmergencyCabinPressureRegulator::SetMaxFlowLBH(double f) {
-
-	if (!pipe) return;
-	pipe->flowMax = f / LBH;
-}
-
-void EmergencyCabinPressureRegulator::ResetMaxFlow() {
-
-	// Real max. flow is 1.4 lb/h, see AOH
-	if (!pipe) return;
-	pipe->flowMax = 1.4 / LBH;
-}
-
-void EmergencyCabinPressureRegulator::LoadState(char* line) {
-
-	int i;
-	double d;
-
-	sscanf(line + 22, "%d %lf", &i, &d);
-	closed = (i != 0);
-	press = d;
-}
-
-void EmergencyCabinPressureRegulator::SaveState(FILEHANDLE scn) {
-
-	char buffer[256];
-
-	sprintf(buffer, "%i %lf", (closed ? 1 : 0), press);
-	oapiWriteScenario_string(scn, "CABINPRESSUREREGULATOR", buffer);
 }
 
 

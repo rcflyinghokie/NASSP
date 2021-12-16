@@ -827,7 +827,7 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 				if ((SuitCompressor1->pumping || SuitCompressor2->pumping) || MissionTime >= -900) {
 			
 					// Close cabin pressure regulator 
-					CabinPressureRegulator.Close();
+					//CabinPressureRegulator.Close();
 
 					// Suit compressors to prelaunch configuration
 					//SuitCompressor1->fan_cap = 110000.0;
@@ -1540,8 +1540,7 @@ void Saturn::SystemsInternalTimestep(double simdt)
 		SPSEngine.SystemTimestep(tFactor);
 		CabinPressureRegulator1.SystemTimestep(tFactor);
 		CabinPressureRegulator2.SystemTimestep(tFactor);
-		EmergencyCabinPressureRegulator1.SystemTimestep(tFactor);
-		EmergencyCabinPressureRegulator2.SystemTimestep(tFactor);
+		EmergencyCabinPressureRegulator.SystemTimestep(tFactor);
 		O2DemandRegulator.SystemTimestep(tFactor);
 		CabinPressureReliefValve1.SystemTimestep(tFactor);
 		CabinPressureReliefValve2.SystemTimestep(tFactor);

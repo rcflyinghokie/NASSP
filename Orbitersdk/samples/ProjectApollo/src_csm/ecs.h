@@ -43,13 +43,6 @@ public:
 
 	void Init(h_Pipe* pr, h_Pipe* crv, RotationalSwitch* crvs);
 	void SystemTimestep(double simdt);
-	void Close();
-	void Reset();
-	void SetPressurePSI(double p);
-	void SetMaxFlowLBH(double f);
-	void ResetMaxFlow();
-	void LoadState(char *line);
-	void SaveState(FILEHANDLE scn);
 
 protected:
 	h_Pipe* cabinPressRegPipe;
@@ -69,13 +62,6 @@ public:
 
 	void Init(h_Pipe* ecpr1, h_Pipe* ecpr2, h_Pipe* ecprtv, RotationalSwitch* ecps, PushSwitch* ecpts);
 	void SystemTimestep(double simdt);
-	void Close();
-	void Reset();
-	void SetPressurePSI(double p);
-	void SetMaxFlowLBH(double f);
-	void ResetMaxFlow();
-	void LoadState(char* line);
-	void SaveState(FILEHANDLE scn);
 
 protected:
 	h_Pipe* emergencyCabinPressRegPipe1;
