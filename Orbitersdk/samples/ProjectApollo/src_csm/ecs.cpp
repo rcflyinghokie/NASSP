@@ -79,15 +79,15 @@ void CabinPressureRegulator::SystemTimestep(double simdt) {
 
 // Cabin repress valve
 
-	if (cabinRepressValveSwitch->GetState() == 6) {
+	if (cabinRepressValveSwitch->GetState() == 0) {
 		cabinRepressValve->in->Close();
 		cabinRepressValve->flowMax = 0;
 	}
-	else if (cabinRepressValveSwitch->GetState() == 5) {
+	else if (cabinRepressValveSwitch->GetState() == 1) {
 		cabinRepressValve->in->Open();
 		cabinRepressValve->flowMax = 6.0 / LBH;  // 0.1 lb/min
 	}
-	else if (cabinRepressValveSwitch->GetState() == 4) {
+	else if (cabinRepressValveSwitch->GetState() == 2) {
 		cabinRepressValve->in->Open();
 		cabinRepressValve->flowMax = 12.0 / LBH;  //
 	}
@@ -95,15 +95,15 @@ void CabinPressureRegulator::SystemTimestep(double simdt) {
 		cabinRepressValve->in->Open();
 		cabinRepressValve->flowMax = 18.0 / LBH;  //
 	}
-	else if (cabinRepressValveSwitch->GetState() == 2) {
+	else if (cabinRepressValveSwitch->GetState() == 4) {
 		cabinRepressValve->in->Open();
 		cabinRepressValve->flowMax = 24.0 / LBH;		//
 	}
-	else if (cabinRepressValveSwitch->GetState() == 1) {
+	else if (cabinRepressValveSwitch->GetState() == 5) {
 		cabinRepressValve->in->Open();
 		cabinRepressValve->flowMax = 30.0 / LBH;		//
 	}
-	else if (cabinRepressValveSwitch->GetState() == 0) {
+	else if (cabinRepressValveSwitch->GetState() == 6) {
 		cabinRepressValve->in->Open();
 		cabinRepressValve->flowMax = 36.0 / LBH;		// Max Flow unknown, this is a guess
 	}
@@ -142,26 +142,28 @@ void EmergencyCabinPressureRegulator::SystemTimestep(double simdt) {
 
 	double cabinpress = emergencyCabinPressTestValve->out->parent->space.Press;
 
-	// Emergency Cabin Pressure Regulator
-	if (emergencyCabinPressureSwitch->GetState() == 3) {
-		emergencyCabinPressRegPipe1->in->Open();
-		emergencyCabinPressRegPipe2->in->Open();
-	}
-	else if (emergencyCabinPressureSwitch->GetState() == 2) {
+	// Emergency Cabin Pressure Regulator Valve
+	if (emergencyCabinPressureSwitch->GetState() == 0) {
 		emergencyCabinPressRegPipe1->in->Open();
 		emergencyCabinPressRegPipe2->in->Close();
 	}
 	else if (emergencyCabinPressureSwitch->GetState() == 1) {
+		emergencyCabinPressRegPipe1->in->Open();
+		emergencyCabinPressRegPipe2->in->Open();
+	}
+	else if (emergencyCabinPressureSwitch->GetState() == 2) {
 		emergencyCabinPressRegPipe1->in->Close();
 		emergencyCabinPressRegPipe2->in->Open();
 	}
-	else if (emergencyCabinPressureSwitch->GetState() == 0) {
+	else if (emergencyCabinPressureSwitch->GetState() == 3) {
 		emergencyCabinPressRegPipe1->in->Close();
 		emergencyCabinPressRegPipe2->in->Close ();
 	}
 
-
-
+	// Emergency Cabin Pressure Test Valve
+	if (emergencyCabinPressureTestSwitch->GetState() != 0) {
+		emergencyCabinPressRegPipe1->flowMax = 
+	}
 
 
 	if (emergencyCabinPressureSwitch->GetState() == 3 || (cabinpress > 4.6 / PSI && emergencyCabinPressureTestSwitch->GetState() == 0)) {
