@@ -417,6 +417,14 @@ bool TwoPositionSwitch::CheckMouseClickVC(int event, VECTOR3 &p)
 	return DoCheckMouseClickVC(event, p);
 }
 
+void TwoPositionSwitch::VesimSwitchTo(int newState)
+{
+	if (newState != state) {
+		SwitchTo(newState, true);
+		Sclick.play();
+	}
+}
+
 void TwoPositionSwitch::DoDrawSwitch(SURFHANDLE DrawSurface)
 
 {
@@ -439,6 +447,8 @@ void TwoPositionSwitch::DrawSwitch(SURFHANDLE DrawSurface)
 
 void TwoPositionSwitch::DrawSwitchVC(int id, int event, SURFHANDLE surf)
 {
+	if (!bHasAnimations) return;
+
 	if (IsUp()) {
 		OurVessel->SetAnimation(anim_switch, 1.0);
 	}
@@ -677,6 +687,8 @@ void ThreePosSwitch::DrawSwitch(SURFHANDLE DrawSurface)
 
 void ThreePosSwitch::DrawSwitchVC(int id, int event, SURFHANDLE surf)
 {
+	if (!bHasAnimations) return;
+
 	if (IsUp()) {
 		OurVessel->SetAnimation(anim_switch, 1.0);
 	}
@@ -1069,6 +1081,13 @@ bool PushSwitch::CheckMouseClickVC(int event, VECTOR3 &p) {
 		SwitchTo(0, true);
 	}
 	return true;
+}
+
+void PushSwitch::VesimSwitchTo(int newState) {
+	if (newState != state) {
+		SwitchTo(newState, true);
+		if (newState) Sclick.play();
+	}
 }
 
 void PushSwitch::InitSound(SoundLib *s) {
@@ -1921,6 +1940,12 @@ bool GuardedToggleSwitch::CheckMouseClickVC(int event, VECTOR3 &p) {
 	return false;
 }
 
+void GuardedToggleSwitch::VesimSwitchTo(int newState) {
+	if (guardState) {
+		return ToggleSwitch::VesimSwitchTo(newState);
+	}
+}
+
 void GuardedToggleSwitch::SaveState(FILEHANDLE scn) {
 
 	char buffer[100];
@@ -2690,6 +2715,8 @@ void RotationalSwitch::DefineVCAnimations(UINT vc_idx)
 
 void RotationalSwitch::DrawSwitchVC(int id, int event, SURFHANDLE drawSurface)
 {
+	if (!bHasAnimations) return;
+
 	double state = 0;
 
 	if (position) state = position->GetAngle();
@@ -3278,66 +3305,62 @@ bool ContinuousThumbwheelSwitch::CheckMouseClick(int event, int mx, int my) {
 
 bool ContinuousThumbwheelSwitch::CheckMouseClickVC(int event, VECTOR3 &p) {
 
-	if (p.x < 0.005)
-	{
-		if (event == PANEL_MOUSE_LBDOWN) {
-			if (isHorizontal) {
-				if (position < numPositions) {
-					SwitchTo(position + 1);
+	if (event == PANEL_MOUSE_LBDOWN) {
+		if (isHorizontal) {
+			if (p.x < 0.5) {
+				if (position + multiplicator <= numPositions) {
+					SwitchTo(position + multiplicator);
 					sclick.play();
 				}
 			}
 			else {
-				if (position > 0) {
-					SwitchTo(position - 1);
+				if (position - multiplicator >= 0) {
+					SwitchTo(position - multiplicator);
 					sclick.play();
 				}
 			}
 		}
-		else if (event == PANEL_MOUSE_RBDOWN)
-		{
-			if (isHorizontal) {
-				if (position > 0) {
-					SwitchTo(position - 1);
+		else {
+			if (p.y < 0.5) {
+				if (position + multiplicator <= numPositions) {
+					SwitchTo(position + multiplicator);
 					sclick.play();
 				}
 			}
 			else {
-				if (position < numPositions) {
-					SwitchTo(position + 1);
+				if (position - multiplicator >= 0) {
+					SwitchTo(position - multiplicator);
 					sclick.play();
 				}
 			}
 		}
-
 	}
-	else
+	else if (event == PANEL_MOUSE_RBDOWN)
 	{
-		if (event == PANEL_MOUSE_LBDOWN) {
-			if (isHorizontal) {
-				if (position + multiplicator <= numPositions) {
-					SwitchTo(position + multiplicator);
+		if (isHorizontal) {
+			if (p.x < 0.5) {
+				if (position < numPositions) {
+					SwitchTo(position + 1);
 					sclick.play();
 				}
 			}
 			else {
-				if (position - multiplicator >= 0) {
-					SwitchTo(position - multiplicator);
+				if (position > 0) {
+					SwitchTo(position - 1);
 					sclick.play();
 				}
 			}
 		}
-		else if (event == PANEL_MOUSE_RBDOWN)
-		{
-			if (isHorizontal) {
-				if (position - multiplicator >= 0) {
-					SwitchTo(position - multiplicator);
+		else {
+			if (p.y < 0.5) {
+				if (position < numPositions) {
+					SwitchTo(position + 1);
 					sclick.play();
 				}
 			}
 			else {
-				if (position + multiplicator <= numPositions) {
-					SwitchTo(position + multiplicator);
+				if (position > 0) {
+					SwitchTo(position - 1);
 					sclick.play();
 				}
 			}
@@ -3345,6 +3368,12 @@ bool ContinuousThumbwheelSwitch::CheckMouseClickVC(int event, VECTOR3 &p) {
 	}
 
 	return true;
+}
+
+void ContinuousThumbwheelSwitch::DrawSwitchVC(int id, int event, SURFHANDLE drawSurface) {
+
+	double s = position / (double)numPositions;
+	OurVessel->SetAnimation(anim_switch, s);
 }
 
 bool ContinuousThumbwheelSwitch::SwitchTo(int newPosition) {
@@ -5317,6 +5346,12 @@ bool PanelConnector::ReceiveMessage(Connector *from, ConnectorMessage &m)
 		return true;
 	case MFD_PANEL_CHECKLIST_FLASHING:
 		checklist.setFlashing(m.val1.bValue);
+		return true;
+	case MFD_PANEL_GET_CHECKLIST_AUTOEXECUTE:
+		m.val1.bValue = checklist.autoExecute();
+		return true;
+	case MFD_PANEL_SET_CHECKLIST_AUTOEXECUTE:
+		checklist.autoExecute(m.val1.bValue);
 		return true;
 	}
 

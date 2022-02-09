@@ -367,11 +367,11 @@ void LEM::SeparateStage (UINT stage)
 		Sat5LMDSC *dscstage = static_cast<Sat5LMDSC *> (oapiGetVesselInterface(hdsc));
 		if (!pMission->LMHasLegs())
 		{
-			dscstage->SetState(10);
+			dscstage->SetState(0);
 		}
 		else
 		{
-			dscstage->SetState(0);
+			dscstage->SetState(1);
 		}
 
 		SetLmAscentHoverStage();
@@ -389,15 +389,15 @@ void LEM::SeparateStage (UINT stage)
 			Sat5LMDSC *dscstage = static_cast<Sat5LMDSC *> (oapiGetVesselInterface(hdsc));
 			if (!pMission->LMHasLegs())
 			{
-				dscstage->SetState(10);
+				dscstage->SetState(0);
 			}
 			else if (Landed)
 			{
-				dscstage->SetState(1);
+				dscstage->SetState(3);
 			}
 			else
 			{
-				dscstage->SetState(11);
+				dscstage->SetState(2);
 			}
 			
 			vs2.vrot.x = 5.32;
@@ -415,15 +415,15 @@ void LEM::SeparateStage (UINT stage)
 			Sat5LMDSC *dscstage = static_cast<Sat5LMDSC *> (oapiGetVesselInterface(hdsc));
 			if (!pMission->LMHasLegs())
 			{
-				dscstage->SetState(10);
+				dscstage->SetState(0);
 			}
 			else if (Landed)
 			{
-				dscstage->SetState(1);
+				dscstage->SetState(3);
 			}
 			else
 			{
-				dscstage->SetState(11);
+				dscstage->SetState(2);
 			}
 
 			SetLmAscentHoverStage();
@@ -626,8 +626,10 @@ void LEM::SetCOAS() {
 	if (!vcmesh)
 		return;
 
-	static UINT meshgroup_COAS[3] = { VC_GRP_COAS_1, VC_GRP_COAS_2, VC_GRP_zzzCOAS_Glass };
-	static UINT meshgroup_Reticle = VC_GRP_COAS_Reticle;
+	static UINT meshgroup_COASfwd[3] = { VC_GRP_COAS_1, VC_GRP_COAS_2, VC_GRP_zzzCOAS_Glass };
+	static UINT meshgroup_COASovhd[3] = { VC_GRP_COAS_1ovhd, VC_GRP_COAS_2ovhd, VC_GRP_zzzCOAS_Glassovhd };
+	static UINT meshgroup_ReticleFwd = VC_GRP_COAS_Reticle;
+	static UINT meshgroup_ReticleOvhd = VC_GRP_COAS_Reticleovhd;
 
 	GROUPEDITSPEC ges_on;
 	ges_on.flags = (GRPEDIT_SETUSERFLAG);
@@ -639,42 +641,62 @@ void LEM::SetCOAS() {
 	// FWD COAS
 	if (LEMCoas2Enabled) {
 		for (int i = 0; i < 3; i++) {
-			oapiEditMeshGroup(vcmesh, meshgroup_COAS[i], &ges_on);
+			oapiEditMeshGroup(vcmesh, meshgroup_COASfwd[i], &ges_on);
 		}
 		if (InVC && oapiCameraInternal() && viewpos == LMVIEW_CDR && COASreticlevisible == 1) {
-			oapiEditMeshGroup(vcmesh, meshgroup_Reticle, &ges_on);
+			oapiEditMeshGroup(vcmesh, meshgroup_ReticleFwd, &ges_on);
 		} else {
-			oapiEditMeshGroup(vcmesh, meshgroup_Reticle, &ges_off);
+			oapiEditMeshGroup(vcmesh, meshgroup_ReticleFwd, &ges_off);
 		}
 	} else {
 		for (int i = 0; i < 3; i++) {
-			oapiEditMeshGroup(vcmesh, meshgroup_COAS[i], &ges_off);
+			oapiEditMeshGroup(vcmesh, meshgroup_COASfwd[i], &ges_off);
 		}
-		oapiEditMeshGroup(vcmesh, meshgroup_Reticle, &ges_off);
+		oapiEditMeshGroup(vcmesh, meshgroup_ReticleFwd, &ges_off);
+	}
+
+	// OVHD COAS
+	if (LEMCoas1Enabled) {
+		for (int i = 0; i < 3; i++) {
+			oapiEditMeshGroup(vcmesh, meshgroup_COASovhd[i], &ges_on);
+		}
+		if (InVC && oapiCameraInternal() && viewpos == LMVIEW_RDVZWIN && COASreticlevisible == 2) {
+			oapiEditMeshGroup(vcmesh, meshgroup_ReticleOvhd, &ges_on);
+		}
+		else {
+			oapiEditMeshGroup(vcmesh, meshgroup_ReticleOvhd, &ges_off);
+		}
+	}
+	else {
+		for (int i = 0; i < 3; i++) {
+			oapiEditMeshGroup(vcmesh, meshgroup_COASovhd[i], &ges_off);
+		}
+		oapiEditMeshGroup(vcmesh, meshgroup_ReticleOvhd, &ges_off);
 	}
 }
 
 void LEM::DefineTouchdownPoints(int s)
 {
 	//Touchdown Points
+	double xtarget = -1.0;
 	if (s == 0)
 	{
-		ConfigTouchdownPoints(7137.75, 3.5, 0.5, -3.60, 0, 3.86, -0.25); // landing gear retracted
+		ConfigTouchdownPoints(7137.75, 3.5, 0.5, -3.7, 0, 3.86, xtarget); // landing gear retracted
 	}
 	else if (s == 1)
 	{
 		if (pMission->LMHasLegs())
 		{
-			ConfigTouchdownPoints(7137.75, 3.5, 4.25, -3.60, -5.31, 3.86, -0.25); // landing gear extended
+			ConfigTouchdownPoints(7137.75, 3.5, 4.25, -3.7, -5.41, 3.86, xtarget); // landing gear extended
 		}
 		else
 		{
-			ConfigTouchdownPoints(7137.75, 3.5, 0.5, -3.60, 0, 3.86, -0.25); // landing gear retracted
+			ConfigTouchdownPoints(7137.75, 3.5, 0.5, -3.7, 0, 3.86, xtarget); // landing gear retracted
 		}
 	}
 	else
 	{
-		ConfigTouchdownPoints(4495.0, 3, 3, -5.42, 0, 2.8, -0.5);
+		ConfigTouchdownPoints(4495.0, 3, 3, -5.42, 0, 2.8, xtarget);
 	}
 }
 
@@ -694,8 +716,8 @@ void LEM::ConfigTouchdownPoints(double mass, double ro1, double ro2, double tdph
 			tdv[i].damping = damping / 200;
 			tdv[i].stiffness = stiffness / 200;
 		}
-		tdv[i].mu = 3;
-		tdv[i].mu_lng = 3;
+		tdv[i].mu = 10;
+		tdv[i].mu_lng = 10;
 	}
 
 	tdv[0].pos.x = 0;
@@ -785,7 +807,7 @@ void LEM::CreateAirfoils()
 	}
 	else
 	{
-		SetCW(0.1, 0.3, 1.4, 1.4);
+		SetCW(0.2, 0.2, 0.2, 0.2); //TBD: Set to 4.0 when RTCC can take drag into account properly
 	}
 }
 

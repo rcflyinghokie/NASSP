@@ -45,7 +45,7 @@ AR_GCore::AR_GCore(VESSEL* v)
 	{
 		mission = 8;
 	}
-	else if (strcmp(v->GetName(), "AS-504") == 0 || strcmp(v->GetName(), "Spider") == 0)
+	else if (strcmp(v->GetName(), "AS-504") == 0 || strcmp(v->GetName(), "Gumdrop") == 0 || strcmp(v->GetName(), "Spider") == 0)
 	{
 		mission = 9;
 	}
@@ -3786,6 +3786,7 @@ int ARCore::subThread()
 		GC->rtcc->JZLAI.sv_Insertion.R = sv_Ins.R;
 		GC->rtcc->JZLAI.sv_Insertion.V = sv_Ins.V;
 		GC->rtcc->JZLAI.sv_Insertion.GMT = OrbMech::GETfromMJD(sv_Ins.MJD, GC->rtcc->GetGMTBase());
+		GC->rtcc->JZLAI.sv_Insertion.RBI = BODY_MOON;
 
 		Result = 0;
 	}
