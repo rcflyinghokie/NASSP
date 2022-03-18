@@ -499,11 +499,9 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	EntryTIGcor = 0.0;
 	EntryLatcor = 0.0;
 	EntryLngcor = 0.0;
-	EntryAngcor = 0.0;
 	Entry_DV = _V(0.0, 0.0, 0.0);
 	RTEReentryTime = 0.0;
 	entryrange = 0.0;
-	EntryRTGO = 0.0;
 	RTECalcMode = 1;
 	RTETradeoffMode = 0;
 	RTEASTType = 76;
@@ -777,6 +775,10 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	lunarentrypad.TRN[0] = 0;
 	lunarentrypad.V400K[0] = 0.0;
 	lunarentrypad.VIO[0] = 0.0;
+	lunarentrypad.RETBBO[0] = 0.0;
+	lunarentrypad.RETEBO[0] = 0.0;
+	lunarentrypad.RETDRO[0] = 0.0;
+	lunarentrypad.RETVCirc[0] = 0.0;
 
 	navcheckpad.alt[0] = 0.0;
 	navcheckpad.lat[0] = 0.0;
@@ -937,7 +939,6 @@ void ARCore::EntryUpdateCalc()
 
 	EntryLatcor = res.latitude;
 	EntryLngcor = res.longitude;
-	EntryRTGO = res.RTGO;
 }
 
 void ARCore::EntryCalc()
@@ -1178,11 +1179,11 @@ void ARCore::DAPPADCalc()
 	if (vesseltype == 4) return;
 	if (vesseltype < 2)
 	{
-		GC->rtcc->CSMDAPUpdate(vessel, DAP_PAD);
+		GC->rtcc->CSMDAPUpdate(vessel, DAP_PAD, vesseltype == 1);
 	}
 	else
 	{
-		GC->rtcc->LMDAPUpdate(vessel, DAP_PAD, lemdescentstage == false);
+		GC->rtcc->LMDAPUpdate(vessel, DAP_PAD, vesseltype == 3, lemdescentstage == false);
 	}
 }
 
@@ -1981,17 +1982,19 @@ void ARCore::RetrofireEXDVUplink()
 	UplinkData(true);
 }
 
-void ARCore::EntryUpdateUplink(void)
+void ARCore::EntryUplinkCalc()
 {
-	g_Data.emem[0] = 06;
-	g_Data.emem[1] = 3400;
-	g_Data.emem[2] = OrbMech::DoubleToBuffer(EntryLatcor / PI2, 0, 1);
-	g_Data.emem[3] = OrbMech::DoubleToBuffer(EntryLatcor / PI2, 0, 0);
-	g_Data.emem[4] = OrbMech::DoubleToBuffer(EntryLngcor / PI2, 0, 1);
-	g_Data.emem[5] = OrbMech::DoubleToBuffer(EntryLngcor / PI2, 0, 0);
+	GC->rtcc->CMMENTRY(EntryLatcor, EntryLngcor);
+}
 
-	//g_Data.uplinkDataReady = 2;
-	UplinkData(true); // Go for uplink
+void ARCore::EntryUpdateUplink()
+{
+	for (int i = 0;i < 6;i++)
+	{
+		g_Data.emem[i] = GC->rtcc->CZENTRY.Octals[i];
+	}
+
+	UplinkData(true);
 }
 
 void ARCore::TLANDUplinkCalc(void)
@@ -3075,8 +3078,21 @@ int ARCore::subThread()
 	break;
 	case 8: //TLI PAD
 	{
-		SaturnV *SatV = (SaturnV*)g_Data.progVessel;
-		LVDCSV *lvdc = (LVDCSV*)SatV->iu->GetLVDC();
+		LVDCSV *lvdc = NULL;
+		if (!stricmp(g_Data.progVessel->GetClassName(), "ProjectApollo\\Saturn5") ||
+			!stricmp(g_Data.progVessel->GetClassName(), "ProjectApollo/Saturn5"))
+		{
+			SaturnV *SatV = (SaturnV *)g_Data.progVessel;
+			if (SatV->iu)
+			{
+				lvdc = (LVDCSV*)SatV->iu->GetLVDC();
+			}
+		}
+		if (lvdc == NULL)
+		{
+			Result = 0;
+			break;
+		}
 
 		TLIPADOpt opt;
 
@@ -3606,7 +3622,7 @@ int ARCore::subThread()
 
 		if (GC->MissionPlanningActive)
 		{
-			double GMT = GC->rtcc->GMTfromGET(GC->rtcc->RZJCTTC.GETI);
+			double GMT = GC->rtcc->GMTfromGET(GC->rtcc->RZJCTTC.R32_GETI);
 			int err = GC->rtcc->ELFECH(GMT, RTCC_MPT_CSM, sv);
 			if (err)
 			{
@@ -3638,8 +3654,12 @@ int ARCore::subThread()
 		{
 			P30TIG = GC->rtcc->RZRFDP.GETI;
 			dV_LVLH = GC->rtcc->RZRFTT.Manual.DeltaV;
-			EntryLatcor = GC->rtcc->RZRFTT.Manual.lat_T;
-			EntryLngcor = GC->rtcc->RZRFTT.Manual.lng_T;
+
+			GC->rtcc->RZC1RCNS.entry = GC->rtcc->RZRFTT.Manual.entry;
+
+			EntryLatcor = GC->rtcc->RZRFTT.Manual.entry.lat_T;
+			EntryLngcor = GC->rtcc->RZRFTT.Manual.entry.lng_T;
+			manpadenginetype = GC->rtcc->RZRFTT.Manual.Thruster;
 		}
 
 		Result = 0;
@@ -4053,10 +4073,12 @@ int ARCore::subThread()
 			EarthEntryPADOpt opt;
 
 			opt.dV_LVLH = dV_LVLH;
-			opt.GETbase = GC->rtcc->CalcGETBase();
 			opt.P30TIG = P30TIG;
 			opt.REFSMMAT = GC->rtcc->EZJGMTX1.data[0].REFSMMAT;
 			opt.sv0 = GC->rtcc->StateVectorCalc(vessel);
+			opt.Thruster = manpadenginetype;
+			opt.InitialBank = GC->rtcc->RZC1RCNS.entry.GNInitialBank;
+			opt.GLevel = GC->rtcc->RZC1RCNS.entry.GLevel;
 
 			if (EntryLatcor == 0)
 			{
@@ -4091,7 +4113,6 @@ int ARCore::subThread()
 			LunarEntryPADOpt opt;
 
 			opt.dV_LVLH = dV_LVLH;
-			opt.GETbase = GC->rtcc->CalcGETBase();
 
 			if (EntryLatcor == 0)
 			{
@@ -4263,7 +4284,7 @@ int ARCore::subThread()
 		EphemerisDataTable2 *tab2;
 		double gmt_guess, gmt_min, gmt_max;
 		
-		gmt_guess = GC->rtcc->GMTfromGET(GC->rtcc->RZJCTTC.R20GET);
+		gmt_guess = GC->rtcc->GMTfromGET(GC->rtcc->RZJCTTC.R20_GET);
 		gmt_min = gmt_guess;
 		gmt_max = gmt_guess + 2.75*60.0*60.0;
 

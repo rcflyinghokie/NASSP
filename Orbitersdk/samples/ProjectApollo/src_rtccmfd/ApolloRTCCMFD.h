@@ -28,6 +28,7 @@ struct RTCCMFDInputBoxData
 {
 	double *dVal;
 	int *iVal;
+	VECTOR3 *vVal;
 	double factor;
 };
 
@@ -69,7 +70,7 @@ public:
 	void menuSetSPQPage();
 	void menuSetTIMultipleSolutionPage();
 	void menuSetREFSMMATPage();
-	void menuSetEntryPage();
+	void menuSetReturnToEarthPage();
 	void menuSetAGSSVPage();
 	void menuSetMenu();
 	void menuSetConfigPage();
@@ -129,6 +130,9 @@ public:
 	void menuRetrofireEXDVUplink();
 	void menuRetrofireEXDVUplinkCalc();
 	bool set_RetrofireEXDVUplinkCalc(char *str);
+	void menuEntryUplinkCalc();
+	void menuEnterSplashdownLat();
+	void menuEnterSplashdownLng();
 	void menuRTED_REFSMMAT();
 	void set_RTED_REFSMMAT(char *str);
 	void menuRTEDASTCodeDialogue();
@@ -748,9 +752,24 @@ public:
 	void LUNTAR_LatInput();
 	void LUNTAR_LngInput();
 	void LUNTARCalc();
+	void menuSetRetrofireSeparationPage();
+	void menuRetroShapingGET();
+	void menuRetroSepDeltaTTIG();
+	void menuRetroSepThruster();
+	bool set_RetroSepThruster(std::string th);
+	void menuRetroSepDeltaV();
+	void menuRetroSepDeltaT();
+	void menuRetroSepUllageDT();
+	void menuRetroSepUllageThrusters();
+	void menuRetroSepGimbalIndicator();
+	void menuRetroSepAtt();
+	void menuSetRetrofireSeparationInputsPage();
+	void menuSetRetrofireSubsystemPage();
+	void menuSetEntryUplinkPage();
 	void GenericGETInput(double *get, char *message);
 	void GenericDoubleInput(double *val, char* message, double factor = 1.0);
 	void GenericIntInput(int *val, char* message);
+	void GenericVectorInput(VECTOR3 *val, char* message, double factor = 1.0);
 protected:
 	oapi::Font *font;
 	oapi::Font *font2;
