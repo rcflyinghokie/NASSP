@@ -20,11 +20,8 @@ struct ApolloRTCCMFDData {  // global data storage
 	int connStatus;
 	int emem[24];
 	int uplinkState;
-	IMFD_BURN_DATA burnData;
 	std::queue<unsigned char> uplinkBuffer;
 	double uplinkBufferSimt;
-	bool isRequesting;
-	Saturn *progVessel;
 };
 
 class AR_GCore
@@ -90,6 +87,8 @@ public:
 	void RTETradeoffDisplayCalc();
 	void GetAGSKFactor();
 	void GeneralMEDRequest();
+	void SkylabSaturnIBLaunchCalc();
+	void SkylabSaturnIBLaunchUplink();
 	void TransferTIToMPT();
 	void TransferSPQToMPT();
 	void TransferDKIToMPT();
@@ -146,11 +145,10 @@ public:
 	void UpdateTLITargetTable();
 	void GenerateSpaceDigitalsNoMPT();
 	void LUNTARCalc();
+	int GetVesselParameters(int Thruster, int &Config, int &TVC, double &CSMMass, double &LMMass);
 
 	int startSubthread(int fcn);
 	int subThread();
-	void StartIMFDRequest();
-	void StopIMFDRequest();
 
 	//EPHEM PROGRAM
 	void GenerateAGCEphemeris();
@@ -175,7 +173,8 @@ public:
 	//GENERAL PARAMETERS
 	double P30TIG;				//Maneuver GET
 	VECTOR3 dV_LVLH;			//LVLH maneuver vector
-	int vesseltype;				//0=CSM, 1=CSM/LM docked, 2 = LM, 3 = LM/CSM docked, 4 = MCC
+	int vesseltype;				// 0 = CSM, 1 = LM, 2 = MCC
+	bool vesselisdocked;		// false = undocked, true = docked
 	bool lemdescentstage;		//0 = ascent stage, 1 = descent stage
 	bool inhibUplLOS;
 	bool PADSolGood;
@@ -394,6 +393,7 @@ public:
 	double RTCCClockTime[2];
 	double DeltaClockTime[2];
 	double DesiredRTCCLiftoffTime[2];
+	int iuUplinkResult; //0 = no uplink, 1 = uplink accepted, 2 = vessel has no IU, 3 = uplink rejected, 4 = No targeting parameters
 
 	//LUNAR TARGETING PROGRAM
 	double LUNTAR_lat;

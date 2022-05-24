@@ -65,6 +65,8 @@ public:
 	void SPQDHdialogue();
 	void set_SPQDH(double DH);
 	void set_target();
+	void menuSLVLaunchTargeting();
+	void menuSLVLaunchUplink();
 	void menuVoid();
 	void menuSetLambertPage();
 	void menuSetSPQPage();
@@ -213,7 +215,7 @@ public:
 	void set_LaunchTime(int hours, int minutes, double seconds);
 	void menuSetAGCEpoch();
 	void set_AGCEpoch(int epoch);
-	void menuChangeVesselType();
+	void menuChangeVesselStatus();
 	void menuCycleLMStage();
 	void menuUpdateLiftoffTime();
 	void AGCSignedValue(int &val);
@@ -272,7 +274,6 @@ public:
 	void menuSetLOIDisplayPage();
 	void menuSetTLAND();
 	void menuLOICalc();
-	void menuRequestLTMFD();
 	void menuSetLandmarkTrkPage();
 	void menuSetLmkTime();
 	void menuSetLmkLat();
@@ -437,15 +438,18 @@ public:
 	void menuSetPredSiteAcquisitionLM1Page();
 	void menuSetPredSiteAcquisitionCSM2Page();
 	void menuSetPredSiteAcquisitionLM2Page();
+	void menuSetLandmarkAcquisitionDisplayPage();
 	void PredSiteAcqCSM1Calc();
 	void PredSiteAcqLM1Calc();
 	void PredSiteAcqCSM2Calc();
 	void PredSiteAcqLM2Calc();
 	void ExpSiteAcqLMCalc();
+	void LandmarkAcqDisplayCalc();
 	void GroundPointTableUpdate();
 	void CyclePredSiteAcqPage();
 	void menuSetExpSiteAcqPage();
 	void CycleExpSiteAcqPage();
+	void CycleLandmarkAcqDisplayPage();
 	void menuSetRelativeMotionDigitalsPage();
 	void RelativeMotionDigitalsCalc();
 	void menuChooseRETPlan();
@@ -709,6 +713,7 @@ public:
 	void menuSelectRecoveryTarget();
 	bool set_RecoveryTarget(int num);
 	void menuSaveDODREFSMMAT();
+	void menuSaveRTEREFSMMAT();
 	void menuMakeDODREFSMMATCurrent();
 	void menuSetRetrofireMissDistance();
 	bool set_RetrofireMissDistance(double val);
@@ -766,6 +771,14 @@ public:
 	void menuSetRetrofireSeparationInputsPage();
 	void menuSetRetrofireSubsystemPage();
 	void menuSetEntryUplinkPage();
+	void menuLWPLiftoffTimeOption();
+	void menuLWPLiftoffTime();
+	void menuLWP_RINS();
+	void menuLWP_VINS();
+	void menuLWP_GAMINS();
+	void menuLWPCycleDELNOF();
+	void menuLWP_DELNO();
+	void menuSetLWPDisplayPage();
 	void GenericGETInput(double *get, char *message);
 	void GenericDoubleInput(double *val, char* message, double factor = 1.0);
 	void GenericIntInput(int *val, char* message);

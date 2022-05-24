@@ -41,6 +41,7 @@ See http://nassp.sourceforge.net/license/ for more details.
 #include "../src_rtccmfd/RTCC_EMSMISS.h"
 #include "../src_rtccmfd/RTCCSystemParameters.h"
 #include "../src_rtccmfd/GeneralPurposeManeuver.h"
+#include "../src_rtccmfd/LWP.h"
 #include "MCCPADForms.h"
 
 class Saturn;
@@ -208,7 +209,7 @@ struct MED_M72
 	double DeleteGET = 0.0; //Deletes all maneuvers in both tables occurring after the input GET (no delete if 0)
 	int Thruster = RTCC_ENGINETYPE_CSMRCSPLUS4; //Thruster for the maneuver
 	int Attitude = RTCC_ATTITUDE_PGNS_EXDV;		//Attitude option
-	double UllageDT = -1;	//Delta T of Ullage
+	double UllageDT = 0.0;	//Delta T of Ullage
 	bool UllageQuads = true;//false = 2 thrusters, true = 4 thrusters
 	bool Iteration = false; //false = do not iterate, true = iterate
 	double TenPercentDT = 26.0;	//Delta T of 10% thrust for the DPS
@@ -446,6 +447,7 @@ struct TLMCCResults
 
 struct TwoImpulseResuls
 {
+	EphemerisData sv_tig;
 	VECTOR3 dV;
 	VECTOR3 dV2;
 	VECTOR3 dV_LVLH;
@@ -651,8 +653,6 @@ struct AGSSVOpt
 
 struct SkyRendOpt
 {
-	VESSEL* vessel;		//vessel
-	VESSEL* target;		//Target vessel
 	double GETbase;		//usually MJD at launch
 	int man;			//0 = Presettings, 1 = NC1, 2 = NC2, 3 = NCC, 4 = NSR, 5 = TPI, 6 = TPM, 7 = NPC
 	bool PCManeuver;	//0 = NC1 is setting up NPC, 1 = NC2 is setting up NPC
@@ -666,8 +666,9 @@ struct SkyRendOpt
 	double n_C;
 	double t_NC;		//Reference time for the NPC maneuver
 	bool useSV = false;		//true if state vector is to be used
-	SV RV_MCC;		//State vector as input
-	bool csmlmdocked; //0 = CSM alone, 1 = CSM/DM
+	SV sv_C;		//Chaser state vector
+	SV sv_T;		//Target state vector
+	double DMMass; //Docking module mass
 };
 
 struct SkylabRendezvousResults
@@ -1980,10 +1981,12 @@ struct LandmarkAcquisitionTable
 	int pages;
 	//Total number of contacts
 	unsigned numcontacts[3];
-	//Station ID of anchor vector
-	std::string STAID;
 	//Trajectory update number of subject vehicle ephemeris
 	int TUN;
+	//Identification of last vector used to update the ephemeris
+	std::string VectorID;
+	//Identification of landmark
+	std::string STAID[3][20];
 	//GET of acquisition of landmark site by vehicle
 	double GETAOS[3][20];
 	//If true, AOS occured before current GET
@@ -1992,6 +1995,8 @@ struct LandmarkAcquisitionTable
 	double GETLOS[3][20];
 	//If true, LOS occurs after end of ephemeris
 	bool BestAvailableLOS[3][20];
+	//If true, closest approach occurs after end of ephemeris
+	bool BestAvailableCA[3][20];
 	//GET of closest approach of vehicle to the landmark
 	double GETCA[3][20];
 	//GET of local sunrise
@@ -2002,6 +2007,7 @@ struct LandmarkAcquisitionTable
 	double Lambda[3][20];
 	//Spacecraft altitude at GETCA
 	double h[3][20];
+	int err;
 };
 
 struct LunarStayTimesTable
@@ -2271,7 +2277,7 @@ struct RTEDMEDData
 	bool HeadsUp;
 	int PrimaryReentryMode;
 	int BackupReentryMode;
-	int IRM; //REFSMMAT number: -1 = input, 0 = Reentry, 1 = deorbit, 2 = orbital preferred
+	int IRM; //REFSMMAT number: -1 = input, 0 = Reentry, 1 = deorbit, 2 = orbital preferred, 3 = TEI
 	int StoppingMode; //-1 = Time, 1 = Gamma
 	bool ManualEntry;
 	int TrimInd;
@@ -2505,7 +2511,7 @@ public:
 	void EngineParametersTable(int enginetype, double &Thrust, double &WLR, double &OnboardThrust);
 	VECTOR3 ConvertDVtoLVLH(SV sv0, double GETbase, double TIG_imp, VECTOR3 DV_imp);
 	VECTOR3 ConvertDVtoInertial(SV sv0, double GETbase, double TIG_imp, VECTOR3 DV_LVLH_imp);
-	void PoweredFlightProcessor(PMMMPTInput in, double &GMT_TIG, VECTOR3 &dV_LVLH);
+	int PoweredFlightProcessor(PMMMPTInput in, double &GMT_TIG, VECTOR3 &dV_LVLH);
 	void PoweredFlightProcessor(SV sv0, double GETbase, double GET_TIG_imp, int enginetype, double attachedMass, VECTOR3 DV, bool DVIsLVLH, double &GET_TIG, VECTOR3 &dV_LVLH, SV &sv_pre, SV &sv_post, bool agc = true);
 	void PoweredFlightProcessor(SV sv0, double GETbase, double GET_TIG_imp, int enginetype, double attachedMass, VECTOR3 DV, bool DVIsLVLH, double &GET_TIG, VECTOR3 &dV_LVLH, bool agc = true);
 	void PoweredFlightProcessor(EphemerisData sv0, double mass, double GETbase, double GET_TIG_imp, int enginetype, double attachedMass, VECTOR3 DV, bool DVIsLVLH, double &GET_TIG, VECTOR3 &dV_LVLH, bool agc = true);
@@ -2684,6 +2690,8 @@ public:
 	void PMSEXE(int L, double gmt);
 	//Earth Orbit Insertion Processor
 	void PMMIEV(double T_L);
+	//SLV Targeting Load Module
+	void PMMPAR(VECTOR3 RT, VECTOR3 VT, double TT);
 	//Mission Planning Print Load Module
 	void PMXSPT(std::string source, int n);
 	void PMXSPT(std::string source, std::vector<std::string> message);
@@ -2805,7 +2813,7 @@ public:
 	//Ground Range and Altitude Subprogram
 	void ECMEXP(EphemerisData sv, Station *stat, int statbody, double &range, double &alt);
 	//Landmark Acquisition Display
-	void EMDLANDM(int L, double get, double dt, int ref);
+	void EMDLANDM(int L, double gmt, double dt, int ref);
 	//Display Updates
 	void EMSNAP(int L, int ID);
 
@@ -3309,6 +3317,8 @@ public:
 	MissionPlanTable PZMPTCSM, PZMPTLEM;
 	DetailedManeuverTable DMTBuffer[2];
 	BurnParameterTable PZBURN;
+	LWPInputTable PZSLVCON;
+	SLVTargetingParametersTable PZSLVTAR;
 
 	std::vector<VECTOR3> EZJGSTAR;
 
@@ -4666,12 +4676,12 @@ private:
 	bool MPTIsPrimaryThruster(int thruster, int i);
 	bool MPTIsUllageThruster(int thruster, int i);
 	int MPTGetPrimaryThruster(int thruster);
-	void MPTGetConfigFromString(const std::string &str, std::bitset<4> &cfg);
 public:
 	//Trajectory Update On-line Print
 	void EMGPRINT(std::string source, int i);
 	void EMGPRINT(std::string source, std::vector<std::string> message);
-	void MPTMassUpdate(VESSEL *vessel, MED_M50 &med1, MED_M55 &med2);
+	void MPTMassUpdate(VESSEL *vessel, MED_M50 &med1, MED_M55 &med2, bool docked = true);
+	void MPTGetConfigFromString(const std::string &str, std::bitset<4> &cfg);
 	MissionPlanTable *GetMPTPointer(int L);
 protected:
 
