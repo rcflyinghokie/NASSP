@@ -250,7 +250,6 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 	break;
 	case 5: //TLI PAD
 	{
-		TLIPADOpt opt;
 		SV sv;
 
 		TLIPAD * form = (TLIPAD *)pad;
@@ -263,6 +262,7 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		form->BurnTime = DMTBuffer[0].DT_B;
 		form->dVC = DMTBuffer[0].DVC;
 		form->VI = length(PZMPTCSM.mantable[0].V_BO) / 0.3048;
+		form->type = 2;
 
 		//DMT for sep maneuver
 		GMGMED("U20,CSM,2;");
@@ -316,7 +316,7 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 
 		double TLIbase = floor((calcParams.TLI / 1800.0) + 0.5)*1800.0; //Round to next half hour
 
-		if (fcn == 5)
+		if (fcn == 8)
 		{
 			opt.n = 3;
 
@@ -1492,14 +1492,14 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 	{
 		AP10DAPDATA * form = (AP10DAPDATA *)pad;
 
-		CSMDAPUpdate(calcParams.src, *form);
+		CSMDAPUpdate(calcParams.src, *form, false);
 	}
 	break;
 	case 62: //LM DAP DATA
 	{
 		AP10DAPDATA * form = (AP10DAPDATA *)pad;
 
-		LMDAPUpdate(calcParams.tgt, *form);
+		LMDAPUpdate(calcParams.tgt, *form, false);
 	}
 	break;
 	case 63: //GYRO TORQUING ANGLES
@@ -1775,7 +1775,6 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 	{
 		AP11LMManPADOpt opt;
 		DKIOpt dkiopt;
-		DKIResults dkires;
 		SV sv_LM, sv_CSM, sv_DOI, sv_Phasing;
 		VECTOR3 dV_LVLH;
 		double GETbase, dt_peri, t_Abort, t_TPI_guess, t_TPI_Abort, P30TIG;
@@ -1794,16 +1793,46 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		t_TPI_guess = OrbMech::HHMMSSToSS(103, 9, 0);
 		t_TPI_Abort = FindOrbitalMidnight(sv_CSM, GETbase, t_TPI_guess);
 
-		dkiopt.DH = 15.0*1852.0;
-		dkiopt.E = 26.6*RAD;
-		dkiopt.GETbase = GETbase;
-		dkiopt.sv_A = sv_DOI;
-		dkiopt.sv_P = sv_CSM;
-		dkiopt.t_TIG = t_Abort;
-		dkiopt.t_TPI_guess = t_TPI_Abort;
+		dkiopt.DHSR = 15.0*1852.0;
+		dkiopt.Elev = 26.6*RAD;
+		dkiopt.IPUTNA = 1;
+		dkiopt.PUTNA = 0.5;
+		dkiopt.PUTTNA = GMTfromGET(t_Abort);
+		dkiopt.NC1 = 0.5;
+		dkiopt.NH = 1.0;
+		dkiopt.NSR = 1.5;
+		dkiopt.K46 = 1;
+		dkiopt.WT = 130.0*RAD;
+		dkiopt.MI = 2.0;
+		dkiopt.MV = 2;
+		dkiopt.sv_CSM = ConvertSVtoEphemData(sv_CSM);
+		dkiopt.sv_LM = ConvertSVtoEphemData(sv_DOI);
+		dkiopt.TTPI = GMTfromGET(t_TPI_Abort);
 
-		DockingInitiationProcessor(dkiopt, dkires);
-		PoweredFlightProcessor(sv_DOI, GETbase, t_Abort, RTCC_ENGINETYPE_LMDPS, 0.0, dkires.DV_Phasing, true, P30TIG, dV_LVLH);
+		DockingInitiationProcessor(dkiopt);
+
+		//Convert to finite burn
+		PMMMPTInput in;
+
+		in.CONFIG = RTCC_CONFIG_A + RTCC_CONFIG_D;
+		in.VC = RTCC_MANVEHICLE_LM;
+		in.CSMWeight = 0.0;
+		in.LMWeight = sv_DOI.mass;
+		in.VehicleArea = 0.0;
+		in.IterationFlag = false;
+		in.IgnitionTimeOption = false;
+		in.Thruster = RTCC_ENGINETYPE_LMDPS;
+
+		in.sv_before = PZDKIELM.Block[0].SV_before[0];
+		in.V_aft = PZDKIELM.Block[0].V_after[0];
+		in.DETU = 8.0;
+		in.UT = true;
+		in.DT_10PCT = -15.0; //Minus to bypass throttle up test
+		in.DPSScaleFactor = 0.925;
+
+		double GMT_TIG;
+		PoweredFlightProcessor(in, GMT_TIG, dV_LVLH);
+		P30TIG = GETfromGMT(GMT_TIG);
 
 		opt.R_LLS = BZLAND.rad[RTCC_LMPOS_BEST];
 		opt.csmlmdocked = false;
@@ -1820,9 +1849,9 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		AP11LMManeuverPAD(&opt, *form);
 		sprintf(form->purpose, "PDI Abort");
 
-		OrbMech::format_time_HHMMSS(GETbuffer, dkires.t_CSI);
+		OrbMech::format_time_HHMMSS(GETbuffer, GETfromGMT(PZDKIT.Block[0].Display[1].ManGMT));
 		OrbMech::format_time_HHMMSS(GETbuffer2, t_TPI_Abort);
-		sprintf(form->remarks, "CSI time: %s, TPI time: %s, N equal to 1", GETbuffer, GETbuffer2);
+		sprintf(form->remarks, "15 seconds at 10 percent, then full thrust. CSI time: %s, TPI time: %s, N equal to 1", GETbuffer, GETbuffer2);
 	}
 	break;
 	case 75: //PRELIMINARY CSM BACKUP INSERTION UPDATE
@@ -2334,7 +2363,6 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		}
 
 		entopt.dV_LVLH = DeltaV_LVLH;
-		entopt.GETbase = GETbase;
 		entopt.lat = SplashLatitude;
 		entopt.lng = SplashLongitude;
 		entopt.P30TIG = TimeofIgnition;

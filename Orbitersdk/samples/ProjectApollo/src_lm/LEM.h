@@ -54,6 +54,7 @@
 #include "LEMcomputer.h"
 #include "lm_rr.h"
 #include "lm_aeaa.h"
+#include "inertial.h"
 
 // Cosmic background temperature in degrees F
 #define CMBG_TEMP -459.584392
@@ -232,12 +233,30 @@ namespace mission
 #define LM_BUTTON_ABORT_STAGE       14
 #define LM_BUTTON_ABORT_STAGE_GRD   15
 #define LM_BUTTON_DSKY_PRO          16
-#define LM_BUTTON_DSKY_ENTER        17
-#define LM_BUTTON_MDCTRL_PGNS       18
-#define LM_BUTTON_MDCTRL_PGNS_AUT   19
-#define LM_BUTTON_MDCTRL_PGNS_ATH   20
-#define LM_BUTTON_MDCTRL_PGNS_OFF   21
-#define LM_AXIS_THR_JET_LEVER       22
+#define LM_BUTTON_DSKY_KEY_REL      17
+#define LM_BUTTON_DSKY_VERB         18
+#define LM_BUTTON_DSKY_NOUN         19
+#define LM_BUTTON_DSKY_ENTR         20
+#define LM_BUTTON_DSKY_CLR          21
+#define LM_BUTTON_DSKY_PLUS         22
+#define LM_BUTTON_DSKY_MINUS        23
+#define LM_BUTTON_DSKY_RSET         24
+#define LM_BUTTON_DSKY_NUM_0        25
+#define LM_BUTTON_DSKY_NUM_1        26
+#define LM_BUTTON_DSKY_NUM_2        27
+#define LM_BUTTON_DSKY_NUM_3        28
+#define LM_BUTTON_DSKY_NUM_4        29
+#define LM_BUTTON_DSKY_NUM_5        30
+#define LM_BUTTON_DSKY_NUM_6        31
+#define LM_BUTTON_DSKY_NUM_7        32
+#define LM_BUTTON_DSKY_NUM_8        33
+#define LM_BUTTON_DSKY_NUM_9        34
+#define LM_BUTTON_MDCTRL_PGNS       35
+#define LM_BUTTON_MDCTRL_PGNS_AUT   36
+#define LM_BUTTON_MDCTRL_PGNS_ATH   37
+#define LM_BUTTON_MDCTRL_PGNS_OFF   38
+#define LM_AXIS_THR_JET_LEVER       39
+
 
 // Callback for Vesim events
 void cbLMVesim(int inputID, int eventType, int newValue, void *pdata);
@@ -594,7 +613,7 @@ public:
 	virtual bool SetupPayload(PayloadSettings &ls);
 	virtual void PadLoad(unsigned int address, unsigned int value);
 	virtual void AEAPadLoad(unsigned int address, unsigned int value);
-	virtual void StopEVA();
+	virtual void StopEVA(bool isCDR);
 	virtual bool IsForwardHatchOpen() { return ForwardHatch.IsOpen(); }
 
 	char *getOtherVesselName() { return agc.OtherVesselName;};
@@ -682,8 +701,7 @@ protected:
 	void InitPanelVC();
 	void SetSwitches(int panel);
 	void AddRCS_LMH(double TRANY);
-	void ToggleEVA();
-	void SetupEVA();
+	void ToggleEVA(bool isCDR);
 	void SetView();
 	void RedrawPanel_Horizon (SURFHANDLE surf);
 	void RedrawPanel_AOTReticle (SURFHANDLE surf);
@@ -693,6 +711,7 @@ protected:
 	void GuardClick();
 	void AbortFire();
 	void InitSwitches();
+	void InitVCAnimations();
 	void DefineVCAnimations();
 	void DoFirstTimestep();
 	void LoadDefaultSounds();
@@ -785,6 +804,9 @@ protected:
 	ModeSelectSwitch ModeSelSwitch;
 	ToggleSwitch AltRngMonSwitch;
 
+	SwitchRow LeftMasterAlarmSwitchRow;
+	LEMMasterAlarmSwitch LeftMasterAlarmSwitch;
+
 	SwitchRow LeftMonitorSwitchRow;
 	ToggleSwitch RateErrorMonSwitch;
 	ToggleSwitch AttitudeMonSwitch;
@@ -847,6 +869,9 @@ protected:
 	LMGlycolPressMeter LMGlycolPressMeter;
 	LMOxygenQtyMeter LMOxygenQtyMeter;
 	LMWaterQtyMeter LMWaterQtyMeter;
+
+	SwitchRow RightMasterAlarmSwitchRow;
+	LEMMasterAlarmSwitch RightMasterAlarmSwitch;
 
 	SwitchRow RightMonitorSwitchRow;
 	ToggleSwitch RightRateErrorMonSwitch;
@@ -1537,7 +1562,7 @@ protected:
 	bool FirstTimestep;
 
 	bool ToggleEva;
-	bool CDREVA_IP;
+	bool EVA_IP[2];
 
 	int CDRinPLSS;
 	int LMPinPLSS;
@@ -1553,6 +1578,7 @@ protected:
 #define LMVIEW_OVHDHATCH 8
 #define LMVIEW_ECS		 9
 #define LMVIEW_ECS2		 10
+#define LMVIEW_RDVZWIN   11
 
 #define VIEWANGLE 30
 
@@ -1563,7 +1589,7 @@ protected:
 	bool Crewed;
 	bool AutoSlow;
 
-	OBJHANDLE hLEVA;
+	OBJHANDLE hLEVA[2];
 	OBJHANDLE hdsc;
 
 	ATTACHMENTHANDLE hattDROGUE;
@@ -1852,6 +1878,7 @@ protected:
 	LEM_INV INV_2;
 
 	// GNC
+	InertialData inertialData;
 	ATCA atca;
 	DECA deca;
 	LEM_LR LR;

@@ -94,23 +94,18 @@ protected:
 	void TurnOn();
 	void TurnOff();
 
-	VECTOR3 GetGravityVector();
-
 	h_Radiator *hsink;			// Case (Connected to primary coolant loop)
 	Boiler *fastheater;				// Fast Warmup Heater
 	Boiler *fineheater;				// Fine Control Heater
 	h_HeatLoad *asaHeat;
 	ThreePosSwitch *PowerSwitch;
 
-	bool Initialized;
 	bool Operate;
 
 	double LastSimDT;
 	MATRIX3 CurrentRotationMatrix;
 	VECTOR3 EulerAngles;
 	VECTOR3 RemainingDeltaVel;
-	VECTOR3 LastWeightAcceleration;
-	VECTOR3 LastGlobalVel;
 
 	const double AttPulsesScal = pow(2.0, 16.0);
 	const double AccPulsesScal = 1.0 / 0.003125 / 0.3048;
@@ -157,6 +152,8 @@ public:
 	bool IsPowered();
 	bool IsACPowered();
 	bool GetTestModeFailure();
+	bool GetEngineOnSignal();
+	bool GetEngineOffSignal();
 	LEM *lem;					// Pointer at LEM
 	h_HeatLoad *aeaHeat;
 
@@ -206,6 +203,7 @@ protected:
 	const double ALTRATESCALEFACTOR = 0.3048*pow(2.0, -4.0);
 
 	friend class ARCore;
+	friend class RTCC;
 };
 
 // DATA ENTRY and DISPLAY ASSEMBLY (DEDA)

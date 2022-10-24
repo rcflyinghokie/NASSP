@@ -69,28 +69,228 @@ extern "C" {
 
 //extern FILE *PanelsdkLogFile;
 
-#define CSM_AXIS_INPUT_CNT  7
+#define CSM_AXIS_INPUT_CNT  53
 VesimInputDefinition vesim_csm_inputs[CSM_AXIS_INPUT_CNT] = {
-	{ CSM_AXIS_INPUT_RHCR,   "RHC Roll",                      VESIM_INPUTTYPE_AXIS,     VESIM_DEFAULT_AXIS_VALUE, false },
-	{ CSM_AXIS_INPUT_RHCP,   "RHC Pitch",                     VESIM_INPUTTYPE_AXIS,     VESIM_DEFAULT_AXIS_VALUE, false },
-	{ CSM_AXIS_INPUT_RHCY,   "RHC Yaw",                       VESIM_INPUTTYPE_AXIS,     VESIM_DEFAULT_AXIS_VALUE, false },
-	{ CSM_AXIS_INPUT_THCX,   "THC X",                         VESIM_INPUTTYPE_AXIS,     VESIM_DEFAULT_AXIS_VALUE, false },
-	{ CSM_AXIS_INPUT_THCY,   "THC Y",                         VESIM_INPUTTYPE_AXIS,     VESIM_DEFAULT_AXIS_VALUE, false },
-	{ CSM_AXIS_INPUT_THCZ,   "THC Z",                         VESIM_INPUTTYPE_AXIS,     VESIM_DEFAULT_AXIS_VALUE, false },
-	{ CSM_BUTTON_ROT_LIN,    "Rotation/Translation toggle",   VESIM_INPUTTYPE_BUTTON,  0, true }
+	{ CSM_AXIS_INPUT_RHC_R,       "RHC Roll",                      VESIM_INPUTTYPE_AXIS,     VESIM_DEFAULT_AXIS_VALUE, false },
+	{ CSM_AXIS_INPUT_RHC_P,       "RHC Pitch",                     VESIM_INPUTTYPE_AXIS,     VESIM_DEFAULT_AXIS_VALUE, false },
+	{ CSM_AXIS_INPUT_RHC_Y,       "RHC Yaw",                       VESIM_INPUTTYPE_AXIS,     VESIM_DEFAULT_AXIS_VALUE, false },
+	{ CSM_AXIS_INPUT_THC_X,       "THC X",                         VESIM_INPUTTYPE_AXIS,     VESIM_DEFAULT_AXIS_VALUE, false },
+	{ CSM_AXIS_INPUT_THC_Y,       "THC Y",                         VESIM_INPUTTYPE_AXIS,     VESIM_DEFAULT_AXIS_VALUE, false },
+	{ CSM_AXIS_INPUT_THC_Z,       "THC Z",                         VESIM_INPUTTYPE_AXIS,     VESIM_DEFAULT_AXIS_VALUE, false },
+	{ CSM_BUTTON_INPUT_THC_CCW,   "THC Move CCW",                  VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_INPUT_THC_CW,    "THC Move CW",                   VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_ROT_LIN,         "Rotation/Translation toggle",   VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_PRO,       "Main DSKY PRO",                 VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_KEY_REL,   "Main DSKY KEY REL",             VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_VERB,      "Main DSKY VERB",                VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_NOUN,      "Main DSKY NOUN",                VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_ENTR,      "Main DSKY ENTR",                VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_CLR,       "Main DSKY CLR",                 VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_PLUS,      "Main DSKY +",                   VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_MINUS,     "Main DSKY -",                   VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_RSET,      "Main DSKY RSET",                VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_NUM_0,     "Main DSKY Number 0",            VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_NUM_1,     "Main DSKY Number 1",            VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_NUM_2,     "Main DSKY Number 2",            VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_NUM_3,     "Main DSKY Number 3",            VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_NUM_4,     "Main DSKY Number 4",            VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_NUM_5,     "Main DSKY Number 5",            VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_NUM_6,     "Main DSKY Number 6",            VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_NUM_7,     "Main DSKY Number 7",            VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_NUM_8,     "Main DSKY Number 8",            VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY1_NUM_9,     "Main DSKY Number 9",            VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_PRO,       "LEB DSKY PRO",                  VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_KEY_REL,   "LEB DSKY KEY REL",              VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_VERB,      "LEB DSKY VERB",                 VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_NOUN,      "LEB DSKY NOUN",                 VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_ENTR,      "LEB DSKY ENTR",                 VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_CLR,       "LEB DSKY CLR",                  VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_PLUS,      "LEB DSKY +",                    VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_MINUS,     "LEB DSKY -",                    VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_RSET,      "LEB DSKY RSET",                 VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_NUM_0,     "LEB DSKY Number 0",             VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_NUM_1,     "LEB DSKY Number 1",             VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_NUM_2,     "LEB DSKY Number 2",             VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_NUM_3,     "LEB DSKY Number 3",             VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_NUM_4,     "LEB DSKY Number 4",             VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_NUM_5,     "LEB DSKY Number 5",             VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_NUM_6,     "LEB DSKY Number 6",             VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_NUM_7,     "LEB DSKY Number 7",             VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_NUM_8,     "LEB DSKY Number 8",             VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DSKY2_NUM_9,     "LEB DSKY Number 9",             VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DIR_ULL,         "Direct Ullage",                 VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_THR_ON,          "Thrust On",                     VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DVTA_NORM,       "DV Thrust A Norm",              VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DVTA_OFF,        "DV Thrust A Off",               VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DVTB_NORM,       "DV Thrust B Norm",              VESIM_INPUTTYPE_BUTTON,  0, true },
+	{ CSM_BUTTON_DVTB_OFF,        "DV Thrust B Off",               VESIM_INPUTTYPE_BUTTON,  0, true }
 };
 
 void cbCSMVesim(int inputID, int eventType, int newValue, void *pdata) {
 	Saturn *pSaturn = (Saturn *)pdata;
-	switch (inputID) {
-	case CSM_BUTTON_ROT_LIN:
-		if (eventType == VESIM_EVTTYPE_BUTTON_ON) {
+	if (eventType == VESIM_EVTTYPE_BUTTON_ON) {
+		switch (inputID) {
+		case CSM_BUTTON_ROT_LIN:			
 			if (pSaturn->GetAttitudeMode() == RCS_ROT)
 				pSaturn->SetAttitudeMode(RCS_LIN);
 			else
 				pSaturn->SetAttitudeMode(RCS_ROT);
+			break;
+		case CSM_BUTTON_INPUT_THC_CCW:
+			pSaturn->MoveTHC(1);
+			break;
+		case CSM_BUTTON_INPUT_THC_CW:
+			pSaturn->MoveTHC(0);
+			break;
+		case CSM_BUTTON_DSKY1_PRO:
+			pSaturn->dsky.ProgPressed();
+			break;
+		case CSM_BUTTON_DSKY1_KEY_REL:
+			pSaturn->dsky.KeyRel();
+			break;
+		case CSM_BUTTON_DSKY1_VERB:
+			pSaturn->dsky.VerbPressed();
+			break;
+		case CSM_BUTTON_DSKY1_NOUN:
+			pSaturn->dsky.NounPressed();
+			break;
+		case CSM_BUTTON_DSKY1_ENTR:
+			pSaturn->dsky.EnterPressed();
+			break;
+		case CSM_BUTTON_DSKY1_CLR:
+			pSaturn->dsky.ClearPressed();
+			break;
+		case CSM_BUTTON_DSKY1_PLUS:
+			pSaturn->dsky.PlusPressed();
+			break;
+		case CSM_BUTTON_DSKY1_MINUS:
+			pSaturn->dsky.MinusPressed();
+			break;
+		case CSM_BUTTON_DSKY1_RSET:
+			pSaturn->dsky.ResetPressed();
+			break;
+		case CSM_BUTTON_DSKY1_NUM_0:
+			pSaturn->dsky.NumberPressed(0);
+			break;
+		case CSM_BUTTON_DSKY1_NUM_1:
+			pSaturn->dsky.NumberPressed(1);
+			break;
+		case CSM_BUTTON_DSKY1_NUM_2:
+			pSaturn->dsky.NumberPressed(2);
+			break;
+		case CSM_BUTTON_DSKY1_NUM_3:
+			pSaturn->dsky.NumberPressed(3);
+			break;
+		case CSM_BUTTON_DSKY1_NUM_4:
+			pSaturn->dsky.NumberPressed(4);
+			break;
+		case CSM_BUTTON_DSKY1_NUM_5:
+			pSaturn->dsky.NumberPressed(5);
+			break;
+		case CSM_BUTTON_DSKY1_NUM_6:
+			pSaturn->dsky.NumberPressed(6);
+			break;
+		case CSM_BUTTON_DSKY1_NUM_7:
+			pSaturn->dsky.NumberPressed(7);
+			break;
+		case CSM_BUTTON_DSKY1_NUM_8:
+			pSaturn->dsky.NumberPressed(8);
+			break;
+		case CSM_BUTTON_DSKY1_NUM_9:
+			pSaturn->dsky.NumberPressed(9);
+			break;
+		case CSM_BUTTON_DSKY2_PRO:
+			pSaturn->dsky2.ProgPressed();
+			break;
+		case CSM_BUTTON_DSKY2_KEY_REL:
+			pSaturn->dsky2.KeyRel();
+			break;
+		case CSM_BUTTON_DSKY2_VERB:
+			pSaturn->dsky2.VerbPressed();
+			break;
+		case CSM_BUTTON_DSKY2_NOUN:
+			pSaturn->dsky2.NounPressed();
+			break;
+		case CSM_BUTTON_DSKY2_ENTR:
+			pSaturn->dsky2.EnterPressed();
+			break;
+		case CSM_BUTTON_DSKY2_CLR:
+			pSaturn->dsky2.ClearPressed();
+			break;
+		case CSM_BUTTON_DSKY2_PLUS:
+			pSaturn->dsky2.PlusPressed();
+			break;
+		case CSM_BUTTON_DSKY2_MINUS:
+			pSaturn->dsky2.MinusPressed();
+			break;
+		case CSM_BUTTON_DSKY2_RSET:
+			pSaturn->dsky2.ResetPressed();
+			break;
+		case CSM_BUTTON_DSKY2_NUM_0:
+			pSaturn->dsky2.NumberPressed(0);
+			break;
+		case CSM_BUTTON_DSKY2_NUM_1:
+			pSaturn->dsky2.NumberPressed(1);
+			break;
+		case CSM_BUTTON_DSKY2_NUM_2:
+			pSaturn->dsky2.NumberPressed(2);
+			break;
+		case CSM_BUTTON_DSKY2_NUM_3:
+			pSaturn->dsky2.NumberPressed(3);
+			break;
+		case CSM_BUTTON_DSKY2_NUM_4:
+			pSaturn->dsky2.NumberPressed(4);
+			break;
+		case CSM_BUTTON_DSKY2_NUM_5:
+			pSaturn->dsky2.NumberPressed(5);
+			break;
+		case CSM_BUTTON_DSKY2_NUM_6:
+			pSaturn->dsky2.NumberPressed(6);
+			break;
+		case CSM_BUTTON_DSKY2_NUM_7:
+			pSaturn->dsky2.NumberPressed(7);
+			break;
+		case CSM_BUTTON_DSKY2_NUM_8:
+			pSaturn->dsky2.NumberPressed(8);
+			break;
+		case CSM_BUTTON_DSKY2_NUM_9:
+			pSaturn->dsky2.NumberPressed(9);
+			break;
+		case CSM_BUTTON_DIR_ULL:
+			pSaturn->DirectUllageButton.VesimSwitchTo(1);
+			break;
+		case CSM_BUTTON_THR_ON:
+			pSaturn->ThrustOnButton.VesimSwitchTo(1);
+			break;
+		case CSM_BUTTON_DVTA_NORM:
+			pSaturn->dVThrust1Switch.VesimSwitchTo(TOGGLESWITCH_UP);
+			break;
+		case CSM_BUTTON_DVTA_OFF:
+			pSaturn->dVThrust1Switch.VesimSwitchTo(TOGGLESWITCH_DOWN);
+			break;
+		case CSM_BUTTON_DVTB_NORM:
+			pSaturn->dVThrust2Switch.VesimSwitchTo(TOGGLESWITCH_UP);
+			break;
+		case CSM_BUTTON_DVTB_OFF:
+			pSaturn->dVThrust2Switch.VesimSwitchTo(TOGGLESWITCH_DOWN);
+			break;
 		}
-		break;
+	}
+	else if (eventType == VESIM_EVTTYPE_BUTTON_OFF) {
+		switch (inputID) {		
+		case CSM_BUTTON_DSKY1_PRO:
+			pSaturn->dsky.ProgReleased();
+			break;
+		case CSM_BUTTON_DSKY2_PRO:
+			pSaturn->dsky2.ProgReleased();
+			break;
+		case CSM_BUTTON_DIR_ULL:
+			pSaturn->DirectUllageButton.VesimSwitchTo(0);
+			break;
+		case CSM_BUTTON_THR_ON:
+			pSaturn->ThrustOnButton.VesimSwitchTo(0);
+			break;
+		}
 	}
 }
 
@@ -155,13 +355,14 @@ BOOL CALLBACK EnumAxesCallback( const DIDEVICEOBJECTINSTANCE* pdidoi, VOID* pSat
 #pragma warning ( disable:4355 )
 
 Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj, fmodel), 
-
+	inertialData(this),
 	agc(soundlib, dsky, dsky2, imu, scdu, tcdu, Panelsdk),
 	dsky(soundlib, agc, 015),
 	dsky2(soundlib, agc, 016), 
-	imu(agc, Panelsdk),
+	imu(agc, Panelsdk, inertialData),
 	scdu(agc, RegOPTX, 0140, 2),
 	tcdu(agc, RegOPTY, 0141, 2),
+	mechanicalAccelerometer(inertialData),
 	cws(SMasterAlarm, Bclick, Panelsdk),
 	dockingprobe(0, SDockingCapture, SDockingLatch, SDockingExtend, SUndock, CrashBumpS, Panelsdk),
 	MissionTimerDisplay(Panelsdk),
@@ -308,7 +509,6 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 {	
 	//_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF|_CRTDBG_CHECK_ALWAYS_DF );
 	InitSaturnCalled = false;
-	LastTimestep = 0;
 
 	//Mission File
 	InitMissionManagementMemory();
@@ -1223,12 +1423,12 @@ void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 	TRACE(buffer);
 }
 
-void Saturn::clbkPostStep (double simt, double simdt, double mjd)
+void Saturn::clbkPostStep(double simt, double simdt, double mjd)
 
 {
 	char buffer[100];
 	TRACESETUP("Saturn::clbkPostStep");
-	sprintf(buffer, "MissionTime %f, simt %f, simdt %f, time(0) %lld", MissionTime, simt, simdt, time(0)); 
+	sprintf(buffer, "MissionTime %f, simt %f, simdt %f, time(0) %lld", MissionTime, simt, simdt, time(0));
 	TRACE(buffer);
 
 	if (debugConnected == false)
@@ -1237,13 +1437,15 @@ void Saturn::clbkPostStep (double simt, double simdt, double mjd)
 		debugConnected = true;
 	}
 
+	inertialData.Timestep(simdt);
+
 	if (stage >= PRELAUNCH_STAGE && !GenericFirstTimestep) {
 
 		//
 		// The SPS engine must be in post time step 
 		// to inhibit Orbiter's thrust control
 		//
-		
+
 		SPSEngine.Timestep(MissionTime, simdt);
 
 		// Better acceleration measurement stability
@@ -1260,12 +1462,17 @@ void Saturn::clbkPostStep (double simt, double simdt, double mjd)
 	}
 	// Order is important, otherwise delayed springloaded switches are reset immediately
 	MainPanel.timestep(MissionTime);
-	checkControl.timestep(MissionTime,eventControl);
+	checkControl.timestep(MissionTime, eventControl);
 
 	// Update VC animations
 	if (oapiCameraInternal() && oapiCockpitMode() == COCKPIT_VIRTUAL)
 	{
 		MainPanelVC.OnPostStep(simt, simdt, mjd);
+	}
+
+	// Do this last to override previous debug strings
+	if (nasspver != NASSP_VERSION) {
+		sprintf(oapiDebugString(), "The scenario you are using is too old (Scenario: %d, NASSP: %d). Please go here for more info: https://nassp.space/index.php/Scenario_File_Updates", nasspver, NASSP_VERSION);
 	}
 
 	sprintf(buffer, "End time(0) %lld", time(0)); 
@@ -1291,7 +1498,7 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	int i = 1;
 	char str[256];
 
-	oapiWriteScenario_int (scn, "NASSPVER", NASSP_VERSION);
+	oapiWriteScenario_int (scn, "NASSPVER", nasspver);
 	oapiWriteScenario_int (scn, "STAGE", stage);
 	oapiWriteScenario_int(scn, "VECHNO", VehicleNo);
 	oapiWriteScenario_int (scn, "APOLLONO", ApolloNo);
@@ -1375,7 +1582,7 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 		if (AEAPadCount > 0) {
 			oapiWriteScenario_int(scn, "AEAPADCNT", AEAPadCount);
 			for (i = 0; i < AEAPadCount; i++) {
-				sprintf(str, "%04o %05o", AEAPad[i * 2], AEAPad[i * 2 + 1]);
+				sprintf(str, "%04o %06o", AEAPad[i * 2], AEAPad[i * 2 + 1]);
 				oapiWriteScenario_string(scn, "AEAPAD", str);
 			}
 		}
@@ -1424,6 +1631,7 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 		}
 	}
 
+	inertialData.SaveState(scn);
 	dsky.SaveState(scn, DSKY_START_STRING, DSKY_END_STRING);
 	dsky2.SaveState(scn, DSKY2_START_STRING, DSKY2_END_STRING);
 	agc.SaveState(scn);
@@ -1465,7 +1673,6 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	eda.SaveState(scn);
 	ems.SaveState(scn);
 	ordeal.SaveState(scn);
-	mechanicalAccelerometer.SaveState(scn);
 
 	MissionTimerDisplay.SaveState(scn, MISSIONTIMER_2_START_STRING, MISSIONTIMER_END_STRING, false);
 	MissionTimer306Display.SaveState(scn, MISSIONTIMER_306_START_STRING, MISSIONTIMER_END_STRING, false);
@@ -1732,7 +1939,7 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 {
 	float ftcp;
 	int SwitchState = 0;
-	int nasspver = 0, status = 0;
+	int status = 0;
 	int DummyLoad, i;
 	bool found;
 
@@ -2016,6 +2223,9 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	}
 	else if (!strnicmp(line, "PAYN", 4)) {
 		strncpy (PayloadName, line + 5, 64);
+	}
+	else if (!strnicmp(line, INERTIAL_DATA_START_STRING, sizeof(INERTIAL_DATA_START_STRING))) {
+		inertialData.LoadState(scn);
 	}
 	else if (!strnicmp(line, DSKY_START_STRING, sizeof(DSKY_START_STRING))) {
 		dsky.LoadState(scn, DSKY_END_STRING);
@@ -2336,8 +2546,6 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 			tvsa.LoadState(scn);
 		} else if (!strnicmp(line, ORDEAL_START_STRING, sizeof(ORDEAL_START_STRING))) {
 			ordeal.LoadState(scn);
-		} else if (!strnicmp(line, MECHACCEL_START_STRING, sizeof(MECHACCEL_START_STRING))) {
-			mechanicalAccelerometer.LoadState(scn);
 		} else if (!strnicmp(line, MISSIONTIMER_2_START_STRING, sizeof(MISSIONTIMER_2_START_STRING))) {
 			MissionTimerDisplay.LoadState(scn, MISSIONTIMER_END_STRING);
 		} else if (!strnicmp(line, MISSIONTIMER_306_START_STRING, sizeof(MISSIONTIMER_306_START_STRING))) {
@@ -2732,13 +2940,10 @@ void Saturn::GenericTimestep(double simt, double simdt, double mjd)
 	//
 	//  This model of vibration is visual only and has no effect on other parts of the simulation.
 	double dynpress = GetDynPressure();
-	VECTOR3 vAccel, vWeight;
-	GetForceVector(vAccel);
-	GetWeightVector(vWeight);
-	
-	vAccel -= vWeight;
-	vAccel /= GetMass();
-	
+	VECTOR3 vAccel;
+
+	inertialData.getAcceleration(vAccel);
+	vAccel = -vAccel;
 	THRUSTER_HANDLE *tharr;
 	VECTOR3 seatacc = vAccel;
 	double thsum = 0.0;
@@ -3167,6 +3372,12 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 		return 0;
 	}
 	if (KEYMOD_CONTROL(kstate)) {
+		switch (key) {
+			case OAPI_KEY_D:
+				// Orbiter undocking messes with our undocking system. We consume the keybind here to block it.
+				// This won't work if the user has changed this keybind. Unfortunately Orbiter does not export the keymap through the API (yet). :(
+				return 1;
+		}
 		return 0;
 	}
 	if (KEYMOD_ALT(kstate))
@@ -4104,7 +4315,7 @@ void Saturn::SetGenericStageState()
 {
 	switch(stage) {
 	case CSM_LEM_STAGE:
-		SetCSMStage();
+		SetCSMStage(_V(0, 0, 0));
 		break;
 
 	case CM_STAGE:
@@ -4453,7 +4664,7 @@ void Saturn::StageSix(double simt)
 			// Update the mesh.
 			//
 
-			SetCSMStage();
+			SetCSMStage(_V(0, 0, 0));
 
 			//
 			// Blow off Panel 4.
@@ -4808,6 +5019,10 @@ void Saturn::UpdateMassAndCoG()
 
 		//Particle streams
 		SetWaterDumpParticleStreams(currentCoG + _V(0, 0, 32.3));
+		
+		//lights
+		SpotLight->UpdatePosition(CoGShift);
+		RndzLight->UpdatePosition(CoGShift);
 
 		// All done!
 		LastFuelWeight = CurrentFuelWeight;

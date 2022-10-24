@@ -410,7 +410,7 @@ const VECTOR3 Sw_RRGyroLocation = { -0.1557, 0.7949, 1.3874 };
 const VECTOR3 AOT_ShaftSelectorLocation = { 0.0640, 0.8800, 1.4792 };
 
 // Subtracted from total material count to find L01 location.
-const int mat_L01 = 53;
+const int mat_L01 = 54;
 
 void LEM::JostleViewpoint(double amount)
 
@@ -511,6 +511,11 @@ void LEM::SetView() {
 		case LMVIEW_OVHDHATCH:
 			v = _V(0.0, -0.3, 0.1) + ofs;
 			SetCameraDefaultDirection(_V(0.0, 1.0, 0.0), 180 * RAD);
+			break;
+
+		case LMVIEW_RDVZWIN:
+			v = _V(-0.58, -0.05, 1.004) + ofs;
+			SetCameraDefaultDirection(_V(0.0, 1.0, 0.0));
 			break;
 
 		}
@@ -632,7 +637,7 @@ bool LEM::clbkLoadVC (int id)
 		viewpos = LMVIEW_CDR;
 		SetCameraRotationRange(0.8 * PI, 0.8 * PI, 0.4 * PI, 0.4 * PI);
 		SetCameraMovement(_V(-0.1, -0.0612, 0.25), 0, P1_TILT, _V(-0.1, 0.0, 0.0), 0, 0, _V(0.1, 0.0, 0.0), 0, 0);
-		oapiVCSetNeighbours(LMVIEW_CBLEFT, LMVIEW_DSKY, -1, LMVIEW_LPD);
+		oapiVCSetNeighbours(LMVIEW_CBLEFT, LMVIEW_DSKY, LMVIEW_RDVZWIN, LMVIEW_LPD);
 		InVC = true;
 		InPanel = false;
 		SetView();
@@ -788,6 +793,21 @@ bool LEM::clbkLoadVC (int id)
 		InPanel = false;
 		SetView();
 		SetLMMeshVis();
+
+		RegisterActiveAreas();
+
+		return true;
+
+	case LMVIEW_RDVZWIN:
+		viewpos = LMVIEW_RDVZWIN;
+		SetCameraRotationRange(0.8 * PI, 0.8 * PI, 0.4 * PI, 0.4 * PI);
+		SetCameraMovement(_V(0.0, 0.0, 0.0), 0, 0, _V(0.0, 0.0, 0.0), 0, 0, _V(0.0, 0.0, 0.0), 0, 0);
+		oapiVCSetNeighbours(-1, -1, -1, LMVIEW_CDR);
+		InVC = true;
+		InPanel = false;
+		SetView();
+		SetLMMeshVis();
+		SetCOAS();
 
 		RegisterActiveAreas();
 
@@ -1255,14 +1275,22 @@ void LEM::RegisterActiveAreas()
 	oapiVCRegisterArea(AID_VC_RETICLEDISP, _R(1068, 1891, 1188, 1927), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE, PANEL_MAP_BACKGROUND, MainPanelTex2);
 
 	// COAS FWD
-	const VECTOR3 COAS1Location = { -0.5612, 0.7323, 1.6805 };
+	const VECTOR3 COAS2Location = { -0.5612, 0.7323, 1.6805 };
 	oapiVCRegisterArea(AID_VC_COAS2, PANEL_REDRAW_NEVER, PANEL_MOUSE_LBDOWN);
-	oapiVCSetAreaClickmode_Spherical(AID_VC_COAS2, COAS1Location + ofs, 0.05);
+	oapiVCSetAreaClickmode_Spherical(AID_VC_COAS2, COAS2Location + ofs, 0.05);
+
+	// COAS OVHD
+	const VECTOR3 COAS1Location = { -0.475804, 1.0044, 1.0043 };
+	oapiVCRegisterArea(AID_VC_COAS1, PANEL_REDRAW_NEVER, PANEL_MOUSE_LBDOWN);
+	oapiVCSetAreaClickmode_Spherical(AID_VC_COAS1, COAS1Location + ofs, 0.05);
 
 	//
 	// Initialize surfaces and switches
 	//
 	InitPanelVC();
+
+	LeftMasterAlarmSwitch.InitVC(srf[SRF_LEM_MASTERALARMVC]);
+	RightMasterAlarmSwitch.InitVC(srf[SRF_LEM_MASTERALARMVC]);
 
 	ASCHeReg1TB.InitVC(srf[SRF_INDICATORVC]);
 	DESHeReg1TB.InitVC(srf[SRF_INDICATORVC]);
@@ -1296,7 +1324,7 @@ void LEM::RegisterActiveAreas()
 	EDDesOxidVentTB.InitVC(srf[SRF_INDICATORVC]);
 	EDLGTB.InitVC(srf[SRF_INDICATORVC]);
 
-	TapeRecorderTB.InitVC(srf[SRF_INDICATORVC]);
+	//TapeRecorderTB.InitVC(srf[SRF_INDICATORVC]);
 
 	DSCBattery1TB.InitVC(srf[SRF_INDICATORVC]);
 	DSCBattery2TB.InitVC(srf[SRF_INDICATORVC]);
@@ -1313,10 +1341,6 @@ void LEM::RegisterActiveAreas()
 bool LEM::clbkVCMouseEvent(int id, int event, VECTOR3 &p)
 {
 	switch (id) {
-		case AID_VC_LEM_MA_LEFT:
-		case AID_VC_LEM_MA_RIGHT:
-			return CWEA.CheckMasterAlarmMouseClick(event);
-
 		case AID_VC_OVERHEADHATCH:
 			OverheadHatch.Toggle();
 			return true;
@@ -1325,11 +1349,30 @@ bool LEM::clbkVCMouseEvent(int id, int event, VECTOR3 &p)
 			ForwardHatch.Toggle();
 			return true;
 
+		case AID_VC_COAS1:
+			if (LEMCoas1Enabled)
+			{
+				LEMCoas1Enabled = false;
+			}
+			else
+			{
+				LEMCoas1Enabled = true;
+				LEMCoas2Enabled = false;
+			}
+			SwitchClick();
+			SetCOAS();
+			return true;
+
 		case AID_VC_COAS2:
 			if (LEMCoas2Enabled)
+			{
 				LEMCoas2Enabled = false;
+			}
 			else
+			{
 				LEMCoas2Enabled = true;
+				LEMCoas1Enabled = false;
+			}
 			SwitchClick();
 			SetCOAS();
 			return true;
@@ -1704,11 +1747,6 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 		}
 		return true;
 
-	case AID_VC_LEM_MA_LEFT:
-	case AID_VC_LEM_MA_RIGHT:
-		CWEA.RenderMasterAlarm(surf, srf[SRF_LEM_MASTERALARMVC], NULL);
-		return true;
-
 	case AID_VC_RETICLEDISP:
 		optics.PaintReticleAngle(surf, srf[SRF_AOTFONT_VC]);
 		return true;
@@ -1724,6 +1762,19 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 
 	return MainPanelVC.VCRedrawEvent(id, event, surf);
 	//return false;
+}
+
+void LEM::InitVCAnimations() {
+
+	anim_fdaiR_cdr = anim_fdaiR_lmp = -1;
+	anim_fdaiP_cdr = anim_fdaiP_lmp = -1;
+	anim_fdaiY_cdr = anim_fdaiY_lmp = -1;
+	anim_fdaiRerror_cdr = anim_fdaiRerror_lmp = -1;
+	anim_fdaiPerror_cdr = anim_fdaiPerror_lmp = -1;
+	anim_fdaiYerror_cdr = anim_fdaiYerror_lmp = -1;
+	anim_fdaiRrate_cdr = anim_fdaiRrate_lmp = -1;
+	anim_fdaiPrate_cdr = anim_fdaiPrate_lmp = -1;
+	anim_fdaiYrate_cdr = anim_fdaiYrate_lmp = -1;
 }
 
 void LEM::DefineVCAnimations()
@@ -1879,6 +1930,8 @@ void LEM::DefineVCAnimations()
 
 	crossPointerRight.SetDirection(xvector, yvector);
 	crossPointerRight.DefineMeshGroup(VC_GRP_XpointerX_lmp, VC_GRP_XpointerY_lmp);
+
+	MainPanelVC.AddSwitch(&LeftMasterAlarmSwitch, AID_VC_LEM_MA_LEFT);
 
 	//Panel 2
 
@@ -2070,6 +2123,8 @@ void LEM::DefineVCAnimations()
 
 	MainPanelVC.AddSwitch(&RCSMainSovATB, AID_VC_MAIN_SOV_TALKBACKS);
 	MainPanelVC.AddSwitch(&RCSMainSovBTB, AID_VC_MAIN_SOV_TALKBACKS);
+
+	MainPanelVC.AddSwitch(&RightMasterAlarmSwitch, AID_VC_LEM_MA_RIGHT);
 
 	//Panel 3
 
@@ -2662,6 +2717,8 @@ void LEM::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&Panel12SignalStrengthMeter);
 	Panel12SignalStrengthMeter.SetReference(P12_NEEDLE_POS[2], P12_ROT_AXIS);
 	Panel12SignalStrengthMeter.DefineMeshGroup(VC_GRP_Needle_P12_03);
+
+	//MainPanelVC.AddSwitch(&TapeRecorderTB, AID_VC_RECORDER_TALKBACK);
 
 	//Panel 14
 

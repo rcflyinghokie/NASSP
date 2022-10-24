@@ -23,6 +23,9 @@
 
   **************************************************************************/
 
+#include "RF_calc.h"
+#include "paCBGmessageID.h"
+
 /* PCM DOWN-TELEMETRY
 
 	HBR FRAME:
@@ -446,10 +449,10 @@ public:
 	int RcvBeamWidthSelect = 0; // 0 = none, 1 = Wide, 2 = Med, 3 = Narrow
 	int XmtBeamWidthSelect = 0; // 0 = none, 1 = Wide, 2 = Med, 3 = Narrow
 	bool AutoTrackingMode;
+	bool DriveToReacqSetPoint;
 	double HGAWavelength;
 	double HGAFrequency;
-	double Gain85ft;
-	double Power85ft;
+	RFCALC_RFProperties GroundTransmitterRFProperties;
 
 	double GetResolvedPitch() { return PitchRes * DEG; }
 	double GetResolvedYaw() { return YawRes * DEG; }
@@ -479,8 +482,6 @@ private:
 
 	VECTOR3 U_Horn[4];
 
-	VECTOR3 boomAxis = _V(0., -0.612217, 0.790690); //In Apollo CSM coordinates. this gets converted in the constructor.
-
 	// Animations
 	UINT anim_HGAalpha, anim_HGAbeta, anim_HGAgamma;
 	double	hga_proc[3];
@@ -496,8 +497,7 @@ public:
 	void TimeStep();			// TimeStep
 	double OMNIWavelength;
 	double OMNIFrequency;
-	double Gain30ft;
-	double Power30ft;
+	RFCALC_RFProperties GroundTransmitterRFProperties;
 	double OMNI_Gain;
 protected:
 	Saturn *sat;				// Ship we're installed in

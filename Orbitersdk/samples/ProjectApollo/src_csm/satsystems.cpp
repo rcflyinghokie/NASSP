@@ -135,6 +135,14 @@ void Saturn::SystemsInit() {
 	FuelCellH2Manifold[2] = (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:H2FUELCELL3MANIFOLD");
 
 	//
+	// Electric Lights
+	//
+
+	SpotLight = (ElectricLight *)Panelsdk.GetPointerByString("ELECTRIC:SPOTLIGHT");
+	RndzLight = (ElectricLight *)Panelsdk.GetPointerByString("ELECTRIC:RNDZLIGHT");
+
+
+	//
 	// O2 tanks.
 	//
 
@@ -735,6 +743,11 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 		sce.Timestep();
 		dataRecorder.TimeStep( MissionTime, simdt );
 		RRTsystem.TimeStep(simdt);
+
+		//
+		// Switches MAYBE THIS SHOULD GO SOMEWHERE ELSE? They only need to be updated every timestep, not every substep
+		///
+		RndzLightSwitch.refresh(simdt);
 
 		//
 		// Systems state handling
@@ -1691,9 +1704,9 @@ void Saturn::JoystickTimestep()
 		int rhc_rot_pos = 32768; 
 		if (enableVESIM) {
 			if (GetAttitudeMode() == RCS_ROT) {
-				rhc_x_pos = vesim.getInputValue(CSM_AXIS_INPUT_RHCR);
-				rhc_y_pos = vesim.getInputValue(CSM_AXIS_INPUT_RHCP);
-				rhc_rot_pos = vesim.getInputValue(CSM_AXIS_INPUT_RHCY);
+				rhc_x_pos = vesim.getInputValue(CSM_AXIS_INPUT_RHC_R);
+				rhc_y_pos = vesim.getInputValue(CSM_AXIS_INPUT_RHC_P);
+				rhc_rot_pos = vesim.getInputValue(CSM_AXIS_INPUT_RHC_Y);
 			}
 			//sprintf(oapiDebugString(), "RHC: X/Y/Z = %d / %d / %d | rzx_id %d rot_id %d", rhc_x_pos, rhc_y_pos, rhc_rot_pos, rhc_rzx_id, rhc_rot_id);
 		}
@@ -2137,14 +2150,14 @@ void Saturn::JoystickTimestep()
 		
 		if (enableVESIM) {
 			if (GetAttitudeMode() == RCS_ROT) {
-				thc_x_pos = vesim.getInputValue(CSM_AXIS_INPUT_THCY);
-				thc_y_pos = 65535 - vesim.getInputValue(CSM_AXIS_INPUT_THCZ);
-				thc_rot_pos = vesim.getInputValue(CSM_AXIS_INPUT_THCX);
+				thc_x_pos = vesim.getInputValue(CSM_AXIS_INPUT_THC_Y);
+				thc_y_pos = 65535 - vesim.getInputValue(CSM_AXIS_INPUT_THC_Z);
+				thc_rot_pos = vesim.getInputValue(CSM_AXIS_INPUT_THC_X);
 			}
 			else{
-				thc_x_pos = vesim.getInputValue(CSM_AXIS_INPUT_RHCR);
-				thc_y_pos = vesim.getInputValue(CSM_AXIS_INPUT_RHCP);
-				thc_rot_pos = vesim.getInputValue(CSM_AXIS_INPUT_RHCY);
+				thc_x_pos = vesim.getInputValue(CSM_AXIS_INPUT_RHC_R);
+				thc_y_pos = vesim.getInputValue(CSM_AXIS_INPUT_RHC_P);
+				thc_rot_pos = vesim.getInputValue(CSM_AXIS_INPUT_RHC_Y);
 			}
 		}
 		else if (thc_id != -1 && thc_id < js_enabled){
@@ -2548,7 +2561,10 @@ void Saturn::CheckSMSystemsState()
 		SecEcsRadiatorExchanger1->SetLength(0);
 		SecEcsRadiatorExchanger2->SetLength(0);
 
-		//SM sensors
+		// Close O2 SM supply
+		O2SMSupply.Close();
+
+		// SM sensors
 		H2Tank1TempSensor.WireTo(NULL);
 		H2Tank2TempSensor.WireTo(NULL);
 		O2Tank1TempSensor.WireTo(NULL);
@@ -2567,6 +2583,10 @@ void Saturn::CheckSMSystemsState()
 			delete secs.SMJCB;
 			secs.SMJCB = NULL;
 		}
+
+		// Disconnect Exterior SM lights
+		RndzLight->WireTo(NULL);
+		SpotLight->WireTo(NULL);
 	}
 }
 

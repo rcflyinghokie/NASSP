@@ -60,13 +60,10 @@ LEM_ASA::LEM_ASA()// : hsink("LEM-ASA-HSink",_vector3(0.013, 3.0, 0.03),0.03,0.0
 	hsink = 0;
 	asaHeat = 0;
 
-	Initialized = false;
 	Operate = false;
 	CurrentRotationMatrix = _M(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 	EulerAngles = _V(0.0, 0.0, 0.0);
 	RemainingDeltaVel = _V(0.0, 0.0, 0.0);
-	LastWeightAcceleration = _V(0.0, 0.0, 0.0);
-	LastGlobalVel = _V(0.0, 0.0, 0.0);
 	LastSimDT = -1.0;
 }
 
@@ -97,7 +94,6 @@ void LEM_ASA::TurnOn()
 void LEM_ASA::TurnOff()
 {
 	Operate = false;
-	Initialized = false;
 }
 
 void LEM_ASA::Timestep(double simdt){
@@ -160,136 +156,15 @@ void LEM_ASA::Timestep(double simdt){
 
 	CurrentRotationMatrix = Rotnew;
 
-	if (!Initialized) 
-	{
-		// Get current weight vector in vessel coordinates
-		VECTOR3 w;
-		lem->GetWeightVector(w);
-		// Transform to Orbiter global and calculate weight acceleration
-		w = mul(CurrentRotationMatrix, w) / lem->GetMass();
+	VECTOR3 accel;
+	lem->inertialData.getAcceleration(accel);
+	accel = -accel;
 
-		//Orbiter 2016 hack
-		if (length(w) == 0.0)
-		{
-			w = GetGravityVector();
-		}
+	RemainingDeltaVel.y += accel.x * LastSimDT;
+	RemainingDeltaVel.x += accel.y * LastSimDT;
+	RemainingDeltaVel.z += accel.z * LastSimDT;
 
-		LastWeightAcceleration = w;
-
-		lem->GetGlobalVel(LastGlobalVel);
-
-		LastSimDT = simdt;
-		Initialized = true;
-	}
-	else
-	{
-		//ACCELERATION
-
-		// Calculate accelerations
-		VECTOR3 w, vel;
-		lem->GetWeightVector(w);
-		// Transform to Orbiter global and calculate accelerations
-		w = mul(CurrentRotationMatrix, w) / lem->GetMass();
-
-		//Orbiter 2016 hack
-		if (length(w) == 0.0)
-		{
-			w = GetGravityVector();
-		}
-
-		lem->GetGlobalVel(vel);
-		VECTOR3 dvel = (vel - LastGlobalVel) / LastSimDT;
-
-		// Measurements with the 2006-P1 version showed that the average of the weight 
-		// vector of this and the last step match the force vector while in free fall
-		// The force vector matches the global velocity change of the last timestep exactly,
-		// but isn't used because GetForceVector isn't working while docked
-		VECTOR3 dw1 = w - dvel;
-		VECTOR3 dw2 = LastWeightAcceleration - dvel;
-		VECTOR3 accel = -(dw1 + dw2) / 2.0;
-		LastWeightAcceleration = w;
-		LastGlobalVel = vel;
-
-		accel = mul(transpose_matrix(CurrentRotationMatrix), accel);
-
-		RemainingDeltaVel.y += accel.x * LastSimDT;
-		RemainingDeltaVel.x += accel.y * LastSimDT;
-		RemainingDeltaVel.z += accel.z * LastSimDT;
-
-		LastSimDT = simdt;
-	}
-}
-
-VECTOR3 LEM_ASA::GetGravityVector()
-{
-	OBJHANDLE gravref = lem->GetGravityRef();
-	OBJHANDLE hSun = oapiGetObjectByName("Sun");
-	VECTOR3 R, U_R;
-	lem->GetRelativePos(gravref, R);
-	U_R = unit(R);
-	double r = length(R);
-	VECTOR3 R_S, U_R_S;
-	lem->GetRelativePos(hSun, R_S);
-	U_R_S = unit(R_S);
-	double r_S = length(R_S);
-	double mu = GGRAV * oapiGetMass(gravref);
-	double mu_S = GGRAV * oapiGetMass(hSun);
-	int jcount = oapiGetPlanetJCoeffCount(gravref);
-	double JCoeff[5];
-	for (int i = 0; i < jcount; i++)
-	{
-		JCoeff[i] = oapiGetPlanetJCoeff(gravref, i);
-	}
-	double R_E = oapiGetSize(gravref);
-
-	VECTOR3 a_dP;
-
-	a_dP = -U_R;
-
-	if (jcount > 0)
-	{
-		MATRIX3 mat;
-		VECTOR3 U_Z;
-		double costheta, P2, P3;
-
-		oapiGetPlanetObliquityMatrix(gravref, &mat);
-		U_Z = mul(mat, _V(0, 1, 0));
-
-		costheta = dotp(U_R, U_Z);
-
-		P2 = 3.0 * costheta;
-		P3 = 0.5*(15.0*costheta*costheta - 3.0);
-		a_dP += (U_R*P3 - U_Z * P2)*JCoeff[0] * pow(R_E / r, 2.0);
-		if (jcount > 1)
-		{
-			double P4;
-			P4 = 1.0 / 3.0*(7.0*costheta*P3 - 4.0*P2);
-			a_dP += (U_R*P4 - U_Z * P3)*JCoeff[1] * pow(R_E / r, 3.0);
-			if (jcount > 2)
-			{
-				double P5;
-				P5 = 0.25*(9.0*costheta*P4 - 5.0 * P3);
-				a_dP += (U_R*P5 - U_Z * P4)*JCoeff[2] * pow(R_E / r, 4.0);
-			}
-		}
-	}
-	a_dP *= mu / pow(r, 2.0);
-	a_dP -= U_R_S * mu_S / pow(r_S, 2.0);
-
-	if (gravref == oapiGetObjectByName("Moon"))
-	{
-		OBJHANDLE hEarth = oapiGetObjectByName("Earth");
-
-		VECTOR3 R_Ea, U_R_E;
-		lem->GetRelativePos(hEarth, R_Ea);
-		U_R_E = unit(R_Ea);
-		double r_E = length(R_Ea);
-		double mu_E = GGRAV * oapiGetMass(hEarth);
-
-		a_dP -= U_R_E * mu_E / pow(r_E, 2.0);
-	}
-
-	return a_dP;
+	LastSimDT = simdt;
 }
 
 void LEM_ASA::SystemTimestep(double simdt)
@@ -406,11 +281,8 @@ void LEM_ASA::SaveState(FILEHANDLE scn,char *start_str,char *end_str)
 
 	papiWriteScenario_mx(scn, "CURRENTROTATIONMATRIX", CurrentRotationMatrix);
 	papiWriteScenario_vec(scn, "EULERANGLES", EulerAngles);
-	papiWriteScenario_vec(scn, "LASTWEIGHTACCELERATION", LastWeightAcceleration);
-	papiWriteScenario_vec(scn, "LASTGLOBALVEL", LastGlobalVel);
 	papiWriteScenario_vec(scn, "REMAININGDELTAVEL", RemainingDeltaVel);
 	papiWriteScenario_double(scn, "LASTSIMDT", LastSimDT);
-	papiWriteScenario_bool(scn, "INITIALIZED", Initialized);
 	papiWriteScenario_bool(scn, "OPERATE", Operate);
 
 	oapiWriteLine(scn, end_str);
@@ -426,11 +298,8 @@ void LEM_ASA::LoadState(FILEHANDLE scn, char *end_str)
 
 		papiReadScenario_mat(line, "CURRENTROTATIONMATRIX", CurrentRotationMatrix);
 		papiReadScenario_vec(line, "EULERANGLES", EulerAngles);
-		papiReadScenario_vec(line, "LASTWEIGHTACCELERATION", LastWeightAcceleration);
-		papiReadScenario_vec(line, "LASTGLOBALVEL", LastGlobalVel);
 		papiReadScenario_vec(line, "REMAININGDELTAVEL", RemainingDeltaVel);
 		papiReadScenario_double(line, "LASTSIMDT", LastSimDT);
-		papiReadScenario_bool(line, "INITIALIZED", Initialized);
 		papiReadScenario_bool(line, "OPERATE", Operate);
 	}
 }
@@ -457,6 +326,7 @@ LEM_AEA::LEM_AEA(PanelSDK &p, LEM_DEDA &display) : DCPower(0, p), deda(display) 
 	AGSLateralVelocity = 0.0;
 	Altitude = 0.0;
 	AltitudeRate = 0.0;
+	powered = false;
 
 	//
 	// Virtual AGS.
@@ -933,6 +803,24 @@ bool LEM_AEA::GetTestModeFailure()
 	return ~agsval40[AGSTestModeFailure];
 }
 
+bool LEM_AEA::GetEngineOnSignal()
+{
+	if (!IsPowered())
+		return false;
+	AGSChannelValue40 agsval40;
+	agsval40 = OutputPorts[IO_ODISCRETES];
+	return ~agsval40[AGSEngineOn];
+}
+
+bool LEM_AEA::GetEngineOffSignal()
+{
+	if (!IsPowered())
+		return false;
+	AGSChannelValue40 agsval40;
+	agsval40 = OutputPorts[IO_ODISCRETES];
+	return ~agsval40[AGSEngineOff];
+}
+
 void LEM_AEA::InitVirtualAGS(char *binfile)
 {
 	aea_engine_init(&vags, binfile, NULL);
@@ -1348,21 +1236,23 @@ int LEM_DEDA::ThreeDigitDisplaySegmentsLit(char *Str)
 void LEM_DEDA::RenderThreeDigitDisplay(SURFHANDLE surf, SURFHANDLE digits, int dstx, int dsty, char *Str)
 
 {
+	const int DigitWidth = 19;
+	const int DigitHeight = 21;
 	int Curdigit;
 
 	if (Str[0] >= '0' && Str[0] <= '9') {
 		Curdigit = Str[0] - '0';
-		oapiBlt(surf,digits,dstx+0,dsty,19*Curdigit,0,19,21);
+		oapiBlt(surf, digits, dstx + 0, dsty, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
 	}
 
 	if (Str[1] >= '0' && Str[1] <= '9') {
 		Curdigit = Str[1] - '0';
-		oapiBlt(surf,digits,dstx+20,dsty,19*Curdigit,0,19,21);
+		oapiBlt(surf, digits, dstx + 20, dsty, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
 	}
 
 	if (Str[2] >= '0' && Str[2] <= '9') {
 		Curdigit = Str[2] - '0';
-		oapiBlt(surf,digits,dstx+39,dsty,19*Curdigit,0,19,21);
+		oapiBlt(surf, digits, dstx + 39, dsty, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
 	}
 }
 
@@ -1388,20 +1278,22 @@ int LEM_DEDA::SixDigitDisplaySegmentsLit(char *Str)
 void LEM_DEDA::RenderSixDigitDisplay(SURFHANDLE surf, SURFHANDLE digits, int dstx, int dsty, char *Str)
 
 {
+	const int DigitWidth = 19;
+	const int DigitHeight = 21;
 	int	Curdigit;
 	int i;
 
 	if (Str[0] == '-') {
-		oapiBlt(surf,digits,dstx+4,dsty,191,0,19,21);
+		oapiBlt(surf, digits, dstx + 4, dsty, 10 * DigitWidth, 0, DigitWidth, DigitHeight);
 	}
 	else if (Str[0] == '+') {
-		oapiBlt(surf,digits,dstx+4,dsty,210,0,19,21);
+		oapiBlt(surf, digits, dstx + 4, dsty, 11 * DigitWidth, 0, DigitWidth, DigitHeight);
 	}
 
 	for (i = 1; i < 6; i++) {
 		if (Str[i] >= '0' && Str[i] <= '9') {
 			Curdigit = Str[i] - '0';
-			oapiBlt(surf, digits, dstx + (20*i)+ 4, dsty, 19*Curdigit, 0, 19,21);
+			oapiBlt(surf, digits, dstx + ((DigitWidth + 1) * i) + 4, dsty, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
 		}
 		else {
 //			oapiBlt(surf, digits, dstx + (10*i), dsty, 440, 6, 10, 15);

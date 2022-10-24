@@ -183,6 +183,50 @@ static PARTICLESTREAMSPEC prelaunchvent_spec = {
 	PARTICLESTREAMSPEC::ATM_FLAT, 0.1, 0.1
 };
 
+void SaturnIB3rdStage_Coeff(VESSEL *v, double aoa, double M, double Re, void *context, double *cl, double *cm, double *cd)
+{
+	//Redefine the aoa
+	VECTOR3 vec;
+	v->GetAirspeedVector(FRAME_LOCAL, vec);
+	aoa = acos(unit(vec).z);
+
+	double Kn = M / Re * 1.482941286; //Knudsen number. Factor is sqrt(1.4*pi/2)
+	int i;
+	const int nlift = 6;
+	static const double AOA[nlift] = { 0 * RAD, 10 * RAD, 30 * RAD, 90 * RAD, 150 * RAD, 180 * RAD };
+	static const double CD_free[nlift] = { 2.9251, 3.3497, 6.1147, 11.08, 6.1684, 3.1275 }; //free flow
+	static const double CD_cont[nlift] = { 0.44, 0.59, 1.12, 2.78, 1.8, 1.5 }; //continuum flow
+
+	//Find angle of attack in array, then linearly interpolate
+	for (i = 0; i < nlift - 1 && AOA[i + 1] < aoa; i++);
+	double f = (aoa - AOA[i]) / (AOA[i + 1] - AOA[i]);
+
+	//No lift and moment coefficients for now
+	*cl = 0.0;
+	*cm = 0.0;
+
+	if (Kn > 10.0)
+	{
+		//Free flow
+		*cd = CD_free[i] + (CD_free[i + 1] - CD_free[i]) * f;
+	}
+	else if (Kn < 0.01)
+	{
+		//Continuum flow
+		*cd = CD_cont[i] + (CD_cont[i + 1] - CD_cont[i]) * f + oapiGetWaveDrag(M, 0.75, 1.0, 1.1, 0.04);
+	}
+	else
+	{
+		//Mix
+		double g = (Kn - 0.01) / 9.99;
+		*cd = g * (CD_free[i] + (CD_free[i + 1] - CD_free[i]) * f) + (1.0 - g)*(CD_cont[i] + (CD_cont[i + 1] - CD_cont[i]) * f + oapiGetWaveDrag(M, 0.75, 1.0, 1.1, 0.04));
+	}
+
+	//TBD: Remove when RTCC takes drag into account properly
+	*cd = (*cd)*0.05;
+
+	//sprintf(oapiDebugString(), "Second Stage: aoa %lf M %lf Re %lf Kn %lf CD %lf CL %lf CM %lf", aoa*DEG, M, Re, Kn, *cd, *cl, *cm);
+}
 
 void Saturn1b::SetFirstStage ()
 {
@@ -354,14 +398,12 @@ void Saturn1b::SetSecondStage ()
 	double EmptyMass = Stage2Mass + (LESAttached ? Abort_Mass : 0.0);
 
 	SetEmptyMass (EmptyMass);
-	SetPMI (_V(94,94,20));
+	SetPMI(_V(94,94,20));
 	SetCrossSections (_V(267,267,97));
-	SetCW (0.1, 0.3, 1.4, 1.4);
+	SetCW(0.1, 0.3, 1.4, 1.4);
+	ClearAirfoilDefinitions();
+	CreateAirfoil3(LIFT_VERTICAL, _V(0, 0, 0), SaturnIB3rdStage_Coeff, NULL, 6.604, 34.2534, 0.1);
 	SetRotDrag (_V(0.7,0.7,1.2));
-	SetPitchMomentScale (0);
-	SetYawMomentScale (0);
-	SetLiftCoeffFunc (0);
-
     ClearMeshes();
 	SetSecondStageMeshes(STG1OF);
 }
@@ -489,7 +531,7 @@ void Saturn1b::SetSecondStageMeshes(double offset)
 	SetDockParams(dockpos, dockdir, dockrot);
 
 	SetCameraOffset(_V(-1, 1.0, 29.45 - STG1O + offset));
-    SetView(21.0 + offset, false);
+	SetView(21.0 + offset, false);
 }
 
 void Saturn1b::SetSecondStageEngines (double offset)
@@ -723,9 +765,9 @@ void Saturn1b::SeparateStage (int new_stage)
 			stage1->SetState(S1Config);
 		}
 
+		ShiftCG(_V(0, 0, 19.95));
 		SetSecondStage ();
 		SetSecondStageEngines(STG1OF);
-		ShiftCentreOfMass(_V(0, 0, 19.95));
 	}
 
 	if ((stage == LAUNCH_STAGE_SIVB || stage == STAGE_ORBIT_SIVB) && new_stage != CM_STAGE)
@@ -749,7 +791,7 @@ void Saturn1b::SeparateStage (int new_stage)
 		if (ph_rcs3) proptemp[5] = GetPropellantMass(ph_rcs3);
 		ClearPropellants();
 
-		SetCSMStage();
+		SetCSMStage(_V(0, 0, 13.1));
 
 		// Restore RCS Propellant
 		if (proptemp[0] != -1) SetPropellantMass(ph_rcs_cm_1, proptemp[0]);
@@ -758,8 +800,6 @@ void Saturn1b::SeparateStage (int new_stage)
 		if (proptemp[3] != -1) SetPropellantMass(ph_rcs1, proptemp[3]);
 		if (proptemp[4] != -1) SetPropellantMass(ph_rcs2, proptemp[4]);
 		if (proptemp[5] != -1) SetPropellantMass(ph_rcs3, proptemp[5]);
-
-		ShiftCentreOfMass(_V(0, 0, 13.1));
 	}
 
 	if (stage == CSM_LEM_STAGE)
@@ -854,13 +894,13 @@ void Saturn1b::SeparateStage (int new_stage)
 			{
 				vs3.vrot.x = 39.5 + 28.4;
 				DefSetStateEx(&vs3);
-				SetCSMStage();
+				SetCSMStage(_V(0, 0, 33.05));
 			}
 			else
 			{
 				vs3.vrot.x = 39.5 + 31;
 				DefSetStateEx(&vs3);
-				SetReentryStage(_V(0,0,0));
+				SetReentryStage(_V(0, 0, 35.15));
 			}
 		}
 		else
@@ -876,8 +916,7 @@ void Saturn1b::SeparateStage (int new_stage)
 
 			if (new_stage == CSM_LEM_STAGE)
 			{
-				SetCSMStage();
-				ShiftCentreOfMass(_V(0, 0, 32.55));
+				SetCSMStage(_V(0, 0, 33.05));
 			}
 			else
 			{

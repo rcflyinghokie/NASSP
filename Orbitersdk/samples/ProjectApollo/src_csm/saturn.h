@@ -65,6 +65,7 @@
 #include "sce.h"
 #include "csmsensors.h"
 #include "rhc.h"
+#include "inertial.h"
 
 #define DIRECTINPUT_VERSION 0x0800
 #include "dinput.h"
@@ -320,13 +321,59 @@ typedef struct {
 } SPSStatus;
 
 // Vesim input IDs
-#define CSM_AXIS_INPUT_RHCR    1
-#define CSM_AXIS_INPUT_RHCP    2
-#define CSM_AXIS_INPUT_RHCY    3
-#define CSM_AXIS_INPUT_THCX    4
-#define CSM_AXIS_INPUT_THCY    5
-#define CSM_AXIS_INPUT_THCZ    6
-#define CSM_BUTTON_ROT_LIN     7
+#define CSM_AXIS_INPUT_RHC_R        1
+#define CSM_AXIS_INPUT_RHC_P        2
+#define CSM_AXIS_INPUT_RHC_Y        3
+#define CSM_AXIS_INPUT_THC_X        4
+#define CSM_AXIS_INPUT_THC_Y        5
+#define CSM_AXIS_INPUT_THC_Z        6
+#define CSM_BUTTON_INPUT_THC_CCW    7
+#define CSM_BUTTON_INPUT_THC_CW     8
+#define CSM_BUTTON_ROT_LIN          9
+#define CSM_BUTTON_DSKY1_PRO       10
+#define CSM_BUTTON_DSKY1_KEY_REL   11
+#define CSM_BUTTON_DSKY1_VERB      12
+#define CSM_BUTTON_DSKY1_NOUN      13
+#define CSM_BUTTON_DSKY1_ENTR      14
+#define CSM_BUTTON_DSKY1_CLR       15
+#define CSM_BUTTON_DSKY1_PLUS      16
+#define CSM_BUTTON_DSKY1_MINUS     17
+#define CSM_BUTTON_DSKY1_RSET      18
+#define CSM_BUTTON_DSKY1_NUM_0     19
+#define CSM_BUTTON_DSKY1_NUM_1     20
+#define CSM_BUTTON_DSKY1_NUM_2     21
+#define CSM_BUTTON_DSKY1_NUM_3     22
+#define CSM_BUTTON_DSKY1_NUM_4     23
+#define CSM_BUTTON_DSKY1_NUM_5     24
+#define CSM_BUTTON_DSKY1_NUM_6     25
+#define CSM_BUTTON_DSKY1_NUM_7     26
+#define CSM_BUTTON_DSKY1_NUM_8     27
+#define CSM_BUTTON_DSKY1_NUM_9     28
+#define CSM_BUTTON_DSKY2_PRO       29
+#define CSM_BUTTON_DSKY2_KEY_REL   30
+#define CSM_BUTTON_DSKY2_VERB      31
+#define CSM_BUTTON_DSKY2_NOUN      32
+#define CSM_BUTTON_DSKY2_ENTR      33
+#define CSM_BUTTON_DSKY2_CLR       34
+#define CSM_BUTTON_DSKY2_PLUS      35
+#define CSM_BUTTON_DSKY2_MINUS     36
+#define CSM_BUTTON_DSKY2_RSET      37
+#define CSM_BUTTON_DSKY2_NUM_0     38
+#define CSM_BUTTON_DSKY2_NUM_1     39
+#define CSM_BUTTON_DSKY2_NUM_2     40
+#define CSM_BUTTON_DSKY2_NUM_3     41
+#define CSM_BUTTON_DSKY2_NUM_4     42
+#define CSM_BUTTON_DSKY2_NUM_5     43
+#define CSM_BUTTON_DSKY2_NUM_6     44
+#define CSM_BUTTON_DSKY2_NUM_7     45
+#define CSM_BUTTON_DSKY2_NUM_8     46
+#define CSM_BUTTON_DSKY2_NUM_9     47
+#define CSM_BUTTON_DIR_ULL         48
+#define CSM_BUTTON_THR_ON          49
+#define CSM_BUTTON_DVTA_NORM       50
+#define CSM_BUTTON_DVTA_OFF        51
+#define CSM_BUTTON_DVTB_NORM       52
+#define CSM_BUTTON_DVTB_OFF        53
 
 // Callback for Vesim events
 void cbCSMVesim(int inputID, int eventType, int newValue, void *pdata);
@@ -1315,6 +1362,7 @@ public:
 	int Lua_GetAGCUplinkStatus();
 
 	//System Access
+	InertialData *GetInertialData() { return &inertialData; };
 	SPSPropellantSource *GetSPSPropellant() { return &SPSPropellant; };
 	SPSEngine *GetSPSEngine() { return &SPSEngine; };
 	SCE *GetSCE() { return &sce; }
@@ -1443,6 +1491,11 @@ protected:
 	bool DeleteLaunchSite;
 
 	int buildstatus;
+
+	///
+	/// \brief NASSP scenario version
+	///
+	int nasspver;
 
 	//
 	// Current mission time and mission times for stage events.
@@ -1854,7 +1907,7 @@ protected:
 
 	SwitchRow CSMLightSwitchesRow;
 	ToggleSwitch RunEVALightSwitch;
-	ThreePosSwitch RndzLightSwitch;
+	ThreeSourceTwoDestSwitch RndzLightSwitch;
 	ToggleSwitch TunnelLightSwitch;
 
 	SwitchRow LMPowerSwitchRow;
@@ -3141,10 +3194,10 @@ protected:
 	CircuitBrakerSwitch GlycolToRadiatorsLever;
 
 	SwitchRow CabinPressureReliefLever1Row;
-	ThumbwheelSwitch CabinPressureReliefLever1;
+	SaturnCabinPressureReliefLever CabinPressureReliefLever1;
 
 	SwitchRow CabinPressureReliefLever2Row;
-	SaturnCabinPressureReliefLever CabinPressureReliefLever2;
+	SaturnGuardedCabinPressureReliefLever CabinPressureReliefLever2;
 
 	SwitchRow GlycolReservoirRotariesRow;
 	RotationalSwitch GlycolReservoirInletRotary;
@@ -3548,6 +3601,8 @@ protected:
 	// Internal systems devices.						 //
 	///////////////////////////////////////////////////////
 
+	InertialData inertialData;
+
 	// SCS components
 	BMAG bmag1;
 	BMAG bmag2;
@@ -3632,6 +3687,10 @@ protected:
 	Cooling *FuelCellCooling[3];
 	h_Tank *FuelCellO2Manifold[3];
 	h_Tank *FuelCellH2Manifold[3];
+	
+	// Electric Lights
+	ElectricLight* SpotLight;
+	ElectricLight* RndzLight;
 
 	// O2 tanks.
 	h_Tank *O2Tanks[2];
@@ -4195,7 +4254,7 @@ protected:
 	void SetChuteStage3();
 	void SetChuteStage4();
 	void SetSplashStage();
-	void SetCSMStage();
+	void SetCSMStage(VECTOR3 cg_ofs);
 	void CreateSIVBStage(char *config, VESSELSTATUS &vs1, bool SaturnVStage);
 	void SetReentryStage(VECTOR3 cg_ofs);
 	void SetReentryMeshes();
@@ -4388,11 +4447,6 @@ protected:
 
 	double CurrentViewOffset;
 
-	///
-	/// Time of last timestep call.
-	///
-	double LastTimestep;
-
 	//
 	// Panel flash.
 	//
@@ -4581,6 +4635,8 @@ protected:
 	friend class AR_GCore;
 	friend class ApolloRTCCMFD;
 	friend class RTCC;
+
+	friend void cbCSMVesim(int inputID, int eventType, int newValue, void *pdata);
 };
 
 extern void BaseInit();
