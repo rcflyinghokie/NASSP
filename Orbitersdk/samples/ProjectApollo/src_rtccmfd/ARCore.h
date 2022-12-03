@@ -104,6 +104,7 @@ public:
 	void SLVNavigationUpdateCalc();
 	void SLVNavigationUpdateUplink();
 	void UpdateGRRTime();
+	void PerigeeAdjustCalc();
 	bool vesselinLOS();
 	void MinorCycle(double SimT, double SimDT, double mjd);
 
@@ -180,6 +181,7 @@ public:
 	bool PADSolGood;
 	int manpadenginetype;
 	double t_TPI;				// Generally used TPI time
+	int mptinitmode;			//0 = MED M49, 1 = MED M50, 2 = MED M51, 3 = MED M55
 
 	//DOCKING INITIATION
 	int TPI_Mode;
