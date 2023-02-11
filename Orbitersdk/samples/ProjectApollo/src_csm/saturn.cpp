@@ -22,7 +22,7 @@
 
   **************************************************************************/
 
-// To force orbitersdk.h to use <fstream> in any compiler version
+// To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
 #include <stdio.h>
@@ -41,7 +41,7 @@
 #include "tracer.h"
 #include "sm.h"
 #include "sivb.h"
-#include "lemcomputer.h"
+#include "LEMcomputer.h"
 #include "LEM.h"
 #include "papi.h"
 #include "mcc.h"
@@ -470,6 +470,20 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	H2Tank2TempSensor("H2Tank2-Temp-Sensor", -425.0, -200.0),
 	O2Tank1TempSensor("O2Tank1-Temp-Sensor", -325.0, 80.0),
 	O2Tank2TempSensor("O2Tank2-Temp-Sensor", -325.0, 80.0),
+	H2Tank1PressSensor("H2Tank1-Press-Sensor", 0.0, 350.0),
+	H2Tank2PressSensor("H2Tank2-Press-Sensor", 0.0, 350.0),
+	O2Tank1PressSensor("O2Tank1-Press-Sensor", 50.0, 1050.0),
+	O2Tank2PressSensor("O2Tank2-Press-Sensor", 50.0, 1050.0),
+	H2Tank1QuantitySensor("H2Tank1-Quantity-Sensor", 0.0, 1.0, 12701.0),
+	H2Tank2QuantitySensor("H2Tank2-Quantity-Sensor", 0.0, 1.0, 12701.0),
+	O2Tank1QuantitySensor("O2Tank1-Quantity-Sensor", 0.0, 1.0, 145150.0),
+	O2Tank2QuantitySensor("O2Tank2-Quantity-Sensor", 0.0, 1.0, 145150.0),
+	FCO2PressureSensor1("FuelCell1-O2-Press-Sensor", 0.0, 75.0),
+	FCO2PressureSensor2("FuelCell2-O2-Press-Sensor", 0.0, 75.0),
+	FCO2PressureSensor3("FuelCell3-O2-Press-Sensor", 0.0, 75.0),
+	FCH2PressureSensor1("FuelCell1-H2-Press-Sensor", 0.0, 75.0),
+	FCH2PressureSensor2("FuelCell2-H2-Press-Sensor", 0.0, 75.0),
+	FCH2PressureSensor3("FuelCell3-H2-Press-Sensor", 0.0, 75.0),
 	CabinPressSensor("Cabin-Press-Sensor", 0.0, 17.0),
 	ECSPressGroups1Feeder("ECS-Press-Groups1-Feeder", Panelsdk),
 	ECSPressGroups2Feeder("ECS-Press-Groups2-Feeder", Panelsdk),
@@ -687,14 +701,12 @@ void Saturn::initSaturn()
 	hintstg = 0;
 	hesc1 = 0;
 	hPROBE = 0;
-	hs4bM = 0;
 	hs4b1 = 0;
 	hs4b2 = 0;
 	hs4b3 = 0;
 	hs4b4 = 0;
 	habort = 0;
 	hSMJet = 0;
-	hLMV = 0;
 	hVAB = 0;
 	hML = 0;
 	hCrawler = 0;
@@ -734,7 +746,6 @@ void Saturn::initSaturn()
 
 	MissionTime = (-3600);
 	NextMissionEventTime = 0;
-	LastMissionEventTime = 0;
 
 	//
 	// No point trying to destroy things if we haven't launched.
@@ -1079,8 +1090,6 @@ void Saturn::initSaturn()
 	KEY8=false;
 	KEY9=false;
 
-	actualFUEL = 0;
-
 	viewpos = SATVIEW_LEFTSEAT;
 
 	dockringidx = -1;
@@ -1166,7 +1175,6 @@ void Saturn::initSaturn()
 		// Initialize the panel
 		fdaiDisabled = false;
 		fdaiSmooth = false;
-		hBmpFDAIRollIndicator = 0;
 
 		PanelId = SATPANEL_MAIN; 		// default panel
 		MainPanelSplit = false;
@@ -1296,32 +1304,6 @@ void Saturn::KillAlt(OBJHANDLE &hvessel, double altVS)
 
 		oapiDeleteVessel(hvessel, GetHandle());
 		hvessel = 0;
-	}
-}
-
-void Saturn::LookForSIVb()
-
-{
-	if (!hs4bM)
-	{
-		char VName[256];
-		char ApolloName[64];
-
-		GetApolloName(ApolloName);
-
-		strcpy (VName, ApolloName); strcat (VName, "-S4BSTG");
-		hs4bM = oapiGetVesselByName(VName);
-	}
-}
-
-void Saturn::LookForLEM()
-
-{
-	if (!hLMV)
-	{
-		char VName[256];
-		GetPayloadName(VName);
-		hLMV = oapiGetVesselByName(VName);
 	}
 }
 
@@ -1508,7 +1490,6 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	papiWriteScenario_double (scn, "TCP", TCPO);
 	papiWriteScenario_double (scn, "MISSNTIME", MissionTime);
 	papiWriteScenario_double (scn, "NMISSNTIME", NextMissionEventTime);
-	papiWriteScenario_double (scn, "LMISSNTIME", LastMissionEventTime);
 
 //	oapiWriteScenario_string (scn, "STAGECONFIG", StagesString);
 
@@ -1594,6 +1575,15 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 
 	if (AutoSlow) {
 		oapiWriteScenario_int (scn, "AUTOSLOW", 1);
+	}
+	if (LandFail.word) {
+		oapiWriteScenario_int(scn, "LANDFAIL", LandFail.word);
+	}
+	if (LaunchFail.word) {
+		oapiWriteScenario_int(scn, "LAUNCHFAIL", LaunchFail.word);
+	}
+	if (SwitchFail.word) {
+		oapiWriteScenario_int(scn, "SWITCHFAIL", SwitchFail.word);
 	}
 	if (ApolloNo == 1301) {
 		oapiWriteScenario_int (scn, "A13STATE", GetA13State());
@@ -2100,10 +2090,6 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
         sscanf (line + 10, "%f", &ftcp);
 		NextMissionEventTime = ftcp;
 	}
-	else if (!strnicmp(line, "LMISSNTIME", 10)) {
-        sscanf (line + 10, "%f", &ftcp);
-		LastMissionEventTime = ftcp;
-	}
 	else if (!strnicmp(line, "SIFUELMASS", 10)) {
         sscanf (line + 10, "%f", &ftcp);
 		SI_FuelMass = ftcp;
@@ -2212,6 +2198,15 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	else if (!strnicmp(line, "CMMASS", 6)) {
 		sscanf(line + 6, "%f", &ftcp);
 		CM_EmptyMass = ftcp;
+	}
+	else if (!strnicmp(line, "LANDFAIL", 8)) {
+		sscanf(line + 8, "%d", &LandFail.word);
+	}
+	else if (!strnicmp(line, "LAUNCHFAIL", 10)) {
+		sscanf(line + 10, "%d", &LaunchFail.word);
+	}
+	else if (!strnicmp(line, "SWITCHCHFAIL", 10)) {
+		sscanf(line + 10, "%d", &SwitchFail.word);
 	}
 	else if (!strnicmp(line, "LANG", 4)) {
 		strncpy (AudioLanguage, line + 5, 64);
@@ -3097,9 +3092,6 @@ void Saturn::GenericTimestep(double simt, double simdt, double mjd)
 
 	VESSELSTATUS status;
 	GetStatus(status);
-	
-	double aSpeed = length(status.rvel);
-	actualFUEL = ((GetFuelMass() * 100.0) / GetMaxFuelMass());
 
 	SystemsTimestep(simt, simdt, mjd);
 
@@ -3162,21 +3154,6 @@ void Saturn::GenericTimestep(double simt, double simdt, double mjd)
 	//
 
 	RCSSoundTimestep();
-
-	//
-	// IMFD5 communication support
-	//
-
-	IMFDVariableConfiguration vc;
-	// Set GET
-	if (MissionTime >= 0) {
-		vc.GET = MissionTime;
-	} else {
-		vc.GET = -1;
-	}
-	vc.DataTimeStamp = simt;
-	IMFD_Client.SetVariableConfiguration(vc);
-	IMFD_Client.TimeStep(); 
 }
 
 void StageTransform(VESSEL *vessel, VESSELSTATUS *vs, VECTOR3 ofs, VECTOR3 vel)
@@ -4585,9 +4562,7 @@ void Saturn::LoadDefaultSounds()
 	Sctdw.setFlags(SOUNDFLAG_1XONLY|SOUNDFLAG_COMMS);
 }
 
-void Saturn::StageSix(double simt)
-
-{
+void Saturn::StageSix(double simt){
 	UpdateMassAndCoG();
 
 	if (ApolloNo == 1301) {
@@ -4723,17 +4698,13 @@ void Saturn::StageSix(double simt)
 		}
 
 		if (ApolloExploded && ph_o2_vent) {
+			
+			double O2Tank1Mass = O2Tanks[0]->mass/1E3;
 
-			TankQuantities t;
-			GetTankQuantities(t);
+			SetThrusterLevel(th_o2_vent, O2Tank1Mass/145149.5584);
 
-			SetThrusterLevel(th_o2_vent, t.O2Tank1Quantity);
-
-			SetPropellantMass(ph_o2_vent, t.O2Tank1QuantityKg);
-
-
+			SetPropellantMass(ph_o2_vent, O2Tank1Mass);
 		}
-
 	}
 }
 

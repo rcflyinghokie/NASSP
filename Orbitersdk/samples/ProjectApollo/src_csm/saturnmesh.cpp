@@ -23,7 +23,7 @@
 
   **************************************************************************/
 
-// To force orbitersdk.h to use <fstream> in any compiler version
+// To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
 #include <stdio.h>
@@ -37,7 +37,7 @@
 
 #include "toggleswitch.h"
 #include "apolloguidance.h"
-#include "csmcomputer.h"
+#include "CSMcomputer.h"
 #include "ioChannels.h"
 
 #include "saturn.h"
@@ -1123,11 +1123,7 @@ void Saturn::SetCSMStage (VECTOR3 cg_ofs)
 
 		ph_o2_vent = CreatePropellantResource(tank_mass, tank_mass); //"Thruster" created by O2 venting
 
-		TankQuantities t;
-
-		GetTankQuantities(t);
-
-		SetPropellantMass(ph_o2_vent, t.O2Tank1QuantityKg);
+		SetPropellantMass(ph_o2_vent, O2Tanks[0]->mass / 1E3);
 
 	}
 	
@@ -1154,7 +1150,7 @@ void Saturn::CreateSIVBStage(char *config, VESSELSTATUS &vs1, bool SaturnVStage)
 	char VName[256]="";
 
 	GetApolloName(VName); strcat (VName, "-S4BSTG");
-	hs4bM = oapiCreateVessel(VName, config, vs1);
+	OBJHANDLE hs4bM = oapiCreateVessel(VName, config, vs1);
 
 	SIVBSettings S4Config;
 
@@ -2139,25 +2135,6 @@ void Saturn::JettisonOpticsCover()
 	GetApolloName(VName); 
 	strcat (VName, "-OPTICSCOVER");
 	hOpticsCover = oapiCreateVessel(VName, "ProjectApollo/CMOpticsCover", vs4b);
-}
-
-void Saturn::JettisonNosecap()
-
-{
-	char VName[256];
-
-	// Use VC offset to calculate the optics cover offset
-	VECTOR3 ofs = _V(0, 0, CurrentViewOffset + 0.25);
-	VECTOR3 vel = { 0.0, 0.0, 2.5 };
-	VESSELSTATUS vs4b;
-	GetStatus(vs4b);
-	StageTransform(this, &vs4b, ofs, vel);
-	vs4b.vrot.x = 0.0;
-	vs4b.vrot.y = 0.0;
-	vs4b.vrot.z = 0.0;
-	GetApolloName(VName);
-	strcat(VName, "-NOSECAP");
-	hNosecapVessel = oapiCreateVessel(VName, "ProjectApollo/Sat1Aerocap", vs4b);
 }
 
 void Saturn::DeployCanard()

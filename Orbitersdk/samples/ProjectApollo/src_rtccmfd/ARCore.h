@@ -9,11 +9,12 @@
 #include "soundlib.h"
 #include "apolloguidance.h"
 #include "dsky.h"
-#include "csmcomputer.h"
+#include "CSMcomputer.h"
 #include "saturn.h"
 #include "mcc.h"
 #include "rtcc.h"
 #include "LunarTargetingProgram.h"
+#include "thread.h"
 #include <queue>
 
 struct ApolloRTCCMFDData {  // global data storage
@@ -103,7 +104,8 @@ public:
 	void TransferRTEToMPT();
 	void SLVNavigationUpdateCalc();
 	void SLVNavigationUpdateUplink();
-	void UpdateGRRTime();
+	void UpdateGRRTime(VESSEL *v);
+	void PerigeeAdjustCalc();
 	bool vesselinLOS();
 	void MinorCycle(double SimT, double SimDT, double mjd);
 
@@ -159,9 +161,9 @@ public:
 	void GenerateAGCCorrectionVectors();
 
 	// SUBTHREAD MANAGEMENT
-	HANDLE hThread;
+	KillableWorker subThreadWorker;
 	int subThreadMode;										// What should the subthread do?
-	int subThreadStatus;									// 0 = done/not busy, 1 = busy, negative = done with error
+	std::atomic<ThreadStatus> subThreadStatus;
 
 	ApolloRTCCMFDData g_Data;
 
@@ -180,6 +182,7 @@ public:
 	bool PADSolGood;
 	int manpadenginetype;
 	double t_TPI;				// Generally used TPI time
+	int mptinitmode;			//0 = MED M49, 1 = MED M50, 2 = MED M51, 3 = MED M55
 
 	//DOCKING INITIATION
 	int TPI_Mode;
@@ -234,7 +237,8 @@ public:
 	int GMPManeuverType;
 
 	//REFSMMAT PAGE
-	double REFSMMATTime;
+	double REFSMMAT_LVLH_Time;
+	double REFSMMAT_PTC_MJD;
 	int REFSMMATopt; //Displayed REFSMMAT page: 0 = P30 Maneuver, 1 = P30 Retro, 2 = LVLH, 3 = Lunar Entry, 4 = Launch, 5 = Landing Site, 6 = PTC, 7 = Attitude, 8 = LS during TLC
 	int REFSMMATcur; //Currently saved REFSMMAT
 	bool REFSMMATHeadsUp;

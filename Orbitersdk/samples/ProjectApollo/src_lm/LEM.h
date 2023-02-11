@@ -33,7 +33,7 @@
 #include "dinput.h"
 #include "vesim.h"
 #include "dsky.h"
-#include "imu.h"
+#include "IMU.h"
 #include "cdu.h"
 #include "lmscs.h"
 #include "lm_ags.h"
@@ -773,8 +773,6 @@ protected:
 	int fdaiSmooth;
 
 	CrossPointer crossPointerLeft;
-
-	HBITMAP hBmpFDAIRollIndicator;
 
 	SwitchRow LeftXPointerSwitchRow;
 	ToggleSwitch LeftXPointerSwitch;
