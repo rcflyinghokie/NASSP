@@ -177,7 +177,7 @@ void Thermal_engine::Radiative(double dt){
 	SunRelPosNorm = unit(tmul(VesselRotationMatrix, SunRelPos));
 
 
-	PlanetDistanceFactor = (pow(PlanetRadius, 2)) / length2(PlanetRelPos);
+	PlanetDistanceFactor = (PlanetRadius * PlanetRadius) / length2(PlanetRelPos);
 	double angle = acos(dotp(PlanetRelPosNorm, SunRelPosNorm));
 	double EclipseAngle;
 	double PlanetDistance = length(PlanetRelPos);
