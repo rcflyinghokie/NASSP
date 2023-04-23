@@ -1542,8 +1542,11 @@ void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 	//
 	// Subclass specific handling
 	//
-
+	VECTOR3 ATTITUDEFORTESTING = imu.GetTotalAttitude();
+	VECTOR3 DRIFTRATEFORTESTING = imu.GetNBDriftRates();
+	sprintf(oapiDebugString(), "%0.10f, %0.10f, %0.10f, %0.10f, %0.10f, %0.10f", ATTITUDEFORTESTING.x, ATTITUDEFORTESTING.y, ATTITUDEFORTESTING.z, DRIFTRATEFORTESTING.x, DRIFTRATEFORTESTING.y, DRIFTRATEFORTESTING.z);
 	Timestep(simt, simdt, mjd);
+	
 
 	sprintf(buffer, "End time(0) %lld", time(0)); 
 	TRACE(buffer);
@@ -2772,7 +2775,7 @@ void Saturn::GetScenarioState (FILEHANDLE scn, void *vstatus)
 	//
 
 	agc.SetMissionInfo(pMission->GetCMCVersion(), PayloadName);
-
+	imu.SetDriftRates(pMission->GetCM_IMU_Drift());
 	secs.SetSaturnType(SaturnType);
 
 	//
