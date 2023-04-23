@@ -116,8 +116,7 @@ void LEM_ASA::Timestep(double simdt){
 
 	if (IsHeaterPowered())
 	{
-		if (hsink->GetTemp() <= 319.817)
-		//if (fastheater->pumping)
+		if (fastheater->pumping)
 		{
 			fineheater->SetPumpOff();
 		}
@@ -172,8 +171,8 @@ void LEM_ASA::SystemTimestep(double simdt)
 {
 	if (IsPowered())
 	{
-		lem->SCS_ASA_CB.DrawPower(41.1);
-		asaHeat->GenerateHeat(95.1); //Electric heat load from LM-8 Systems Handbook
+		lem->SCS_ASA_CB.DrawPower(42.0);
+		asaHeat->GenerateHeat(42.0); //Electric heat load from LM-3 Systems Handbook
 	}
 }
 
