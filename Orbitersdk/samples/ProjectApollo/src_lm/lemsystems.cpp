@@ -2084,7 +2084,7 @@ void LEM::SystemsTimestep(double simt, double simdt)
 	
 	//*/
 
-	sprintf(oapiDebugString(), "Loop T: %.4f ASA T: %.4f FastHtr: %1f FineHtr: %1f ASAPrimHX %.4f ASASecHX %.4f", KelvinToFahrenheit(*primloop1temp), KelvinToFahrenheit(*ASATemp), *ASAFastHtr, *ASAFineHtr, *ASAPrimHX, *ASASecHX);
+	//sprintf(oapiDebugString(), "Loop T: %.4f ASA T: %.4f FastHtr: %1f FineHtr: %1f ASAPrimHX %.4f ASASecHX %.4f", KelvinToFahrenheit(*primloop1temp), KelvinToFahrenheit(*ASATemp), *ASAFastHtr, *ASAFineHtr, *ASAPrimHX, *ASASecHX);
 	//sprintf(oapiDebugString(), "CFM T: %lf HX: %lf Out: %lf", KelvinToFahrenheit(*CabinFanManifoldTemp), *CabinFanManifoldHX, *CabinFanManifoldOutFlow* LBH);
 
 	//sprintf(oapiDebugString(), "B1T %.3f B2T %.3f B3T %.3f B4T %.3f DGT %.3f B5T %.3f B6T %.3f B5PT %.3f B6PT %.3f AGT %.3f EDA %.3f EDB %.3f", KelvinToFahrenheit(*bat1temp), KelvinToFahrenheit(*bat2temp), KelvinToFahrenheit(*bat3temp), KelvinToFahrenheit(*bat4temp), KelvinToFahrenheit(*desbatglycoltemp), KelvinToFahrenheit(*bat5temp), KelvinToFahrenheit(*bat6temp), KelvinToFahrenheit(*bat5platetemp), KelvinToFahrenheit(*bat6platetemp), KelvinToFahrenheit(*ascbatglycoltemp), KelvinToFahrenheit(*edbatAtemp), KelvinToFahrenheit(*edbatBtemp));
