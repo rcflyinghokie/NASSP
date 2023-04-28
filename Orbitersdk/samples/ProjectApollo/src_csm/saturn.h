@@ -57,7 +57,7 @@
 #include "MechanicalAccelerometer.h"
 #include "checklistController.h"
 #include "payload.h"
-#include "csmcomputer.h"
+#include "CSMcomputer.h"
 #include "qball.h"
 #include "canard.h"
 #include "siisystems.h"
@@ -66,16 +66,11 @@
 #include "csmsensors.h"
 #include "rhc.h"
 #include "inertial.h"
+#include "CueCardManager.h"
 
 #define DIRECTINPUT_VERSION 0x0800
 #include "dinput.h"
 #include "vesim.h"
-
-//
-// IMFD5 communication support
-//
-
-#include "IMFD/IMFD_Client.h"
 
 class IU;
 class SICSystems;
@@ -94,30 +89,6 @@ namespace mission
 #define RCS_CM_RING_1		4
 #define RCS_CM_RING_2		5
 
-///
-/// \brief O2/H2 tank status.
-/// \ingroup InternalInterface
-///
-typedef struct {
-	double O2Tank1PressurePSI;
-	double O2Tank2PressurePSI;
-	double H2Tank1PressurePSI;
-	double H2Tank2PressurePSI;
-	double O2SurgeTankPressurePSI;
-} TankPressures;
-
-///
-/// \brief O2/H2 tank quantities.
-/// \ingroup InternalInterface
-///
-typedef struct {
-	double O2Tank1Quantity;
-	double O2Tank1QuantityKg;
-	double O2Tank2Quantity;
-	double O2Tank2QuantityKg;
-	double H2Tank1Quantity;
-	double H2Tank2Quantity;
-} TankQuantities;
 
 ///
 /// \brief Cabin atmosphere status.
@@ -673,8 +644,6 @@ public:
 			unsigned LETAutoJetFail:1;			///< The LES auto jettison will fail.
 			unsigned LESJetMotorFail:1;			///< The LET jettison motor will fail.
 			unsigned SIIAutoSepFail:1;			///< Stage two will fail to seperate automatically from stage one.
-			unsigned LiftoffSignalAFail:1;		///< Liftoff signal A will not come through from the IU.
-			unsigned LiftoffSignalBFail:1;		///< Liftoff signal B will not come through from the IU.
 			unsigned AutoAbortEnableFail:1;		///< IU fails to enable the auto abort relays.
 		};
 		int word;								///< Word holds the flags from the bitfield in one 32-bit value for scenarios.
@@ -760,7 +729,7 @@ public:
 			unsigned ApexCoverAttached:1;	///< Is the apex cover attached?
 			unsigned ChutesAttached:1;		///< Are the chutes attached?
 			unsigned CSMAttached:1;			///< Is there a CSM?
-			unsigned NosecapAttached:1;		///< Is there an Apollo 5-style nosecap?
+			unsigned Spare1:1;				///< Spare
 			unsigned LESLegsCut:1;			///< Are the LES legs attached?
 			unsigned SIMBayPanelJett:1;		///< Has the SIM bay panel been jettisoned?
 		};
@@ -1141,8 +1110,6 @@ public:
 	///
 	void GetAtmosStatus(AtmosStatus &atm);
 	void GetDisplayedAtmosStatus(DisplayedAtmosStatus &atm);
-	void GetTankPressures(TankPressures &press);
-	void GetTankQuantities(TankQuantities &q);
 
 	///
 	/// Get information on the status of a fuel cell in the CSM.
@@ -1298,11 +1265,6 @@ public:
 	void SetCMdocktgtMesh();
 
 	///
-	/// \brief Set nosecap mesh
-	///
-	void SetNosecapMesh();
-
-	///
 	/// \brief Set VC seats mesh
 	///
 	void SetVCSeatsMesh();
@@ -1310,6 +1272,8 @@ public:
 	void SetCOASMesh();
 
 	void SetSIMBayPanelMesh();
+
+	void AddCMMeshes(const VECTOR3 &mesh_dir);
 
 	///
 	/// Check whether the Launch Escape Tower is attached.
@@ -1319,11 +1283,6 @@ public:
 	bool LETAttached();
 
 	void CutLESLegs();
-
-	///
-	/// \brief Returns the IMFD communication client for ProjectApolloMFD
-	///
-	virtual IMFD_Client *GetIMFDClient() { return &IMFD_Client; }; 
 
 	///
 	/// \brief TLI event management
@@ -1403,8 +1362,6 @@ protected:
 
 	void JettisonOpticsCover();
 
-	void JettisonNosecap();
-
 	void JettisonSIMBayPanel();
 
 	//
@@ -1468,12 +1425,6 @@ protected:
 	bool CSMAttached;
 
 	///
-	/// True if there is an Apollo 5-style nosecap in place of a CSM.
-	/// \brief Nosecap attached flag.
-	///
-	bool NosecapAttached;
-
-	///
 	/// Gives the angle to which the SLA panels will rotate; some of the Skylab missions
 	/// planned to retain the SLA panels but rotate them around 150 degrees.
 	/// \brief SLA panel rotation angle.
@@ -1515,13 +1466,6 @@ protected:
 	/// \brief Time of next event.
 	///
 	double NextMissionEventTime;
-
-	///
-	/// The time in seconds of the previous automated event that occur in the mission. This 
-	/// is a generic value used by the autopilot and staging code.
-	/// \brief Time of last event.
-	///
-	double LastMissionEventTime;
 
 
 	///
@@ -1669,8 +1613,6 @@ protected:
 	FDAI fdaiLeft;
 	int fdaiDisabled;
 	int fdaiSmooth;
-
-	HBITMAP hBmpFDAIRollIndicator;
 
 	//Panels
 
@@ -3525,6 +3467,8 @@ protected:
 	bool LVGuidLight;
 	bool LVRateLight;
 
+	CueCardManager CueCards;
+
 	//
 	// And state that doesn't need to be saved.
 	//
@@ -3543,8 +3487,6 @@ protected:
 	/// \brief SIVb mesh offset.
 	///
 	double S4Offset;
-
-	double actualFUEL;
 
 	bool KEY1;
 	bool KEY2;
@@ -3573,7 +3515,6 @@ protected:
 	int CurrentTimestep;
 	int LongestTimestep;
 	double LongestTimestepLength;
-	VECTOR3 normal;
 
 	PanelSwitches MainPanel;
 	PanelSwitchesVC MainPanelVC;
@@ -3647,6 +3588,14 @@ public:
 	CSMTankTempTransducer H2Tank2TempSensor;
 	CSMTankTempTransducer O2Tank1TempSensor;
 	CSMTankTempTransducer O2Tank2TempSensor;
+	CSMTankPressTransducer H2Tank1PressSensor;
+	CSMTankPressTransducer H2Tank2PressSensor;
+	CSMTankPressTransducer O2Tank1PressSensor;
+	CSMTankPressTransducer O2Tank2PressSensor;
+	CSMTankQuantityTransducer H2Tank1QuantitySensor;
+	CSMTankQuantityTransducer H2Tank2QuantitySensor;
+	CSMTankQuantityTransducer O2Tank1QuantitySensor;
+	CSMTankQuantityTransducer O2Tank2QuantitySensor;
 	CSMTankPressTransducer CabinPressSensor;
 	CSMTankTempTransducer CabinTempSensor;
 	CSMDeltaPressINH2OTransducer SuitCabinDeltaPressSensor;
@@ -3676,6 +3625,12 @@ public:
 	CSMTankTempTransducer PriRadInTempSensor;
 	CSMTankTempTransducer SecRadInTempSensor;
 	CSMTankTempTransducer SecRadOutTempSensor;
+	CSMTankPressTransducer FCO2PressureSensor1;
+	CSMTankPressTransducer FCO2PressureSensor2;
+	CSMTankPressTransducer FCO2PressureSensor3;
+	CSMTankPressTransducer FCH2PressureSensor1;
+	CSMTankPressTransducer FCH2PressureSensor2;
+	CSMTankPressTransducer FCH2PressureSensor3;
 protected:
 
 	// CM Optics
@@ -3957,8 +3912,6 @@ protected:
 	int fwdhatchidx;
 	int opticscoveridx;
 	int cmdocktgtidx;
-	int nosecapidx;
-	int meshLM_1;
 	int simbaypanelidx;
 	int vcidx;
 	int seatsfoldedidx;
@@ -4026,7 +3979,7 @@ protected:
 	int ReticleLineCnt[2], ReticleLineMaxLen;
 	int *ReticleLineLen[2]; //[SCT=0 | SXT=1]
 	double *ReticleLine[2][2]; //[SCT=0 | SXT=1][X=0 | Y=1]
-	POINT *ReticlePoint;
+	oapi::IVECTOR2 *ReticlePoint;
 
 	double PanelPixelHeight;
 
@@ -4060,13 +4013,11 @@ protected:
 	// Vessel handles.
 	//
 
-	OBJHANDLE hLMV;
 	OBJHANDLE hstg1;
 	OBJHANDLE hstg2;
 	OBJHANDLE hintstg;
 	OBJHANDLE hesc1;
 	OBJHANDLE hPROBE;
-	OBJHANDLE hs4bM;
 	OBJHANDLE hs4b1;
 	OBJHANDLE hs4b2;
 	OBJHANDLE hs4b3;
@@ -4082,7 +4033,6 @@ protected:
 	OBJHANDLE hDrogueChute;
 	OBJHANDLE hMainChute;
 	OBJHANDLE hOpticsCover;
-	OBJHANDLE hNosecapVessel;
 	OBJHANDLE hLC34;
 	OBJHANDLE hLC37;
 	OBJHANDLE hLCC;
@@ -4262,14 +4212,13 @@ protected:
 	void GenericTimestepStage(double simt, double simdt);
 	void SetGenericStageState();
 	void DestroyStages(double simt);
-	void LookForSIVb();
-	void LookForLEM();
 	void FireSeperationThrusters(THRUSTER_HANDLE *pth);
 	void LoadDefaultSounds();
 	void RCSSoundTimestep();
 	void LoadVC();
 	void UpdateVC(VECTOR3 meshdir);
 	void DefineCMAttachments();
+	void ResetDynamicMeshIndizes();
 
 	//
 	// Sounds
@@ -4517,11 +4466,6 @@ protected:
 	double *pCabinRepressFlow;
 	double *pEmergencyCabinRegulatorFlow;
 	double *pO2FlowXducer;
-	double *pO2Tank1Press;
-	double *pO2Tank2Press;
-	double *pH2Tank1Press;
-	double *pH2Tank2Press;
-	double *pO2SurgeTankPress;
 	double *pO2Tank1Quantity;
 	double *pO2Tank2Quantity;
 	double *pH2Tank1Quantity;
@@ -4557,11 +4501,6 @@ protected:
 
 #define SISYSTEMS_START_STRING		"SISYSTEMS_BEGIN"
 #define SISYSTEMS_END_STRING		"SISYSTEMS_END"
-
-	//
-	// IMFD5 communication support
-	//
-	IMFD_Client IMFD_Client; 
 
 	//
 	// Friend Class List for systems objects 
@@ -4645,7 +4584,6 @@ extern void StageTransform(VESSEL *vessel, VESSELSTATUS *vs, VECTOR3 ofs, VECTOR
 
 const double STG2O = 8;
 const double SMVO = 0.0;
-const double CREWO = 0.0;
 
 extern MESHHANDLE hSM;
 extern MESHHANDLE hCM;
@@ -4668,8 +4606,5 @@ extern MESHHANDLE hcmseatsfolded;
 extern MESHHANDLE hcmseatsunfolded;
 extern MESHHANDLE hcmCOAScdr;
 extern MESHHANDLE hcmCOAScdrreticle;
-
-extern void SetupgParam(HINSTANCE hModule);
-extern void DeletegParam();
 
 #endif // _PA_SATURN_H

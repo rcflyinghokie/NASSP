@@ -18,8 +18,8 @@
 #include "ARCore.h"
 #include "soundlib.h"
 #include "apolloguidance.h"
-#include "csmcomputer.h"
-#include "lemcomputer.h"
+#include "CSMcomputer.h"
+#include "LEMcomputer.h"
 #include "saturn.h"
 #include "saturnv.h"
 #include "LEM.h"
@@ -97,8 +97,8 @@ public:
 	void menuCycleGMPManeuverVehicle();
 	void menuCycleGMPManeuverPoint();
 	void menuCycleGMPManeuverType();
-	void menuCycleGMPMarkerUp();
-	void menuCycleGMPMarkerDown();
+	void menuCycleMarkerUp();
+	void menuCycleMarkerDown();
 	void menuSetGMPInput();
 	void menuCycleOrbAdjAltRef();
 	void menuMissionNumberInput();
@@ -218,7 +218,6 @@ public:
 	void menuChangeVesselStatus();
 	void menuCycleLMStage();
 	void menuUpdateLiftoffTime();
-	void AGCSignedValue(int &val);
 	void set_svtarget();
 	void TwoImpulseOffset();
 	void GetREFSMMATfromAGC();
@@ -314,19 +313,7 @@ public:
 	void menuSetLDPPSequence();
 	void menuTLANDUplinkCalc();
 	void menuTLANDUpload();
-	void menuSetSkylabPage();
-	void menuSwitchSkylabManeuver();
-	void menuSetSkylabGET();
-	void set_SkylabGET(double time);
-	void menuSkylabCalc();
-	void menuSetSkylabNC();
-	void menuSetSkylabDH1();
-	void menuSetSkylabDH2();
-	void menuSetSkylabEL();
 	void set_t_TPI(double time);
-	void menuCyclePlaneChange();
-	void menuCyclePCManeuver();
-	void set_SkylabDTTPM(double dt);
 	void menuSetDescPlanInitPage();
 	void menuCycleLLWPChaserOption();
 	void menuSetLiftoffguess();
@@ -564,21 +551,10 @@ public:
 	void menuMPTDirectInputTrimAngleInd();
 	void menuTransferPoweredAscentToMPT();
 	void menuTransferPoweredDescentToMPT();
-	void menuMPTMEDM49();
 	void CheckoutMonitorCalc();
-	void menuMPTInitM50M55Table();
-	void menuMPTInitM50CSMWT();
-	void menuMPTInitM50LMWT();
-	void menuMPTInitM50LMAscentWT();
-	void menuMPTInitM50SIVBWT();
-	void set_MPTInitM50CSMWT(double mass);
-	void set_MPTInitM50LMWT(double mass);
-	void set_MPTInitM50LMAscentWT(double mass);
-	void set_MPTInitM50SIVBWT(double mass);
-	void menuMPTInitM55Config();
+	void menuSetMPTInitInput();
 	void set_MPTInitM55Config(char *cfg);
-	void menuMPTM50Update();
-	void menuMPTM55Update();
+	void menuMPTUpdate();
 	void menuMPTInitAutoUpdate();
 	void menuMPTInitM50M55Vehicle();
 	void menuMPTTrajectoryUpdateCSM();
@@ -778,10 +754,19 @@ public:
 	void menuLWP_RINS();
 	void menuLWP_VINS();
 	void menuLWP_GAMINS();
+	void menuLWP_PhaseFlags();
 	void menuLWPCycleDELNOF();
 	void menuLWP_DELNO();
 	void menuSetLWPDisplayPage();
 	void menuSetRendezvousPlanningDisplayPage();
+	void menuSetPerigeeAdjustInputPage();
+	void menuSetPerigeeAdjustDisplayPage();
+	void menuPerigeeAdjustCalc();
+	void CyclePerigeeAdjustVehicle();
+	void menuPerigeeAdjustVectorTime();
+	void menuPerigeeAdjustThresholdTime();
+	void menuPerigeeAdjustTimeIncrement();
+	void menuPerigeeAdjustHeight();
 	void GenericGETInput(double *get, char *message);
 	void GenericDoubleInput(double *val, char* message, double factor = 1.0);
 	void GenericIntInput(int *val, char* message);
@@ -799,6 +784,7 @@ protected:
 	LEM *lem;
 	int screen;
 	int marker;
+	int markermax;
 	int RTETradeoffScreen;
 	static struct ScreenData {
 		int screen;

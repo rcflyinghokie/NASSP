@@ -33,7 +33,7 @@
 #include "dinput.h"
 #include "vesim.h"
 #include "dsky.h"
-#include "imu.h"
+#include "IMU.h"
 #include "cdu.h"
 #include "lmscs.h"
 #include "lm_ags.h"
@@ -773,8 +773,6 @@ protected:
 	int fdaiSmooth;
 
 	CrossPointer crossPointerLeft;
-
-	HBITMAP hBmpFDAIRollIndicator;
 
 	SwitchRow LeftXPointerSwitchRow;
 	ToggleSwitch LeftXPointerSwitch;
@@ -2083,8 +2081,6 @@ extern MESHHANDLE hAstro1;
 extern MESHHANDLE hLMVC;
 
 extern void LEMLoadMeshes();
-extern void InitGParam(HINSTANCE hModule);
-extern void FreeGParam();
 
 //Offset from center of LM mesh (full LM) to center of descent stage mesh (for staging)
 const VECTOR3 OFS_LM_DSC = { 0, -1.25, 0.0 };

@@ -21,12 +21,12 @@
 
   **************************************************************************/
 
-// To force orbitersdk.h to use <fstream> in any compiler version
+// To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
 #include "soundlib.h"
 #include "apolloguidance.h"
-#include "csmcomputer.h"
+#include "CSMcomputer.h"
 #include "LEMcomputer.h"
 #include "papi.h"
 #include "saturn.h"
@@ -41,15 +41,13 @@
 #include "MCC_Mission_D.h"
 #include "MCC_Mission_F.h"
 #include "MCC_Mission_G.h"
+#include "MCC_Mission_H1.h"
 #include "rtcc.h"
 #include "LVDC.h"
 #include "iu.h"
+#include "nassputils.h"
 
-// This is a threadenwerfer. It werfs threaden.
-static DWORD WINAPI MCC_Trampoline(LPVOID ptr){	
-	MCC *mcc = (MCC *)ptr;
-	return(mcc->subThread());
-}
+using namespace nassp;
 
 // SCENARIO FILE MACROLOGY
 #define SAVE_BOOL(KEY,VALUE) oapiWriteScenario_int(scn, KEY, VALUE)
@@ -95,6 +93,8 @@ MCC::MCC(RTCC *rtc)
 	CM_Prev_MoonPosition[0] = 0;
 	CM_Prev_MoonPosition[1] = 0;
 	CM_Prev_MoonPosition[2] = 0;
+	R_E = 0;
+	R_M = 0;
 	// Reset ground stations
 	int x=0;
 	while(x<MAX_GROUND_STATION){
@@ -112,7 +112,8 @@ MCC::MCC(RTCC *rtc)
 		GroundStations[x].UpTlmCaps = 0;
 		GroundStations[x].USBCaps = 0;
 		GroundStations[x].StationPurpose = 0;
-		GroundStations[x].AOS = 0;
+		GroundStations[x].AOS[0] = 0;
+		GroundStations[x].AOS[1] = 0;
 		sprintf(GroundStations[x].Name,"INVALID");
 		sprintf(GroundStations[x].Code,"XXX");
 		x++;
@@ -138,7 +139,8 @@ MCC::MCC(RTCC *rtc)
 	upDescr[0] = 0;
 	upMessage[0] = 0;
 	upType = 0;
-	subThreadStatus = 0;
+	subThreadStatus = DONE;
+	MoonGlobalPos = _V(0.0, 0.0, 0.0);
 
 	// Ground Systems Init
 	Init();
@@ -152,18 +154,30 @@ void MCC::Init(){
 	// Obtain Earth and Moon pointers
 	Earth = oapiGetGbodyByName("Earth");
 	Moon = oapiGetGbodyByName("Moon");
+
+	//Obtain radii for both
+	R_E = oapiGetSize(Earth);
+	R_M = oapiGetSize(Moon);
 	
 	// GROUND TRACKING INITIALIZATION
 	LastAOSUpdate = 2.0;
 
-	TransmittingGroundStation = 0;
-	TransmittingGroundStationVector = _V(0, 0, 0);
+	TransmittingGroundStation[TrackingSlot::SlotCM] = 0;
+	TransmittingGroundStation[TrackingSlot::SlotLM] = 0;
+	TransmittingGroundStationVector[TrackingSlot::SlotCM] = _V(0, 0, 0);
+	TransmittingGroundStationVector[TrackingSlot::SlotLM] = _V(0, 0, 0);
+
+	VesselGlobalPos[TrackingSlot::SlotCM] = _V(0, 0, 0);
+	VesselGlobalPos[TrackingSlot::SlotLM] = _V(0, 0, 0);
+	Vessel_Vector[TrackingSlot::SlotCM] = _V(0, 0, 0);
+	Vessel_Vector[TrackingSlot::SlotLM] = _V(0, 0, 0);
 
 	// Load ground station information.
 	// Later this can be made dynamic, but this will work for now.
 
 	// This particular ground station list is the stations that were on-net for Apollo 8.
 	// The index numbers represent status as of 1968.	
+	// Leave GroundStations[0] empty as an invalid station with no capabilities for the AOS/LOS logic
 	sprintf(GroundStations[1].Name,"ANTIGUA"); sprintf(GroundStations[1].Code,"ANG");
 	// GroundStations[1].Position[0] = 28.40433; GroundStations[1].Position[1] = -80.60192; // This is the Cape?
 	GroundStations[1].Position[0] = 17.137222; GroundStations[1].Position[1] = -61.775833;
@@ -400,7 +414,7 @@ void MCC::Init(){
 	// 28 = MSFNOC (? THE OPERATIONS CENTER ?)
 
 	// 29 = HSK WING
-	sprintf(GroundStations[29].Name,"HONEYSUCKLE"); sprintf(GroundStations[29].Code,"HSKX");
+	sprintf(GroundStations[29].Name,"HONEYSUCKLE WING"); sprintf(GroundStations[29].Code,"HSKX");
 	GroundStations[29].Position[0] = -35.40282; GroundStations[29].Position[1] = 148.98144;
 	GroundStations[29].SBandAntenna = GSSA_26METER;
 	GroundStations[29].StationPurpose = GSPT_LUNAR;
@@ -410,7 +424,7 @@ void MCC::Init(){
 	GroundStations[29].Active = true;
 
 	// 30 = GDS WING
-	sprintf(GroundStations[30].Name,"GOLDSTONE"); sprintf(GroundStations[30].Code,"GDSX");
+	sprintf(GroundStations[30].Name,"GOLDSTONE WING"); sprintf(GroundStations[30].Code,"GDSX");
 	GroundStations[30].Position[0] = 35.33820; GroundStations[30].Position[1] = -116.87421;
 	GroundStations[30].SBandAntenna = GSSA_26METER;
 	GroundStations[30].StationPurpose = GSPT_LUNAR;
@@ -420,7 +434,7 @@ void MCC::Init(){
 	GroundStations[30].Active = true;
 
 	// 31 = MAD WING
-	sprintf(GroundStations[31].Name,"MADRID"); sprintf(GroundStations[31].Code,"MADX");
+	sprintf(GroundStations[31].Name,"MADRID WING"); sprintf(GroundStations[31].Code,"MADX");
 	GroundStations[31].Position[0] = 40.45443; GroundStations[31].Position[1] = -4.16990;
 	GroundStations[31].SBandAntenna = GSSA_26METER;
 	GroundStations[31].StationPurpose = GSPT_LUNAR;
@@ -585,167 +599,39 @@ void MCC::setSubState(int newState){
 
 void MCC::TimeStep(double simdt){
 	int x=0,y=0,z=0;				// Scratch
-	char buf[MAX_MSGSIZE];			// More Scratch
 
 	/* AOS DETERMINATION */
-	
-	
 	LastAOSUpdate += simdt;
-	if (LastAOSUpdate > 1) {
-		double Moonrelang;
-		double LOSRange;
-		VECTOR3 CMGlobalPos = _V(0, 0, 0);
-		VECTOR3 MoonGlobalPos = _V(0, 0, 0);
-		VECTOR3 CM_Vector = _V(0, 0, 0);
-		VECTOR3 GSGlobalVector = _V(0, 0, 0);
-		VECTOR3 GSVector = _V(0, 0, 0);
-		double R_E, R_M;
-		bool MoonInTheWay;
-
-		LastAOSUpdate = 0;
-		// Bail out if we failed to find either major body
-		if (Earth == NULL) { addMessage("Can't find Earth"); GT_Enabled = false; return; }
-		if (Moon == NULL) { addMessage("Can't find Moon"); GT_Enabled = false; return; }
-		//Or the CSM
-		if (cm == NULL) { return; }
-
-		R_E = oapiGetSize(Earth);
-		R_M = oapiGetSize(Moon);
-
-		// Update previous position data
-		CM_Prev_Position[0] = CM_Position[0];
-		CM_Prev_Position[1] = CM_Position[1];
-		CM_Prev_Position[2] = CM_Position[2];
-		CM_Prev_MoonPosition[0] = CM_MoonPosition[0];
-		CM_Prev_MoonPosition[1] = CM_MoonPosition[1];
-		CM_Prev_MoonPosition[2] = CM_MoonPosition[2];
-		// Obtain global positions
-		cm->GetGlobalPos(CMGlobalPos);
+	if (LastAOSUpdate > 1.0) {
+		LastAOSUpdate = 0.0;
 		oapiGetGlobalPos(Moon, &MoonGlobalPos);
-
-		// Convert to Earth equatorial
-		oapiGlobalToEqu(Earth, CMGlobalPos, &CM_Position[1], &CM_Position[0], &CM_Position[2]);
-		// Convert to Earth equatorial
-		oapiGlobalToLocal(Earth, &CMGlobalPos, &CM_Vector);
-		// Convert to Moon equatorial
-		oapiGlobalToEqu(Moon, CMGlobalPos, &CM_MoonPosition[1], &CM_MoonPosition[0], &CM_MoonPosition[2]);
-		// Convert from radians
-		CM_Position[0] *= DEG;
-		CM_Position[1] *= DEG;
-		// Convert from radial distance
-		CM_Position[2] -= 6373338; // Launch pad radius should be good enough
-
-		//Within Lunar SOI
-		if (length(MoonGlobalPos - CMGlobalPos) < 0.0661e9)
-		{
-			// If we just crossed the rev line, count it (from -180 it jumps to 180)
-			if (CM_Prev_MoonPosition[1] < 0 && CM_MoonPosition[1] >= 0 && cm->stage >= STAGE_ORBIT_SIVB) {
-				MoonRev++;
-				MoonRevTime = 0.0;
-				if (GT_Enabled == true) {
-					sprintf(buf, "Rev %d", MoonRev);
-					addMessage(buf);
-				}
-			}
-		}
-		//Within Earth SOI
-		else
-		{
-			// If we just crossed the rev line, count it
-			if (CM_Prev_Position[1] < -80 && CM_Position[1] >= -80 && cm->stage >= STAGE_ORBIT_SIVB) {
-				EarthRev++;
-				if (GT_Enabled == true) {
-					sprintf(buf, "Rev %d", EarthRev);
-					addMessage(buf);
-				}
-			}
-		}
-
-		y = 0;
-
-		while (x < MAX_GROUND_STATION) {
-			if (GroundStations[x].Active == true) {
-				GSVector = _V(cos(GroundStations[x].Position[1] * RAD) * cos(GroundStations[x].Position[0] * RAD), sin(GroundStations[x].Position[0] * RAD), sin(GroundStations[x].Position[1] * RAD) * cos(GroundStations[x].Position[0] * RAD)) * R_E;
-				oapiLocalToGlobal(Earth, &GSVector, &GSGlobalVector);
-				MoonInTheWay = false;
-				if (GroundStations[x].StationPurpose & GSPT_LUNAR)
-				{
-					LOSRange = 5e8;
-				}
-				else
-				{
-					LOSRange = 2e7;
-				}
-				//Moon in the way
-				Moonrelang = dotp(unit(MoonGlobalPos - CMGlobalPos), unit(GSGlobalVector - CMGlobalPos));
-				if (Moonrelang > cos(asin(R_M / length(MoonGlobalPos - CMGlobalPos))))
-				{
-					MoonInTheWay = true;
-				}
-				if (OrbMech::sight(CM_Vector, GSVector, R_E) && GroundStations[x].AOS == 0 && ((GroundStations[x].USBCaps & GSSC_VOICE) || (GroundStations[x].CommCaps & GSGC_VHFAG_VOICE))) {
-					if (length(CM_Vector - GSVector) < LOSRange && !MoonInTheWay)
-					{
-						//Dont switch to a new station if we're transmitting an uplink;
-						bool uplinking = false;
-						if (cm) {
-							if (cm->pcm.mcc_size != 0) {
-								uplinking = true;
-							}
-						}
-						if (lm) {
-							if (lm->PCM.mcc_size != 0) { 
-								uplinking = true;
-							}
-						}
-
-						if (!uplinking) {
-							GroundStations[x].AOS = 1;
-							if (GT_Enabled == true) {
-								sprintf(buf, "AOS %s", GroundStations[x].Name);
-								addMessage(buf);
-							}
-
-							if (GroundStations[x].USBCaps) {
-								TransmittingGroundStation = x; //only interested in picking a station to tx USB carrier
-							}
-						}
-
-					}
-				}
-				if ((!OrbMech::sight(CM_Vector, GSVector, R_E) || length(CM_Vector - GSVector) > LOSRange || MoonInTheWay) && GroundStations[x].AOS == 1) {
-					GroundStations[x].AOS = 0;
-
-					if (GT_Enabled == true) {
-						sprintf(buf, "LOS %s", GroundStations[x].Name);
-						addMessage(buf);
-					}
-				}
-				if (GroundStations[x].AOS) { y++; }
-			}
-			x++;
-		}
-		if (y == 0) {
-			TransmittingGroundStation = 0;
-		}
+		if (cm) { AutoUpdateXmitGroundStation(static_cast<VESSEL*>(cm), TrackingVesselType::TypeCM, TrackingSlot::SlotCM); }
+		if (lm) { AutoUpdateXmitGroundStation(static_cast<VESSEL*>(lm), TrackingVesselType::TypeLM, TrackingSlot::SlotLM); }
+		UpdateRevCounters(TrackingSlot::SlotCM); //Will almost always be CM, unless Apollo 5 gets MCC support, then you'll need logic for that.
 	}
 
-	if (TransmittingGroundStation) {
-		VECTOR3 XmitGSVector = _V(cos(GroundStations[TransmittingGroundStation].Position[1] * RAD) * cos(GroundStations[TransmittingGroundStation].Position[0] * RAD),
-			sin(GroundStations[TransmittingGroundStation].Position[0] * RAD),
-			sin(GroundStations[TransmittingGroundStation].Position[1] * RAD) * cos(GroundStations[TransmittingGroundStation].Position[0] * RAD)) * oapiGetSize(Earth);
-		oapiLocalToGlobal(Earth, &XmitGSVector, &TransmittingGroundStationVector);
+	if (TransmittingGroundStation[TrackingSlot::SlotCM]) {
+		VECTOR3 XmitGSVector = _V(cos(GroundStations[TransmittingGroundStation[TrackingSlot::SlotCM]].Position[1] * RAD) * cos(GroundStations[TransmittingGroundStation[TrackingSlot::SlotCM]].Position[0] * RAD),
+			sin(GroundStations[TransmittingGroundStation[TrackingSlot::SlotCM]].Position[0] * RAD),
+			sin(GroundStations[TransmittingGroundStation[TrackingSlot::SlotCM]].Position[1] * RAD) * cos(GroundStations[TransmittingGroundStation[TrackingSlot::SlotCM]].Position[0] * RAD)) * oapiGetSize(Earth);
+		oapiLocalToGlobal(Earth, &XmitGSVector, &TransmittingGroundStationVector[TrackingSlot::SlotCM]);
 	}
 	else {
-		TransmittingGroundStationVector = _V(0, 0, 0);
+		TransmittingGroundStationVector[TrackingSlot::SlotCM] = _V(0, 0, 0);
+	}
+
+	if (TransmittingGroundStation[TrackingSlot::SlotLM]) {
+		VECTOR3 XmitGSVector = _V(cos(GroundStations[TransmittingGroundStation[TrackingSlot::SlotLM]].Position[1] * RAD) * cos(GroundStations[TransmittingGroundStation[TrackingSlot::SlotLM]].Position[0] * RAD),
+			sin(GroundStations[TransmittingGroundStation[TrackingSlot::SlotLM]].Position[0] * RAD),
+			sin(GroundStations[TransmittingGroundStation[TrackingSlot::SlotLM]].Position[1] * RAD) * cos(GroundStations[TransmittingGroundStation[TrackingSlot::SlotLM]].Position[0] * RAD)) * oapiGetSize(Earth);
+		oapiLocalToGlobal(Earth, &XmitGSVector, &TransmittingGroundStationVector[TrackingSlot::SlotLM]);
+	}
+	else {
+		TransmittingGroundStationVector[TrackingSlot::SlotLM] = _V(0, 0, 0);
 	}
 
 	//debugging
-	/*if (TransmittingGroundStation) {
-		sprintf(oapiDebugString(), TransmittingGroundStation->Name);
-	}
-	else {
-		sprintf(oapiDebugString(), "none");
-	}*/
+	//sprintf(oapiDebugString(), "%d %d", TransmittingGroundStation[TrackingSlot::SlotCM], TransmittingGroundStation[TrackingSlot::SlotLM]);
 
 	// MISSION STATE EVALUATOR
 	if(MT_Enabled == true){
@@ -786,19 +672,28 @@ void MCC::TimeStep(double simdt){
 					setState(MST_SV_PRELAUNCH);
 					break;
 				case 12:
+					MissionType = MTP_H1;
+					setState(MST_SV_PRELAUNCH);
+					break;
 				case 13:
+					MissionType = MTP_H2;
+					break;
 				case 14:
-					MissionType = MTP_H;
+					MissionType = MTP_H3;
 					break;
 				case 15:
+					MissionType = MTP_J1;
+					break;
 				case 16:
+					MissionType = MTP_J2;
+					break;
 				case 17:
-					MissionType = MTP_J;
+					MissionType = MTP_J3;
 					break;
 				default:
 					// If the ApolloNo is not on this list, you are expected to provide a mission type in the scenario file, which will override the default.
 					if (cm->SaturnType == SAT_SATURNV) {
-						MissionType = MTP_H;
+						MissionType = MTP_H1;
 					}
 					if (cm->SaturnType == SAT_SATURN1B) {
 						MissionType = MTP_C;
@@ -817,6 +712,7 @@ void MCC::TimeStep(double simdt){
 				}
 			}
 			if(MissionType == 0){
+				char buf[MAX_MSGSIZE];
 				sprintf(buf,"Unsupported Mission %d",cm->ApolloNo);
 				addMessage(buf);
 				MT_Enabled = false;
@@ -951,6 +847,9 @@ void MCC::TimeStep(double simdt){
 					case MTP_G:
 						setState(MST_G_INSERTION);
 						break;
+					case MTP_H1:
+						setState(MST_H1_INSERTION);
+						break;
 					}
 				}
 			}
@@ -994,6 +893,12 @@ void MCC::TimeStep(double simdt){
 			********************** */
 			MissionSequence_G();
 			break;
+		case MTP_H1:
+			/* *********************
+			* MISSION H1: APOLLO 12 *
+			********************** */
+			MissionSequence_H1();
+			break;
 		}
 	}
 
@@ -1022,6 +927,155 @@ void MCC::TimeStep(double simdt){
 	}
 	if(z == 1){								// If we set the updation flag
 		oapiAnnotationSetText(NHmessages,msgOutputBuf);	// update the annotation
+	}
+}
+
+void MCC::AutoUpdateXmitGroundStation(VESSEL* Ves, TrackingVesselType Type, TrackingSlot Slot)
+{
+	double Moonrelang;
+	double LOSRange;
+	VECTOR3 GSGlobalVector = _V(0, 0, 0);
+	VECTOR3 GSVector = _V(0, 0, 0);
+	bool MoonInTheWay, Sight;
+
+	// Bail out if we failed to find either major body
+	if (Earth == NULL) { addMessage("Can't find Earth"); GT_Enabled = false; return; }
+	if (Moon == NULL) { addMessage("Can't find Moon"); GT_Enabled = false; return; }
+
+	int AOSCount = 0;
+
+	//Get vessel position in local and global coordinates
+	Ves->GetGlobalPos(VesselGlobalPos[Slot]);
+	oapiGlobalToLocal(Earth, &VesselGlobalPos[Slot], &(Vessel_Vector[Slot]));
+
+	for(int StationIndex = 1; StationIndex < MAX_GROUND_STATION; StationIndex++){
+		if (GroundStations[StationIndex].Active == true) {
+
+			GSVector = _V(cos(GroundStations[StationIndex].Position[1] * RAD) * cos(GroundStations[StationIndex].Position[0] * RAD),
+				sin(GroundStations[StationIndex].Position[0] * RAD), 
+				sin(GroundStations[StationIndex].Position[1] * RAD) * cos(GroundStations[StationIndex].Position[0] * RAD)) * R_E;
+			
+			oapiLocalToGlobal(Earth, &GSVector, &GSGlobalVector);
+			MoonInTheWay = false;
+			if (GroundStations[StationIndex].StationPurpose & GSPT_LUNAR)
+			{
+				LOSRange = 5e8;
+			}
+			else
+			{
+				LOSRange = 2e7;
+			}
+			//Check if there is line-of-sight between vessel and station
+			Sight = OrbMech::sight(Vessel_Vector[Slot], GSVector, R_E);
+			//Moon in the way
+			Moonrelang = dotp(unit(MoonGlobalPos - VesselGlobalPos[Slot]), unit(GSGlobalVector - VesselGlobalPos[Slot]));
+			if (Moonrelang > cos(asin(R_M / length(MoonGlobalPos - VesselGlobalPos[Slot]))))
+			{
+				MoonInTheWay = true;
+			}
+			if (Sight && GroundStations[StationIndex].AOS[Slot] == 0 && ((GroundStations[StationIndex].USBCaps & GSSC_VOICE) || (GroundStations[StationIndex].CommCaps & GSGC_VHFAG_VOICE))) {
+				if (length(Vessel_Vector[Slot] - GSVector) < LOSRange && !MoonInTheWay)
+				{
+					//Dont switch to a new station if we're transmitting an uplink;
+					bool uplinking = false;
+					
+					switch (Type) {
+						case TrackingVesselType::TypeCM:
+							if (((Saturn*)Ves)->pcm.mcc_size != 0) { uplinking = true; }
+							break;
+						case TrackingVesselType::TypeLM:
+							if (((LEM*)Ves)->PCM.mcc_size != 0) { uplinking = true; }
+							break;
+					}
+					
+
+					if (!uplinking) {
+						GroundStations[StationIndex].AOS[Slot] = 1;
+						if (Type == TrackingVesselType::TypeCM && GT_Enabled == true) {
+							char buf[MAX_MSGSIZE];
+							sprintf(buf, "AOS %s", GroundStations[StationIndex].Name);
+							addMessage(buf);
+						}
+
+						if (GroundStations[StationIndex].USBCaps) {
+							TransmittingGroundStation[Slot] = StationIndex; //only interested in picking a station to tx USB carrier
+						}
+					}
+
+				}
+			}
+			if ((!Sight || length(Vessel_Vector[Slot] - GSVector) > LOSRange || MoonInTheWay) && GroundStations[StationIndex].AOS[Slot] == 1) {
+				GroundStations[StationIndex].AOS[Slot] = 0;
+
+				if (Type == TrackingVesselType::TypeCM && GT_Enabled == true) {
+					char buf[MAX_MSGSIZE];
+					sprintf(buf, "LOS %s", GroundStations[StationIndex].Name);
+					addMessage(buf);
+				}
+			}
+			if (GroundStations[StationIndex].AOS[Slot]) { AOSCount++; }
+		}
+	}
+	if (AOSCount == 0) {
+		TransmittingGroundStation[Slot] = 0;
+	}
+}
+
+void MCC::UpdateRevCounters(TrackingSlot Slot)
+{
+	// TEMPORARY FIX, need to make this work for LM only missions at some point
+	// probably by asking the RTCC very nicely for rev count info from its MPTs
+	if (!cm) { return; }
+	//-------------------------------------------------------------------------
+
+	//This function requires that VesselGlobalPos, MoonGlobalPos and Vessel_Vector were calculated in AutoUpdateXmitGroundStation
+
+	// Update previous position data
+	CM_Prev_Position[0] = CM_Position[0];
+	CM_Prev_Position[1] = CM_Position[1];
+	CM_Prev_Position[2] = CM_Position[2];
+	CM_Prev_MoonPosition[0] = CM_MoonPosition[0];
+	CM_Prev_MoonPosition[1] = CM_MoonPosition[1];
+	CM_Prev_MoonPosition[2] = CM_MoonPosition[2];
+
+	// Convert to Earth equatorial
+	oapiGlobalToEqu(Earth, VesselGlobalPos[Slot], &CM_Position[1], &CM_Position[0], &CM_Position[2]);
+	// Convert to Earth equatorial
+	oapiGlobalToLocal(Earth, &VesselGlobalPos[0], &Vessel_Vector[Slot]);
+	// Convert to Moon equatorial
+	oapiGlobalToEqu(Moon, VesselGlobalPos[Slot], &CM_MoonPosition[1], &CM_MoonPosition[0], &CM_MoonPosition[2]);
+	// Convert from radians
+	CM_Position[0] *= DEG;
+	CM_Position[1] *= DEG;
+	// Convert from radial distance
+	CM_Position[2] -= 6373338; // Launch pad radius should be good enough
+
+	//Within Lunar SOI
+	if (length(MoonGlobalPos - VesselGlobalPos[Slot]) < 0.0661e9)
+	{
+		// If we just crossed the rev line, count it (from -180 it jumps to 180)
+		if (CM_Prev_MoonPosition[1] < 0 && CM_MoonPosition[1] >= 0 && cm->stage >= STAGE_ORBIT_SIVB) {
+			MoonRev++;
+			MoonRevTime = 0.0;
+			if (GT_Enabled == true) {
+				char buf[MAX_MSGSIZE];
+				sprintf(buf, "Rev %d", MoonRev);
+				addMessage(buf);
+			}
+		}
+	}
+	//Within Earth SOI
+	else
+	{
+		// If we just crossed the rev line, count it
+		if (CM_Prev_Position[1] < -80 && CM_Position[1] >= -80 && cm->stage >= STAGE_ORBIT_SIVB) {
+			EarthRev++;
+			if (GT_Enabled == true) {
+				char buf[MAX_MSGSIZE];
+				sprintf(buf, "Rev %d", EarthRev);
+				addMessage(buf);
+			}
+		}
 	}
 }
 
@@ -1225,25 +1279,20 @@ int MCC::LM_uplink_buffer() {
 
 // Subthread Entry Point
 int MCC::subThread(){
-	int Result = 0;
-	subThreadStatus = 2; // Running
+	ThreadStatus Result = DONE;
+	subThreadStatus = RUNNING;
 	
 	if (subThreadMode == 0)
 	{
 		Sleep(5000); // Waste 5 seconds
-		Result = 0;  // Success (negative = error)
+		Result = DONE;  // Success (negative = error)
 	}
 	else if (MissionType == MTP_B)
 	{
 		subThreadMacro(subThreadType, subThreadMode);
-		Result = 0;
+		Result = DONE;
 	}
-	else if (MissionType == MTP_D)
-	{
-		subThreadMacro(subThreadType, subThreadMode);
-		Result = 0;
-	}
-	else if (MissionType == MTP_F || MissionType == MTP_G)
+	else if (MissionType == MTP_D || MissionType == MTP_F || MissionType == MTP_G || MissionType == MTP_H1)
 	{
 		//Try to find LEM
 		if (rtcc->calcParams.tgt == NULL)
@@ -1256,12 +1305,12 @@ int MCC::subThread(){
 		}
 
 		subThreadMacro(subThreadType, subThreadMode);
-		Result = 0;
+		Result = DONE;
 	}
 	else if (MissionType == MTP_C_PRIME)
 	{
 		subThreadMacro(subThreadType, subThreadMode);
-		Result = 0;
+		Result = DONE;
 	}
 	else if (MissionType == MTP_C)
 	{
@@ -1271,7 +1320,7 @@ int MCC::subThread(){
 			rtcc->calcParams.tgt = oapiGetVesselInterface(ves); // Should be user-programmable later
 		}
 		subThreadMacro(subThreadType, subThreadMode);
-		Result = 0; // Done
+		Result = DONE; // Done
 	}
 	subThreadStatus = Result;
 	// Printing messages from the subthread is not safe, but this is just for testing.
@@ -1281,14 +1330,13 @@ int MCC::subThread(){
 
 // Subthread initiation
 int MCC::startSubthread(int fcn, int type){
-	if(subThreadStatus < 1){
+	if(IsReady(subThreadStatus)){
 		// Punt thread
 		subThreadMode = fcn;
 		subThreadType = type;
-		subThreadStatus = 1; // Busy
-		DWORD id = 0;
-		HANDLE h = CreateThread(NULL, 0, MCC_Trampoline, this, 0, &id);
-		if(h != NULL){ CloseHandle(h); }
+		subThreadStatus = SCHEDULED;
+		std::thread t(&MCC::subThread, this);
+		t.detach();
 		addMessage("Thread Started");
 	}else{
 		addMessage("Thread Busy");
@@ -1317,13 +1365,19 @@ void MCC::SaveState(FILEHANDLE scn) {
 	SAVE_INT("MCC_AbortMode", AbortMode);
 	for (int i = 0; i < MAX_GROUND_STATION; i++)
 	{
-		if (GroundStations[i].AOS)
+		if (GroundStations[i].AOS[TrackingSlot::SlotCM])
 		{
-			int Itemp[2] = { i, GroundStations[i].AOS };
-			papiWriteScenario_intarr(scn, "MCC_GroundStationAOS", Itemp, 2);
+			int Itemp[2] = { i, GroundStations[i].AOS[TrackingSlot::SlotCM]};
+			papiWriteScenario_intarr(scn, "MCC_GroundStationAOS_CM", Itemp, 2);
+		}
+		if (GroundStations[i].AOS[0])
+		{
+			int Itemp[2] = { i, GroundStations[i].AOS[TrackingSlot::SlotLM] };
+			papiWriteScenario_intarr(scn, "MCC_GroundStationAOS_LM", Itemp, 2);
 		}
 	}
-	if (TransmittingGroundStation) { SAVE_INT("MCC_TransmittingGroundstation", TransmittingGroundStation); }
+	if (TransmittingGroundStation[TrackingSlot::SlotCM]) { SAVE_INT("MCC_TransmittingGroundstation", TransmittingGroundStation[TrackingSlot::SlotCM]); }
+	if (TransmittingGroundStation[TrackingSlot::SlotLM]) { SAVE_INT("MCC_TransmittingGroundstationLM", TransmittingGroundStation[TrackingSlot::SlotLM]); }
 	// Floats
 	SAVE_DOUBLE("MCC_StateTime", StateTime);
 	SAVE_DOUBLE("MCC_SubStateTime", SubStateTime);
@@ -1835,6 +1889,45 @@ void MCC::SaveState(FILEHANDLE scn) {
 			SAVE_V3("MCC_AP7RETRORIENTPAD_RetroAtt_Day", form->RetroAtt_Day);
 			SAVE_V3("MCC_AP7RETRORIENTPAD_RetroAtt_Night", form->RetroAtt_Night);
 		}
+		else if (padNumber == PT_AP12PDIABORTPAD)
+		{
+		AP12PDIABORTPAD *form = (AP12PDIABORTPAD*)padForm;
+
+		SAVE_DOUBLE("MCC_PDIABORTPAD_T_TPI_Post10Min", form->T_TPI_Post10Min);
+		SAVE_DOUBLE("MCC_PDIABORTPAD_T_TPI_Pre10Min", form->T_TPI_Pre10Min);
+		}
+		else if (padNumber == PT_AP12LUNSURFPAD)
+		{
+		AP12LunarSurfaceDataCard *form = (AP12LunarSurfaceDataCard*)padForm;
+
+		SAVE_DOUBLE("MCC_AP12T2ABORTPAD_TIG", form->T2_TIG);
+		SAVE_DOUBLE("MCC_AP12T2ABORTPAD_t_TPI", form->T2_t_TPI);
+		SAVE_DOUBLE("MCC_AP12T3ABORTPAD_TIG", form->T3_TIG);
+		}
+		else if (padNumber == PT_LMP22ACQPAD)
+		{
+		LMP22ACQPAD *form = (LMP22ACQPAD*)padForm;
+
+		SAVE_DOUBLE("MCC_AP12P22ACQ", form->P22_ACQ);
+		}
+		else if (padNumber == PT_AP12LMASCPAD)
+		{
+		AP12LMASCPAD *form = (AP12LMASCPAD*)padForm;
+
+		SAVE_DOUBLE("MCC_AP12LMASCPAD_CR", form->CR);
+		SAVE_INT("MCC_AP12LMASCPAD_DEDA047", form->DEDA047);
+		SAVE_INT("MCC_AP12LMASCPAD_DEDA053", form->DEDA053);
+		SAVE_DOUBLE("MCC_AP12LMASCPAD_DEDA225_226", form->DEDA225_226);
+		SAVE_DOUBLE("MCC_AP12LMASCPAD_DEDA231", form->DEDA231);
+		SAVE_DOUBLE("MCC_AP12LMASCPAD_TIG", form->TIG);
+		SAVE_DOUBLE("MCC_AP12LMASCPAD_V_hor", form->V_hor);
+		SAVE_DOUBLE("MCC_AP12LMASCPAD_V_vert", form->V_vert);
+		SAVE_STRING("MCC_AP12LMASCPAD_remarks", form->remarks);
+		SAVE_DOUBLE("MCC_AP12LMASCPAD_TIG_2", form->TIG_2);
+		SAVE_DOUBLE("MCC_AP12LMASCPAD_DEDA231", form->DEDA465);
+		SAVE_DOUBLE("MCC_AP12LMASCPAD_LM_WT", form->LMWeight);
+		SAVE_DOUBLE("MCC_AP12LMASCPAD_CSM_WT", form->CSMWeight);
+		}
 	}
 	// Write uplink buffer here!
 	if (upString[0] != 0 && uplink_size > 0) { SAVE_STRING("MCC_upString", upString); }
@@ -1875,13 +1968,19 @@ void MCC::LoadState(FILEHANDLE scn) {
 		LOAD_DOUBLE("MCC_MoonRevTime", MoonRevTime);
 		LOAD_STRING("MCC_PCOption_Text", PCOption_Text, 32);
 		LOAD_STRING("MCC_NCOption_Text", NCOption_Text, 32);
-		LOAD_INT("MCC_TransmittingGroundstation", TransmittingGroundStation);
+		LOAD_INT("MCC_TransmittingGroundstation", TransmittingGroundStation[TrackingSlot::SlotCM]);
+		LOAD_INT("MCC_TransmittingGroundstationLM", TransmittingGroundStation[TrackingSlot::SlotLM]);
 		LOAD_INT("MCC_padNumber", padNumber);
 		//LOAD_INT("MCC_padState", padState);
 
-		if (papiReadScenario_intarr(line, "MCC_GroundStationAOS", iTemp, 2))
+		if (papiReadScenario_intarr(line, "MCC_GroundStationAOS_CM", iTemp, 2))
 		{
-			GroundStations[iTemp[0]].AOS = iTemp[1];
+			GroundStations[iTemp[0]].AOS[TrackingSlot::SlotCM] = iTemp[1];
+		}
+
+		if (papiReadScenario_intarr(line, "MCC_GroundStationAOS_LM", iTemp, 2))
+		{
+			GroundStations[iTemp[0]].AOS[TrackingSlot::SlotLM] = iTemp[1];
 		}
 
 		if (padNumber > 0)
@@ -2374,6 +2473,45 @@ void MCC::LoadState(FILEHANDLE scn) {
 			LOAD_DOUBLE("MCC_AP7RETRORIENTPAD_GET_Night", form->GET_Night);
 			LOAD_V3("MCC_AP7RETRORIENTPAD_RetroAtt_Day", form->RetroAtt_Day);
 			LOAD_V3("MCC_AP7RETRORIENTPAD_RetroAtt_Night", form->RetroAtt_Night);
+		}
+		else if (padNumber == PT_AP12PDIABORTPAD)
+		{
+		AP12PDIABORTPAD *form = (AP12PDIABORTPAD*)padForm;
+
+		LOAD_DOUBLE("MCC_PDIABORTPAD_T_TPI_Post10Min", form->T_TPI_Post10Min);
+		LOAD_DOUBLE("MCC_PDIABORTPAD_T_TPI_Pre10Min", form->T_TPI_Pre10Min);
+		}
+		else if (padNumber == PT_AP12LUNSURFPAD)
+		{
+		AP12LunarSurfaceDataCard *form = (AP12LunarSurfaceDataCard*)padForm;
+
+		LOAD_DOUBLE("MCC_AP12T2ABORTPAD_TIG", form->T2_TIG);
+		LOAD_DOUBLE("MCC_AP12T2ABORTPAD_t_TPI", form->T2_t_TPI);
+		LOAD_DOUBLE("MCC_AP12T3ABORTPAD_TIG", form->T3_TIG);
+		}
+		else if (padNumber == PT_LMP22ACQPAD)
+		{
+		LMP22ACQPAD *form = (LMP22ACQPAD*)padForm;
+
+		LOAD_DOUBLE("MCC_AP12P22ACQ", form->P22_ACQ);
+		}
+		else if (padNumber == PT_AP12LMASCPAD)
+		{
+		AP12LMASCPAD *form = (AP12LMASCPAD*)padForm;
+
+		LOAD_DOUBLE("MCC_AP12LMASCPAD_CR", form->CR);
+		LOAD_INT("MCC_AP12LMASCPAD_DEDA047", form->DEDA047);
+		LOAD_INT("MCC_AP12LMASCPAD_DEDA053", form->DEDA053);
+		LOAD_DOUBLE("MCC_AP12LMASCPAD_DEDA225_226", form->DEDA225_226);
+		LOAD_DOUBLE("MCC_AP12LMASCPAD_DEDA231", form->DEDA231);
+		LOAD_DOUBLE("MCC_AP12LMASCPAD_TIG", form->TIG);
+		LOAD_DOUBLE("MCC_AP12LMASCPAD_V_hor", form->V_hor);
+		LOAD_DOUBLE("MCC_AP12LMASCPAD_V_vert", form->V_vert);
+		LOAD_STRING("MCC_AP12LMASCPAD_remarks", form->remarks, 128);
+		LOAD_DOUBLE("MCC_AP12LMASCPAD_TIG_2", form->TIG_2);
+		LOAD_DOUBLE("MCC_AP12LMASCPAD_DEDA231", form->DEDA465);
+		LOAD_DOUBLE("MCC_AP12LMASCPAD_LM_WT", form->LMWeight);
+		LOAD_DOUBLE("MCC_AP12LMASCPAD_CSM_WT", form->CSMWeight);
 		}
 
 		LOAD_STRING("MCC_upString", upString, 3072);
@@ -3183,6 +3321,70 @@ void MCC::drawPad(bool writetofile){
 		oapiAnnotationSetText(NHpad, buffer);
 	}
 	break;
+	case PT_AP12PDIABORTPAD:
+	{
+		AP12PDIABORTPAD *form = (AP12PDIABORTPAD*)padForm;
+
+		int hh[2], mm[2];
+		double ss[2];
+
+		SStoHHMMSS(form->T_TPI_Pre10Min, hh[0], mm[0], ss[0]);
+		SStoHHMMSS(form->T_TPI_Post10Min, hh[1], mm[1], ss[1]);
+
+		sprintf(buffer, "PDI ABORT <10 MIN\n%+06d HRS N37\n%+06d MIN TPI\n%+07.2f SEC\nPDI ABORT >10 MIN\n%+06d HRS N37\n%+06d MIN TPI\n%+07.2f SEC", hh[0], mm[0], ss[0], hh[1], mm[1], ss[1]);
+
+		oapiAnnotationSetText(NHpad, buffer);
+	}
+	break;
+	case PT_AP12LUNSURFPAD:
+	{
+		AP12LunarSurfaceDataCard *form = (AP12LunarSurfaceDataCard*)padForm;
+
+		int hh[3], mm[3];
+		double ss[3];
+
+		SStoHHMMSS(form->T2_TIG, hh[0], mm[0], ss[0]);
+		SStoHHMMSS(form->T2_t_TPI, hh[1], mm[1], ss[1]);
+		SStoHHMMSS(form->T3_TIG, hh[2], mm[2], ss[2]);
+
+		sprintf(buffer, "T2 ABORT\n%+06d HRS T2\n%+06d MIN TIG\n%+07.2f SEC\n%+06d HRS N37\n%+06d MIN TPI\n%+07.2f SEC\nT3 ABORT\n%+06d HRS T3\n%+06d MIN TIG\n%+07.2f SEC",
+			hh[0], mm[0], ss[0], hh[1], mm[1], ss[1], hh[2], mm[2], ss[2]);
+
+		oapiAnnotationSetText(NHpad, buffer);
+	}
+	break;
+	case PT_LMP22ACQPAD:
+	{
+		LMP22ACQPAD *form = (LMP22ACQPAD*)padForm;
+
+		int hh, mm;
+		double ss;
+
+		SStoHHMMSS(form->P22_ACQ, hh, mm, ss);
+
+		sprintf(buffer, "P22 ACQUISITION\n%+06d HRS\n%+06d MIN\n%+07.2f SEC", hh, mm, ss);
+
+		oapiAnnotationSetText(NHpad, buffer);
+	}
+	break;
+	case PT_AP12LMASCPAD:
+	{
+		AP12LMASCPAD *form = (AP12LMASCPAD*)padForm;
+
+		int hh[2], mm[2];
+		double ss[2];
+
+		SStoHHMMSS(form->TIG, hh[0], mm[0], ss[0]);
+		SStoHHMMSS(form->TIG_2, hh[1], mm[1], ss[1]);
+
+		sprintf(buffer, "LM ASCENT PAD\n%+06d HRS\n%+06d MIN TIG\n%+07.2f SEC\n%+07.1f V (HOR)\n%+07.1f V (VERT) N76\n%+07.1f CROSSRANGE\n"
+			"%+06d 047\n%+06d 053\n%+06.0f 225/226\n%+06.0f 231\n%+07.1f 465\n%+06d HRS\n%+06d MIN TIG\n%+07.2f SEC\n%+06.0f LM WT\n%+06.0f CSM WT\nRemarks: %s",
+			hh[0], mm[0], ss[0], form->V_hor, form->V_vert, form->CR, form->DEDA047, form->DEDA053, form->DEDA225_226, form->DEDA231, form->DEDA465, hh[1], mm[1], ss[1],
+			form->LMWeight, form->CSMWeight, form->remarks);
+
+		oapiAnnotationSetText(NHpad, buffer);
+	}
+	break;
 	case PT_GENERIC:
 	{
 		GENERICPAD * form = (GENERICPAD *)padForm;
@@ -3321,6 +3523,18 @@ void MCC::allocPad(int Number){
 		break;
 	case PT_RETROORIENTATION: // AP7RETRORIENTPAD
 		padForm = calloc(1, sizeof(AP7RETRORIENTPAD));
+		break;
+	case PT_AP12PDIABORTPAD: // AP12PDIABORTPAD
+		padForm = calloc(1, sizeof(AP12PDIABORTPAD));
+		break;
+	case PT_AP12LUNSURFPAD: // AP12T2ABORTPAD
+		padForm = calloc(1, sizeof(AP12LunarSurfaceDataCard));
+		break;
+	case PT_LMP22ACQPAD: // LMP22ACQPAD
+		padForm = calloc(1, sizeof(LMP22ACQPAD));
+		break;
+	case PT_AP12LMASCPAD: // AP12LMASCPAD
+		padForm = calloc(1, sizeof(AP12LMASCPAD));
 		break;
 	case PT_GENERIC: // GENERICPAD
 		padForm = calloc(1, sizeof(GENERICPAD));
@@ -3625,7 +3839,7 @@ void MCC::UpdateMacro(int type, int padtype, bool condition, int updatenumber, i
 			setSubState(1);
 			// FALL INTO
 		case 1: // Await pad read-up time (however long it took to compute it and give it to capcom)
-			if (SubStateTime > 1 && subThreadStatus == 0) {
+			if (SubStateTime > 1 && subThreadStatus == DONE) {
 				if (scrubbed)
 				{
 					if (upMessage[0] != 0)
@@ -3669,7 +3883,7 @@ void MCC::UpdateMacro(int type, int padtype, bool condition, int updatenumber, i
 		case 3: // Negative response / not ready for uplink
 			break;
 		case 4: // Ready for uplink
-			if (SubStateTime > 1 && subThreadStatus == 0) {
+			if (SubStateTime > 1 && subThreadStatus == DONE) {
 				// The uplink should also be ready, so flush the uplink buffer to the CMC
 				this->CM_uplink_buffer();
 				// uplink_size = 0; // Reset
@@ -3720,7 +3934,7 @@ void MCC::UpdateMacro(int type, int padtype, bool condition, int updatenumber, i
 			setSubState(1);
 			// FALL INTO
 		case 1: // Await pad read-up time (however long it took to compute it and give it to capcom)
-			if (SubStateTime > 1 && subThreadStatus == 0) {
+			if (SubStateTime > 1 && subThreadStatus == DONE) {
 				// Completed. We really should test for P00 and proceed since that would be visible to the ground.
 				addMessage("CSM: Ready for uplink?");
 				sprintf(PCOption_Text, "Ready for uplink");
@@ -3795,7 +4009,7 @@ void MCC::UpdateMacro(int type, int padtype, bool condition, int updatenumber, i
 			setSubState(1);
 			// FALL INTO
 		case 1: // Await pad read-up time (however long it took to compute it and give it to capcom)
-			if (SubStateTime > 1 && subThreadStatus == 0) {
+			if (SubStateTime > 1 && subThreadStatus == DONE) {
 				if (scrubbed)
 				{
 					if (upMessage[0] != 0)
@@ -3839,7 +4053,7 @@ void MCC::UpdateMacro(int type, int padtype, bool condition, int updatenumber, i
 		case 3: // Negative response / not ready for uplink
 			break;
 		case 4: // Ready for uplink
-			if (SubStateTime > 1 && subThreadStatus == 0) {
+			if (SubStateTime > 1 && subThreadStatus == DONE) {
 				// The uplink should also be ready, so flush the uplink buffer to the CMC
 				this->LM_uplink_buffer();
 				// uplink_size = 0; // Reset
@@ -3890,7 +4104,7 @@ void MCC::UpdateMacro(int type, int padtype, bool condition, int updatenumber, i
 			setSubState(1);
 			// FALL INTO
 		case 1: // Await pad read-up time (however long it took to compute it and give it to capcom)
-			if (SubStateTime > 1 && subThreadStatus == 0) {
+			if (SubStateTime > 1 && subThreadStatus == DONE) {
 				// Completed. We really should test for P00 and proceed since that would be visible to the ground.
 				addMessage("LM: Ready for uplink?");
 				sprintf(PCOption_Text, "Ready for uplink");
@@ -3997,7 +4211,7 @@ void MCC::UpdateMacro(int type, int padtype, bool condition, int updatenumber, i
 			setSubState(1);
 			// FALL INTO
 		case 1: // Await pad read-up time (however long it took to compute it and give it to capcom)
-			if (SubStateTime > 1 && subThreadStatus == 0) {
+			if (SubStateTime > 1 && subThreadStatus == DONE) {
 				if (upMessage[0] != 0)
 				{
 					addMessage(upMessage);
@@ -4125,6 +4339,10 @@ void MCC::initiateAbort()
 		{
 			setState(MST_G_ABORT_ORBIT);
 		}
+		else if (MissionType == MTP_H1)
+		{
+			setState(MST_H1_ABORT_ORBIT);
+		}
 	}
 	else if (MissionPhase == MMST_TL_COAST)
 	{
@@ -4132,6 +4350,10 @@ void MCC::initiateAbort()
 		if (MissionType == MTP_C_PRIME)
 		{
 			setState(MST_CP_ABORT);
+		}
+		else if (MissionType == MTP_H1)
+		{
+			setState(MST_H1_ABORT);
 		}
 	}
 	else if (MissionPhase == MMST_LUNAR_ORBIT)
@@ -4141,6 +4363,10 @@ void MCC::initiateAbort()
 		{
 			setState(MST_CP_ABORT);
 		}
+		else if (MissionType == MTP_H1)
+		{
+			setState(MST_H1_ABORT);
+		}
 	}
 	else if (MissionPhase == MMST_TE_COAST)
 	{
@@ -4148,6 +4374,10 @@ void MCC::initiateAbort()
 		if (MissionType == MTP_C_PRIME)
 		{
 			setState(MST_CP_ABORT);
+		}
+		else if (MissionType == MTP_H1)
+		{
+			setState(MST_H1_ABORT);
 		}
 	}
 }
@@ -4172,10 +4402,7 @@ void MCC::SetCSM(char *csmname)
 	{
 		v = oapiGetVesselInterface(hVessel);
 
-		if (!_stricmp(v->GetClassName(), "ProjectApollo\\Saturn5") ||
-			!_stricmp(v->GetClassName(), "ProjectApollo/Saturn5") ||
-			!_stricmp(v->GetClassName(), "ProjectApollo\\Saturn1b") ||
-			!_stricmp(v->GetClassName(), "ProjectApollo/Saturn1b")) {
+		if (utils::IsVessel(v, utils::Saturn)) {
 			cm = (Saturn *)v;
 			rtcc->calcParams.src = cm;
 		}
@@ -4193,8 +4420,7 @@ void MCC::SetLM(char *lemname)
 	{
 		v = oapiGetVesselInterface(hVessel);
 
-		if (!_stricmp(v->GetClassName(), "ProjectApollo\\LEM") ||
-			!_stricmp(v->GetClassName(), "ProjectApollo/LEM")) {
+		if (utils::IsVessel(v, utils::LEM)) {
 			lm = (LEM *)v;
 			rtcc->calcParams.tgt = v;
 		}
@@ -4213,10 +4439,7 @@ void MCC::SetLV(char *lvname)
 	{
 		v = oapiGetVesselInterface(hVessel);
 
-		if (!_stricmp(v->GetClassName(), "ProjectApollo\\sat5stg3") ||
-			!_stricmp(v->GetClassName(), "ProjectApollo/sat5stg3") ||
-			!_stricmp(v->GetClassName(), "ProjectApollo\\nsat1stg2") ||
-			!_stricmp(v->GetClassName(), "ProjectApollo/nsat1stg2")) {
+		if (utils::IsVessel(v, utils::SIVB)) {
 			sivb = (SIVB *)v;
 		}
 	}

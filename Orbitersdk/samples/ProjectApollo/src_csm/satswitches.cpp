@@ -22,7 +22,7 @@
 
   **************************************************************************/
 
-// To force orbitersdk.h to use <fstream> in any compiler version
+// To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
 #include <stdio.h>
@@ -36,7 +36,7 @@
 
 #include "toggleswitch.h"
 #include "apolloguidance.h"
-#include "csmcomputer.h"
+#include "CSMcomputer.h"
 #include "ioChannels.h"
 
 #include "saturn.h"
@@ -101,13 +101,10 @@ void SaturnH2PressureMeter::Init(int i, SURFHANDLE surf, SwitchRow &row, Saturn 
 
 double SaturnH2PressureMeter::QueryValue()
 {
-	TankPressures press;
-	Sat->GetTankPressures(press);
-
-	if (Index == 1) 
-		return press.H2Tank1PressurePSI;
+	if (Index == 1)
+		return Sat->H2Tank1PressSensor.Voltage()*70.0; //Scales Volts back to PSI. Only for backwards compatibility of displayed state.
 	else
-		return press.H2Tank2PressurePSI;
+		return Sat->H2Tank2PressSensor.Voltage()*70.0;
 }
 
 void SaturnH2PressureMeter::DoDrawSwitch(double v, SURFHANDLE drawSurface)
@@ -130,16 +127,45 @@ void SaturnO2PressureMeter::Init(int i, SURFHANDLE surf, SwitchRow &row, Saturn 
 
 double SaturnO2PressureMeter::QueryValue()
 {
-	TankPressures press;
-	Sat->GetTankPressures(press);
-
+	//Scale voltage (0-5V) to 0 to 1000 range on display
+	//TBD: Display goes from 100 to 1050, but should actually start at 50
+	double val;
 	if (Index == 1)
 		if (O2PressIndSwitch->IsUp())
-			return press.O2Tank1PressurePSI;
+			val = Sat->O2Tank1PressSensor.Voltage();
 		else
-			return Sat->O2SurgeTankPressSensor.Voltage()*200.0 + 50.0;
+			val = Sat->O2SurgeTankPressSensor.Voltage();
 	else
-		return press.O2Tank2PressurePSI;
+		val = Sat->O2Tank2PressSensor.Voltage();
+
+	if (val < 0.25) //100 PSI
+	{
+		return 0.0;
+	}
+	else if (val < 2.25) //100-500 psi
+	{
+		return (val - 0.25)*122.64; //245.28 at 500 psi
+	}
+	else if (val < 3.75) //500-800 psi
+	{
+		return (val - 0.8055)*169.81; //500 at 800 psi
+	}
+	else if (val < 4.25) //800-900 psi
+	{
+		return (val - 2.3553)*358.5; //679.25 at 900 psi
+	}
+	else if (val < 4.5) //900-950 psi
+	{
+		return (val - 3.39284)*792.44; //877.36 at 950 psi
+	}
+	else if (val < 5.0) //950-1050 psi
+	{
+		return (val - 2.1038)*345.28; //1000 at 1050 psi
+	}
+	else
+	{
+		return 1000.0;
+	}
 }
 
 void SaturnO2PressureMeter::DoDrawSwitch(double v, SURFHANDLE drawSurface)
@@ -152,26 +178,7 @@ void SaturnO2PressureMeter::DoDrawSwitch(double v, SURFHANDLE drawSurface)
 
 void SaturnO2PressureMeter::DoDrawSwitch(SURFHANDLE surf, SURFHANDLE needle, double value, int xOffset, int xNeedle)
 {
-	if (value < 100.0)
-		oapiBlt(surf, needle, xOffset, 130, xNeedle, 0, 10, 10, SURF_PREDEF_CK);
-
-	else if (value <= 500.0) 
-		oapiBlt(surf, needle, xOffset, 130 - (int)((value - 100.0) * 0.065), xNeedle, 0, 10, 10, SURF_PREDEF_CK);
-
-	else if (value <= 850.0)
-		oapiBlt(surf, needle, xOffset, 104 - (int)((value - 500.0) * 0.07714), xNeedle, 0, 10, 10, SURF_PREDEF_CK);
-
-	else if (value <= 900.0)
-		oapiBlt(surf, needle, xOffset, 77 - (int)((value - 850.0) * 0.38), xNeedle, 0, 10, 10, SURF_PREDEF_CK);
-
-	else if (value <= 950.0)
-		oapiBlt(surf, needle, xOffset, 58 - (int)((value - 900.0) * 0.42), xNeedle, 0, 10, 10, SURF_PREDEF_CK);
-
-	else if (value <= 1050.0)
-		oapiBlt(surf, needle, xOffset, 37 - (int)((value - 950.0) * 0.13), xNeedle, 0, 10, 10, SURF_PREDEF_CK);
-
-	else
-		oapiBlt(surf, needle, xOffset, 24, xNeedle, 0, 10, 10, SURF_PREDEF_CK);
+	oapiBlt(surf, needle, xOffset, 130 - (int)(value*0.106), xNeedle, 0, 10, 10, SURF_PREDEF_CK);
 }
 
 
@@ -186,19 +193,16 @@ void SaturnCryoQuantityMeter::Init(char *sub, int i, SURFHANDLE surf, SwitchRow 
 
 double SaturnCryoQuantityMeter::QueryValue()
 {
-	TankQuantities q;
-	Sat->GetTankQuantities(q);
-
 	if (!strcmp("H2", Substance)) {
-		if (Index == 1) 
-			return q.H2Tank1Quantity;
+		if (Index == 1)
+			return Sat->H2Tank1QuantitySensor.Voltage();
 		else
-			return q.H2Tank2Quantity;
+			return Sat->H2Tank2QuantitySensor.Voltage();
 	} else {
-		if (Index == 1) 
-			return q.O2Tank1Quantity;
+		if (Index == 1)
+			return Sat->O2Tank1QuantitySensor.Voltage();
 		else
-			return q.O2Tank2Quantity;
+			return Sat->O2Tank2QuantitySensor.Voltage();
 	}
 }
 
@@ -206,12 +210,12 @@ void SaturnCryoQuantityMeter::DoDrawSwitch(double v, SURFHANDLE drawSurface)
 {
 	if (!strcmp("H2", Substance)) {
 		if (Index == 1) 
-			oapiBlt(drawSurface, NeedleSurface,  172, (130 - (int)(v * 104.0)), 0, 0, 10, 10, SURF_PREDEF_CK);
+			oapiBlt(drawSurface, NeedleSurface,  172, (130 - (int)(v * 20.8)), 0, 0, 10, 10, SURF_PREDEF_CK);
 		else
-			oapiBlt(drawSurface, NeedleSurface,  225, (130 - (int)(v * 104.0)), 10, 0, 10, 10, SURF_PREDEF_CK);
+			oapiBlt(drawSurface, NeedleSurface,  225, (130 - (int)(v * 20.8)), 10, 0, 10, 10, SURF_PREDEF_CK);
 	} else {
 		if (Index == 1) 
-			oapiBlt(drawSurface, NeedleSurface,  258, (130 - (int)(v * 104.0)), 0, 0, 10, 10, SURF_PREDEF_CK);
+			oapiBlt(drawSurface, NeedleSurface,  258, (130 - (int)(v * 20.8)), 0, 0, 10, 10, SURF_PREDEF_CK);
 		else {
 			//
 			// Apollo 13 O2 tank 2 quantity display failed offscale high around 46:45.
@@ -227,7 +231,7 @@ void SaturnCryoQuantityMeter::DoDrawSwitch(double v, SURFHANDLE drawSurface)
 					v += (1.05 - value) * ((Sat->GetMissionTime() - O2FAILURETIME) / 5.0);
 				}
 			}
-			oapiBlt(drawSurface, NeedleSurface,  311, (130 - (int)(v * 104.0)), 10, 0, 10, 10, SURF_PREDEF_CK);
+			oapiBlt(drawSurface, NeedleSurface,  311, (130 - (int)(v * 20.8)), 10, 0, 10, 10, SURF_PREDEF_CK);
 		}
 	}
 }
@@ -466,17 +470,27 @@ void SaturnFuelCellO2FlowMeter::DoDrawSwitch(double v, SURFHANDLE drawSurface)
 
 double SaturnFuelCellTempMeter::QueryValue()
 {
-	return (Sat->GetSCE()->GetVoltage(2, FuelCellIndicatorsSwitch->GetState() + 6)*94.0 + 80.0);
+	double inputFromSCE = (Sat->GetSCE()->GetVoltage(2, FuelCellIndicatorsSwitch->GetState() + 6)); // 0-5V range
+	double gaugeOutput = 0.0;
+
+	if (inputFromSCE < 3.404) {
+		gaugeOutput = inputFromSCE * 0.779;
+	}
+	else if (inputFromSCE < 4.468) {
+		gaugeOutput = (inputFromSCE-3.404) * 1.733 + 2.653;
+	}
+	else {
+		gaugeOutput = (inputFromSCE-4.468) * 0.945 + 4.497;
+	}
+
+	
+	//sprintf(oapiDebugString(), "%lf %lf", inputFromSCE, gaugeOutput);
+	return gaugeOutput;
 }
 
 void SaturnFuelCellTempMeter::DoDrawSwitch(double v, SURFHANDLE drawSurface)
 {
-	if (v < 400.0)
-		oapiBlt(drawSurface, NeedleSurface, 86, (109 - (int)((v - 100.0) / 300.0 * 53.0)), 0, 0, 10, 10, SURF_PREDEF_CK);
-	else if (v < 500.0)
-		oapiBlt(drawSurface, NeedleSurface, 86, (56 - (int)((v - 400.0) / 100.0 * 40.0)), 0, 0, 10, 10, SURF_PREDEF_CK);
-	else
-		oapiBlt(drawSurface, NeedleSurface, 86, (16 - (int)((v - 500.0) / 50.0 * 12.0)), 0, 0, 10, 10, SURF_PREDEF_CK);
+	oapiBlt(drawSurface, NeedleSurface, 86, 112 - (int)(v * 21.6), 0, 0, 10, 10, SURF_PREDEF_CK);
 }
 
 
@@ -588,7 +602,7 @@ void SaturnPartPressCO2Meter::DoDrawSwitch(double v, SURFHANDLE drawSurface)
 		oapiBlt(drawSurface, NeedleSurface, 215, (20 - (int)((v - 20.0) / 10.0 * 14.0)), 10, 0, 10, 10, SURF_PREDEF_CK);
 }
 
-void SaturnRoundMeter::Init(HPEN p0, HPEN p1, SwitchRow &row, Saturn *s)
+void SaturnRoundMeter::Init(oapi::Pen *p0, oapi::Pen *p1, SwitchRow &row, Saturn *s)
 {
 	RoundMeter::Init(p0, p1, row);
 	Sat = s;
@@ -644,7 +658,7 @@ void SaturnRightO2FlowMeter::DoDrawSwitch(double v, SURFHANDLE drawSurface)
 }
 
 
-void SaturnEcsRadTempInletMeter::Init(HPEN p0, HPEN p1, SwitchRow &row, Saturn *s, RotationalSwitch *ecsindicatorsswitch)
+void SaturnEcsRadTempInletMeter::Init(oapi::Pen *p0, oapi::Pen *p1, SwitchRow &row, Saturn *s, RotationalSwitch *ecsindicatorsswitch)
 {
 	SaturnRoundMeter::Init(p0, p1, row, s);
 	ECSIndicatorsSwitch = ecsindicatorsswitch;
@@ -690,7 +704,7 @@ void SaturnEcsRadTempSecOutletMeter::DoDrawSwitch(double v, SURFHANDLE drawSurfa
 }
 
 
-void SaturnGlyEvapTempOutletMeter::Init(HPEN p0, HPEN p1, SwitchRow &row, Saturn *s, RotationalSwitch *ecsindicatorsswitch)
+void SaturnGlyEvapTempOutletMeter::Init(oapi::Pen *p0, oapi::Pen *p1, SwitchRow &row, Saturn *s, RotationalSwitch *ecsindicatorsswitch)
 {
 	SaturnRoundMeter::Init(p0, p1, row, s);
 	ECSIndicatorsSwitch = ecsindicatorsswitch;
@@ -712,7 +726,7 @@ void SaturnGlyEvapTempOutletMeter::DoDrawSwitch(double v, SURFHANDLE drawSurface
 }
 
 
-void SaturnGlyEvapSteamPressMeter::Init(HPEN p0, HPEN p1, SwitchRow &row, Saturn *s, RotationalSwitch *ecsindicatorsswitch)
+void SaturnGlyEvapSteamPressMeter::Init(oapi::Pen *p0, oapi::Pen *p1, SwitchRow &row, Saturn *s, RotationalSwitch *ecsindicatorsswitch)
 {
 	SaturnRoundMeter::Init(p0, p1, row, s);
 	ECSIndicatorsSwitch = ecsindicatorsswitch;
@@ -734,7 +748,7 @@ void SaturnGlyEvapSteamPressMeter::DoDrawSwitch(double v, SURFHANDLE drawSurface
 }
 
 
-void SaturnGlycolDischPressMeter::Init(HPEN p0, HPEN p1, SwitchRow &row, Saturn *s, RotationalSwitch *ecsindicatorsswitch)
+void SaturnGlycolDischPressMeter::Init(oapi::Pen *p0, oapi::Pen *p1, SwitchRow &row, Saturn *s, RotationalSwitch *ecsindicatorsswitch)
 {
 	SaturnRoundMeter::Init(p0, p1, row, s);
 	ECSIndicatorsSwitch = ecsindicatorsswitch;
@@ -756,7 +770,7 @@ void SaturnGlycolDischPressMeter::DoDrawSwitch(double v, SURFHANDLE drawSurface)
 }
 
 
-void SaturnAccumQuantityMeter::Init(HPEN p0, HPEN p1, SwitchRow &row, Saturn *s, RotationalSwitch *ecsindicatorsswitch)
+void SaturnAccumQuantityMeter::Init(oapi::Pen *p0, oapi::Pen *p1, SwitchRow &row, Saturn *s, RotationalSwitch *ecsindicatorsswitch)
 {
 	SaturnRoundMeter::Init(p0, p1, row, s);
 	ECSIndicatorsSwitch = ecsindicatorsswitch;
@@ -778,7 +792,7 @@ void SaturnAccumQuantityMeter::DoDrawSwitch(double v, SURFHANDLE drawSurface)
 }
 
 
-void SaturnH2oQuantityMeter::Init(HPEN p0, HPEN p1, SwitchRow &row, Saturn *s, ToggleSwitch *h2oqtyindswitch, PowerSource *pwr)
+void SaturnH2oQuantityMeter::Init(oapi::Pen *p0, oapi::Pen *p1, SwitchRow &row, Saturn *s, ToggleSwitch *h2oqtyindswitch, PowerSource *pwr)
 {
 	SaturnRoundMeter::Init(p0, p1, row, s);
 	H2oQtyIndSwitch = h2oqtyindswitch;
@@ -985,7 +999,7 @@ SaturnDCAmpMeter::SaturnDCAmpMeter(double minVal, double maxVal, double vMin, do
 {
 }
 
-void SaturnDCAmpMeter::Init(HPEN p0, HPEN p1, SwitchRow &row, Saturn *s, PowerStateRotationalSwitch *dcindicatorswitch)
+void SaturnDCAmpMeter::Init(oapi::Pen *p0, oapi::Pen *p1, SwitchRow &row, Saturn *s, PowerStateRotationalSwitch *dcindicatorswitch)
 {
 	ElectricMeter::Init(p0, p1, row, dcindicatorswitch);
 	DCIndicatorSwitch = dcindicatorswitch;
@@ -1201,7 +1215,7 @@ void SaturnSPSHeliumNitrogenPressMeter::DoDrawSwitch(double v, SURFHANDLE drawSu
 }
 
 
-void SaturnLVSPSPcMeter::Init(HPEN p0, HPEN p1, SwitchRow &row, Saturn *s, ToggleSwitch *lvspspcindicatorswitch, SURFHANDLE frameSurface)
+void SaturnLVSPSPcMeter::Init(oapi::Pen *p0, oapi::Pen *p1, SwitchRow &row, Saturn *s, ToggleSwitch *lvspspcindicatorswitch, SURFHANDLE frameSurface)
 {
 	SaturnRoundMeter::Init(p0, p1, row, s);
 	LVSPSPcIndicatorSwitch = lvspspcindicatorswitch;
@@ -2367,14 +2381,12 @@ void SaturnLMDPGauge::DrawNeedle (SURFHANDLE surf, int x, int y, double rad, dou
 	// This one needs a longer and offset needle
 
 	double dx = rad * cos(angle), dy = rad * sin(angle);
-	HGDIOBJ oldObj;
 
-	HDC hDC = oapiGetDC (surf);
-	oldObj = SelectObject (hDC, Pen1);
-	MoveToEx (hDC, x + (int)(2*dx+0.5), y - (int)(2*dy+0.5), 0); 
-	LineTo (hDC, x + (int)(3*dx+0.5), y - (int)(3*dy+0.5));
-	SelectObject (hDC, oldObj);
-	oapiReleaseDC (surf, hDC);
+	oapi::Sketchpad *skp = oapiGetSketchpad (surf);
+	skp->SetPen(Pen1);
+	skp->MoveTo (x + (int)(2*dx+0.5), y - (int)(2*dy+0.5));
+	skp->LineTo (x + (int)(3*dx+0.5), y - (int)(3*dy+0.5));
+	oapiReleaseSketchpad (skp);
 }
 
 // Right Docking Target Switch
@@ -2504,20 +2516,18 @@ void SaturnAltimeter::Init(SURFHANDLE surf1, SURFHANDLE surf2, Saturn *s) {
 	Sat = s;
 };
 
-void SaturnAltimeter::DrawNeedle(HDC hDC, int x, int y, double rad, double angle, HPEN pen0, HPEN pen1)
+void SaturnAltimeter::DrawNeedle(oapi::Sketchpad* skp, int x, int y, double rad, double angle, oapi::Pen* pen0, oapi::Pen* pen1)
 {
 	//
     //Needle function by Rob Conley from Mercury code
     //
 	double dx = rad * cos(angle), dy = rad * sin(angle);
-	HGDIOBJ oldObj;
 
-	oldObj = SelectObject(hDC, pen1);
-	MoveToEx(hDC, x, y, 0); LineTo(hDC, x + (int)(0.85*dx + 0.5), y - (int)(0.85*dy + 0.5));
-	SelectObject(hDC, oldObj);
-	oldObj = SelectObject(hDC, pen0);
-	MoveToEx(hDC, x, y, 0); LineTo(hDC, x + (int)(dx + 0.5), y - (int)(dy + 0.5));
-	SelectObject(hDC, oldObj);
+	oapi::Pen* oldObj = skp->SetPen(pen1);
+	skp->MoveTo(x, y); skp->LineTo(x + (int)(0.85 * dx + 0.5), y - (int)(0.85 * dy + 0.5));
+	skp->SetPen(pen0);
+	skp->MoveTo(x, y); skp->LineTo(x + (int)(dx + 0.5), y - (int)(dy + 0.5));
+	skp->SetPen(oldObj);
 }
 
 //
@@ -2545,57 +2555,57 @@ void SaturnAltimeter::RedrawPanel_Alt(SURFHANDLE surf)
 		range = 120 * RAD;
 		range = range / 4000;
 		alpha = 4000 - alpha;
-		HDC hDC = oapiGetDC(surf);
-		DrawNeedle(hDC, ALTIMETER_X_CENTER, ALTIMETER_Y_CENTER, ALTIMETER_RADIUS, (alpha*range) + 150 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
-		oapiReleaseDC(surf, hDC);
+		oapi::Sketchpad* skp = oapiGetSketchpad(surf);
+		DrawNeedle(skp, ALTIMETER_X_CENTER, ALTIMETER_Y_CENTER, ALTIMETER_RADIUS, (alpha * range) + 150 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
+		oapiReleaseSketchpad(skp);
 	}
 	else if (alpha > 4001 && alpha < 6001) {
 		range = 35 * RAD;
 		range = range / 2000;
 		alpha = 2000 - alpha;
-		HDC hDC = oapiGetDC(surf);
-		DrawNeedle(hDC, ALTIMETER_X_CENTER, ALTIMETER_Y_CENTER, ALTIMETER_RADIUS, (alpha*range) + 185 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
-		oapiReleaseDC(surf, hDC);
+		oapi::Sketchpad* skp = oapiGetSketchpad(surf);
+		DrawNeedle(skp, ALTIMETER_X_CENTER, ALTIMETER_Y_CENTER, ALTIMETER_RADIUS, (alpha * range) + 185 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
+		oapiReleaseSketchpad(skp);
 	}
 	else if (alpha > 6001 && alpha < 8001) {
 		range = 25 * RAD;
 		range = range / 2000;
 		alpha = 2000 - alpha;
-		HDC hDC = oapiGetDC(surf);
-		DrawNeedle(hDC, ALTIMETER_X_CENTER, ALTIMETER_Y_CENTER, ALTIMETER_RADIUS, (alpha*range) + 165 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
-		oapiReleaseDC(surf, hDC);
+		oapi::Sketchpad* skp = oapiGetSketchpad(surf);
+		DrawNeedle(skp, ALTIMETER_X_CENTER, ALTIMETER_Y_CENTER, ALTIMETER_RADIUS, (alpha * range) + 165 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
+		oapiReleaseSketchpad(skp);
 	}
 	else if (alpha > 8001 && alpha < 10001) {
 		range = 30 * RAD;
 		range = range / 2000;
 		alpha = 2000 - alpha;
-		HDC hDC = oapiGetDC(surf);
-		DrawNeedle(hDC, ALTIMETER_X_CENTER, ALTIMETER_Y_CENTER, ALTIMETER_RADIUS, (alpha*range) + 180 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
-		oapiReleaseDC(surf, hDC);
+		oapi::Sketchpad* skp = oapiGetSketchpad(surf);
+		DrawNeedle(skp, ALTIMETER_X_CENTER, ALTIMETER_Y_CENTER, ALTIMETER_RADIUS, (alpha * range) + 180 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
+		oapiReleaseSketchpad(skp);
 	}
 	else if (alpha > 10001 && alpha < 20001) {
 		range = 45 * RAD;
 		range = range / 10000;
 		alpha = 10000 - alpha;
-		HDC hDC = oapiGetDC(surf);
-		DrawNeedle(hDC, ALTIMETER_X_CENTER, ALTIMETER_Y_CENTER, ALTIMETER_RADIUS, (alpha*range) + 60 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
-		oapiReleaseDC(surf, hDC);
+		oapi::Sketchpad* skp = oapiGetSketchpad(surf);
+		DrawNeedle(skp, ALTIMETER_X_CENTER, ALTIMETER_Y_CENTER, ALTIMETER_RADIUS, (alpha * range) + 60 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
+		oapiReleaseSketchpad(skp);
 	}
 	else if (alpha > 20001 && alpha < 40001) {
 		range = 65 * RAD;
 		range = range / 20000;
 		alpha = 20000 - alpha;
-		HDC hDC = oapiGetDC(surf);
-		DrawNeedle(hDC, ALTIMETER_X_CENTER, ALTIMETER_Y_CENTER, ALTIMETER_RADIUS, (alpha*range) + 15 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
-		oapiReleaseDC(surf, hDC);
+		oapi::Sketchpad* skp = oapiGetSketchpad(surf);
+		DrawNeedle(skp, ALTIMETER_X_CENTER, ALTIMETER_Y_CENTER, ALTIMETER_RADIUS, (alpha * range) + 15 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
+		oapiReleaseSketchpad(skp);
 	}
 	else {
 		range = 20 * RAD;
 		range = range / 10000;
 		alpha = 10000 - alpha;
-		HDC hDC = oapiGetDC(surf);
-		DrawNeedle(hDC, ALTIMETER_X_CENTER, ALTIMETER_Y_CENTER, ALTIMETER_RADIUS, (alpha*range) + 10 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
-		oapiReleaseDC(surf, hDC);
+		oapi::Sketchpad* skp = oapiGetSketchpad(surf);
+		DrawNeedle(skp, ALTIMETER_X_CENTER, ALTIMETER_Y_CENTER, ALTIMETER_RADIUS, (alpha * range) + 10 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
+		oapiReleaseSketchpad(skp);
 	}
 	oapiBlt(surf, surface1, 0, 0, 0, 0, 137, 137, SURF_PREDEF_CK);
 }
@@ -2619,57 +2629,57 @@ void SaturnAltimeter::RedrawPanel_Alt2(SURFHANDLE surf)
 		range = 120 * RAD;
 		range = range / 4000;
 		alpha = 4000 - alpha;
-		HDC hDC = oapiGetDC(surf);
-		DrawNeedle(hDC, ALTIMETER2_X_CENTER, ALTIMETER2_Y_CENTER, ALTIMETER2_RADIUS, (alpha*range) + 150 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
-		oapiReleaseDC(surf, hDC);
+		oapi::Sketchpad* skp = oapiGetSketchpad(surf);
+		DrawNeedle(skp, ALTIMETER2_X_CENTER, ALTIMETER2_Y_CENTER, ALTIMETER2_RADIUS, (alpha * range) + 150 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
+		oapiReleaseSketchpad(skp);
 	}
 	else if (alpha > 4001 && alpha < 6001) {
 		range = 35 * RAD;
 		range = range / 2000;
 		alpha = 2000 - alpha;
-		HDC hDC = oapiGetDC(surf);
-		DrawNeedle(hDC, ALTIMETER2_X_CENTER, ALTIMETER2_Y_CENTER, ALTIMETER2_RADIUS, (alpha*range) + 185 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
-		oapiReleaseDC(surf, hDC);
+		oapi::Sketchpad* skp = oapiGetSketchpad(surf);
+		DrawNeedle(skp, ALTIMETER2_X_CENTER, ALTIMETER2_Y_CENTER, ALTIMETER2_RADIUS, (alpha * range) + 185 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
+		oapiReleaseSketchpad(skp);
 	}
 	else if (alpha > 6001 && alpha < 8001) {
 		range = 25 * RAD;
 		range = range / 2000;
 		alpha = 2000 - alpha;
-		HDC hDC = oapiGetDC(surf);
-		DrawNeedle(hDC, ALTIMETER2_X_CENTER, ALTIMETER2_Y_CENTER, ALTIMETER2_RADIUS, (alpha*range) + 165 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
-		oapiReleaseDC(surf, hDC);
+		oapi::Sketchpad* skp = oapiGetSketchpad(surf);
+		DrawNeedle(skp, ALTIMETER2_X_CENTER, ALTIMETER2_Y_CENTER, ALTIMETER2_RADIUS, (alpha * range) + 165 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
+		oapiReleaseSketchpad(skp);
 	}
 	else if (alpha > 8001 && alpha < 10001) {
 		range = 20 * RAD;
 		range = range / 2000;
 		alpha = 2000 - alpha;
-		HDC hDC = oapiGetDC(surf);
-		DrawNeedle(hDC, ALTIMETER2_X_CENTER, ALTIMETER2_Y_CENTER, ALTIMETER2_RADIUS, (alpha*range) + 150 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
-		oapiReleaseDC(surf, hDC);
+		oapi::Sketchpad* skp = oapiGetSketchpad(surf);
+		DrawNeedle(skp, ALTIMETER2_X_CENTER, ALTIMETER2_Y_CENTER, ALTIMETER2_RADIUS, (alpha * range) + 150 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
+		oapiReleaseSketchpad(skp);
 	}
 	else if (alpha > 10001 && alpha < 20001) {
 		range = 55 * RAD;
 		range = range / 10000;
 		alpha = 10000 - alpha;
-		HDC hDC = oapiGetDC(surf);
-		DrawNeedle(hDC, ALTIMETER2_X_CENTER, ALTIMETER2_Y_CENTER, ALTIMETER2_RADIUS, (alpha*range) + 70 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
-		oapiReleaseDC(surf, hDC);
+		oapi::Sketchpad* skp = oapiGetSketchpad(surf);
+		DrawNeedle(skp, ALTIMETER2_X_CENTER, ALTIMETER2_Y_CENTER, ALTIMETER2_RADIUS, (alpha * range) + 70 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
+		oapiReleaseSketchpad(skp);
 	}
 	else if (alpha > 20001 && alpha < 40001) {
 		range = 65 * RAD;
 		range = range / 20000;
 		alpha = 20000 - alpha;
-		HDC hDC = oapiGetDC(surf);
-		DrawNeedle(hDC, ALTIMETER2_X_CENTER, ALTIMETER2_Y_CENTER, ALTIMETER2_RADIUS, (alpha*range) + 15 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
-		oapiReleaseDC(surf, hDC);
+		oapi::Sketchpad* skp = oapiGetSketchpad(surf);
+		DrawNeedle(skp, ALTIMETER2_X_CENTER, ALTIMETER2_Y_CENTER, ALTIMETER2_RADIUS, (alpha * range) + 15 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
+		oapiReleaseSketchpad(skp);
 	}
 	else {
 		range = 20 * RAD;
 		range = range / 10000;
 		alpha = 10000 - alpha;
-		HDC hDC = oapiGetDC(surf);
-		DrawNeedle(hDC, ALTIMETER2_X_CENTER, ALTIMETER2_Y_CENTER, ALTIMETER2_RADIUS, (alpha*range) + 10 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
-		oapiReleaseDC(surf, hDC);
+		oapi::Sketchpad* skp = oapiGetSketchpad(surf);
+		DrawNeedle(skp, ALTIMETER2_X_CENTER, ALTIMETER2_Y_CENTER, ALTIMETER2_RADIUS, (alpha * range) + 10 * RAD, g_Param.pen[1], g_Param.pen[4]);//(alpha * range)
+		oapiReleaseSketchpad(skp);
 	}
 	oapiBlt(surf, surface2, 0, 0, 0, 0, 161, 161, SURF_PREDEF_CK);
 }

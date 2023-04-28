@@ -22,8 +22,8 @@
 
   **************************************************************************/
 
-#include "hsystems.h"
-#include "orbitersdk.h"
+#include "Hsystems.h"
+#include "Orbitersdk.h"
 #include <stdio.h>
 #include <math.h>
 #include "nasspdefs.h"
@@ -737,7 +737,6 @@ void h_Tank::refresh(double dt) {
 	}*/
 
 	space.ThermalComps(dt);	
-
 	Temp = space.Temp;
 	energy = space.Q;
 
