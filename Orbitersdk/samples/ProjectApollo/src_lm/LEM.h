@@ -158,6 +158,7 @@ public:
 	double GetLGCAltitude() { return lgc_alt; };
 	double GetLGCAltitudeRate() { return lgc_altrate; };
 
+	bool PowerSignalMonOn();
 	bool IsPowered();
 private:
 	void TapeDrive(double &Angle, double AngleCmd, double RateLimit, double simdt);

@@ -2880,6 +2880,18 @@ void LEM_RadarTape::Init(LEM *s, e_object * dc_src, e_object *ac_src, SURFHANDLE
 	tape2 = surf2;
 }
 
+// Power signal monitor - The power signal monitor provides an alarm light in the event of:
+// (a) alternating current voltage below 85 volts 
+// (b) direct current voltage below 20 volts 
+// (c) input data loss
+bool LEM_RadarTape::PowerSignalMonOn()
+{
+	if (dc_source->Voltage() > 2.0 && (ac_source->Voltage() < 85.0 || dc_source->Voltage() < 20.0)) {
+		return true;
+	}
+	return false;
+}
+
 void LEM_RadarTape::Timestep(double simdt) {
 	
 	if (!IsPowered())
