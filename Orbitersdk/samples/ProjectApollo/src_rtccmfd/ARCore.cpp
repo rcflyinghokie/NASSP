@@ -2,7 +2,7 @@
 
 #include "soundlib.h"
 #include "apolloguidance.h"
-#include "csmcomputer.h"
+#include "CSMcomputer.h"
 #include "IMU.h"
 #include "saturn.h"
 #include "saturnv.h"
@@ -25,11 +25,6 @@ static SOCKET close_Socket = INVALID_SOCKET;
 static char debugString[100];
 static char debugStringBuffer[100];
 static char debugWinsock[100];
-
-static DWORD WINAPI RTCCMFD_Trampoline(LPVOID ptr) {
-	ARCore *core = (ARCore *)ptr;
-	return(core->subThread());
-}
 
 AR_GCore::AR_GCore(VESSEL* v)
 {
@@ -354,7 +349,8 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	//screen = 0;
 	targetnumber = -1;
 	AGCEphemTEphemZero = 40038.0;
-	REFSMMATTime = 0.0;
+	REFSMMAT_LVLH_Time = 0.0;
+	REFSMMAT_PTC_MJD = 0.0;
 	REFSMMATopt = 4;
 	REFSMMATcur = 4;
 	manpadopt = 0;
@@ -495,7 +491,7 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	EntryLngcor = 0.0;
 	Entry_DV = _V(0.0, 0.0, 0.0);
 	RTEReentryTime = 0.0;
-	entryrange = 0.0;
+	entryrange = GC->rtcc->PZREAP.RRBIAS;
 	RTECalcMode = 1;
 	RTETradeoffMode = 0;
 	RTEASTType = 76;
@@ -539,19 +535,17 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	sprintf(lmmanpad.remarks, "");
 	entrypadopt = 0;
 	manpadenginetype = RTCC_ENGINETYPE_CSMSPS;
-	TPIPAD_AZ = 0.0;
-	TPIPAD_dH = 0.0;
-	TPIPAD_dV_LOS = _V(0.0, 0.0, 0.0);
-	TPIPAD_ELmin5 = 0.0;
-	TPIPAD_R = 0.0;
-	TPIPAD_Rdot = 0.0;
-	TPIPAD_ddH = 0.0;
-	TPIPAD_BT = _V(0.0, 0.0, 0.0);
+	TPI_PAD.AZ = 0.0;
+	TPI_PAD.dH_TPI = 0.0;
+	TPI_PAD.Backup_dV = _V(0.0, 0.0, 0.0);
+	TPI_PAD.EL = 0.0;
+	TPI_PAD.R = 0.0;
+	TPI_PAD.Rdot = 0.0;
+	TPI_PAD.dH_Max = 0.0;
+	TPI_PAD.Backup_bT = _V(0.0, 0.0, 0.0);
 	sxtstardtime = 0.0;
 	manpad_ullage_dt = 0.0;
 	manpad_ullage_opt = true;
-	EntryRRT = 0.0;
-	EntryRET05G = 0.0;
 
 	mapupdate.LOSGET = 0.0;
 	mapupdate.AOSGET = 0.0;
@@ -571,8 +565,6 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 
 	landingzone = 0;
 	entryprecision = -1;
-
-	TLImaneuver = 0;
 	
 	tlipad.TB6P = 0.0;
 	tlipad.BurnTime = 0.0;
@@ -581,8 +573,6 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	tlipad.SepATT = _V(0.0, 0.0, 0.0);
 	tlipad.IgnATT = _V(0.0, 0.0, 0.0);
 	tlipad.ExtATT = _V(0.0, 0.0, 0.0);
-	R_TLI = _V(0, 0, 0);
-	V_TLI = _V(0, 0, 0);
 
 	pdipad.Att = _V(0, 0, 0);
 	pdipad.CR = 0.0;
@@ -591,7 +581,7 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	pdipad.t_go = 0.0;
 
 	subThreadMode = 0;
-	subThreadStatus = 0;
+	subThreadStatus = DONE;
 
 	LmkLat = 0;
 	LmkLng = 0;
@@ -634,10 +624,17 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	PDAP_Theta_LIM = 0.0;
 	PDAP_R_amin = 0.0;
 
-	if (GC->mission == 12)
+	if (GC->mission == 10)
 	{
-		//For PTC REFSMMAT
-		REFSMMATTime = OrbMech::HHMMSSToSS(183, 0, 30);
+		REFSMMAT_PTC_MJD = 40365.25560140741; //133:19:04 GET of nominal mission
+	}
+	else if (GC->mission == 11)
+	{
+		REFSMMAT_PTC_MJD = 40426.71589131481; //195:38:53 GET of nominal mission
+	}
+	else if (GC->mission == 12)
+	{
+		REFSMMAT_PTC_MJD = 40547.30729122223; //183:00:30 GET of nominal mission
 
 		PDAP_J1 = 6.0325675e6*0.3048;
 		PDAP_K1 = -6.2726125e5*0.3048;
@@ -648,40 +645,28 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	}
 	else if (GC->mission == 13)
 	{
-		//For PTC REFSMMAT
-		REFSMMATTime = OrbMech::HHMMSSToSS(178, 30, 0);
+		REFSMMAT_PTC_MJD = 40695.238194; //178:30:00 GET of nominal mission
 	}
 	else if (GC->mission == 14)
 	{
-		//For PTC REFSMMAT
-		REFSMMATTime = OrbMech::HHMMSSToSS(166, 10, 30);
+		REFSMMAT_PTC_MJD = 40989.77326433333; //166:10:30 GET of nominal mission
 	}
 	else if (GC->mission == 15)
 	{
-		//For PTC REFSMMAT
-		REFSMMATTime = OrbMech::HHMMSSToSS(230, 9, 0);
+		REFSMMAT_PTC_MJD = 41168.15486133334; //230:09:00 GET of nominal mission
 	}
 	else if (GC->mission == 16)
 	{
-		//For PTC REFSMMAT
-		REFSMMATTime = OrbMech::HHMMSSToSS(166, 2, 50);
+		REFSMMAT_PTC_MJD = 41430.66446425925;  //166:02:50 GET of nominal mission
 	}
 	else if (GC->mission == 17)
 	{
-		//For PTC REFSMMAT
-		REFSMMATTime = OrbMech::HHMMSSToSS(241, 29, 30);
+		REFSMMAT_PTC_MJD = 41668.18229177778;  //241:29:30 GET of nominal mission
 	}
-
-	Skylabmaneuver = 0;
-	SkylabTPIGuess = 0.0;
-	Skylab_n_C = 1.5;
-	SkylabDH1 = 20.0*1852.0;
-	SkylabDH2 = 10.0*1852.0;
-	Skylab_E_L = 27.0*RAD;
-	SkylabSolGood = true;
-	Skylab_dV_NSR = Skylab_dV_NCC = _V(0, 0, 0);
-	Skylab_dH_NC2 = Skylab_dv_NC2 = Skylab_t_NC1 = Skylab_t_NC2 = Skylab_dv_NCC = Skylab_t_NCC = Skylab_t_NSR = Skylab_dt_TPM = 0.0;
-	Skylab_NPCOption = Skylab_PCManeuver = false;
+	else
+	{
+		REFSMMAT_PTC_MJD = oapiGetSimMJD(); //Near current time usually gives a good PTC REFSMMAT, too
+	}
 
 	TMLat = 0.0;
 	TMLng = 0.0;
@@ -813,7 +798,7 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 		DeltaClockTime[i] = 0.0;
 		DesiredRTCCLiftoffTime[i] = 0.0;
 	}
-	iuUplinkResult = 0;
+	iuUplinkResult = DONE;
 
 	LUNTAR_lat = 0.0;
 	LUNTAR_lng = 0.0;
@@ -861,11 +846,6 @@ void ARCore::LDPPalc()
 	startSubthread(10);
 }
 
-void ARCore::SkylabCalc()
-{
-	startSubthread(12);
-}
-
 void ARCore::LunarLaunchTargetingCalc()
 {
 	startSubthread(13);
@@ -882,7 +862,7 @@ void ARCore::EntryUpdateCalc()
 	EntryResults res;
 
 	sv0 = GC->rtcc->StateVectorCalc(vessel);
-	GC->rtcc->EntryUpdateCalc(sv0, GC->rtcc->CalcGETBase(), entryrange, true, &res);
+	GC->rtcc->EntryUpdateCalc(sv0, entryrange, true, &res);
 
 	EntryLatcor = res.latitude;
 	EntryLngcor = res.longitude;
@@ -955,7 +935,7 @@ void ARCore::PDAPCalc()
 
 void ARCore::CycleVectorPanelSummary()
 {
-	if (subThreadStatus == 0)
+	if (subThreadStatus == DONE)
 	{
 		if (GC->rtcc->RTCCPresentTimeGMT() > GC->rtcc->VectorPanelSummaryBuffer.gmt + 6.0)
 		{
@@ -967,7 +947,7 @@ void ARCore::CycleVectorPanelSummary()
 
 void ARCore::CycleFIDOOrbitDigitals1()
 {
-	if (subThreadStatus == 0)
+	if (subThreadStatus == DONE)
 	{
 		double GET = OrbMech::GETfromMJD(oapiGetSimMJD(), GC->rtcc->CalcGETBase());
 		if (GET > GC->rtcc->EZSAVCSM.GET + 12.0)
@@ -979,7 +959,7 @@ void ARCore::CycleFIDOOrbitDigitals1()
 
 void ARCore::CycleFIDOOrbitDigitals2()
 {
-	if (subThreadStatus == 0)
+	if (subThreadStatus == DONE)
 	{
 		double GET = OrbMech::GETfromMJD(oapiGetSimMJD(), GC->rtcc->CalcGETBase());
 		if (GET > GC->rtcc->EZSAVLEM.GET + 12.0)
@@ -991,7 +971,7 @@ void ARCore::CycleFIDOOrbitDigitals2()
 
 void ARCore::CycleSpaceDigitals()
 {
-	if (subThreadStatus == 0)
+	if (subThreadStatus == DONE)
 	{
 		double GET = OrbMech::GETfromMJD(oapiGetSimMJD(), GC->rtcc->CalcGETBase());
 		if (GET > GC->rtcc->EZSPACE.GET + 12.0)
@@ -1003,7 +983,7 @@ void ARCore::CycleSpaceDigitals()
 
 void ARCore::SpaceDigitalsMSKRequest()
 {
-	if (subThreadStatus == 0)
+	if (subThreadStatus == DONE)
 	{
 		startSubthread(30);
 	}
@@ -1014,6 +994,16 @@ void ARCore::GenerateSpaceDigitalsNoMPT()
 	startSubthread(11);
 }
 
+void ARCore::TLIProcessorCalc()
+{
+	startSubthread(12);
+}
+
+void ARCore::SaturnVTLITargetUplink()
+{
+	startSubthread(57);
+}
+
 void ARCore::LUNTARCalc()
 {
 	startSubthread(50);
@@ -1021,7 +1011,7 @@ void ARCore::LUNTARCalc()
 
 void ARCore::CycleNextStationContactsDisplay()
 {
-	if (subThreadStatus == 0)
+	if (subThreadStatus == DONE)
 	{
 		double GET = OrbMech::GETfromMJD(oapiGetSimMJD(), GC->rtcc->CalcGETBase());
 		if (GET > GC->rtcc->NextStationContactsBuffer.GET + 12.0)
@@ -1535,7 +1525,7 @@ void ARCore::NavCheckPAD()
 
 	sv = GC->rtcc->StateVectorCalc(vessel);
 
-	GC->rtcc->NavCheckPAD(sv, navcheckpad, GC->rtcc->CalcGETBase(), navcheckpad.NavChk[0]);
+	GC->rtcc->NavCheckPAD(sv, navcheckpad, navcheckpad.NavChk[0]);
 }
 
 void ARCore::UpdateTLITargetTable()
@@ -2509,21 +2499,15 @@ void ARCore::SendNodeToSFP()
 }
 
 int ARCore::startSubthread(int fcn) {
-	if (subThreadStatus < 1) {
+	if (IsReady(subThreadStatus)) {
 		// Punt thread
 		subThreadMode = fcn;
-		subThreadStatus = 1; // Busy
-		DWORD id = 0;
-		hThread = CreateThread(NULL, 0, RTCCMFD_Trampoline, this, 0, &id);
+		subThreadStatus = SCHEDULED;
+		subThreadWorker.Start([this] { subThread(); });
 	}
 	else {
-		//Kill thread
-		DWORD exitcode = 0;
-		if (TerminateThread(hThread, exitcode))
-		{
-			subThreadStatus = 0;
-			if (hThread != NULL) { CloseHandle(hThread); }
-		}
+		subThreadWorker.Kill();
+		subThreadStatus = DONE;
 		return(-1);
 	}
 	return(0);
@@ -2531,7 +2515,7 @@ int ARCore::startSubthread(int fcn) {
 
 int ARCore::subThread()
 {
-	int Result = 0;
+	ThreadStatus Result = DONE;
 
 	int mptveh;
 
@@ -2544,11 +2528,11 @@ int ARCore::subThread()
 		mptveh = RTCC_MPT_LM;
 	}
 
-	subThreadStatus = 2; // Running
+	subThreadStatus = RUNNING;
 	switch (subThreadMode) {
 	case 0: // Test
 		Sleep(5000); // Waste 5 seconds
-		Result = 0;  // Success (negative = error)
+		Result = DONE;  // Success (negative = error)
 		break;
 	case 1: //Lambert Targeting
 	{
@@ -2573,7 +2557,7 @@ int ARCore::subThread()
 
 			if (GC->rtcc->ELFECH(GMT, GC->rtcc->med_k30.Vehicle, EPHEM))
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 
@@ -2590,7 +2574,7 @@ int ARCore::subThread()
 
 			if (GC->rtcc->ELFECH(GMT, 4 - GC->rtcc->med_k30.Vehicle, EPHEM))
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 			sv_P = EPHEM;
@@ -2629,7 +2613,7 @@ int ARCore::subThread()
 
 		GC->rtcc->PMSTICN(opt, res);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 2:	//Concentric Rendezvous Processor
@@ -2664,7 +2648,7 @@ int ARCore::subThread()
 			err = GC->rtcc->ELFECH(GMT_C, GC->rtcc->med_k01.ChaserVehicle, EPHEM);
 			if (err)
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 			sv_A.R = EPHEM.R;
@@ -2675,7 +2659,7 @@ int ARCore::subThread()
 			err = GC->rtcc->ELFECH(GMT_T, 4 - GC->rtcc->med_k01.ChaserVehicle, EPHEM);
 			if (err)
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 			sv_P.R = EPHEM.R;
@@ -2687,7 +2671,7 @@ int ARCore::subThread()
 		{
 			if (target == NULL)
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 
@@ -2697,7 +2681,6 @@ int ARCore::subThread()
 
 		opt.DH = GC->rtcc->GZGENCSN.SPQDeltaH;
 		opt.E = GC->rtcc->GZGENCSN.SPQElevationAngle;
-		opt.GETbase = GC->rtcc->CalcGETBase();
 		opt.sv_A = sv_A;
 		opt.sv_P = sv_P;
 		opt.WT = GC->rtcc->GZGENCSN.SPQTerminalPhaseAngle;
@@ -2740,7 +2723,7 @@ int ARCore::subThread()
 			}
 			else
 			{
-				opt.t_CDH = GC->rtcc->FindDH(sv_A, sv_P, GC->rtcc->CalcGETBase(), CDHtime, GC->rtcc->GZGENCSN.SPQDeltaH);
+				opt.t_CDH = GC->rtcc->FindDH(sv_A, sv_P, CDHtime, GC->rtcc->GZGENCSN.SPQDeltaH);
 			}
 		}
 		opt.t_TPI = GC->rtcc->GZGENCSN.TPIDefinitionValue;
@@ -2768,7 +2751,7 @@ int ARCore::subThread()
 			SPQDeltaV = res.dV_CDH;
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 3:	//Orbital Adjustment Targeting
@@ -2782,7 +2765,7 @@ int ARCore::subThread()
 			double GMT = GC->rtcc->GMTfromGET(SPSGET);
 			if (GC->rtcc->ELFECH(GMT, GC->rtcc->med_k20.Vehicle, sv0))
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 		}
@@ -2812,7 +2795,7 @@ int ARCore::subThread()
 		double GPM_TIG;
 		GC->rtcc->GeneralManeuverProcessor(&opt, OrbAdjDVX, GPM_TIG);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 4:	//REFSMMAT Calculation
@@ -2820,7 +2803,6 @@ int ARCore::subThread()
 		REFSMMATOpt opt;
 
 		opt.dV_LVLH = dV_LVLH;
-		opt.GETbase = GC->rtcc->CalcGETBase();
 		opt.LSAzi = GC->rtcc->med_k18.psi_DS*RAD;
 		opt.LSLat = GC->rtcc->BZLAND.lat[RTCC_LMPOS_BEST];
 		opt.LSLng = GC->rtcc->BZLAND.lng[RTCC_LMPOS_BEST];
@@ -2830,13 +2812,17 @@ int ARCore::subThread()
 		{
 			opt.REFSMMATTime = P30TIG;
 		}
+		else if (REFSMMATopt == 2)
+		{
+			opt.REFSMMATTime = REFSMMAT_LVLH_Time;
+		}
 		else if (REFSMMATopt == 5 || REFSMMATopt == 8)
 		{
 			opt.REFSMMATTime = GC->rtcc->CZTDTGTU.GETTD;
 		}
 		else
 		{
-			opt.REFSMMATTime = REFSMMATTime;
+			opt.REFSMMATTime = REFSMMAT_PTC_MJD;
 		}
 
 		//For LS REFSMMAT use target vessel, if we are not in the CSM
@@ -2844,7 +2830,7 @@ int ARCore::subThread()
 		{
 			if (target == NULL)
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 
@@ -2902,7 +2888,7 @@ int ARCore::subThread()
 				EphemerisData EPHEM;
 				if (GC->rtcc->ELFECH(GMT, mptveh, EPHEM))
 				{
-					Result = 0;
+					Result = DONE;
 					break;
 				}
 				opt.RV_MCC.R = EPHEM.R;
@@ -2966,7 +2952,7 @@ int ARCore::subThread()
 
 		REFSMMATcur = REFSMMATopt;
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 5: //LOI Targeting
@@ -2988,7 +2974,7 @@ int ARCore::subThread()
 
 			if (GC->rtcc->ELFECH(gmt, RTCC_MPT_CSM, sv0))
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 		}
@@ -3010,33 +2996,22 @@ int ARCore::subThread()
 
 		GC->rtcc->PMMLRBTI(sv0);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 6: //TPI PAD
 	{
 		AP7TPIPADOpt opt;
-		AP7TPI pad;
 
 		opt.dV_LVLH = dV_LVLH;
-		opt.GETbase = GC->rtcc->CalcGETBase();
 		opt.TIG = P30TIG;
 		opt.sv_A = GC->rtcc->StateVectorCalcEphem(vessel);
 		opt.sv_P = GC->rtcc->StateVectorCalcEphem(target);
 		opt.mass = vessel->GetMass();
 
-		GC->rtcc->AP7TPIPAD(opt, pad);
+		GC->rtcc->AP7TPIPAD(opt, TPI_PAD);
 
-		TPIPAD_AZ = pad.AZ;
-		TPIPAD_BT = pad.Backup_bT;
-		TPIPAD_ddH = pad.dH_Max;
-		TPIPAD_dH = pad.dH_TPI;
-		TPIPAD_dV_LOS = pad.Backup_dV;
-		TPIPAD_ELmin5 = pad.EL;
-		TPIPAD_R = pad.R;
-		TPIPAD_Rdot = pad.Rdot;
-
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 7:	//Return to Earth
@@ -3062,7 +3037,7 @@ int ARCore::subThread()
 			GC->rtcc->PMMREDIG(false);
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 8: //TLI PAD
@@ -3078,7 +3053,7 @@ int ARCore::subThread()
 		}
 		if (lvdc == NULL)
 		{
-			Result = 0;
+			Result = DONE;
 			break;
 		}
 
@@ -3099,7 +3074,7 @@ int ARCore::subThread()
 
 		GC->rtcc->TLI_PAD(opt, tlipad);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 9: //Maneuver PAD
@@ -3112,7 +3087,7 @@ int ARCore::subThread()
 			EphemerisData EPHEM;
 			if (GC->rtcc->ELFECH(GMT, mptveh, EPHEM))
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 			sv_A.R = EPHEM.R;
@@ -3146,7 +3121,6 @@ int ARCore::subThread()
 
 			opt.dV_LVLH = dV_LVLH;
 			opt.enginetype = manpadenginetype;
-			opt.GETbase = GC->rtcc->CalcGETBase();
 			opt.HeadsUp = HeadsUp;
 			opt.REFSMMAT = GC->rtcc->EZJGMTX1.data[0].REFSMMAT;
 			opt.sxtstardtime = sxtstardtime;
@@ -3174,7 +3148,6 @@ int ARCore::subThread()
 
 			opt.dV_LVLH = dV_LVLH;
 			opt.enginetype = manpadenginetype;
-			opt.GETbase = GC->rtcc->CalcGETBase();
 			opt.HeadsUp = HeadsUp;
 			opt.REFSMMAT = GC->rtcc->EZJGMTX3.data[0].REFSMMAT;
 			opt.sxtstardtime = sxtstardtime;
@@ -3188,7 +3161,7 @@ int ARCore::subThread()
 			GC->rtcc->AP11LMManeuverPAD(&opt, lmmanpad);
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 10: //Lunar Descent Planning Processor
@@ -3211,7 +3184,7 @@ int ARCore::subThread()
 			EphemerisData EPHEM;
 			if (GC->rtcc->ELFECH(gmt, GC->rtcc->med_k16.Vehicle, EPHEM))
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 
@@ -3233,7 +3206,7 @@ int ARCore::subThread()
 			}
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 11: //Space Digitals without MPT
@@ -3241,137 +3214,18 @@ int ARCore::subThread()
 		SV sv0 = GC->rtcc->StateVectorCalc(vessel);
 		GC->rtcc->EMDSPACENoMPT(sv0, SpaceDigitalsOption + 2, GC->rtcc->GMTfromGET(SpaceDigitalsGET));
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
-	case 12: //Skylab Rendezvous Targeting
+	case 12: //TLI Processor
 	{
-		SkyRendOpt opt;
-		SkylabRendezvousResults res;
+		SV2 state;
 
-		opt.E_L = Skylab_E_L;
-		opt.GETbase = GC->rtcc->CalcGETBase();
-		opt.man = Skylabmaneuver;
-		opt.DH1 = SkylabDH1;
-		opt.DH2 = SkylabDH2;
-		opt.n_C = Skylab_n_C;
-		opt.t_TPI = t_TPI;
-		opt.PCManeuver = Skylab_PCManeuver;
-		opt.NPCOption = Skylab_NPCOption;
+		state = GC->rtcc->StateVectorCalc2(vessel);
 
-		if (Skylabmaneuver == 0)
-		{
-			opt.TPIGuess = SkylabTPIGuess;
-		}
-		else if (Skylabmaneuver == 1)
-		{
-			opt.t_C = Skylab_t_NC1;
-		}
-		else if (Skylabmaneuver == 2)
-		{
-			opt.t_C = Skylab_t_NC2;
-		}
-		else if (Skylabmaneuver == 3)
-		{
-			opt.t_C = Skylab_t_NCC;
-		}
-		else if (Skylabmaneuver == 4)
-		{
-			opt.t_C = Skylab_t_NSR;
-		}
-		else if (Skylabmaneuver == 5)
-		{
-			opt.t_C = t_TPI;
-		}
-		else if (Skylabmaneuver == 6)
-		{
-			opt.t_C = t_TPI + Skylab_dt_TPM;
-		}
-		else if (Skylabmaneuver == 7)
-		{
-			if (Skylab_PCManeuver == 0)
-			{
-				opt.t_NC = Skylab_t_NC1;
-			}
-			else
-			{
-				opt.t_NC = Skylab_t_NC2;
-			}
-		}
+		GC->rtcc->TranslunarInjectionProcessor(state);
 
-		if (GC->MissionPlanningActive)
-		{
-			double gmt = GC->rtcc->GMTfromGET(opt.t_C);
-
-			EphemerisData EPHEM;
-			if (GC->rtcc->ELFECH(gmt, RTCC_MPT_CSM, EPHEM))
-			{
-				Result = 0;
-				break;
-			}
-
-			opt.sv_C.R = EPHEM.R;
-			opt.sv_C.V = EPHEM.V;
-			opt.sv_C.MJD = OrbMech::MJDfromGET(EPHEM.GMT, GC->rtcc->GetGMTBase());
-			opt.sv_C.gravref = GC->rtcc->GetGravref(EPHEM.RBI);
-
-			if (GC->rtcc->ELFECH(gmt, RTCC_MPT_LM, EPHEM))
-			{
-				Result = 0;
-				break;
-			}
-
-			opt.sv_T.R = EPHEM.R;
-			opt.sv_T.V = EPHEM.V;
-			opt.sv_T.MJD = OrbMech::MJDfromGET(EPHEM.GMT, GC->rtcc->GetGMTBase());
-			opt.sv_T.gravref = GC->rtcc->GetGravref(EPHEM.RBI);
-		}
-		else
-		{
-			opt.sv_C = GC->rtcc->StateVectorCalc(vessel);
-			opt.sv_T = GC->rtcc->StateVectorCalc(target);
-		}
-		opt.DMMass = GC->rtcc->GetDockedVesselMass(vessel);
-
-		SkylabSolGood = GC->rtcc->SkylabRendezvous(&opt, &res);
-
-		if (SkylabSolGood)
-		{
-			if (Skylabmaneuver == 0)
-			{
-				t_TPI = res.t_TPI;
-			}
-			else
-			{
-				dV_LVLH = res.dV_LVLH;
-				P30TIG = res.P30TIG;
-			}
-			
-			if (Skylabmaneuver == 1)
-			{
-				Skylab_dH_NC2 = res.dH_NC2;
-				Skylab_dv_NC2 = res.dv_NC2;
-				Skylab_dv_NCC = res.dv_NCC;
-				Skylab_dV_NSR = res.dV_NSR;
-				Skylab_t_NC2 = res.t_NC2;
-				Skylab_t_NCC = res.t_NCC;
-				Skylab_t_NSR = res.t_NSR;
-			}
-			else if (Skylabmaneuver == 2)
-			{
-				Skylab_dv_NCC = res.dv_NCC;
-				Skylab_dV_NSR = res.dV_NSR;
-				Skylab_t_NCC = res.t_NCC;
-				Skylab_t_NSR = res.t_NSR;
-			}
-			else if (Skylabmaneuver == 3)
-			{
-				Skylab_dV_NSR = res.dV_NSR;
-				Skylab_t_NSR = res.t_NSR;
-			}
-		}
-
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 13: //Lunar Launch Targeting Processor (Short Rendezvous Profile)
@@ -3383,7 +3237,7 @@ int ARCore::subThread()
 		{
 			if (GC->rtcc->ELFECH(GC->rtcc->GMTfromGET(GC->rtcc->med_k50.GETV), RTCC_MPT_CSM, sv_CSM))
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 		}
@@ -3413,7 +3267,7 @@ int ARCore::subThread()
 			GC->rtcc->PZLTRT.InsertionHorizontalVelocity = GC->rtcc->PZLLTT.VH;
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 14: //MCC Targeting
@@ -3427,7 +3281,7 @@ int ARCore::subThread()
 			EphemerisData EPHEM;
 			if (GC->rtcc->ELFECH(GMT, RTCC_MPT_CSM, EPHEM))
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 
@@ -3464,7 +3318,7 @@ int ARCore::subThread()
 
 		GC->rtcc->TranslunarMidcourseCorrectionProcessor(sv0, CSMmass, LMmass);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 15:	//Lunar Launch Window Processor
@@ -3478,7 +3332,7 @@ int ARCore::subThread()
 			EphemerisData EPHEM;
 			if (GC->rtcc->ELFECH(GMT, RTCC_MPT_CSM, EPHEM))
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 			sv_CSM.R = EPHEM.R;
@@ -3555,7 +3409,7 @@ int ARCore::subThread()
 
 		GC->rtcc->LunarLaunchWindowProcessor(opt);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 16: //PDI PAD
@@ -3567,7 +3421,7 @@ int ARCore::subThread()
 		{
 			if (GC->rtcc->NewMPTTrajectory(RTCC_MPT_LM, opt.sv0))
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 		}
@@ -3577,7 +3431,6 @@ int ARCore::subThread()
 		}
 
 		opt.direct = true;
-		opt.GETbase = GC->rtcc->CalcGETBase();
 		opt.HeadsUp = HeadsUp;
 		opt.REFSMMAT = GC->rtcc->EZJGMTX3.data[0].REFSMMAT;
 		opt.R_LS = OrbMech::r_from_latlong(GC->rtcc->BZLAND.lat[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.lng[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.rad[RTCC_LMPOS_BEST]);
@@ -3591,7 +3444,7 @@ int ARCore::subThread()
 			pdipad = temppdipad;
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 17: //Deorbit Maneuver
@@ -3605,7 +3458,7 @@ int ARCore::subThread()
 			int err = GC->rtcc->ELFECH(GMT, RTCC_MPT_CSM, sv);
 			if (err)
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 
@@ -3641,7 +3494,7 @@ int ARCore::subThread()
 			manpadenginetype = GC->rtcc->RZRFTT.Manual.Thruster;
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 19: //Docking Initiation Processor
@@ -3665,7 +3518,7 @@ int ARCore::subThread()
 			int err = GC->rtcc->ELFECH(GMT, RTCC_MPT_CSM, EPHEM);
 			if (err)
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 			opt.sv_CSM = EPHEM;
@@ -3673,7 +3526,7 @@ int ARCore::subThread()
 			err = GC->rtcc->ELFECH(GMT, RTCC_MPT_LM, EPHEM);
 			if (err)
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 			opt.sv_LM = EPHEM;
@@ -3682,7 +3535,7 @@ int ARCore::subThread()
 		{
 			if (target == NULL)
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 
@@ -3759,7 +3612,7 @@ int ARCore::subThread()
 
 		GC->rtcc->DockingInitiationProcessor(opt);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 20: //Lunar Ascent Processor
@@ -3774,7 +3627,7 @@ int ARCore::subThread()
 			EphemerisData EPHEM;
 			if (GC->rtcc->ELFECH(GMT, RTCC_MPT_CSM, EPHEM))
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 
@@ -3795,7 +3648,7 @@ int ARCore::subThread()
 		{
 			if (target == NULL)
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 			sv_CSM = GC->rtcc->StateVectorCalc(target);
@@ -3805,7 +3658,7 @@ int ARCore::subThread()
 
 		R_LS = OrbMech::r_from_latlong(GC->rtcc->BZLAND.lat[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.lng[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.rad[RTCC_LMPOS_BEST]);
 
-		GC->rtcc->LunarAscentProcessor(R_LS, m0, sv_CSM, GC->rtcc->CalcGETBase(), t_LunarLiftoff, GC->rtcc->PZLTRT.InsertionHorizontalVelocity, GC->rtcc->PZLTRT.InsertionRadialVelocity, theta, dt, dv, sv_IG, sv_Ins);
+		GC->rtcc->LunarAscentProcessor(R_LS, m0, sv_CSM, t_LunarLiftoff, GC->rtcc->PZLTRT.InsertionHorizontalVelocity, GC->rtcc->PZLTRT.InsertionRadialVelocity, theta, dt, dv, sv_IG, sv_Ins);
 
 		GC->rtcc->PZLTRT.PoweredFlightArc = theta;
 		GC->rtcc->PZLTRT.PoweredFlightTime = dt;
@@ -3822,14 +3675,14 @@ int ARCore::subThread()
 		GC->rtcc->JZLAI.sv_Insertion.GMT = OrbMech::GETfromMJD(sv_Ins.MJD, GC->rtcc->GetGMTBase());
 		GC->rtcc->JZLAI.sv_Insertion.RBI = BODY_MOON;
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 21: //LM Ascent PAD
 	{
 		if (target == NULL)
 		{
-			Result = 0;
+			Result = DONE;
 			break;
 		}
 
@@ -3841,7 +3694,6 @@ int ARCore::subThread()
 		vessel->GetRotationMatrix(Rot);
 		oapiGetRotationMatrix(sv_CSM.gravref, &Rot2);
 
-		opt.GETbase = GC->rtcc->CalcGETBase();
 		opt.Rot_VL = OrbMech::GetVesselToLocalRotMatrix(Rot, Rot2);
 		opt.R_LS = OrbMech::r_from_latlong(GC->rtcc->BZLAND.lat[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.lng[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.rad[RTCC_LMPOS_BEST]);
 		opt.sv_CSM = sv_CSM;
@@ -3851,7 +3703,7 @@ int ARCore::subThread()
 
 		GC->rtcc->LunarAscentPAD(opt, lmascentpad);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 22: //Powered Descent Abort Program
@@ -3867,12 +3719,12 @@ int ARCore::subThread()
 		{
 			if (GC->rtcc->NewMPTTrajectory(RTCC_MPT_LM, sv_LM))
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 			if (GC->rtcc->NewMPTTrajectory(RTCC_MPT_CSM, sv_CSM))
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 
@@ -3883,7 +3735,7 @@ int ARCore::subThread()
 		{
 			if (vesseltype != 1 || target == NULL)
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 
@@ -3904,7 +3756,6 @@ int ARCore::subThread()
 
 		}
 
-		opt.GETbase = GC->rtcc->CalcGETBase();
 		opt.IsTwoSegment = GC->mission > 11;
 		opt.REFSMMAT = GC->rtcc->EZJGMTX3.data[0].REFSMMAT;
 		opt.R_LS = OrbMech::r_from_latlong(GC->rtcc->BZLAND.lat[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.lng[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.rad[RTCC_LMPOS_BEST]);
@@ -3956,7 +3807,7 @@ int ARCore::subThread()
 			DEDA227 = OrbMech::DoubleToDEDA(res.DEDA227 / 0.3048*pow(2, -20), 14);
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 23: //Calculate TPI times
@@ -3964,32 +3815,32 @@ int ARCore::subThread()
 		SV sv0 = GC->rtcc->StateVectorCalc(target);
 		t_TPI = GC->rtcc->CalculateTPITimes(sv0, TPI_Mode, t_TPIguess, dt_TPI_sunrise);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 24: //FIDO Orbit Digitals No 1 Cycle
 	{
 		GC->rtcc->EMMDYNMC(1, 1);
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 25: //Vector Compare Display
 	{
 		GC->rtcc->BMSVEC();
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 26: //FIDO Orbit Digitals No 1 Cycle
 	{
 		GC->rtcc->EMMDYNMC(2, 1);
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 27: //SLV Navigation Update Calculation
 	{
 		if (svtarget == NULL)
 		{
-			Result = 0;
+			Result = DONE;
 			break;
 		}
 
@@ -4006,23 +3857,23 @@ int ARCore::subThread()
 
 		GC->rtcc->CMMSLVNAV(sv2.R, sv2.V, sv2.GMT);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 28: //SLV Navigation Update Uplink
 	{
-		iuUplinkResult = 0;
+		iuUplinkResult = DONE;
 
 		if (GC->rtcc->CZNAVSLV.NUPTIM == 0.0)
 		{
 			iuUplinkResult = 4;
-			Result = 0;
+			Result = DONE;
 			break;
 		}
 		if (svtarget == NULL)
 		{
 			iuUplinkResult = 2;
-			Result = 0;
+			Result = DONE;
 			break;
 		}
 
@@ -4041,7 +3892,7 @@ int ARCore::subThread()
 		else
 		{
 			iuUplinkResult = 2;
-			Result = 0;
+			Result = DONE;
 			break;
 		}
 
@@ -4064,19 +3915,19 @@ int ARCore::subThread()
 			iuUplinkResult = 3;
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 29: //FIDO Space Digitals Cycle
 	{
 		GC->rtcc->EMDSPACE(1);
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 30: //FIDO Space Digitals MSK Request
 	{
 		GC->rtcc->EMDSPACE(6);
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 31: //Entry PAD
@@ -4160,61 +4011,64 @@ int ARCore::subThread()
 			}
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 32: //Map Update
 	{
-		SV sv0;
+		EphemerisData sv0;
 
 		if (GC->MissionPlanningActive && GC->rtcc->MPTHasManeuvers(RTCC_MPT_CSM))
 		{
+			double gmt;
+
 			if (mapUpdateGET <= 0.0)
 			{
-				GC->rtcc->NewMPTTrajectory(RTCC_MPT_CSM, sv0);
+				gmt = GC->rtcc->RTCCPresentTimeGMT();
 			}
 			else
 			{
-				EphemerisData sv;
-				if (GC->rtcc->ELFECH(GC->rtcc->GMTfromGET(mapUpdateGET), RTCC_MPT_CSM, sv))
-				{
-					Result = 0;
-					break;
-				}
-				sv0.R = sv.R;
-				sv0.V = sv.V;
-				sv0.MJD = OrbMech::MJDfromGET(sv.GMT, GC->rtcc->GetGMTBase());
-				sv0.gravref = GC->rtcc->GetGravref(sv.RBI);
+				gmt = GC->rtcc->GMTfromGET(mapUpdateGET);
+			}
+
+			if (GC->rtcc->ELFECH(gmt, RTCC_MPT_CSM, sv0))
+			{
+				Result = DONE;
+				break;
 			}
 		}
 		else
 		{
-			sv0 = GC->rtcc->StateVectorCalc(vessel);
+			sv0 = GC->rtcc->StateVectorCalcEphem(vessel);
 			if (mapUpdateGET > 0)
 			{
-				sv0 = GC->rtcc->coast(sv0, mapUpdateGET - OrbMech::GETfromMJD(sv0.MJD, GC->rtcc->CalcGETBase()));
+				sv0 = GC->rtcc->coast(sv0, GC->rtcc->GMTfromGET(mapUpdateGET) - sv0.GMT);
 			}
 		}
 
 		if (mappage == 0)
 		{
 			int gstat;
-			double ttoGSAOS, ttoGSLOS;
+			double ttoGSAOS, ttoGSLOS, MJD;
+			OBJHANDLE gravref;
 
-			gstat = OrbMech::findNextAOS(sv0.R, sv0.V, sv0.MJD, sv0.gravref);
+			MJD = OrbMech::MJDfromGET(sv0.GMT, GC->rtcc->GetGMTBase());
+			gravref = GC->rtcc->GetGravref(sv0.RBI);
 
-			OrbMech::groundstation(sv0.R, sv0.V, sv0.MJD, sv0.gravref, groundstations[gstat][0], groundstations[gstat][1], 1, ttoGSAOS);
-			OrbMech::groundstation(sv0.R, sv0.V, sv0.MJD, sv0.gravref, groundstations[gstat][0], groundstations[gstat][1], 0, ttoGSLOS);
-			GSAOSGET = (sv0.MJD - GC->rtcc->CalcGETBase())*24.0*3600.0 + ttoGSAOS;
-			GSLOSGET = (sv0.MJD - GC->rtcc->CalcGETBase())*24.0*3600.0 + ttoGSLOS;
+			gstat = OrbMech::findNextAOS(sv0.R, sv0.V, MJD, gravref);
+
+			OrbMech::groundstation(sv0.R, sv0.V, MJD, gravref, groundstations[gstat][0], groundstations[gstat][1], 1, ttoGSAOS);
+			OrbMech::groundstation(sv0.R, sv0.V, MJD, gravref, groundstations[gstat][0], groundstations[gstat][1], 0, ttoGSLOS);
+			GSAOSGET = (MJD - GC->rtcc->CalcGETBase())*24.0*3600.0 + ttoGSAOS;
+			GSLOSGET = (MJD - GC->rtcc->CalcGETBase())*24.0*3600.0 + ttoGSLOS;
 			mapgs = gstat;
 		}
 		else
 		{
-			GC->rtcc->LunarOrbitMapUpdate(sv0, GC->rtcc->CalcGETBase(), mapupdate);
+			GC->rtcc->LunarOrbitMapUpdate(sv0, mapupdate);
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 33: //Landmark Tracking PAD
@@ -4233,7 +4087,7 @@ int ARCore::subThread()
 				EphemerisData sv;
 				if (GC->rtcc->ELFECH(GC->rtcc->GMTfromGET(LmkTime), RTCC_MPT_CSM, sv))
 				{
-					Result = 0;
+					Result = DONE;
 					break;
 				}
 				sv0.R = sv.R;
@@ -4247,7 +4101,6 @@ int ARCore::subThread()
 			sv0 = GC->rtcc->StateVectorCalc(vessel);
 		}
 
-		opt.GETbase = GC->rtcc->CalcGETBase();
 		opt.lat[0] = LmkLat;
 		opt.LmkTime[0] = LmkTime;
 		opt.lng[0] = LmkLng;
@@ -4256,20 +4109,20 @@ int ARCore::subThread()
 
 		GC->rtcc->LandmarkTrackingPAD(&opt, landmarkpad);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 34: //Vector Panel Summary Display
 	{
 		GC->rtcc->BMDVPS();
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 35: //AGS Clock Sync
 	{
 		if (vesseltype != 1)
 		{
-			Result = 0;
+			Result = DONE;
 			break;
 		}
 
@@ -4283,7 +4136,7 @@ int ARCore::subThread()
 			GC->rtcc->SystemParameters.MCGZSS = GC->rtcc->SystemParameters.MCGZSL + KFactor / 3600.0;
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 36: //Next Station Contacts Display
@@ -4291,7 +4144,7 @@ int ARCore::subThread()
 		double GET = OrbMech::GETfromMJD(oapiGetSimMJD(), GC->rtcc->CalcGETBase());
 		GC->rtcc->EMDSTAC();
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 37: //Recovery Target Selection Display
@@ -4316,7 +4169,7 @@ int ARCore::subThread()
 
 			if (tab.Header.NumVec < 9 || GC->rtcc->DetermineSVBody(tab.table[0]) != BODY_EARTH)
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 		}
@@ -4326,7 +4179,7 @@ int ARCore::subThread()
 
 			if (sv.RBI != BODY_EARTH)
 			{
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 
@@ -4347,7 +4200,7 @@ int ARCore::subThread()
 		tab2 = &tab;
 		GC->rtcc->RMDRTSD(*tab2, 1, gmt_guess, GC->rtcc->RZJCTTC.R20_lng);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 38: //Transfer Two-Impulse Solution to MPT
@@ -4368,7 +4221,7 @@ int ARCore::subThread()
 			{
 				if (GC->rtcc->med_m72.Plan > GC->rtcc->PZTIPREG.Solutions)
 				{
-					Result = 0;
+					Result = DONE;
 					break;
 				}
 				opt.sv_A = GC->rtcc->PZMYSAVE.SV_mult[0];
@@ -4381,7 +4234,7 @@ int ARCore::subThread()
 			else
 			{
 				//TBD
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 
@@ -4394,7 +4247,7 @@ int ARCore::subThread()
 			if (GetVesselParameters(GC->rtcc->med_m72.Thruster, in.CONFIG, in.VC, in.CSMWeight, in.LMWeight))
 			{
 				//Error
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 
@@ -4424,7 +4277,7 @@ int ARCore::subThread()
 			}
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 39: //Transfer SPQ to MPT
@@ -4450,10 +4303,10 @@ int ARCore::subThread()
 			{
 				attachedMass = 0.0;
 			}
-			GC->rtcc->PoweredFlightProcessor(sv_tig, GC->rtcc->CalcGETBase(), SPQTIG, GC->rtcc->med_m70.Thruster, 0.0, SPQDeltaV, true, P30TIG, dV_LVLH, sv_pre, sv_post);
+			GC->rtcc->PoweredFlightProcessor(sv_tig, SPQTIG, GC->rtcc->med_m70.Thruster, 0.0, SPQDeltaV, true, P30TIG, dV_LVLH, sv_pre, sv_post);
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 40: //Transfer DKI to MPT
@@ -4471,7 +4324,7 @@ int ARCore::subThread()
 			if (GetVesselParameters(GC->rtcc->med_m70.Thruster, in.CONFIG, in.VC, in.CSMWeight, in.LMWeight))
 			{
 				//Error
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 
@@ -4508,7 +4361,7 @@ int ARCore::subThread()
 			}
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 41: //Direct Input to the MPT
@@ -4517,7 +4370,7 @@ int ARCore::subThread()
 		std::vector<std::string> str;
 		GC->rtcc->PMMMED("66", str);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 42: //Transfer Descent Plan to MPT
@@ -4540,10 +4393,10 @@ int ARCore::subThread()
 				attachedMass = GC->rtcc->GetDockedVesselMass(vessel);
 			}
 
-			GC->rtcc->PoweredFlightProcessor(sv_tig, GC->rtcc->CalcGETBase(), GC->rtcc->PZLDPDIS.GETIG[0], GC->rtcc->med_m70.Thruster, attachedMass, GC->rtcc->PZLDPDIS.DVVector[0] * 0.3048, true, P30TIG, dV_LVLH, sv_pre, sv_post);
+			GC->rtcc->PoweredFlightProcessor(sv_tig, GC->rtcc->PZLDPDIS.GETIG[0], GC->rtcc->med_m70.Thruster, attachedMass, GC->rtcc->PZLDPDIS.DVVector[0] * 0.3048, true, P30TIG, dV_LVLH, sv_pre, sv_post);
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 43: //Direct Input of Lunar Descent Maneuver
@@ -4557,7 +4410,7 @@ int ARCore::subThread()
 			GC->rtcc->PMMMED("86", str);
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 44: //Transfer ascent maneuver to MPT from lunar targeting
@@ -4568,7 +4421,7 @@ int ARCore::subThread()
 			GC->rtcc->PMMMED("85", str);
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 45: //Transfer GPM to the MPT
@@ -4583,7 +4436,7 @@ int ARCore::subThread()
 			if (GC->rtcc->PZGPMELM.SV_before.GMT == 0.0)
 			{
 				//No data
-				Result = 0;
+				Result = DONE;
 				break;
 			}
 			EphemerisData sv_tig;
@@ -4602,18 +4455,18 @@ int ARCore::subThread()
 				attachedMass = 0.0;
 			}
 			VECTOR3 DV = GC->rtcc->PZGPMELM.V_after - GC->rtcc->PZGPMELM.SV_before.V;
-			GC->rtcc->PoweredFlightProcessor(sv_tig, mass, GC->rtcc->GetGMTBase(), GC->rtcc->PZGPMELM.SV_before.GMT, GC->rtcc->med_m65.Thruster, attachedMass, DV, false, P30TIG, dV_LVLH);
+			GC->rtcc->PoweredFlightProcessor(sv_tig, mass, GC->rtcc->GETfromGMT(GC->rtcc->PZGPMELM.SV_before.GMT), GC->rtcc->med_m65.Thruster, attachedMass, DV, false, P30TIG, dV_LVLH);
 			P30TIG = GC->rtcc->GETfromGMT(P30TIG);
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 46: //TLI Direct Input
 	{
 		if (!GC->MissionPlanningActive)
 		{
-			Result = 0;
+			Result = DONE;
 			break;
 		}
 
@@ -4622,7 +4475,7 @@ int ARCore::subThread()
 		//MED string was previously saved
 		GC->rtcc->GMGMED(GC->rtcc->RTCCMEDBUFFER);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 47: //Abort Scan Table
@@ -4654,7 +4507,7 @@ int ARCore::subThread()
 
 				if (found == false)
 				{
-					Result = 0;
+					Result = DONE;
 					break;
 				}
 
@@ -4672,7 +4525,7 @@ int ARCore::subThread()
 
 					if (found == false)
 					{
-						Result = 0;
+						Result = DONE;
 						break;
 					}
 				}
@@ -4689,7 +4542,7 @@ int ARCore::subThread()
 			GC->rtcc->PMMREAST(RTEASTType, &sv);
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 48: //LOI and MCC Transfer
@@ -4708,7 +4561,7 @@ int ARCore::subThread()
 			{
 				if (GC->rtcc->med_m78.ManeuverNumber < 1 || GC->rtcc->med_m78.ManeuverNumber > 8)
 				{
-					Result = 0;
+					Result = DONE;
 					break;
 				}
 				tig = GC->rtcc->GETfromGMT(GC->rtcc->PZLRBELM.sv_man_bef[GC->rtcc->med_m78.ManeuverNumber - 1].GMT);
@@ -4718,7 +4571,7 @@ int ARCore::subThread()
 			{
 				if (GC->rtcc->med_m78.ManeuverNumber < 1 || GC->rtcc->med_m78.ManeuverNumber > 4)
 				{
-					Result = 0;
+					Result = DONE;
 					break;
 				}
 				tig = GC->rtcc->GETfromGMT(GC->rtcc->PZMCCXFR.sv_man_bef[GC->rtcc->med_m78.ManeuverNumber - 1].GMT);
@@ -4738,24 +4591,24 @@ int ARCore::subThread()
 			{
 				attachedMass = 0.0;
 			}
-			GC->rtcc->PoweredFlightProcessor(sv_tig, GC->rtcc->CalcGETBase(), tig, GC->rtcc->med_m78.Thruster, attachedMass, dv, false, P30TIG, dV_LVLH, sv_pre, sv_post);
+			GC->rtcc->PoweredFlightProcessor(sv_tig, tig, GC->rtcc->med_m78.Thruster, attachedMass, dv, false, P30TIG, dV_LVLH, sv_pre, sv_post);
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 49: //Transfer Maneuver to MPT from TTF, SCS, RTE
 	{
 		GC->rtcc->GMGMED(GC->rtcc->RTCCMEDBUFFER);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 50: //Lunar Targeting Program (S-IVB Lunar Impact)
 	{
 		if (target == NULL)
 		{
-			Result = 0;
+			Result = DONE;
 			break;
 		}
 
@@ -4778,14 +4631,14 @@ int ARCore::subThread()
 		}
 		if (iu == NULL)
 		{
-			Result = 0;
+			Result = DONE;
 			break;
 		}
 		lvdc = (LVDCSV*)((IUSV*)iu)->GetLVDC();
 
 		if (lvdc == NULL)
 		{
-			Result = 0;
+			Result = DONE;
 			break;
 		}
 
@@ -4793,7 +4646,7 @@ int ARCore::subThread()
 		{
 			//TB8 not enabled yet
 			LUNTAR_Output.err = 3;
-			Result = 0;
+			Result = DONE;
 			break;
 		}
 
@@ -4812,13 +4665,13 @@ int ARCore::subThread()
 		LunarTargetingProgram luntar(GC->rtcc);
 		luntar.Call(in, LUNTAR_Output);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 
 	case 51: //Moonrise/Moonset Display
 	{
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 52: //RTE Tradeoff Display
@@ -4836,21 +4689,21 @@ int ARCore::subThread()
 
 		GC->rtcc->PMQAFMED(mode);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 53: //Central Manual Entry Device Decoder
 	{
 		GC->rtcc->GMGMED(GC->rtcc->RTCCMEDBUFFER);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 54: //Skylab Saturn IB Launch Targeting
 	{
 		if (target == NULL)
 		{
-			Result = 0;
+			Result = DONE;
 			break;
 		}
 		
@@ -4876,17 +4729,17 @@ int ARCore::subThread()
 
 		GC->rtcc->PMMPAR(RT, VT, TT);
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 55: //SLV Target Update Uplink
 	{
-		iuUplinkResult = 0;
+		iuUplinkResult = DONE;
 
 		if (GC->rtcc->PZSLVTAR.VIGM == 0.0)
 		{
 			iuUplinkResult = 4;
-			Result = 0;
+			Result = DONE;
 			break;
 		}
 
@@ -4900,7 +4753,7 @@ int ARCore::subThread()
 		else
 		{
 			iuUplinkResult = 2;
-			Result = 0;
+			Result = DONE;
 			break;
 		}
 
@@ -4927,7 +4780,7 @@ int ARCore::subThread()
 			iuUplinkResult = 3;
 		}
 
-		Result = 0;
+		Result = DONE;
 	}
 	break;
 	case 56: //Perigee Adjust
@@ -4939,7 +4792,7 @@ int ARCore::subThread()
 		if (GC->MissionPlanningActive)
 		{
 			//TBD
-			Result = 0;
+			Result = DONE;
 			break;
 		}
 		else
@@ -4959,13 +4812,72 @@ int ARCore::subThread()
 		GC->rtcc->PMMPAD(sv1, mass, THT, dt, H_P, Thruster, DPSScaleFactor);
 		GC->rtcc->PMDPAD();
 
-		Result = 0;
+		Result = DONE;
+	}
+	break;
+	case 57: //Saturn V TLI Targeting Update
+	{
+		iuUplinkResult = DONE;
+
+		if (GC->rtcc->PZTTLIPL.DataIndicator == 0)
+		{
+			iuUplinkResult = 4;
+			Result = DONE;
+			break;
+		}
+
+		IU *iu;
+
+		if (utils::IsVessel(vessel, utils::SaturnV))
+		{
+			Saturn *iuv = (Saturn *)vessel;
+			iu = iuv->GetIU();
+		}
+		else
+		{
+			iuUplinkResult = 2;
+			Result = DONE;
+			break;
+		}
+
+		void *uplink = NULL;
+		DCSSLVTLITARGET upl;
+
+		LVDCSV *lvdc = (LVDCSV*)iu->GetLVDC();
+
+		SevenParameterUpdate coe = GC->rtcc->PZTTLIPL.elem;
+
+		//Calculate time of restart preparation in TB5
+		double GMT_TB5 = GC->rtcc->SystemParameters.MCGRIC*3600.0 + lvdc->TB5;
+		double TIG_TB5 = coe.GMT_TIG - GMT_TB5;
+		double T_RP_TB5 = TIG_TB5 - GC->rtcc->SystemParameters.MDVSTP.DTIG;
+
+		upl.T_RP = T_RP_TB5;
+		upl.alpha_D = coe.alpha_D;
+		upl.C_3 = coe.C3;
+		upl.e = coe.e;
+		upl.f = coe.f;
+		upl.Inclination = coe.Inclination;
+		upl.theta_N = coe.theta_N;
+
+		uplink = &upl;
+		bool uplinkaccepted = iu->DCSUplink(DCSUPLINK_SLV_TLI_TARGETING_UPDATE, uplink);
+
+		if (uplinkaccepted)
+		{
+			iuUplinkResult = 1;
+		}
+		else
+		{
+			iuUplinkResult = 3;
+		}
+
+		Result = DONE;
 	}
 	break;
 	}
 
 	subThreadStatus = Result;
-	if (hThread != NULL) { CloseHandle(hThread); }
 
 	return(0);
 }

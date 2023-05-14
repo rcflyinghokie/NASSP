@@ -22,7 +22,7 @@
 
   **************************************************************************/
 
-// To force orbitersdk.h to use <fstream> in any compiler version
+// To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
 #include <stdio.h>
@@ -38,7 +38,7 @@
 
 #include "toggleswitch.h"
 #include "apolloguidance.h"
-#include "csmcomputer.h"
+#include "CSMcomputer.h"
 
 #include "saturn.h"
 #include "papi.h"
@@ -313,19 +313,17 @@ void CSMCautionWarningSystem::TimeStep(double simt)
 			//
 
 			bool LightCryo = false;
-			TankPressures press;
-			sat->GetTankPressures(press);
 
-			if (press.H2Tank1PressurePSI < 220.0 || press.H2Tank2PressurePSI < 220.0) {
+			if (sat->H2Tank1PressSensor.Voltage() < 3.143 || sat->H2Tank2PressSensor.Voltage() < 3.143) {
 				LightCryo = true;
 			}
-			else if (press.H2Tank1PressurePSI > 270.0 || press.H2Tank2PressurePSI > 270.0) {
+			else if (sat->H2Tank1PressSensor.Voltage() > 3.855 || sat->H2Tank2PressSensor.Voltage() > 3.855) {
 				LightCryo = true;
 			}
-			else if (press.O2Tank1PressurePSI < 800.0 || press.O2Tank2PressurePSI < 800.0) {
+			else if (sat->O2Tank1PressSensor.Voltage() < 3.75 || sat->O2Tank2PressSensor.Voltage() < 3.75) {
 				LightCryo = true;
 			}
-			else if (press.O2Tank1PressurePSI > 950.0 || press.O2Tank2PressurePSI > 950.0) {
+			else if (sat->O2Tank1PressSensor.Voltage() > 4.5 || sat->O2Tank2PressSensor.Voltage() > 4.5) {
 				LightCryo = true;
 			}
 

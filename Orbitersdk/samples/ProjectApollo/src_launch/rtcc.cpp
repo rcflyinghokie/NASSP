@@ -21,14 +21,14 @@ See http://nassp.sourceforge.net/license/ for more details.
 
 **************************************************************************/
 
-// To force orbitersdk.h to use <fstream> in any compiler version
+// To force Orbitersdk.h to use <fstream> in any compiler version
 //#pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
 #include "soundlib.h"
 #include "ioChannels.h"
 #include "apolloguidance.h"
 #include "dsky.h"
-#include "csmcomputer.h"
+#include "CSMcomputer.h"
 #include "papi.h"
 #include "saturn.h"
 #include "LEMcomputer.h"
@@ -43,6 +43,9 @@ See http://nassp.sourceforge.net/license/ for more details.
 #include "../src_rtccmfd/ReentryNumericalIntegrator.h"
 #include "mcc.h"
 #include "rtcc.h"
+#include "nassputils.h"
+
+using namespace nassp;
 
 // SCENARIO FILE MACROLOGY
 #define SAVE_BOOL(KEY,VALUE) oapiWriteScenario_int(scn, KEY, VALUE)
@@ -1387,7 +1390,6 @@ RTCC::RTCC()
 	calcParams.TPI = 0.0;
 	calcParams.src = NULL;
 	calcParams.tgt = NULL;
-	REFSMMATType = 0;
 	calcParams.StoredREFSMMAT = _M(0, 0, 0, 0, 0, 0, 0, 0, 0);
 	calcParams.TIGSTORE1 = 0.0;
 	calcParams.DVSTORE1 = _V(0, 0, 0);
@@ -1985,7 +1987,6 @@ void RTCC::AP7BlockData(AP7BLKOpt *opt, AP7BLK &pad)
 	v_e = SystemParameters.MCTST1 / SystemParameters.MCTSW1;
 
 	entopt.vessel = calcParams.src;
-	entopt.GETbase = CalcGETBase();
 	entopt.enginetype = RTCC_ENGINETYPE_CSMSPS;
 	entopt.nominal = true;
 	entopt.ReA = 0;
@@ -2023,7 +2024,6 @@ void RTCC::AP11BlockData(AP11BLKOpt *opt, P37PAD &pad)
 	EntryResults res;
 
 	entopt.entrylongmanual = true;
-	entopt.GETbase = CalcGETBase();
 	entopt.enginetype = RTCC_ENGINETYPE_CSMSPS;
 	entopt.type = 1;
 	entopt.vessel = calcParams.src;
@@ -2055,10 +2055,11 @@ void RTCC::AP11BlockData(AP11BLKOpt *opt, P37PAD &pad)
 void RTCC::BlockDataProcessor(EarthEntryOpt *opt, EntryResults *res)
 {
 	EarthEntry* entry;
-	double GET;
+	double GETbase, GET;
 	bool stop;
 	SV sv;
 
+	GETbase = CalcGETBase();
 	stop = false;
 
 	if (opt->useSV)
@@ -2069,9 +2070,9 @@ void RTCC::BlockDataProcessor(EarthEntryOpt *opt, EntryResults *res)
 	{
 		sv = StateVectorCalc(opt->vessel);
 	}
-	GET = (sv.MJD - opt->GETbase)*24.0*3600.0;
+	GET = (sv.MJD - GETbase)*24.0*3600.0;
 
-	entry = new EarthEntry(sv.R, sv.V, sv.MJD, sv.gravref, opt->GETbase, opt->TIGguess, opt->ReA, opt->lng, opt->nominal, opt->entrylongmanual);
+	entry = new EarthEntry(sv.R, sv.V, sv.MJD, sv.gravref, GETbase, opt->TIGguess, opt->ReA, opt->lng, opt->nominal, opt->entrylongmanual);
 
 	while (!stop)
 	{
@@ -2097,7 +2098,7 @@ void RTCC::BlockDataProcessor(EarthEntryOpt *opt, EntryResults *res)
 	TIG_imp = res->P30TIG;
 	DV_imp = res->dV_LVLH;
 
-	PoweredFlightProcessor(sv, opt->GETbase, TIG_imp, opt->enginetype, 0.0, DV_imp, true, res->P30TIG, res->dV_LVLH, res->sv_preburn, res->sv_postburn);
+	PoweredFlightProcessor(sv, TIG_imp, opt->enginetype, 0.0, DV_imp, true, res->P30TIG, res->dV_LVLH, res->sv_preburn, res->sv_postburn);
 
 	RZRFTT.Primary.GMTI = GMTfromGET(res->P30TIG);
 	RZRFTT.Primary.DeltaV = res->dV_LVLH;
@@ -2105,8 +2106,6 @@ void RTCC::BlockDataProcessor(EarthEntryOpt *opt, EntryResults *res)
 
 void RTCC::EntryTargeting(EntryOpt *opt, EntryResults *res)
 {
-	if (opt->RV_MCC.gravref != hEarth) return;
-
 	RTEEarth* entry;
 	double GET, LINE[10];
 	bool stop;
@@ -2115,7 +2114,7 @@ void RTCC::EntryTargeting(EntryOpt *opt, EntryResults *res)
 	stop = false;
 
 	sv = opt->RV_MCC;
-	GET = (sv.MJD - opt->GETbase)*24.0*3600.0;
+	GET = (sv.MJD - CalcGETBase())*24.0*3600.0;
 
 	if (opt->entrylongmanual)
 	{
@@ -2140,6 +2139,11 @@ void RTCC::EntryTargeting(EntryOpt *opt, EntryResults *res)
 	}
 
 	entry = new RTEEarth(this, ConvertSVtoEphemData(sv), GetGMTBase(), GMTfromGET(opt->TIGguess), GMTfromGET(opt->t_Z), opt->type);
+	//Check for error (state vector not in Earth SOI)
+	if (entry->errorstate)
+	{
+		return;
+	}
 	entry->READ(opt->r_rbias, opt->dv_max, 2, 37500.0*0.3048);
 	entry->ATP(LINE);
 	while (!stop)
@@ -2175,7 +2179,7 @@ void RTCC::EntryTargeting(EntryOpt *opt, EntryResults *res)
 		LMmass = 0.0;
 	}
 
-	PoweredFlightProcessor(opt->RV_MCC, opt->GETbase, TIG_imp, opt->enginetype, LMmass, DV_imp, true, res->P30TIG, res->dV_LVLH, res->sv_preburn, res->sv_postburn);
+	PoweredFlightProcessor(opt->RV_MCC, TIG_imp, opt->enginetype, LMmass, DV_imp, true, res->P30TIG, res->dV_LVLH, res->sv_preburn, res->sv_postburn);
 }
 
 int RTCC::PCZYCF(double R1, double R2, double PHIT, double DELT, double VXI2, double VYI2, double VXF1, double VYF1, double SQRMU, int NREVS, int body, double &a, double &e, double &f_T, double &t_PT)
@@ -3276,12 +3280,13 @@ RTCC_PMSTICN_24_3:
 void RTCC::LambertTargeting(LambertMan *lambert, TwoImpulseResuls &res)
 {
 	SV sv_A1, sv_A1_apo, sv_A2, sv_P1, sv_P2;
-	double dt1, dt1_apo, dt2, mu, T1, T2;
+	double GETbase, dt1, dt1_apo, dt2, mu, T1, T2;
 	int N;
 	OBJHANDLE gravref;
 	int body;
 	bool prograde;
 
+	GETbase = CalcGETBase();
 	gravref = lambert->sv_A.gravref;
 	N = lambert->N;
 
@@ -3306,7 +3311,7 @@ void RTCC::LambertTargeting(LambertMan *lambert, TwoImpulseResuls &res)
 		}
 		else
 		{
-			T1 = TPISearch(lambert->sv_A, lambert->sv_P, lambert->GETbase, lambert->ElevationAngle);
+			T1 = TPISearch(lambert->sv_A, lambert->sv_P, lambert->ElevationAngle);
 		}
 	}
 	else
@@ -3314,8 +3319,8 @@ void RTCC::LambertTargeting(LambertMan *lambert, TwoImpulseResuls &res)
 		T1 = lambert->T1;
 	}
 
-	dt1 = T1 - (lambert->sv_A.MJD - lambert->GETbase) * 24.0 * 60.0 * 60.0;
-	dt1_apo = T1 - (lambert->sv_P.MJD - lambert->GETbase) * 24.0 * 60.0 * 60.0;
+	dt1 = T1 - (lambert->sv_A.MJD - GETbase) * 24.0 * 60.0 * 60.0;
+	dt1_apo = T1 - (lambert->sv_P.MJD - GETbase) * 24.0 * 60.0 * 60.0;
 
 	if (lambert->Perturbation == 1)
 	{
@@ -3454,7 +3459,7 @@ void RTCC::LambertTargeting(LambertMan *lambert, TwoImpulseResuls &res)
 		sv_A2_apo.V += DV;
 
 		dt_TPI = OrbMech::findelev(sv_A2_apo.R, sv_A2_apo.V, sv_P2.R, sv_P2.V, sv_P2.MJD, lambert->ElevationAngle, gravref);
-		res.t_TPI = OrbMech::GETfromMJD(sv_P2.MJD, lambert->GETbase) + dt_TPI;
+		res.t_TPI = OrbMech::GETfromMJD(sv_P2.MJD, GETbase) + dt_TPI;
 	}
 
 	if (lambert->storesolns == false) return;
@@ -3577,10 +3582,10 @@ void RTCC::AP10CSIPAD(AP10CSIPADOpt *opt, AP10CSI &pad)
 	VECTOR3 V_G, UX, UY, UZ, IMUangles, FDAIangles, dV_AGS;
 	double dt, TIG_AGS;
 
-	dt = opt->t_CSI - (opt->sv0.MJD - opt->GETbase) * 24.0 * 60.0 * 60.0;
+	dt = opt->t_CSI - (opt->sv0.MJD - CalcGETBase()) * 24.0 * 60.0 * 60.0;
 	sv1 = coast(opt->sv0, dt);
 
-	PoweredFlightProcessor(sv1, opt->GETbase, opt->t_CSI, opt->enginetype, 0.0, opt->dV_LVLH, true, TIG_AGS, dV_AGS, false);
+	PoweredFlightProcessor(sv1, opt->t_CSI, opt->enginetype, 0.0, opt->dV_LVLH, true, TIG_AGS, dV_AGS, false);
 
 	Q_Xx = OrbMech::LVLH_Matrix(sv1.R, sv1.V);
 	V_G = tmul(Q_Xx, opt->dV_LVLH);
@@ -3639,9 +3644,11 @@ void RTCC::AP11LMManeuverPAD(AP11LMManPADOpt *opt, AP11LMMNV &pad)
 {
 	MATRIX3 M_R, M, Q_Xx;
 	VECTOR3 V_G, X_B, UX, UY, UZ, IMUangles, FDAIangles;
-	double dt, mu, CSMmass, ManPADBurnTime, apo, peri, ManPADApo, ManPADPeri, ManPADDVR, ManBSSpitch, ManBSSXPos, R_E, headsswitch;
+	double dt, mu, CSMmass, ManPADBurnTime, apo, peri, ManPADApo, ManPADPeri, ManPADDVR, ManBSSpitch, ManBSSXPos, R_E, headsswitch, GETbase;
 	int ManCOASstaroct;
 	SV sv, sv1, sv2;
+
+	GETbase = CalcGETBase();
 
 	//State vector from PAD options or get a new one
 	if (opt->useSV)
@@ -3654,7 +3661,7 @@ void RTCC::AP11LMManeuverPAD(AP11LMManPADOpt *opt, AP11LMMNV &pad)
 	}
 
 	//Coast until TIG
-	dt = opt->TIG - (sv.MJD - opt->GETbase) * 24.0 * 60.0 * 60.0;
+	dt = opt->TIG - (sv.MJD - GETbase) * 24.0 * 60.0 * 60.0;
 	sv1 = coast(sv, dt);
 
 	//Docked mass
@@ -3668,7 +3675,7 @@ void RTCC::AP11LMManeuverPAD(AP11LMManPADOpt *opt, AP11LMMNV &pad)
 	}
 
 	//Execute maneuver, output state vector at cutoff
-	sv2 = ExecuteManeuver(sv1, opt->GETbase, opt->TIG, opt->dV_LVLH, CSMmass, opt->enginetype, Q_Xx, V_G);
+	sv2 = ExecuteManeuver(sv1, opt->TIG, opt->dV_LVLH, CSMmass, opt->enginetype, Q_Xx, V_G);
 	ManPADBurnTime = (sv2.MJD - sv1.MJD)*24.0*3600.0;
 
 	//Only use landing site radius for the Moon
@@ -3823,7 +3830,7 @@ void RTCC::AP11ManeuverPAD(AP11ManPADOpt *opt, AP11MNV &pad)
 	}
 	else
 	{
-		dt = opt->TIG - (sv.MJD - opt->GETbase) * 24.0 * 60.0 * 60.0;
+		dt = opt->TIG - (sv.MJD - CalcGETBase()) * 24.0 * 60.0 * 60.0;
 		integin.DTU = 0.0;
 	}
 	sv1 = coast(sv, dt);
@@ -4304,7 +4311,7 @@ void RTCC::AP9LMCDHPAD(AP9LMCDHPADOpt *opt, AP9LMCDH &pad)
 	MATRIX3 Rot1, M;
 	VECTOR3 IMUangles, FDAIangles, V_G;
 
-	sv_A1 = coast(opt->sv_A, opt->TIG - OrbMech::GETfromMJD(opt->sv_A.MJD, opt->GETbase));
+	sv_A1 = coast(opt->sv_A, opt->TIG - OrbMech::GETfromMJD(opt->sv_A.MJD, CalcGETBase()));
 	Rot1 = OrbMech::LVLH_Matrix(sv_A1.R, sv_A1.V);
 	V_G = tmul(Rot1, opt->dV_LVLH);
 
@@ -4378,8 +4385,7 @@ void RTCC::LMDAPUpdate(VESSEL *v, AP10DAPDATA &pad, bool docked, bool asc)
 
 	if (asc)
 	{
-		if (!stricmp(v->GetClassName(), "ProjectApollo\\LEM") ||
-			!stricmp(v->GetClassName(), "ProjectApollo/LEM")) {
+		if (utils::IsVessel(v, utils::LEM)) {
 			LEM *lem = (LEM *)v;
 			LMmass = lem->GetAscentStageMass();
 		}
@@ -4447,7 +4453,7 @@ void RTCC::EarthOrbitEntry(const EarthEntryPADOpt &opt, AP7ENT &pad)
 	{
 		SV sv1;
 		
-		sv1 = ExecuteManeuver(opt.sv0, CalcGETBase(), opt.P30TIG, opt.dV_LVLH, 0.0, opt.Thruster);
+		sv1 = ExecuteManeuver(opt.sv0, opt.P30TIG, opt.dV_LVLH, 0.0, opt.Thruster);
 
 		dt2 = OrbMech::time_radius_integ(sv1.R, sv1.V, sv1.MJD, r_EI, -1, sv1.gravref, sv1.gravref, sv_EI.R, sv_EI.V);
 		sv_EI.GMT = OrbMech::GETfromMJD(sv1.MJD + dt2 / 3600.0 / 24.0, GetGMTBase());
@@ -4555,7 +4561,7 @@ void RTCC::LunarEntryPAD(LunarEntryPADOpt *opt, AP11ENT &pad)
 	}
 	else
 	{
-		sv1 = ExecuteManeuver(opt->sv0, CalcGETBase(), opt->P30TIG, opt->dV_LVLH, 0.0, RTCC_ENGINETYPE_CSMSPS);
+		sv1 = ExecuteManeuver(opt->sv0, opt->P30TIG, opt->dV_LVLH, 0.0, RTCC_ENGINETYPE_CSMSPS);
 	}
 
 	if (sv1.gravref == hMoon)
@@ -4749,9 +4755,22 @@ double RTCC::GetClockTimeFromAGC(agc_t *agc)
 
 double RTCC::GetTEPHEMFromAGC(agc_t *agc)
 {
-	return agc->Erasable[AGC_BANK(01710)][AGC_ADDR(01710)] +
-		agc->Erasable[AGC_BANK(01707)][AGC_ADDR(01707)] * pow((double) 2., (double) 14.) +
-		agc->Erasable[AGC_BANK(01706)][AGC_ADDR(01706)] * pow((double) 2., (double) 28.);
+	int tephem_int[3];
+
+	tephem_int[0] = agc->Erasable[AGC_BANK(01706)][AGC_ADDR(01706)];
+	tephem_int[1] = agc->Erasable[AGC_BANK(01707)][AGC_ADDR(01707)];
+	tephem_int[2] = agc->Erasable[AGC_BANK(01710)][AGC_ADDR(01710)];
+
+	//Make negative numbers actually negative
+	for (int i = 0; i < 3; i++)
+	{
+		OrbMech::AGCSignedValue(tephem_int[i]);
+	}
+
+	//Calculate TEPHEM in centiseconds
+	double tephem = tephem_int[2] + tephem_int[1] * pow((double) 2., (double) 14.) + tephem_int[0] * pow((double) 2., (double) 28.);
+
+	return tephem;
 }
 
 void RTCC::navcheck(VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, double &lat, double &lng, double &alt)
@@ -4856,6 +4875,17 @@ EphemerisData RTCC::StateVectorCalcEphem(VESSEL *vessel)
 	{
 		sv.RBI = BODY_MOON;
 	}
+	return sv;
+}
+
+SV2 RTCC::StateVectorCalc2(VESSEL *vessel)
+{
+	SV2 sv;
+
+	sv.sv = StateVectorCalcEphem(vessel);
+	sv.Mass = vessel->GetMass();
+	sv.AttachedMass = GetDockedVesselMass(vessel);
+
 	return sv;
 }
 
@@ -4984,7 +5014,7 @@ MATRIX3 RTCC::REFSMMATCalc(REFSMMATOpt *opt)
 	else if (opt->REFSMMATopt == 4)
 	{
 		//For now a default LC-39A, 72° launch
-		return OrbMech::LaunchREFSMMAT(28.608202*RAD, -80.604064*RAD, opt->GETbase, 72 * RAD);
+		return OrbMech::LaunchREFSMMAT(28.608202*RAD, -80.604064*RAD, CalcGETBase(), 72 * RAD);
 	}
 	else if (opt->REFSMMATopt == 6)
 	{
@@ -4992,7 +5022,7 @@ MATRIX3 RTCC::REFSMMATCalc(REFSMMATOpt *opt)
 		double PTCMJD;
 		VECTOR3 R_ME;
 
-		PTCMJD = opt->REFSMMATTime / 24.0 / 3600.0 + opt->GETbase;
+		PTCMJD = opt->REFSMMATTime;
 
 		CELBODY *cMoon = oapiGetCelbodyInterface(hMoon);
 
@@ -5015,7 +5045,7 @@ MATRIX3 RTCC::REFSMMATCalc(REFSMMATOpt *opt)
 		double LSMJD;
 
 		R_P = unit(_V(cos(opt->LSLng)*cos(opt->LSLat), sin(opt->LSLat), sin(opt->LSLng)*cos(opt->LSLat)));
-		LSMJD = opt->REFSMMATTime / 24.0 / 3600.0 + opt->GETbase;
+		LSMJD = opt->REFSMMATTime / 24.0 / 3600.0 + CalcGETBase();
 		Rot2 = OrbMech::GetRotationMatrix(BODY_MOON, LSMJD);
 
 		R_LS = mul(Rot2, R_P);
@@ -5065,7 +5095,7 @@ MATRIX3 RTCC::REFSMMATCalc(REFSMMATOpt *opt)
 		MATRIX3 Rot2;
 		SV sv3;
 
-		LSMJD = opt->REFSMMATTime / 24.0 / 3600.0 + opt->GETbase;
+		LSMJD = opt->REFSMMATTime / 24.0 / 3600.0 + CalcGETBase();
 
 		R_P = unit(_V(cos(opt->LSLng)*cos(opt->LSLat), sin(opt->LSLat), sin(opt->LSLng)*cos(opt->LSLat)));
 
@@ -5091,7 +5121,7 @@ MATRIX3 RTCC::REFSMMATCalc(REFSMMATOpt *opt)
 
 		if (opt->REFSMMATopt == 0 || opt->REFSMMATopt == 1 || opt->REFSMMATopt == 2)
 		{
-			dt = opt->REFSMMATTime - (sv2.MJD - opt->GETbase) * 24.0 * 60.0 * 60.0;
+			dt = opt->REFSMMATTime - (sv2.MJD - CalcGETBase()) * 24.0 * 60.0 * 60.0;
 			sv4 = coast(sv2, dt);
 		}
 		else
@@ -5222,12 +5252,13 @@ MATRIX3 RTCC::REFSMMATCalc(REFSMMATOpt *opt)
 	}
 }
 
-double RTCC::FindDH(SV sv_A, SV sv_P, double GETbase, double TIGguess, double DH)
+double RTCC::FindDH(SV sv_A, SV sv_P, double TIGguess, double DH)
 {
 	SV sv_A1, sv_P1;
-	double dt, dt2, t_A, t_P, SVMJD, c1, c2, dt2_apo, CDHtime_cor;
+	double GETbase, dt, dt2, t_A, t_P, SVMJD, c1, c2, dt2_apo, CDHtime_cor;
 	int n = 0;
 
+	GETbase = CalcGETBase();
 	t_A = OrbMech::GETfromMJD(sv_A.MJD, GETbase);
 	t_P = OrbMech::GETfromMJD(sv_P.MJD, GETbase);
 	sv_A1 = coast(sv_A, TIGguess - t_A);
@@ -5253,7 +5284,7 @@ double RTCC::FindDH(SV sv_A, SV sv_P, double GETbase, double TIGguess, double DH
 	return CDHtime_cor;
 }
 
-double RTCC::TPISearch(SV sv_A, SV sv_P, double GETbase, double elev)
+double RTCC::TPISearch(SV sv_A, SV sv_P, double elev)
 {
 	SV sv_P1;
 	double dt;
@@ -5261,7 +5292,7 @@ double RTCC::TPISearch(SV sv_A, SV sv_P, double GETbase, double elev)
 	sv_P1 = coast(sv_P, (sv_A.MJD - sv_P.MJD)*24.0*3600.0);
 	dt = OrbMech::findelev(sv_A.R, sv_A.V, sv_P1.R, sv_P1.V, sv_A.MJD, elev, sv_A.gravref);
 
-	return OrbMech::GETfromMJD(sv_A.MJD + dt / 24.0 / 3600.0, GETbase);
+	return OrbMech::GETfromMJD(sv_A.MJD + dt / 24.0 / 3600.0, CalcGETBase());
 }
 
 int RTCC::LunarDescentPlanningProcessor(SV sv)
@@ -5338,6 +5369,36 @@ int RTCC::LunarDescentPlanningProcessor(SV sv)
 	return 0;
 }
 
+void RTCC::TranslunarInjectionProcessor(SV2 state)
+{
+	TLIMEDQuantities medquant;
+	TLMCCMissionConstants mccconst;
+	TLIOutputData out;
+
+	medquant.Mode = PZTLIPLN.Mode;
+	medquant.state = state;
+	medquant.h_ap = PZTLIPLN.h_ap*1852.0;
+	medquant.GMT_TIG = GMTfromGET(PZTLIPLN.GET_TLI);
+
+	mccconst.delta = PZTLIPLN.DELTA;
+	mccconst.sigma = PZTLIPLN.SIGMA;
+	mccconst.Reentry_range = PZMCCPLN.Reentry_range;
+
+	TLIProcessor tli(this);
+	tli.Init(medquant, mccconst, GetGMTBase());
+	tli.Main(out);
+
+	if (out.ErrorIndicator) return;
+
+	PZTTLIPL.DataIndicator = 1;
+	PZTTLIPL.elem = out.uplink_data;
+
+	//Display data
+	PZTPDDIS.GET_TIG = GETfromGMT(out.uplink_data.GMT_TIG);
+	PZTPDDIS.GET_TB6 = PZTPDDIS.GET_TIG - SystemParameters.MDVSTP.DTIG;
+	PZTPDDIS.dv_TLI = out.dv_TLI / 0.3048;
+}
+
 void RTCC::TranslunarMidcourseCorrectionProcessor(EphemerisData sv0, double CSMmass, double LMmass)
 {
 	TLMCCDataTable datatab;
@@ -5350,8 +5411,6 @@ void RTCC::TranslunarMidcourseCorrectionProcessor(EphemerisData sv0, double CSMm
 	medquant.Mode = PZMCCPLN.Mode;
 	medquant.Config = PZMCCPLN.Config;
 	medquant.T_MCC = GMTfromGET(PZMCCPLN.MidcourseGET);
-	medquant.GMTBase = GetGMTBase();
-	medquant.GETBase = CalcGETBase();
 	medquant.sv0 = sv0;
 	medquant.CSMMass = CSMmass;
 	medquant.LMMass = LMmass;
@@ -5396,7 +5455,7 @@ void RTCC::TranslunarMidcourseCorrectionProcessor(EphemerisData sv0, double CSMm
 	mccconst.Reentry_range = PZMCCPLN.Reentry_range;
 
 	TLMCCProcessor tlmcc(this);
-	tlmcc.Init(datatab, medquant, mccconst);
+	tlmcc.Init(datatab, medquant, mccconst, GetGMTBase());
 	tlmcc.Main(out);
 
 	//Update display data
@@ -5679,7 +5738,9 @@ bool RTCC::PDI_PAD(PDIPADOpt* opt, AP11PDIPAD &pad)
 	SV sv1, sv2, sv_I;
 	MATRIX3 REFSMMAT;
 	VECTOR3 U_FDP;
-	double C_R, TTT, t_IG;
+	double GETbase, C_R, TTT, t_IG;
+
+	GETbase = CalcGETBase();
 
 	if (opt->direct)
 	{
@@ -5687,15 +5748,15 @@ bool RTCC::PDI_PAD(PDIPADOpt* opt, AP11PDIPAD &pad)
 	}
 	else
 	{
-		sv2 = ExecuteManeuver(opt->sv0, opt->GETbase, opt->P30TIG, opt->dV_LVLH, 0.0, RTCC_ENGINETYPE_LMDPS);
+		sv2 = ExecuteManeuver(opt->sv0, opt->P30TIG, opt->dV_LVLH, 0.0, RTCC_ENGINETYPE_LMDPS);
 	}
 
-	if (!PDIIgnitionAlgorithm(sv2, opt->GETbase, opt->R_LS, opt->t_land, sv_I, TTT, C_R, U_FDP, REFSMMAT))
+	if (!PDIIgnitionAlgorithm(sv2, opt->R_LS, opt->t_land, sv_I, TTT, C_R, U_FDP, REFSMMAT))
 	{
 		return false;
 	}
 
-	t_IG = OrbMech::GETfromMJD(sv_I.MJD, opt->GETbase);
+	t_IG = OrbMech::GETfromMJD(sv_I.MJD, GETbase);
 
 	VECTOR3 X_B, UX, UY, UZ, IMUangles, FDAIangles;
 	MATRIX3 M, M_R;
@@ -5764,10 +5825,11 @@ void RTCC::LunarAscentPAD(ASCPADOpt opt, AP11LMASCPAD &pad)
 	SV sv_Ins, sv_CSM_TIG;
 	MATRIX3 Rot_LG, Rot_VG;
 	VECTOR3 R_LSP, Q, U_R, Z_B, X_AGS, Y_AGS, Z_AGS;
-	double CR, MJD_TIG, SMa, R_D, delta_L, sin_DL, cos_DL;
+	double GETbase, CR, MJD_TIG, SMa, R_D, delta_L, sin_DL, cos_DL;
 
-	MJD_TIG = OrbMech::MJDfromGET(opt.TIG, opt.GETbase);
-	sv_CSM_TIG = coast(opt.sv_CSM, opt.TIG - OrbMech::GETfromMJD(opt.sv_CSM.MJD, opt.GETbase));
+	GETbase = CalcGETBase();
+	MJD_TIG = OrbMech::MJDfromGET(opt.TIG, GETbase);
+	sv_CSM_TIG = coast(opt.sv_CSM, opt.TIG - OrbMech::GETfromMJD(opt.sv_CSM.MJD, GETbase));
 
 	ELVCNV(opt.R_LS, GMTfromGET(opt.TIG), 1, 3, 2, R_LSP);
 
@@ -6025,7 +6087,7 @@ void RTCC::AGCStateVectorUpdate(char *str, int comp, int ves, EphemerisData sv, 
 	}
 }
 
-void RTCC::AGCStateVectorUpdate(char *str, SV sv, bool csm, double GETbase, bool v66)
+void RTCC::AGCStateVectorUpdate(char *str, SV sv, bool csm, bool v66)
 {
 	OBJHANDLE hMoon = oapiGetGbodyByName("Moon");
 	OBJHANDLE hEarth = oapiGetGbodyByName("Earth");
@@ -6038,7 +6100,7 @@ void RTCC::AGCStateVectorUpdate(char *str, SV sv, bool csm, double GETbase, bool
 
 	pos = mul(Rot, sv.R);
 	vel = mul(Rot, sv.V)*0.01;
-	get = (sv.MJD - GETbase)*24.0*3600.0;
+	get = (sv.MJD - CalcGETBase())*24.0*3600.0;
 
 	if (sv.gravref == hMoon) {
 
@@ -6135,6 +6197,21 @@ void RTCC::IncrementAGCTime(char *list, int veh, double dt)
 	}
 
 	V7XUpdate(73, list, octals, 3);
+}
+
+void RTCC::IncrementAGCLiftoffTime(char *list, int veh, double dt)
+{
+	CMMLIFTF(veh, dt / 3600.0);
+	int *octals;
+	if (veh == RTCC_MPT_CSM)
+	{
+		octals = CZLIFTFF.Blocks[0].Octals;
+	}
+	else
+	{
+		octals = CZLIFTFF.Blocks[1].Octals;
+	}
+	V7XUpdate(70, list, octals, 3);
 }
 
 void RTCC::V7XUpdate(int verb, char *list, int* emem, int n)
@@ -6378,11 +6455,13 @@ void RTCC::AGSStateVectorPAD(const AGSSVOpt &opt, AP11AGSSVPAD &pad)
 	}
 }
 
-void RTCC::NavCheckPAD(SV sv, AP7NAV &pad, double GETbase, double GET)
+void RTCC::NavCheckPAD(SV sv, AP7NAV &pad, double GET)
 {
-	double lat, lng, alt, navcheckdt;
+	double GETbase, lat, lng, alt, navcheckdt;
 	VECTOR3 R1, V1;
 	OBJHANDLE outgrav = NULL;
+
+	GETbase = CalcGETBase();
 	
 	if (GET == 0.0)
 	{
@@ -6412,7 +6491,7 @@ void RTCC::P27PADCalc(P27Opt *opt, P27PAD &pad)
 	bool csm = true;
 	SV sv, sv1;
 
-	SVMJD = opt->GETbase + opt->SVGET / 24.0 / 3600.0;
+	SVMJD = CalcGETBase() + opt->SVGET / 24.0 / 3600.0;
 
 	sv = StateVectorCalc(opt->vessel, SVMJD);
 	sv1 = coast(sv, opt->navcheckGET - opt->SVGET);
@@ -6508,7 +6587,6 @@ void RTCC::SaveState(FILEHANDLE scn) {
 	SAVE_INT("RTCC_GZGENCSN_DayofLiftoff", GZGENCSN.DayofLiftoff);
 	SAVE_INT("RTCC_GZGENCSN_DaysinMonthofLiftoff", GZGENCSN.DaysinMonthofLiftoff);
 	SAVE_INT("RTCC_SFP_MODE", PZSFPTAB.blocks[1].mode);
-	SAVE_INT("RTCC_REFSMMATType", REFSMMATType);
 	// Floats
 	SAVE_DOUBLE("RTCC_GMTBASE",SystemParameters.GMTBASE);
 	SAVE_DOUBLE("RTCC_MCGMTL", SystemParameters.MCGMTL);
@@ -6719,7 +6797,6 @@ void RTCC::LoadState(FILEHANDLE scn) {
 		}
 		LOAD_INT("RTCC_GZGENCSN_DaysinMonthofLiftoff", GZGENCSN.DaysinMonthofLiftoff);
 		LOAD_INT("RTCC_SFP_MODE", PZSFPTAB.blocks[1].mode);
-		LOAD_INT("RTCC_REFSMMATType", REFSMMATType);
 		LOAD_DOUBLE("RTCC_GMTBASE",SystemParameters.GMTBASE);
 		LOAD_DOUBLE("RTCC_MCGMTL", SystemParameters.MCGMTL);
 		LOAD_DOUBLE("RTCC_MCGZSA", SystemParameters.MCGZSA);
@@ -6906,19 +6983,32 @@ int RTCC::SPSRCSDecision(double a, VECTOR3 dV_LVLH)
 	}
 }
 
-SV RTCC::ExecuteManeuver(SV sv, double GETbase, double P30TIG, VECTOR3 dV_LVLH, double attachedMass, int Thruster)
+SV2 RTCC::ExecuteManeuver(SV2 sv, double P30TIG, VECTOR3 dV_LVLH, int Thruster)
+{
+	SV sv0 = ConvertEphemDatatoSV(sv.sv, sv.Mass);
+	SV sv1 = ExecuteManeuver(sv0, P30TIG, dV_LVLH, sv.AttachedMass, Thruster);
+
+	SV2 sv2;
+
+	sv2.sv = ConvertSVtoEphemData(sv1);
+	sv2.Mass = sv1.mass;
+	sv2.AttachedMass = sv.AttachedMass;
+
+	return sv2;
+}
+
+SV RTCC::ExecuteManeuver(SV sv, double P30TIG, VECTOR3 dV_LVLH, double attachedMass, int Thruster)
 {
 	MATRIX3 Q_Xx;
 	VECTOR3 V_G;
 
-	return ExecuteManeuver(sv, GETbase, P30TIG, dV_LVLH, attachedMass, Thruster, Q_Xx, V_G);
+	return ExecuteManeuver(sv, P30TIG, dV_LVLH, attachedMass, Thruster, Q_Xx, V_G);
 }
 
-SV RTCC::ExecuteManeuver(SV sv, double GETbase, double P30TIG, VECTOR3 dV_LVLH, double attachedMass, int Thruster, MATRIX3 &Q_Xx, VECTOR3 &V_G)
+SV RTCC::ExecuteManeuver(SV sv, double P30TIG, VECTOR3 dV_LVLH, double attachedMass, int Thruster, MATRIX3 &Q_Xx, VECTOR3 &V_G)
 {
 	//INPUT:
 	//vessel: vessel interface
-	//GETbase: usually launch MJD
 	//P30TIG: Time of ignition in seconds relative to GETbase
 	//dV_LVLH: DV Vector in LVLH coordinates
 	//sv: state vector on trajectory before the maneuver, doesn't have to be at TIG
@@ -6929,10 +7019,11 @@ SV RTCC::ExecuteManeuver(SV sv, double GETbase, double P30TIG, VECTOR3 dV_LVLH, 
 	//OUTPUT:
 	//sv3: state vector at cutoff
 
-	double t_go, theta_T, F, v_e, F_average, wdot, OnboardThrust;
+	double GETbase, t_go, theta_T, F, v_e, F_average, wdot, OnboardThrust;
 	VECTOR3 UX, UY, UZ, DV, DV_P, DV_C;
 	SV sv2, sv3;
 
+	GETbase = CalcGETBase();
 	EngineParametersTable(Thruster, F, wdot, OnboardThrust);
 	v_e = F / wdot;
 
@@ -6984,11 +7075,12 @@ void RTCC::RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res)
 	RTEMoon* teicalc;
 	SV sv0, sv1, sv2;
 	bool endi = false;
-	double EMSAlt, dt22, MJDguess, LMmass, TZMINI;
+	double GETbase, EMSAlt, dt22, MJDguess, LMmass, TZMINI;
 	VECTOR3 R05G, V05G;
 	OBJHANDLE hEarth = oapiGetObjectByName("Earth");
 	OBJHANDLE hMoon = oapiGetObjectByName("Moon");
 
+	GETbase = CalcGETBase();
 	EMSAlt = 297431.0*0.3048;
 
 	sv0 = opt->RV_MCC;
@@ -7008,7 +7100,7 @@ void RTCC::RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res)
 	}
 	else
 	{
-		MJDguess = opt->GETbase + opt->TIGguess / 24.0 / 3600.0;
+		MJDguess = GETbase + opt->TIGguess / 24.0 / 3600.0;
 	}
 
 	sv1 = coast(sv0, (MJDguess - sv0.MJD)*24.0*3600.0);
@@ -7038,7 +7130,7 @@ void RTCC::RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res)
 			DT_TEI_EI -= 24.0*3600.0;
 		}
 
-		double t0 = OrbMech::GETfromMJD(sv2.MJD, opt->GETbase);
+		double t0 = OrbMech::GETfromMJD(sv2.MJD, GETbase);
 		TZMINI = t0 + DT_TEI_EI;
 	}
 	else
@@ -7096,7 +7188,7 @@ void RTCC::RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res)
 	res->ReA = teicalc->EntryAng;
 	res->GET400K = GETfromGMT(teicalc->t_R);
 	res->GET05G = res->GET400K + dt22;
-	res->RTGO = OrbMech::CMCEMSRangeToGo(R05G, OrbMech::MJDfromGET(res->GET05G, opt->GETbase), res->latitude, res->longitude);
+	res->RTGO = OrbMech::CMCEMSRangeToGo(R05G, OrbMech::MJDfromGET(res->GET05G, GETbase), res->latitude, res->longitude);
 	res->VIO = length(V05G);
 	res->precision = teicalc->precision;
 	res->Incl = teicalc->ReturnInclination;
@@ -7120,51 +7212,52 @@ void RTCC::RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res)
 	sv_tig.R = teicalc->sv0.R;
 	sv_tig.V = teicalc->sv0.V;
 
-	PoweredFlightProcessor(sv_tig, opt->GETbase, 0.0, opt->enginetype, LMmass, teicalc->Vig_apo - teicalc->sv0.V, false, res->P30TIG, res->dV_LVLH, res->sv_preburn, res->sv_postburn);
+	PoweredFlightProcessor(sv_tig, 0.0, opt->enginetype, LMmass, teicalc->Vig_apo - teicalc->sv0.V, false, res->P30TIG, res->dV_LVLH, res->sv_preburn, res->sv_postburn);
 
 	delete teicalc;
 }
 
-void RTCC::LunarOrbitMapUpdate(SV sv0, double GETbase, AP10MAPUPDATE &pad, double pm)
+void RTCC::LunarOrbitMapUpdate(EphemerisData sv0, AP10MAPUPDATE &pad, double pm)
 {
-	double ttoLOS, ttoAOS, ttoSS, ttoSR, ttoPM;
-	OBJHANDLE hEarth, hSun;
+	double ttoLOS, ttoAOS, ttoSS, ttoSR, ttoPM, MJD;
+	OBJHANDLE hEarth, hSun, gravref;
+	double t_lng, GETbase;
 
-	double t_lng;
+	GETbase = CalcGETBase();
+	MJD = OrbMech::MJDfromGET(sv0.GMT, GetGMTBase());
+	gravref = GetGravref(sv0.RBI);
 
 	hEarth = oapiGetObjectByName("Earth");
 	hSun = oapiGetObjectByName("Sun");
 
-	ttoLOS = OrbMech::sunrise(sv0.R, sv0.V, sv0.MJD, sv0.gravref, hEarth, 0, 0, true);
-	ttoAOS = OrbMech::sunrise(sv0.R, sv0.V, sv0.MJD, sv0.gravref, hEarth, 1, 0, true);
+	ttoLOS = OrbMech::sunrise(sv0.R, sv0.V, MJD, gravref, hEarth, 0, 0, true);
+	ttoAOS = OrbMech::sunrise(sv0.R, sv0.V, MJD, gravref, hEarth, 1, 0, true);
 
-	pad.LOSGET = (sv0.MJD - GETbase)*24.0*3600.0 + ttoLOS;
-	pad.AOSGET = (sv0.MJD - GETbase)*24.0*3600.0 + ttoAOS;
+	pad.LOSGET = (MJD - GETbase)*24.0*3600.0 + ttoLOS;
+	pad.AOSGET = (MJD - GETbase)*24.0*3600.0 + ttoAOS;
 
-	ttoSS = OrbMech::sunrise(sv0.R, sv0.V, sv0.MJD, sv0.gravref, hSun, 0, 0, true);
-	ttoSR = OrbMech::sunrise(sv0.R, sv0.V, sv0.MJD, sv0.gravref, hSun, 1, 0, true);
+	ttoSS = OrbMech::sunrise(sv0.R, sv0.V, MJD, gravref, hSun, 0, 0, true);
+	ttoSR = OrbMech::sunrise(sv0.R, sv0.V, MJD, gravref, hSun, 1, 0, true);
 
-	pad.SSGET = (sv0.MJD - GETbase)*24.0*3600.0 + ttoSS;
-	pad.SRGET = (sv0.MJD - GETbase)*24.0*3600.0 + ttoSR;
+	pad.SSGET = (MJD - GETbase)*24.0*3600.0 + ttoSS;
+	pad.SRGET = (MJD - GETbase)*24.0*3600.0 + ttoSR;
 
-	t_lng = OrbMech::P29TimeOfLongitude(sv0.R, sv0.V, sv0.MJD, sv0.gravref, pm);
-	ttoPM = (t_lng - sv0.MJD)*24.0 * 3600.0;
-	pad.PMGET = (sv0.MJD - GETbase)*24.0*3600.0 + ttoPM;
+	t_lng = OrbMech::P29TimeOfLongitude(sv0.R, sv0.V, MJD, gravref, pm);
+	ttoPM = (t_lng - MJD)*24.0 * 3600.0;
+	pad.PMGET = (MJD - GETbase)*24.0*3600.0 + ttoPM;
 }
 
 void RTCC::LandmarkTrackingPAD(LMARKTRKPADOpt *opt, AP11LMARKTRKPAD &pad)
 {
 	SV sv1;
 	VECTOR3 R_P, u;
-	double dt1, dt2, MJDguess, sinl, gamma, r_0, LmkRange;
-	OBJHANDLE hEarth, hMoon;
+	double GETbase, dt1, dt2, MJDguess, sinl, gamma, r_0, LmkRange;
 
-	hEarth = oapiGetObjectByName("Earth");
-	hMoon = oapiGetObjectByName("Moon");
+	GETbase = CalcGETBase();
 
 	for (int i = 0;i < opt->entries;i++)
 	{
-		MJDguess = opt->GETbase + opt->LmkTime[i] / 24.0 / 3600.0;
+		MJDguess = GETbase + opt->LmkTime[i] / 24.0 / 3600.0;
 		sv1 = coast(opt->sv0, (MJDguess - opt->sv0.MJD)*24.0*3600.0);
 
 		R_P = unit(_V(cos(opt->lng[i])*cos(opt->lat[i]), sin(opt->lng[i])*cos(opt->lat[i]), sin(opt->lat[i])))*(oapiGetSize(sv1.gravref) + opt->alt[i]);
@@ -7172,8 +7265,8 @@ void RTCC::LandmarkTrackingPAD(LMARKTRKPADOpt *opt, AP11LMARKTRKPAD &pad)
 		dt1 = OrbMech::findelev_gs(sv1.R, sv1.V, R_P, MJDguess, 180.0*RAD, sv1.gravref, LmkRange);
 		dt2 = OrbMech::findelev_gs(sv1.R, sv1.V, R_P, MJDguess, 145.0*RAD, sv1.gravref, LmkRange);
 
-		pad.T1[i] = dt1 + (MJDguess - opt->GETbase) * 24.0 * 60.0 * 60.0;
-		pad.T2[i] = dt2 + (MJDguess - opt->GETbase) * 24.0 * 60.0 * 60.0;
+		pad.T1[i] = dt1 + (MJDguess - GETbase) * 24.0 * 60.0 * 60.0;
+		pad.T2[i] = dt2 + (MJDguess - GETbase) * 24.0 * 60.0 * 60.0;
 
 		u = unit(R_P);
 		sinl = u.z;
@@ -7287,40 +7380,6 @@ bool RTCC::REFSMMATDecision(VECTOR3 Att)
 	}
 
 	return false;
-}
-
-SevenParameterUpdate RTCC::TLICutoffToLVDCParameters(VECTOR3 R_TLI, VECTOR3 V_TLI, double P30TIG, double TB5, double mu, double T_RG)
-{
-	//Inputs:
-	//
-	//R_TLI: TLI cutoff position vector, right-handed, ECI coordinate system
-	//V_TLI: TLI cutoff velocity vector, right-handed, ECI coordinate system
-
-	double T_RP, tb5start;
-	SevenParameterUpdate param;
-	OELEMENTS coe;
-
-	tb5start = TB5 - 17.0;
-	T_RP = P30TIG - tb5start - T_RG;
-
-	EphemerisData2 sv, sv_out;
-	sv.R = R_TLI;
-	sv.V = V_TLI;
-	sv.GMT = GMTfromGET(P30TIG);
-
-	ELVCNV(sv, 0, 1, sv_out);
-
-	coe = OrbMech::coe_from_PACSS4(sv_out.R, sv_out.V, mu);
-
-	param.alpha_D = coe.w;
-	param.C3 = coe.h;
-	param.e = coe.e;
-	param.f = coe.TA;
-	param.Inclination = coe.i;
-	param.theta_N = coe.RA;
-	param.T_RP = T_RP;
-
-	return param;
 }
 
 int RTCC::PMMSPT(PMMSPTInput &in)
@@ -8016,27 +8075,29 @@ int RTCC::PoweredFlightProcessor(PMMMPTInput in, double &GMT_TIG, VECTOR3 &dV_LV
 	return err;
 }
 
-void RTCC::PoweredFlightProcessor(EphemerisData sv0, double mass, double GETbase, double GET_TIG_imp, int enginetype, double attachedMass, VECTOR3 DV, bool DVIsLVLH, double &GET_TIG, VECTOR3 &dV_LVLH, bool agc)
+void RTCC::PoweredFlightProcessor(EphemerisData sv0, double mass, double GET_TIG_imp, int enginetype, double attachedMass, VECTOR3 DV, bool DVIsLVLH, double &GET_TIG, VECTOR3 &dV_LVLH, bool agc)
 {
 	SV sv1;
 	sv1 = ConvertEphemDatatoSV(sv0);
 	sv1.mass = mass;
-	PoweredFlightProcessor(sv1, GETbase, GET_TIG_imp, enginetype, attachedMass, DV, DVIsLVLH, GET_TIG, dV_LVLH, agc);
+	PoweredFlightProcessor(sv1, GET_TIG_imp, enginetype, attachedMass, DV, DVIsLVLH, GET_TIG, dV_LVLH, agc);
 }
 
-void RTCC::PoweredFlightProcessor(SV sv0, double GETbase, double GET_TIG_imp, int enginetype, double attachedMass, VECTOR3 DV, bool DVIsLVLH, double &GET_TIG, VECTOR3 &dV_LVLH, bool agc)
+void RTCC::PoweredFlightProcessor(SV sv0, double GET_TIG_imp, int enginetype, double attachedMass, VECTOR3 DV, bool DVIsLVLH, double &GET_TIG, VECTOR3 &dV_LVLH, bool agc)
 {
 	SV sv_pre, sv_post;
 
-	PoweredFlightProcessor(sv0, GETbase, GET_TIG_imp, enginetype, attachedMass, DV, DVIsLVLH, GET_TIG, dV_LVLH, sv_pre, sv_post, agc);
+	PoweredFlightProcessor(sv0, GET_TIG_imp, enginetype, attachedMass, DV, DVIsLVLH, GET_TIG, dV_LVLH, sv_pre, sv_post, agc);
 }
 
-void RTCC::PoweredFlightProcessor(SV sv0, double GETbase, double GET_TIG_imp, int enginetype, double attachedMass, VECTOR3 DV, bool DVIsLVLH, double &GET_TIG, VECTOR3 &dV_LVLH, SV &sv_pre, SV &sv_post, bool agc)
+void RTCC::PoweredFlightProcessor(SV sv0, double GET_TIG_imp, int enginetype, double attachedMass, VECTOR3 DV, bool DVIsLVLH, double &GET_TIG, VECTOR3 &dV_LVLH, SV &sv_pre, SV &sv_post, bool agc)
 {
 	SV sv_imp;
 	MATRIX3 Q_Xx;
 	VECTOR3 DeltaV;
-	double t_slip;
+	double GETbase, t_slip;
+
+	GETbase = CalcGETBase();
 
 	//If TIG set to 0 use input SV MJD as TIG
 	if (GET_TIG_imp == 0.0)
@@ -8064,26 +8125,6 @@ void RTCC::PoweredFlightProcessor(SV sv0, double GETbase, double GET_TIG_imp, in
 	GET_TIG = GET_TIG_imp + t_slip;
 }
 
-VECTOR3 RTCC::ConvertDVtoLVLH(SV sv0, double GETbase, double TIG_imp, VECTOR3 DV_imp)
-{
-	MATRIX3 Q_Xx;
-	SV sv_tig;
-
-	sv_tig = coast(sv0, TIG_imp - OrbMech::GETfromMJD(sv0.MJD, GETbase));
-	Q_Xx = OrbMech::LVLH_Matrix(sv_tig.R, sv_tig.V);
-	return mul(Q_Xx, DV_imp);
-}
-
-VECTOR3 RTCC::ConvertDVtoInertial(SV sv0, double GETbase, double TIG_imp, VECTOR3 DV_LVLH_imp)
-{
-	MATRIX3 Q_Xx;
-	SV sv_tig;
-
-	sv_tig = coast(sv0, TIG_imp - OrbMech::GETfromMJD(sv0.MJD, GETbase));
-	Q_Xx = OrbMech::LVLH_Matrix(sv_tig.R, sv_tig.V);
-	return tmul(Q_Xx, DV_LVLH_imp);
-}
-
 double RTCC::GetDockedVesselMass(VESSEL *vessel)
 {
 	//INPUT:
@@ -8103,8 +8144,7 @@ double RTCC::GetDockedVesselMass(VESSEL *vessel)
 		lm = oapiGetVesselInterface(hLM);
 
 		//Special case: S-IVB, but we want the LM mass
-		if (!stricmp(lm->GetClassName(), "ProjectApollo\\sat5stg3") ||
-			!stricmp(lm->GetClassName(), "ProjectApollo/sat5stg3"))
+		if (utils::IsVessel(lm, utils::SaturnV_SIVB))
 		{
 			SIVB *sivb = (SIVB *)lm;
 			LMmass = sivb->GetPayloadMass();
@@ -8149,14 +8189,14 @@ SV RTCC::FindPericynthion(SV sv0)
 	return coast(sv0, dt);
 }
 
-double RTCC::FindOrbitalMidnight(SV sv, double GETbase, double t_TPI_guess)
+double RTCC::FindOrbitalMidnight(SV sv, double t_TPI_guess)
 {
 	SV sv1;
 	double GET_SV, dt, ttoMidnight;
 
 	OBJHANDLE hSun = oapiGetObjectByName("Sun");
 
-	GET_SV = OrbMech::GETfromMJD(sv.MJD, GETbase);
+	GET_SV = OrbMech::GETfromMJD(sv.MJD, CalcGETBase());
 	dt = t_TPI_guess - GET_SV;
 
 	sv1 = coast(sv, dt);
@@ -8165,7 +8205,7 @@ double RTCC::FindOrbitalMidnight(SV sv, double GETbase, double t_TPI_guess)
 	return t_TPI_guess + ttoMidnight;
 }
 
-void RTCC::FindRadarAOSLOS(SV sv, double GETbase, double lat, double lng, double &GET_AOS, double &GET_LOS)
+void RTCC::FindRadarAOSLOS(SV sv, double lat, double lng, double &GET_AOS, double &GET_LOS)
 {
 	VECTOR3 R_P;
 	double LmkRange, dt1, dt2;
@@ -8175,11 +8215,11 @@ void RTCC::FindRadarAOSLOS(SV sv, double GETbase, double lat, double lng, double
 	dt1 = OrbMech::findelev_gs(sv.R, sv.V, R_P, sv.MJD, 175.0*RAD, sv.gravref, LmkRange);
 	dt2 = OrbMech::findelev_gs(sv.R, sv.V, R_P, sv.MJD, 5.0*RAD, sv.gravref, LmkRange);
 
-	GET_AOS = OrbMech::GETfromMJD(sv.MJD, GETbase) + dt1;
-	GET_LOS = OrbMech::GETfromMJD(sv.MJD, GETbase) + dt2;
+	GET_AOS = OrbMech::GETfromMJD(sv.MJD, CalcGETBase()) + dt1;
+	GET_LOS = OrbMech::GETfromMJD(sv.MJD, CalcGETBase()) + dt2;
 }
 
-void RTCC::FindRadarMidPass(SV sv, double GETbase, double lat, double lng, double &GET_Mid)
+void RTCC::FindRadarMidPass(SV sv, double lat, double lng, double &GET_Mid)
 {
 	VECTOR3 R_P;
 	double LmkRange, dt;
@@ -8188,17 +8228,17 @@ void RTCC::FindRadarMidPass(SV sv, double GETbase, double lat, double lng, doubl
 
 	dt = OrbMech::findelev_gs(sv.R, sv.V, R_P, sv.MJD, 90.0*RAD, sv.gravref, LmkRange);
 
-	GET_Mid = OrbMech::GETfromMJD(sv.MJD, GETbase) + dt;
+	GET_Mid = OrbMech::GETfromMJD(sv.MJD, CalcGETBase()) + dt;
 }
 
-double RTCC::FindOrbitalSunrise(SV sv, double GETbase, double t_sunrise_guess)
+double RTCC::FindOrbitalSunrise(SV sv, double t_sunrise_guess)
 {
 	SV sv1;
 	double GET_SV, dt, ttoSunrise;
 
 	OBJHANDLE hSun = oapiGetObjectByName("Sun");
 
-	GET_SV = OrbMech::GETfromMJD(sv.MJD, GETbase);
+	GET_SV = OrbMech::GETfromMJD(sv.MJD, CalcGETBase());
 	dt = t_sunrise_guess - GET_SV;
 
 	sv1 = coast(sv, dt);
@@ -8235,575 +8275,6 @@ VECTOR3 RTCC::PointAOTWithCSM(MATRIX3 REFSMMAT, EphemerisData sv, int AOTdetent,
 	GA = OrbMech::CALCGAR(_M(1, 0, 0, 0, 1, 0, 0, 0, 1), OrbMech::tmat(C_MSM));
 
 	return GA;
-}
-
-bool RTCC::NC1NC2Program(SV sv_C, SV sv_W, double GETbase, double E_L, double t_C, double dt, double t_F, double dh_F, double n_H1, int s, double dh, double n_C, VECTOR3 &dV_NC1_LVLH, double &dh_NC2, double &dv_NC2, double &t_NC2, VECTOR3 &dV_NC2_LVLH, double &dv_NCC, double &t_NCC, double &t_NSR, VECTOR3 &dV_NSR, bool NPC)
-{
-	int s_F;
-	double t_N, dv_C, dv_H1, dv_H2, c, theta, mu, eps1, pi, t, t_H1, t_H2, e_H1, eps2, c_I, t_S, e_H2, e_P, c_F, dvo_C, eo_P;
-	double d, MJD, p_H1, p_H2, p_C, e_H1o, e_H2o, dv_H1o, dv_H2o, tt, t_WC;
-	VECTOR3 R_WS, V_WS, R_CC, V_CC, R_WC, V_WC, am, ur_WD, R_WF, V_WF, R_WJ, V_WJ, R_CFD, R_CH1, V_CH1, R_CH2, V_CH2, V_CCF, V_CH1F;
-	VECTOR3 R_WH2, V_WH2, V_CH2F, R_CS, V_CS, R_CF, V_CF, R_CSF, V_CSF,R_WAF, V_WAF, X, Y, Z, dV_LVLH, dV_NSR_LVLH;
-	OBJHANDLE gravref;
-
-	gravref = sv_C.gravref;
-	mu = GGRAV*oapiGetMass(gravref);
-	eps1 = 0.000001;
-	eps2 = 0.01;
-	p_C = 1;
-	MJD = GETbase + t_C / 24.0 / 3600.0;
-
-	s_F = 0;
-	p_H1 = p_H2 = c_F = c_I = 0.0;
-	t_N = t_C;
-	R_WS = sv_W.R;
-	V_WS = sv_W.V;
-	pi = PI;
-	dv_C = 225.0*0.3048;
-	dv_H1 = 165.0*0.3048;
-	dv_H2 = 25.0*0.3048;
-
-	if (s == 2)
-	{
-		n_C = n_H1;
-		dv_C = dv_H1;
-	}
-
-	OrbMech::oneclickcoast(sv_C.R, sv_C.V, sv_C.MJD, (GETbase - sv_C.MJD)*24.0*3600.0 + t_C, R_CC, V_CC, gravref, gravref);
-	OrbMech::rv_from_r0v0(sv_W.R, sv_W.V, (GETbase - sv_W.MJD)*24.0*3600.0 + t_C, R_WC, V_WC, mu);
-	t_WC = t_C;
-	do
-	{
-		am = unit(crossp(R_WC, V_WC));
-		ur_WD = unit(crossp(crossp(crossp(R_CC, V_CC), R_CC), am));
-		d = OrbMech::sign(n_C - 18.0);
-		c = OrbMech::sign(dotp(crossp(ur_WD, R_WC), am));
-		theta = pi - c*(pi - acos(dotp(ur_WD, unit(R_WC)))) + (d + 1.0)*(c + 1.0)*pi*0.5;
-
-		if (abs(theta) >= eps1)
-		{
-			if (c_I == 10)
-			{
-				return false;
-			}
-			t = OrbMech::time_theta(R_WC, V_WC, theta, mu);
-			if (pi != 0.0)
-			{
-				pi = 0.0;
-				R_WC = R_WS;
-				V_WC = V_WS;
-				t_WC = (sv_W.MJD - GETbase)*24.0*3600.0;
-			}
-			c_I++;
-			t_N -= t;
-			OrbMech::oneclickcoast(R_WC, V_WC, MJD, t_N - t_WC, R_WC, V_WC, gravref, gravref);
-			t_WC = t_N;
-		}
-	} while (abs(theta) >= eps1);
-
-	R_CC = unit(R_CC - am*dotp(R_CC, am))*length(R_CC);
-	V_CC = unit(V_CC - am*dotp(V_CC, am))*length(V_CC);
-
-	OrbMech::rv_from_r0v0(R_WC, V_WC, t_F - t_N, R_WF, V_WF, mu);
-
-	if (!OrbMech::QDRTPI(R_WF, V_WF, MJD, gravref, mu, dh_F, E_L, 0, R_WJ, V_WJ))
-	{
-		return false;
-	}
-
-	R_CFD = R_WJ - unit(R_WJ)*dh_F;
-
-	do
-	{
-		V_CCF = V_CC + unit(crossp(am, R_CC))*dv_C;
-		OrbMech::REVUP(R_CC, V_CCF, n_C, mu, R_CH1, V_CH1, tt);
-		t_H1 = t_C + tt;
-
-		if (s == 1)
-		{
-			if (c_F == 0)
-			{
-				c_I = 0;
-			}
-			else
-			{
-				c_I = 0.5;
-			}
-			do
-			{
-				V_CH1F = V_CH1 + unit(crossp(am, R_CH1))*dv_H1;
-				OrbMech::REVUP(R_CH1, V_CH1F, n_H1, mu, R_CH2, V_CH2, tt);
-				t_H2 = t_H1 + tt;
-				OrbMech::RADUP(R_WC, V_WC, R_CH2, mu, R_WH2, V_WH2);
-				e_H1 = length(R_WH2) - length(R_CH2) - dh;
-				if (p_H1 == 0 || abs(e_H1) >= eps2)
-				{
-					OrbMech::ITER(c_I, s_F, e_H1, p_H1, dv_H1, e_H1o, dv_H1o);
-					if (s_F == 1)
-					{
-						return false;
-					}
-				}
-			} while (abs(e_H1) >= eps2);
-		}
-		else
-		{
-			t_H2 = t_H1;
-			R_CH2 = R_CH1;
-			V_CH2 = V_CH1;
-		}
-		if (c_F == 0)
-		{
-			c_I = 0;
-		}
-		else
-		{
-			c_I = 0.5;
-		}
-		t_S = t_H2 + dt;
-		do
-		{
-			V_CH2F = V_CH2 + unit(crossp(am, R_CH2))*dv_H2;
-			OrbMech::rv_from_r0v0(R_CH2, V_CH2F, dt, R_CS, V_CS, mu);
-			OrbMech::RADUP(R_WC, V_WC, R_CS, mu, R_WS, V_WS);
-			OrbMech::COE(R_WS, V_WS, length(R_WS) - length(R_CS), mu, R_CSF, V_CSF);
-			OrbMech::rv_from_r0v0(R_CS, V_CSF, t_F - t_S, R_CF, V_CF, mu);
-			OrbMech::RADUP(R_WC, V_WC, R_CF, mu, R_WAF, V_WAF);
-			e_H2 = length(R_WAF) - length(R_CF) - dh_F;
-
-			if (p_H2 == 0 || abs(e_H2) >= eps2)
-			{
-				OrbMech::ITER(c_I, s_F, e_H2, p_H2, dv_H2, e_H2o, dv_H2o);
-				if (s_F == 1)
-				{
-					return false;
-				}
-			}
-		} while (abs(e_H2) >= eps2);
-		e_P = OrbMech::sign(dotp(crossp(R_CF, R_CFD), am))*acos(dotp(R_CFD / length(R_CFD), R_CF / length(R_CF)));
-		if (abs(e_P) >= 4.0*eps1)
-		{
-			OrbMech::ITER(c_F, s_F, e_P, p_C, dv_C, eo_P, dvo_C);
-			if (s_F == 1)
-			{
-				return false;
-			}
-		}
-	} while (abs(e_P) >= 4.0*eps1);
-
-	if (NPC)
-	{
-		double dt_PC, dv_PC, Y_C;
-		VECTOR3 u2, R_WCC, V_WCC, R_CCC, V_CCC, dV_NC, R_WPC, V_WPC, R_CPC, V_CPC, XX, YY, ZZ, V_CCC_apo;
-		double c_PC, p_PC, eo_PC, dvo_PC;
-		int s_PC;
-
-		c_PC = 0.0;
-		p_PC = 0.0;
-
-		OrbMech::oneclickcoast(sv_C.R, sv_C.V, sv_C.MJD, (GETbase - sv_C.MJD)*24.0*3600.0 + t_C, R_CCC, V_CCC, gravref, gravref);
-		OrbMech::oneclickcoast(sv_W.R, sv_W.V, sv_W.MJD, (GETbase - sv_W.MJD)*24.0*3600.0 + t_C, R_WCC, V_WCC, gravref, gravref);
-
-		u2 = unit(crossp(V_WCC, R_WCC));
-		dv_PC = -dotp(V_CCC, u2);
-
-		ZZ = -unit(R_CCC);
-		YY = unit(crossp(V_CCC, R_CCC));
-		XX = crossp(YY, ZZ);
-
-		do
-		{
-			dV_LVLH = _V(dv_C, dv_PC, 0);
-			dV_NC = tmul(_M(XX.x, XX.y, XX.z, YY.x, YY.y, YY.z, ZZ.x, ZZ.y, ZZ.z), dV_LVLH);
-			V_CCC_apo = V_CCC + dV_NC;
-
-			dt_PC = OrbMech::time_theta(R_CCC, V_CCC_apo, PI05, mu);
-
-			OrbMech::oneclickcoast(R_CCC, V_CCC_apo, MJD, dt_PC, R_CPC, V_CPC, gravref, gravref);
-			OrbMech::oneclickcoast(R_WCC, V_WCC, MJD, dt_PC, R_WPC, V_WPC, gravref, gravref);
-			u2 = unit(crossp(V_WPC, R_WPC));
-
-			Y_C = dotp(R_CPC, u2);
-			if (p_PC == 0 || abs(Y_C) >= eps2)
-			{
-				OrbMech::ITER(c_PC, s_PC, Y_C, p_PC, dv_PC, eo_PC, dvo_PC);
-				if (s_PC == 1)
-				{
-					return false;
-				}
-			}
-		} while (abs(Y_C) >= eps2);
-	}
-	else
-	{
-		dV_LVLH = _V(dv_C, 0, 0);
-	}
-	if (s == 1)
-	{
-		OrbMech::RADUP(R_WC, V_WC, R_CH1, mu, R_WF, V_WF);
-		dh_NC2 = length(R_WF) - length(R_CH1);
-		dv_NC2 = dv_H1;
-		dV_NC1_LVLH = dV_LVLH;
-		t_NC2 = t_H1;
-	}
-	else
-	{
-		dV_NC2_LVLH = dV_LVLH;
-	}
-	dv_NCC = dv_H2;
-	dV_NSR = V_CSF - V_CS;
-	t_NCC = t_H2;
-	t_NSR = t_S;
-	Z = -unit(R_CS);
-	Y = -am;
-	X = crossp(Y, Z);
-	dV_NSR_LVLH = mul(_M(X.x, X.y, X.z, Y.x, Y.y, Y.z, Z.x, Z.y, Z.z), dV_NSR);
-
-	return true;
-}
-
-void RTCC::NCCProgram(SV sv_C, SV sv_W, double GETbase, double E_L, double t_C, double dt, double t_F, double dh, VECTOR3 &dV_NCC_LVLH, double &t_NSR, VECTOR3 &dV_NSR_LVLH)
-{
-	VECTOR3 R_CC, V_CC, R_WF, V_WF, R_WJ, V_WJ, R_CF, V_CF, R_CT, V_CT, V_CCF, R_CTF, V_CTF, X, Y, Z, dV_NCC, dV_NSR;
-	double MJD, mu;
-	OBJHANDLE gravref;
-	int body;
-
-	gravref = sv_C.gravref;
-	if (gravref == hEarth)
-	{
-		body = BODY_EARTH;
-	}
-	else
-	{
-		body = BODY_MOON;
-	}
-	mu = GGRAV*oapiGetMass(gravref);
-	MJD = GETbase + t_C / 24.0 / 3600.0;
-
-	OrbMech::oneclickcoast(sv_C.R, sv_C.V, sv_C.MJD, (GETbase - sv_C.MJD)*24.0*3600.0 + t_C, R_CC, V_CC, gravref, gravref);
-	OrbMech::oneclickcoast(sv_W.R, sv_W.V, sv_W.MJD, (GETbase - sv_W.MJD)*24.0*3600.0 + t_F, R_WF, V_WF, gravref, gravref);
-	OrbMech::QDRTPI(R_WF, V_WF, MJD, gravref, mu, dh, E_L, 1, R_WJ, V_WJ);
-	OrbMech::COE(R_WJ, V_WJ, dh, mu, R_CF, V_CF);
-	t_NSR = t_C + dt;
-	OrbMech::oneclickcoast(R_CF, V_CF, MJD, t_NSR - t_F, R_CT, V_CT, gravref, gravref);
-	V_CCF = OrbMech::Vinti(R_CC, V_CC, R_CT, MJD, dt, 0, true, body, body, body, _V(0, 0, 0));
-	OrbMech::oneclickcoast(R_CC, V_CCF, sv_C.MJD, dt, R_CTF, V_CTF, gravref, gravref);
-
-	dV_NCC = V_CCF - V_CC;
-	dV_NSR = V_CT - V_CTF;
-
-	Z = -unit(R_CTF);
-	Y = unit(crossp(V_CTF, R_CTF));
-	X = crossp(Y, Z);
-	dV_NSR_LVLH = mul(_M(X.x, X.y, X.z, Y.x, Y.y, Y.z, Z.x, Z.y, Z.z), dV_NSR);
-
-	Z = -unit(R_CC);
-	Y = unit(crossp(V_CC, R_CC));
-	X = crossp(Y, Z);
-	dV_NCC_LVLH = mul(_M(X.x, X.y, X.z, Y.x, Y.y, Y.z, Z.x, Z.y, Z.z), dV_NCC);
-}
-
-void RTCC::NSRProgram(SV sv_C, SV sv_W, double GETbase, double E_L, double t2, double t3, VECTOR3 &dV_NSR_LVLH)
-{
-	VECTOR3 R_C2, V_C2, R_W2, V_W2, u1, u2, u, R_WC, V_WC, dV_2, X, Y, Z, V_C2_apo;
-	double Y_C, Y_C_dot, Y_W_dot, cos_phi, sin_phi, SW, phi, dh_NSR, v_WV, a_W, a_C, v_CV, v_CH, mu, dt;
-	OBJHANDLE gravref;
-
-	gravref = sv_C.gravref;
-	mu = GGRAV*oapiGetMass(gravref);
-
-	OrbMech::oneclickcoast(sv_C.R, sv_C.V, sv_C.MJD, (GETbase - sv_C.MJD)*24.0*3600.0 + t2, R_C2, V_C2, gravref, gravref);
-	OrbMech::oneclickcoast(sv_W.R, sv_W.V, sv_W.MJD, (GETbase - sv_W.MJD)*24.0*3600.0 + t2, R_W2, V_W2, gravref, gravref);
-
-	u1 = unit(crossp(V_C2, R_C2));
-	u2 = unit(crossp(V_W2, R_W2));
-	Y_C = dotp(R_C2, u2);
-	Y_C_dot = dotp(V_C2, u2);
-	Y_W_dot = dotp(V_W2, u1);
-	
-	u = unit(crossp(R_W2, V_W2));
-	R_C2 = unit(R_C2 - u*dotp(R_C2, u))*length(R_C2);
-	V_C2 = unit(V_C2 - u*dotp(V_C2, u))*length(V_C2);
-
-	cos_phi = dotp(unit(R_C2), unit(R_W2));
-	sin_phi = sqrt(1.0 - cos_phi*cos_phi);
-	SW = dotp(u, crossp(R_W2, R_C2));
-
-	phi = atan2(OrbMech::sign(SW)*sin_phi, cos_phi);
-	dt = OrbMech::time_theta(R_W2, V_W2, phi, mu);
-	OrbMech::rv_from_r0v0(R_W2, V_W2, dt, R_WC, V_WC, mu);
-
-	dh_NSR = length(R_WC) - length(R_C2);
-	v_WV = dotp(V_WC, unit(R_C2));
-	a_W =  1.0 / (2.0 / length(R_W2) - dotp(V_W2, V_W2) / mu);
-	a_C = a_W - dh_NSR;
-	v_CV = v_WV*OrbMech::power(a_W / a_C, 1.5);
-	v_CH = sqrt(mu*(2.0 / length(R_C2) - 1.0 / a_C) - v_CV*v_CV);
-	V_C2_apo = unit(crossp(u, R_C2))*v_CH + unit(R_C2)*v_CV;
-	dV_2 = V_C2_apo - V_C2;
-	Z = unit(-R_C2);
-	Y = -u;
-	X = unit(crossp(Y, Z));
-	
-	dV_NSR_LVLH = mul(_M(X.x, X.y, X.z, Y.x, Y.y, Y.z, Z.x, Z.y, Z.z), dV_2) + _V(0.0, -Y_C_dot, 0.0);
-}
-
-void RTCC::NPCProgram(SV sv_C, SV sv_W, double GETbase, double t, double &t_NPC, VECTOR3 &dV_NPC_LVLH)
-{
-	VECTOR3 R_C2, V_C2, R_C3, V_C3, R_W3, V_W3, u1, u2;
-	double mu, dt, Y_C, Y_C_dot, Y_W_dot, T_P;
-	OBJHANDLE gravref;
-
-	gravref = sv_C.gravref;
-	mu = GGRAV*oapiGetMass(gravref);
-
-	OrbMech::oneclickcoast(sv_C.R, sv_C.V, sv_C.MJD, (GETbase - sv_C.MJD)*24.0*3600.0 + t, R_C2, V_C2, gravref, gravref);
-	dt = OrbMech::time_theta(R_C2, V_C2, PI05*3.0, mu);
-	T_P = OrbMech::period(R_C2, V_C2, mu);
-
-	if (dt < 0)
-	{
-		dt = T_P + dt;
-	}
-
-	t_NPC = t + dt;
-
-	OrbMech::oneclickcoast(R_C2, V_C2, sv_C.MJD, dt, R_C3, V_C3, gravref, gravref);
-	OrbMech::oneclickcoast(sv_W.R, sv_W.V, sv_W.MJD, (GETbase - sv_W.MJD)*24.0*3600.0 + t_NPC, R_W3, V_W3, gravref, gravref);
-
-	u1 = unit(crossp(V_C3, R_C3));
-	u2 = unit(crossp(V_W3, R_W3));
-	Y_C = dotp(R_C3, u2);
-	Y_C_dot = dotp(V_C3, u2);
-	Y_W_dot = dotp(V_W3, u1);
-
-	dV_NPC_LVLH = _V(0, -Y_C_dot, abs(Y_C_dot) / tan(70.0*RAD));
-}
-
-bool RTCC::SkylabRendezvous(SkyRendOpt *opt, SkylabRendezvousResults *res)
-{
-	SV sv_C, sv_W, sv_tig;
-	VECTOR3 dV_NC1, dV_LVLH, dV_NC2, dV_NCC, dV_NSR, dV_NPC;
-	double LMmass, P30TIG, t_NPC;
-	OBJHANDLE gravref;
-	bool SolutionGood = true;	//True = Calculation successful, False = Calculation failed
-
-	sv_C = opt->sv_C;
-
-	sv_W = opt->sv_T;
-	gravref = sv_C.gravref;
-
-	LMmass = opt->DMMass;
-
-	if (opt->man == 0)
-	{
-		SV sv_W1;
-		double ttoMidnight;
-		OBJHANDLE hSun;
-
-		hSun = oapiGetObjectByName("Sun");
-
-		sv_W1 = coast(sv_W, (opt->GETbase - sv_W.MJD)*24.0*3600.0 + opt->TPIGuess);
-
-		ttoMidnight = OrbMech::sunrise(sv_W1.R, sv_W1.V, sv_W1.MJD, gravref, hSun, 1, 1, false);
-		res->t_TPI = opt->TPIGuess + ttoMidnight;
-
-		return true;
-	}
-	else if (opt->man == 1)	//NC1
-	{
-		SolutionGood = NC1NC2Program(sv_C, sv_W, opt->GETbase, opt->E_L, opt->t_C, 37.0*60.0, opt->t_TPI, opt->DH2, 0.5, 1, opt->DH1, opt->n_C, dV_NC1, res->dH_NC2, res->dv_NC2, res->t_NC2, dV_NC2, res->dv_NCC, res->t_NCC, res->t_NSR, res->dV_NSR, opt->NPCOption);
-		
-		if (SolutionGood)
-		{
-			dV_LVLH = dV_NC1;
-			P30TIG = opt->t_C;
-		}
-	}
-	else if (opt->man == 2)	//NC2
-	{
-		SolutionGood = NC1NC2Program(sv_C, sv_W, opt->GETbase, opt->E_L, opt->t_C, 37.0*60.0, opt->t_TPI, opt->DH2, 0.5, 2, opt->DH1, opt->n_C, dV_NC1, res->dH_NC2, res->dv_NC2, res->t_NC2, dV_NC2, res->dv_NCC, res->t_NCC, res->t_NSR, res->dV_NSR, opt->NPCOption);
-		if (SolutionGood)
-		{
-			dV_LVLH = dV_NC2;
-			P30TIG = opt->t_C;
-		}
-	}
-	else if (opt->man == 3)	//NCC
-	{
-		NCCProgram(sv_C, sv_W, opt->GETbase, opt->E_L, opt->t_C, 37.0*60.0, opt->t_TPI, opt->DH2, dV_NCC, res->t_NSR, res->dV_NSR);
-		
-		dV_LVLH = dV_NCC;
-		P30TIG = opt->t_C;
-	}
-	else if (opt->man == 4)	//NSR
-	{
-		NSRProgram(sv_C, sv_W, opt->GETbase, opt->E_L, opt->t_C, opt->t_TPI, dV_NSR);
-
-		dV_LVLH = dV_NSR;
-		P30TIG = opt->t_C;
-	}
-	else if (opt->man == 5)	//TPI
-	{
-		LambertMan lambert;
-		TwoImpulseResuls lamres;
-		double dt;
-
-		dt = OrbMech::time_theta(sv_W.R, sv_W.V, 140.0*RAD, GGRAV*oapiGetMass(gravref));
-
-		lambert.mode = 0;
-		lambert.GETbase = opt->GETbase;
-		lambert.T1 = opt->t_C;
-		lambert.T2 = opt->t_C + dt;
-		lambert.N = 0;
-		lambert.axis = RTCC_LAMBERT_MULTIAXIS;
-		lambert.Perturbation = RTCC_LAMBERT_PERTURBED;
-		lambert.Offset = _V(0, 0, 0);
-		lambert.sv_A = sv_C;
-		lambert.sv_P = sv_W;
-
-		LambertTargeting(&lambert, lamres);
-
-		res->dV_LVLH = dV_LVLH = lamres.dV_LVLH;
-		res->P30TIG = opt->t_C;
-
-		return true;
-	}
-	else if (opt->man == 6)	//TPM
-	{
-		LambertMan lambert;
-		TwoImpulseResuls lamres;
-		double dt;
-
-		dt = OrbMech::time_theta(sv_W.R, sv_W.V, 140.0*RAD, GGRAV*oapiGetMass(gravref));
-
-		lambert.mode = 0;
-		lambert.GETbase = opt->GETbase;
-		lambert.T1 = opt->t_C;
-		lambert.T2 = opt->t_TPI + dt;
-		lambert.N = 0;
-		lambert.axis = RTCC_LAMBERT_MULTIAXIS;
-		lambert.Perturbation = RTCC_LAMBERT_PERTURBED;
-		lambert.Offset = _V(0, 0, 0);
-		lambert.sv_A = sv_C;
-		lambert.sv_P = sv_W;
-
-		LambertTargeting(&lambert, lamres);
-
-		res->dV_LVLH = dV_LVLH = lamres.dV_LVLH;
-		res->P30TIG = opt->t_C;
-
-		return true;
-	}
-	else if (opt->man == 7)	//NPC
-	{
-		NPCProgram(sv_C, sv_W, opt->GETbase, opt->t_NC, t_NPC, dV_NPC);
-
-		dV_LVLH = dV_NPC;
-		P30TIG = t_NPC;
-	}
-
-	if (SolutionGood == false)
-	{
-		return false;
-	}
-
-	sv_tig = coast(sv_C, (opt->GETbase - sv_C.MJD)*24.0*3600.0 + P30TIG);
-
-	PoweredFlightProcessor(sv_tig, opt->GETbase, 0.0, RTCC_ENGINETYPE_CSMSPS, LMmass, dV_LVLH, true, res->P30TIG, res->dV_LVLH);
-
-	return true;
-}
-
-bool RTCC::TLIFlyby(SV sv_TLI, double lat_EMP, double h_peri, SV sv_peri_guess, VECTOR3 &DV, SV &sv_peri, SV &sv_reentry)
-{
-	SV sv_TLI_apo, sv_p, sv_r;
-	MATRIX3 M_EMP;
-	VECTOR3 R_EMP, V_EMP;
-	double dt, ddt, VacPeri, R_E, e_H, e_Ho, c_I, p_H, eps2, dto, r_peri, lngtest, lattest, fpatest, rtest, v_peri, lng_EMP, azi_peri;
-	int s_F;
-	OBJHANDLE hMoon, hEarth;
-	OELEMENTS coe;
-
-	c_I = p_H = dto = 0.0;
-	eps2 = 0.1;
-	s_F = 0;
-
-	hEarth = oapiGetObjectByName("Earth");
-	hMoon = oapiGetObjectByName("Moon");
-	R_E = OrbMech::R_Earth;
-
-	sv_p.gravref = hMoon;
-	sv_r.gravref = hEarth;
-
-	r_peri = OrbMech::R_Moon + h_peri;
-	dt = (sv_peri_guess.MJD - sv_TLI.MJD)*24.0*3600.0;
-
-	M_EMP = OrbMech::EMPMatrix(sv_peri_guess.MJD);
-	R_EMP = mul(M_EMP, sv_peri_guess.R);
-	V_EMP = mul(M_EMP, sv_peri_guess.V);
-	OrbMech::rv_from_adbar(R_EMP, V_EMP, rtest, v_peri, lng_EMP, lattest, fpatest, azi_peri);
-
-	do
-	{
-		sv_p.MJD = sv_TLI.MJD + dt / 24.0 / 3600.0;
-
-		do
-		{
-			//Position vector in EMP Coordinates
-			OrbMech::adbar_from_rv(r_peri, v_peri, lng_EMP, lat_EMP, PI05, azi_peri, R_EMP, V_EMP);
-
-			//EMP Matrix
-			M_EMP = OrbMech::EMPMatrix(sv_p.MJD);
-
-			//Convert EMP position to ecliptic
-			sv_p.R = tmul(M_EMP, R_EMP);
-			sv_p.V = tmul(M_EMP, V_EMP);
-
-			//Calculate pericynthion velocity
-			sv_p.V = OrbMech::Vinti(sv_p.R, _V(0.0, 0.0, 0.0), sv_TLI.R, sv_p.MJD, -dt, 0, false, BODY_MOON, BODY_MOON, BODY_EARTH, sv_p.V);
-
-			//save azi and vmag as new initial guess
-			V_EMP = mul(M_EMP, sv_p.V);
-			OrbMech::rv_from_adbar(R_EMP, V_EMP, rtest, v_peri, lngtest, lattest, fpatest, azi_peri);
-
-			coe = OrbMech::coe_from_sv(sv_p.R, sv_p.V, OrbMech::mu_Moon);
-			ddt = OrbMech::timetoperi(sv_p.R, sv_p.V, OrbMech::mu_Moon);
-
-			if (coe.TA > PI)
-			{
-				lng_EMP += coe.TA - PI2;
-			}
-			else
-			{
-				lng_EMP += coe.TA;
-			}
-		} while (abs(ddt) > 0.01);
-
-		OrbMech::ReturnPerigee(sv_p.R, sv_p.V, sv_p.MJD, hMoon, hEarth, 1.0, sv_r.MJD, sv_r.R, sv_r.V);
-		VacPeri = length(sv_r.R);
-
-		//20NM vacuum perigee
-		e_H = VacPeri - R_E - 20.0*1852.0;
-
-		if (p_H == 0 || abs(dt - dto) >= eps2)
-		{
-			OrbMech::ITER(c_I, s_F, e_H, p_H, dt, e_Ho, dto);
-			if (s_F == 1)
-			{
-				return false;
-			}
-		}
-	} while (abs(dt - dto) >= eps2);
-
-	sv_TLI_apo = coast(sv_p, -dt);
-
-	DV = sv_TLI_apo.V - sv_TLI.V;
-	sv_peri = sv_p;
-	sv_reentry = sv_r;
-
-	return true;
 }
 
 double LLWP_CURVE(double DV1, double DV2, double DV3, double DH1, double DH2, double DH3, double DVMAX)
@@ -9724,7 +9195,7 @@ RTCC_PMMLLWP_22_19:
 	}
 }
 
-void RTCC::EntryUpdateCalc(SV sv0, double GETbase, double entryrange, bool highspeed, EntryResults *res)
+void RTCC::EntryUpdateCalc(SV sv0, double entryrange, bool highspeed, EntryResults *res)
 {
 	OBJHANDLE hEarth;
 	VECTOR3 REI, VEI, UREI, R3, V3, R05G, V05G;
@@ -9745,7 +9216,7 @@ void RTCC::EntryUpdateCalc(SV sv0, double GETbase, double entryrange, bool highs
 
 	dt2 = OrbMech::time_radius_integ(sv0.R, sv0.V, sv0.MJD, RCON, -1, sv0.gravref, hEarth, REI, VEI);
 	MJD_EI = sv0.MJD + dt2 / 24.0 / 3600.0;
-	t2 = (sv0.MJD - GETbase) * 24.0 * 3600.0 + dt2;	//EI time in seconds from launch
+	t2 = (sv0.MJD - CalcGETBase()) * 24.0 * 3600.0 + dt2;	//EI time in seconds from launch
 
 	UREI = unit(REI);
 	vEI = length(VEI);
@@ -10908,11 +10379,13 @@ PMMDKI_2_1:
 
 void RTCC::PMMDKI(SPQOpt &opt, SPQResults &res)
 {
-	double t_CSI0, e_TPI, t_CSI, eps_TPI, c_TPI, e_TPIo, t_CSIo, p_TPI;
+	double GETbase, t_CSI0, e_TPI, t_CSI, eps_TPI, c_TPI, e_TPIo, t_CSIo, p_TPI;
 	int s_TPI;
 
 	PZDKIT.UpdatingIndicator = true;
 	res.err = 0;
+
+	GETbase = CalcGETBase();
 
 	p_TPI = c_TPI = 0.0;
 	eps_TPI = 1.0;
@@ -11002,20 +10475,19 @@ void RTCC::PMMDKI(SPQOpt &opt, SPQResults &res)
 
 		//Calculate TPI and TPF maneuvers
 		double t_TPI, t_TPF;
-		res.err = PCTETR(res.sv_C_apo[1], res.sv_T[1], opt.GETbase, opt.WT, opt.E, t_TPI, t_TPF);
+		res.err = PCTETR(res.sv_C_apo[1], res.sv_T[1], opt.WT, opt.E, t_TPI, t_TPF);
 
 		if (res.err == 0)
 		{
 			//Coast to TPI
-			res.sv_C[2] = coast(res.sv_C_apo[1], t_TPI - OrbMech::GETfromMJD(res.sv_C_apo[1].MJD, opt.GETbase));
-			res.sv_T[2] = coast(res.sv_T[1], t_TPI - OrbMech::GETfromMJD(res.sv_T[1].MJD, opt.GETbase));
+			res.sv_C[2] = coast(res.sv_C_apo[1], t_TPI - OrbMech::GETfromMJD(res.sv_C_apo[1].MJD, GETbase));
+			res.sv_T[2] = coast(res.sv_T[1], t_TPI - OrbMech::GETfromMJD(res.sv_T[1].MJD, GETbase));
 
 			//Call two-impulse processor
 			LambertMan lam;
 			TwoImpulseResuls lamres;
 
 			lam.mode = 2;
-			lam.GETbase = opt.GETbase;
 			lam.T1 = t_TPI;
 			lam.T2 = -1;
 			lam.N = 0;
@@ -11039,8 +10511,8 @@ void RTCC::PMMDKI(SPQOpt &opt, SPQResults &res)
 			PZDKIT.Block[0].NumMan++;
 
 			//Coast to TPF
-			res.sv_C[3] = coast(res.sv_C_apo[2], lamres.T2 - OrbMech::GETfromMJD(res.sv_C_apo[2].MJD, opt.GETbase));
-			res.sv_T[3] = coast(res.sv_T[2], lamres.T2 - OrbMech::GETfromMJD(res.sv_T[2].MJD, opt.GETbase));
+			res.sv_C[3] = coast(res.sv_C_apo[2], lamres.T2 - OrbMech::GETfromMJD(res.sv_C_apo[2].MJD, GETbase));
+			res.sv_T[3] = coast(res.sv_T[2], lamres.T2 - OrbMech::GETfromMJD(res.sv_T[2].MJD, GETbase));
 
 			//Save post TPF state vector
 			res.sv_C_apo[3] = res.sv_C[3];
@@ -11428,7 +10900,7 @@ void RTCC::PCMVMR(VECTOR3 R_C, VECTOR3 V_C, VECTOR3 R_T, VECTOR3 V_T, double DEL
 	V_C_apo = V_C + K2 * DV_H - J2 * DV_R + H2 * DV_Z;
 }
 
-int RTCC::PCTETR(SV sv_C, SV sv_T, double GETBase, double WT, double ESP, double &TESP, double &TR)
+int RTCC::PCTETR(SV sv_C, SV sv_T, double WT, double ESP, double &TESP, double &TR)
 {
 	SV sv_C1, sv_T1;
 	double QL, DU, mu, C1, C2, C3, C4, r_T, r_C, QLI, DT, eps_dt, L_C_dot, L_T_dot;
@@ -11483,7 +10955,7 @@ int RTCC::PCTETR(SV sv_C, SV sv_T, double GETBase, double WT, double ESP, double
 		DT = (QL - QLI) / DU;
 		if (abs(DT) < eps_dt)
 		{
-			TESP = OrbMech::GETfromMJD(sv_C1.MJD, GETBase);
+			TESP = OrbMech::GETfromMJD(sv_C1.MJD, CalcGETBase());
 			TR = TESP + WT / L_T_dot;
 			return 0;
 		}
@@ -11500,10 +10972,12 @@ int RTCC::ConcentricRendezvousProcessor(const SPQOpt &opt, SPQResults &res)
 	CELEMENTS elem;
 	MATRIX3 Q_Xx;
 	VECTOR3 R_equ, V_equ, R_TJ, V_TJ, R_AF, R_AFD;
-	double dv_CSI, mu, t_CDH, t_TPI, DH, p_C, c_C, e_C, e_Co, dv_CSIo, V_Cb, V_CRb, gamma_C, V_CHb, a_T, a_C, r_T_dot, r_C_dot, T_TPF;
+	double GETbase, dv_CSI, mu, t_CDH, t_TPI, DH, p_C, c_C, e_C, e_Co, dv_CSIo, V_Cb, V_CRb, gamma_C, V_CHb, a_T, a_C, r_T_dot, r_C_dot, T_TPF;
 	double V_C_apo, gamma_C_apo, V_CHa, DV_H, DV_R, Pitch, Yaw;
 	int s_C, PCMVMR_IND;
 	bool err;
+
+	GETbase = CalcGETBase();
 
 	//Set up variables for the CSI iteration
 	p_C = c_C = 0.0;
@@ -11539,8 +11013,8 @@ int RTCC::ConcentricRendezvousProcessor(const SPQOpt &opt, SPQResults &res)
 	//CSI scheduled?
 	if (opt.t_CSI > 0)
 	{
-		sv_C_CSI = coast(opt.sv_A, opt.t_CSI - OrbMech::GETfromMJD(opt.sv_A.MJD, opt.GETbase));
-		sv_T_CSI = coast(opt.sv_P, opt.t_CSI - OrbMech::GETfromMJD(opt.sv_P.MJD, opt.GETbase));
+		sv_C_CSI = coast(opt.sv_A, opt.t_CSI - OrbMech::GETfromMJD(opt.sv_A.MJD, GETbase));
+		sv_T_CSI = coast(opt.sv_P, opt.t_CSI - OrbMech::GETfromMJD(opt.sv_P.MJD, GETbase));
 
 		//Initial guess for CSI DV from GSOP
 		VECTOR3 H1 = unit(crossp(crossp(sv_C_CSI.R, sv_C_CSI.V), sv_C_CSI.R));
@@ -11549,13 +11023,13 @@ int RTCC::ConcentricRendezvousProcessor(const SPQOpt &opt, SPQResults &res)
 		//Propagate target to TPI
 		if (opt.K_CDH == 0)
 		{
-			sv_T_TPI = coast(sv_T_CSI, t_TPI - OrbMech::GETfromMJD(sv_T_CSI.MJD, opt.GETbase));
+			sv_T_TPI = coast(sv_T_CSI, t_TPI - OrbMech::GETfromMJD(sv_T_CSI.MJD, GETbase));
 		}
 	}
 	else
 	{
-		sv_C_CDH = coast(opt.sv_A, opt.t_CDH - OrbMech::GETfromMJD(opt.sv_A.MJD, opt.GETbase));
-		sv_T_CDH = coast(opt.sv_P, opt.t_CDH - OrbMech::GETfromMJD(opt.sv_P.MJD, opt.GETbase));
+		sv_C_CDH = coast(opt.sv_A, opt.t_CDH - OrbMech::GETfromMJD(opt.sv_A.MJD, GETbase));
+		sv_T_CDH = coast(opt.sv_P, opt.t_CDH - OrbMech::GETfromMJD(opt.sv_P.MJD, GETbase));
 	}
 
 	//Here we return to the beginning of the loop
@@ -11634,7 +11108,7 @@ RTCC_PMMSPQ_A:
 						break;
 					}
 				} while (opt.N_CDH >= N_CK);
-				t_CDH = OrbMech::GETfromMJD(sv_C_CDH.MJD, opt.GETbase);
+				t_CDH = OrbMech::GETfromMJD(sv_C_CDH.MJD, GETbase);
 			}
 			else
 			{
@@ -11675,14 +11149,14 @@ RTCC_PMMSPQ_A:
 
 				//Propagate to CDH
 				sv_C_CDH = OrbMech::PMMAEGS(sv_C_CSI_apo, 2, u_CDH, err, DN);
-				t_CDH = OrbMech::GETfromMJD(sv_C_CDH.MJD, opt.GETbase);
+				t_CDH = OrbMech::GETfromMJD(sv_C_CDH.MJD, GETbase);
 			}
 		}
 		//CDH on time
 		else if (opt.I_CDH == 2)
 		{
 			t_CDH = opt.t_CDH;
-			sv_C_CDH = coast(sv_C_CSI_apo, t_CDH - OrbMech::GETfromMJD(sv_C_CSI_apo.MJD, opt.GETbase));
+			sv_C_CDH = coast(sv_C_CSI_apo, t_CDH - OrbMech::GETfromMJD(sv_C_CSI_apo.MJD, GETbase));
 		}
 		//CDH at next apsis (Keplerian)
 		else
@@ -11690,7 +11164,7 @@ RTCC_PMMSPQ_A:
 			OELEMENTS coe;
 			double V_R, t_P, t_CSI;
 			
-			t_CSI = OrbMech::GETfromMJD(sv_C_CSI_apo.MJD, opt.GETbase);
+			t_CSI = OrbMech::GETfromMJD(sv_C_CSI_apo.MJD, GETbase);
 			coe = OrbMech::coe_from_sv(sv_C_CSI_apo.R, sv_C_CSI_apo.V, mu);
 			t_P = OrbMech::period(sv_C_CSI_apo.R, sv_C_CSI_apo.V, mu);
 			V_R = dotp(sv_C_CSI_apo.R, sv_C_CSI_apo.V);
@@ -11716,7 +11190,7 @@ RTCC_PMMSPQ_A:
 			}
 			sv_C_CDH = coast(sv_C_CSI_apo, t_CDH - t_CSI);
 		}
-		sv_T_CDH = coast(sv_T_CSI, t_CDH - OrbMech::GETfromMJD(sv_T_CSI.MJD, opt.GETbase));
+		sv_T_CDH = coast(sv_T_CSI, t_CDH - OrbMech::GETfromMJD(sv_T_CSI.MJD, GETbase));
 	}
 
 	//Target to position (phase) match
@@ -11790,7 +11264,7 @@ RTCC_PMMSPQ_A:
 	else
 	{
 		//If iteration on DH was used, get TPI time now
-		if (PCTETR(sv_C_CDH_apo, sv_T_CDH, opt.GETbase, opt.WT, opt.E, t_TPI, T_TPF))
+		if (PCTETR(sv_C_CDH_apo, sv_T_CDH, opt.WT, opt.E, t_TPI, T_TPF))
 		{
 			return 94;
 		}
@@ -12406,26 +11880,15 @@ void RTCC::MPTMassUpdate(VESSEL *vessel, MED_M50 &med1, MED_M55 &med2, MED_M49 &
 
 	if (vessel == NULL) return;
 
-	char Buffer[100];
-
-	sprintf_s(Buffer, vessel->GetClassNameA());
-
-	if (!stricmp(Buffer, "ProjectApollo\\Saturn5") ||
-		!stricmp(Buffer, "ProjectApollo/Saturn5") ||
-		!stricmp(Buffer, "ProjectApollo\\Saturn1b") ||
-		!stricmp(Buffer, "ProjectApollo/Saturn1b"))
+	if (utils::IsVessel(vessel, utils::Saturn))
 	{
 		vesseltype = 0;
 	}
-	else if (!stricmp(vessel->GetClassName(), "ProjectApollo\\LEM") ||
-		!stricmp(vessel->GetClassName(), "ProjectApollo/LEM"))
+	else if (utils::IsVessel(vessel, utils::LEM))
 	{
 		vesseltype = 1;
 	}
-	else if (!stricmp(vessel->GetClassName(), "ProjectApollo\\sat5stg3") ||
-		!stricmp(vessel->GetClassName(), "ProjectApollo/sat5stg3") ||
-		!stricmp(vessel->GetClassName(), "ProjectApollo\\nsat1stg2") ||
-		!stricmp(vessel->GetClassName(), "ProjectApollo/nsat1stg2"))
+	else if (utils::IsVessel(vessel, utils::SIVB))
 	{
 		vesseltype = 2;
 	}
@@ -12499,9 +11962,12 @@ void RTCC::MPTMassUpdate(VESSEL *vessel, MED_M50 &med1, MED_M55 &med2, MED_M49 &
 				cfg = "C";
 			}
 
-			spsmass = sat->GetPropellantMass(sat->GetPropellantHandleByIndex(0));
-			csmrcsmass = sat->GetPropellantMass(sat->GetPropellantHandleByIndex(1)) + sat->GetPropellantMass(sat->GetPropellantHandleByIndex(2)) + 
-				sat->GetPropellantMass(sat->GetPropellantHandleByIndex(3)) + sat->GetPropellantMass(sat->GetPropellantHandleByIndex(4));
+			if (sat->GetStage() < CM_STAGE)
+			{
+				spsmass = sat->GetPropellantMass(sat->GetPropellantHandleByIndex(0));
+				csmrcsmass = sat->GetPropellantMass(sat->GetPropellantHandleByIndex(1)) + sat->GetPropellantMass(sat->GetPropellantHandleByIndex(2)) +
+					sat->GetPropellantMass(sat->GetPropellantHandleByIndex(3)) + sat->GetPropellantMass(sat->GetPropellantHandleByIndex(4));
+			}
 		}
 	}
 	else if (vesseltype == 1)
@@ -12550,9 +12016,12 @@ void RTCC::MPTMassUpdate(VESSEL *vessel, MED_M50 &med1, MED_M55 &med2, MED_M49 &
 
 			Saturn *sat = (Saturn *)csm;
 
-			spsmass = sat->GetPropellantMass(sat->GetPropellantHandleByIndex(0));
-			csmrcsmass = sat->GetPropellantMass(sat->GetPropellantHandleByIndex(1)) + sat->GetPropellantMass(sat->GetPropellantHandleByIndex(2)) +
-				sat->GetPropellantMass(sat->GetPropellantHandleByIndex(3)) + sat->GetPropellantMass(sat->GetPropellantHandleByIndex(4));
+			if (sat->GetStage() < CM_STAGE)
+			{
+				spsmass = sat->GetPropellantMass(sat->GetPropellantHandleByIndex(0));
+				csmrcsmass = sat->GetPropellantMass(sat->GetPropellantHandleByIndex(1)) + sat->GetPropellantMass(sat->GetPropellantHandleByIndex(2)) +
+					sat->GetPropellantMass(sat->GetPropellantHandleByIndex(3)) + sat->GetPropellantMass(sat->GetPropellantHandleByIndex(4));
+			}
 		}
 	}
 	else
@@ -12645,7 +12114,7 @@ void RTCC::AGOPCislunarNavigation(SV sv, MATRIX3 REFSMMAT, int star, double yaw,
 	OrbMech::CALCSXA(CBNB, U_S, TA, SA);
 }
 
-VECTOR3 RTCC::LOICrewChartUpdateProcessor(SV sv0, double GETbase, MATRIX3 REFSMMAT, double p_EMP, double LOI_TIG, VECTOR3 dV_LVLH_LOI, double p_T, double y_T)
+VECTOR3 RTCC::LOICrewChartUpdateProcessor(SV sv0, MATRIX3 REFSMMAT, double p_EMP, double LOI_TIG, VECTOR3 dV_LVLH_LOI, double p_T, double y_T)
 {
 	SV sv_tig;
 	MATRIX3 M_EMP, M_R, M, M_RTM;
@@ -12654,7 +12123,7 @@ VECTOR3 RTCC::LOICrewChartUpdateProcessor(SV sv0, double GETbase, MATRIX3 REFSMM
 
 	headsswitch = -1.0;
 
-	dt = LOI_TIG - OrbMech::GETfromMJD(sv0.MJD, GETbase);
+	dt = LOI_TIG - OrbMech::GETfromMJD(sv0.MJD, CalcGETBase());
 	sv_tig = coast(sv0, dt);
 	M_EMP = OrbMech::EMPMatrix(sv_tig.MJD);
 	X_B = tmul(M_EMP, _V(-sin(p_EMP), cos(p_EMP), 0));
@@ -12671,22 +12140,24 @@ VECTOR3 RTCC::LOICrewChartUpdateProcessor(SV sv0, double GETbase, MATRIX3 REFSMM
 	return IMUangles;
 }
 
-bool RTCC::PoweredDescentProcessor(VECTOR3 R_LS, double TLAND, SV sv, double GETbase, RTCCNIAuxOutputTable &aux, EphemerisDataTable2 *E, SV &sv_PDI, SV &sv_land, double &dv)
+bool RTCC::PoweredDescentProcessor(VECTOR3 R_LS, double TLAND, SV sv, RTCCNIAuxOutputTable &aux, EphemerisDataTable2 *E, SV &sv_PDI, SV &sv_land, double &dv)
 {
 	MATRIX3 Rot, REFSMMAT;
 	DescentGuidance descguid;
 	AscDescIntegrator integ;
 	SV sv_IG, sv_D;
 	VECTOR3 U_FDP, WI, W, R_LSP, U_FDP_abort, U_M;
-	double t_go, CR, t_PDI, t_UL, t_D, W_TD, T_DPS, isp, t_D_old;
+	double GETbase, t_go, CR, t_PDI, t_UL, t_D, W_TD, T_DPS, isp, t_D_old;
 	bool stop;
 
 	bool LandFlag = false;
 	t_UL = 7.9;
 	dv = 0.0;
 
+	GETbase = CalcGETBase();
+
 	//Just for t_go and U_FDP, call to this function should be removed
-	if (!PDIIgnitionAlgorithm(sv, GETbase, R_LS, TLAND, sv_IG, t_go, CR, U_FDP, REFSMMAT))
+	if (!PDIIgnitionAlgorithm(sv, R_LS, TLAND, sv_IG, t_go, CR, U_FDP, REFSMMAT))
 	{
 		return false;
 	}
@@ -12731,7 +12202,7 @@ bool RTCC::PoweredDescentProcessor(VECTOR3 R_LS, double TLAND, SV sv, double GET
 	return true;
 }
 
-void RTCC::LunarAscentProcessor(VECTOR3 R_LS, double m0, SV sv_CSM, double GETbase, double t_liftoff, double v_LH, double v_LV, double &theta, double &dt_asc, double &dv, SV &sv_IG, SV &sv_Ins)
+void RTCC::LunarAscentProcessor(VECTOR3 R_LS, double m0, SV sv_CSM, double t_liftoff, double v_LH, double v_LV, double &theta, double &dt_asc, double &dv, SV &sv_IG, SV &sv_Ins)
 {
 	//Test
 	AscentGuidance asc;
@@ -12744,7 +12215,7 @@ void RTCC::LunarAscentProcessor(VECTOR3 R_LS, double m0, SV sv_CSM, double GETba
 
 	dv = 0.0;
 	t_total = 0.0;
-	dt = t_liftoff - OrbMech::GETfromMJD(sv_CSM.MJD, GETbase);
+	dt = t_liftoff - OrbMech::GETfromMJD(sv_CSM.MJD, CalcGETBase());
 	sv_CSM_TIG = coast(sv_CSM, dt);
 
 	asc.Init(sv_CSM_TIG.R, sv_CSM_TIG.V, m0, length(R_LS), v_LH, v_LV);
@@ -12787,17 +12258,19 @@ void RTCC::LunarAscentProcessor(VECTOR3 R_LS, double m0, SV sv_CSM, double GETba
 	sv_Ins = sv_ins;
 }
 
-bool RTCC::PDIIgnitionAlgorithm(SV sv, double GETbase, VECTOR3 R_LS, double TLAND, SV &sv_IG, double &t_go, double &CR, VECTOR3 &U_IG, MATRIX3 &REFSMMAT)
+bool RTCC::PDIIgnitionAlgorithm(SV sv, VECTOR3 R_LS, double TLAND, SV &sv_IG, double &t_go, double &CR, VECTOR3 &U_IG, MATRIX3 &REFSMMAT)
 {
 	SV sv_I;
 	MATRIX3 C_GP, Rot;
 	VECTOR3 U_FDP, dV_TrP, R_TG, V_TG, A_TG, R_LSI, R_LSP, W_I, W_P, R_P, G_P, V_P, R_G, V_SURFP, V_G, A_G, A_FDP;
 	VECTOR3 C_XGP, C_YGP, C_ZGP, U_XSM, U_YSM, U_ZSM;
-	double GUIDDURN, AF_TRIM, DELTTRIM, TTT, t_pip, dt_I, FRAC;
+	double GETbase, GUIDDURN, AF_TRIM, DELTTRIM, TTT, t_pip, dt_I, FRAC;
 	double v_IGG, r_IGXG, r_IGZG, K_X, K_Y, K_V;
 	double J_TZG, A_TZG, V_TZG, R_TZG;
 	double LEADTIME, w_M, t_2, t_I, PIPTIME, t_pipold, eps, dTTT, TTT_P, TEM, q;
 	int n1, n2, COUNT_TTT;
+
+	GETbase = CalcGETBase();
 
 	GUIDDURN = 664.4;
 	AF_TRIM = 0.350133;
@@ -12943,7 +12416,7 @@ bool RTCC::PoweredDescentAbortProgram(PDAPOpt opt, PDAPResults &res)
 	SV sv_I_guess, sv_IG, sv_D, sv_CSM_Ins, sv_LM_Ins, sv_Abort, sv_CAN, sv_CAN_apo, sv_CSM_Abort;
 	MATRIX3 Rot, Q_Xx, REFSMMAT;
 	VECTOR3 U_FDP, WM, WI, W, R_LSP, U_FDP_abort;
-	double t_go, CR, t_PDI, t_D, t_UL, t_stage, W_TD, T_DPS, dt_abort, Z_D_dot, R_D_dot, W_TA, t, T, isp, t_Ins, TS, theta, r_Ins, A_Ins, H_a, t_CSI, DH_D;
+	double GETbase, t_go, CR, t_PDI, t_D, t_UL, t_stage, W_TD, T_DPS, dt_abort, Z_D_dot, R_D_dot, W_TA, t, T, isp, t_Ins, TS, theta, r_Ins, A_Ins, H_a, t_CSI, DH_D;
 	double SLOPE, dV_Inc, dh_apo, w_M, V_H_min, t_CAN, dt_CSI, R_a, R_a_apo, dt_CAN, theta_D, theta_apo, t_go_abort;
 	int K_loop;
 	bool K_stage;
@@ -12958,6 +12431,8 @@ bool RTCC::PoweredDescentAbortProgram(PDAPOpt opt, PDAPResults &res)
 	std::vector<double> A_ins_Table;
 	int i = 0;
 
+	GETbase = CalcGETBase();
+
 	K3 = false;
 	w_M = 2.66169948e-6;
 	t_UL = 7.9;
@@ -12968,21 +12443,20 @@ bool RTCC::PoweredDescentAbortProgram(PDAPOpt opt, PDAPResults &res)
 	dt_CSI = opt.dt_CSI;
 	dt_CAN = opt.dt_CAN;
 	conopt.E = 26.6*RAD;
-	conopt.GETbase = opt.GETbase;
 	conopt.K_CDH = 0;
 	conopt.t_TPI = opt.t_TPI;
 
 	res.R_amin = length(opt.R_LS) + opt.h_amin;
 
 	dt_abort = opt.dt_step;
-	sv_I_guess = coast(opt.sv_A, opt.TLAND - OrbMech::GETfromMJD(opt.sv_A.MJD, opt.GETbase));
-	if (!PDIIgnitionAlgorithm(sv_I_guess, opt.GETbase, opt.R_LS, opt.TLAND, sv_IG, t_go, CR, U_FDP, REFSMMAT))
+	sv_I_guess = coast(opt.sv_A, opt.TLAND - OrbMech::GETfromMJD(opt.sv_A.MJD, GETbase));
+	if (!PDIIgnitionAlgorithm(sv_I_guess, opt.R_LS, opt.TLAND, sv_IG, t_go, CR, U_FDP, REFSMMAT))
 	{
 		return false;
 	}
 	t_go = -t_go;
 	t_go_abort = t_go;
-	t_PDI = OrbMech::GETfromMJD(sv_IG.MJD, opt.GETbase);
+	t_PDI = OrbMech::GETfromMJD(sv_IG.MJD, GETbase);
 	t_D = t_PDI - t_UL;
 	sv_Abort = coast(sv_IG, -t_UL);
 	t_stage = t_PDI + opt.dt_stage;
@@ -13034,7 +12508,7 @@ bool RTCC::PoweredDescentAbortProgram(PDAPOpt opt, PDAPResults &res)
 		U_FDP_abort = U_FDP;
 		t_go_abort = t_go;
 
-		sv_CSM_Abort = coast(opt.sv_P, t_D - OrbMech::GETfromMJD(opt.sv_P.MJD, opt.GETbase));
+		sv_CSM_Abort = coast(opt.sv_P, t_D - OrbMech::GETfromMJD(opt.sv_P.MJD, GETbase));
 		WM = unit(crossp(sv_CSM_Abort.V, sv_CSM_Abort.R));
 		TS = dotp(crossp(unit(sv_CSM_Abort.R), unit(sv_Abort.R)), WM);
 		theta_D = OrbMech::sign(TS)*acos(dotp(unit(sv_CSM_Abort.R), unit(sv_Abort.R)));
@@ -13078,13 +12552,13 @@ bool RTCC::PoweredDescentAbortProgram(PDAPOpt opt, PDAPResults &res)
 			t_Ins = t;
 			sv_LM_Ins = sv_D;
 			sv_LM_Ins.mass = W_TA;
-			sv_LM_Ins.MJD = OrbMech::MJDfromGET(t_Ins, opt.GETbase);
+			sv_LM_Ins.MJD = OrbMech::MJDfromGET(t_Ins, GETbase);
 
 			//Overwrite actual insertion velocity with desired one; gives more consistent results
 			Q_Xx = OrbMech::LVLH_Matrix(sv_LM_Ins.R, sv_LM_Ins.V);
 			sv_LM_Ins.V = tmul(Q_Xx, _V(Z_D_dot, 0, -R_D_dot));
 
-			sv_CSM_Ins = coast(opt.sv_P, t_Ins - OrbMech::GETfromMJD(opt.sv_P.MJD, opt.GETbase));
+			sv_CSM_Ins = coast(opt.sv_P, t_Ins - OrbMech::GETfromMJD(opt.sv_P.MJD, GETbase));
 			WM = unit(crossp(sv_CSM_Ins.V, sv_CSM_Ins.R));
 			TS = dotp(crossp(unit(sv_CSM_Ins.R), unit(sv_LM_Ins.R)), WM);
 			theta = OrbMech::sign(TS)*acos(dotp(unit(sv_CSM_Ins.R), unit(sv_LM_Ins.R)));
@@ -16856,7 +16330,7 @@ int RTCC::PMMLAI(PMMLAIInput in, RTCCNIAuxOutputTable &aux, EphemerisDataTable2 
 	VECTOR3 R_LS = OrbMech::r_from_latlong(BZLAND.lat[RTCC_LMPOS_BEST], BZLAND.lng[RTCC_LMPOS_BEST], BZLAND.rad[RTCC_LMPOS_BEST]);
 	double theta, dt_asc, dv;
 	SV sv_IG, sv_Ins;
-	LunarAscentProcessor(R_LS, in.m0, in.sv_CSM,SystemParameters.GMTBASE, in.t_liftoff, in.v_LH, in.v_LV, theta, dt_asc, dv, sv_IG, sv_Ins);
+	LunarAscentProcessor(R_LS, in.m0, in.sv_CSM, GETfromGMT(in.t_liftoff), in.v_LH, in.v_LV, theta, dt_asc, dv, sv_IG, sv_Ins);
 
 	if (E)
 	{
@@ -16935,7 +16409,7 @@ int RTCC::PMMLDI(PMMLDIInput in, RTCCNIAuxOutputTable &aux, EphemerisDataTable2 
 	double dv;
 	VECTOR3 R_LS = OrbMech::r_from_latlong(BZLAND.lat[RTCC_LMPOS_BEST], BZLAND.lng[RTCC_LMPOS_BEST], BZLAND.rad[RTCC_LMPOS_BEST]);
 
-	PoweredDescentProcessor(R_LS, in.TLAND, in.sv, CalcGETBase(), aux, E, sv_PDI, sv_land, dv);
+	PoweredDescentProcessor(R_LS, in.TLAND, in.sv, aux, E, sv_PDI, sv_land, dv);
 
 	if (E)
 	{
@@ -17016,7 +16490,7 @@ int RTCC::PMMLDP(PMMLDPInput in, MPTManeuver &man)
 
 	VECTOR3 R_LS = OrbMech::r_from_latlong(BZLAND.lat[RTCC_LMPOS_BEST], BZLAND.lng[RTCC_LMPOS_BEST], BZLAND.rad[RTCC_LMPOS_BEST]);
 
-	if (!PDIIgnitionAlgorithm(in.sv, CalcGETBase(), R_LS, in.TLAND, sv_IG, t_go, CR, U_IG, REFSMMAT))
+	if (!PDIIgnitionAlgorithm(in.sv, R_LS, in.TLAND, sv_IG, t_go, CR, U_IG, REFSMMAT))
 	{
 		return 1;
 	}
@@ -18913,7 +18387,7 @@ bool RTCC::MEDTimeInputHHMMSS(std::string vec, double &hours)
 	int hh, mm;
 	double ss;
 	bool pos = true;
-	if (sscanf_s(vec.c_str(), "%d:%d:%lf", &hh, &mm, &ss) != 3)
+	if (sscanf(vec.c_str(), "%d:%d:%lf", &hh, &mm, &ss) != 3)
 	{
 		return true;
 	}
@@ -19363,7 +18837,7 @@ void RTCC::PMMIEV(double T_L)
 
 	VECTOR3 R, V;
 	double GMT_EOI = T_L + dt_EOI;
-	if (EMMXTR(GMT_EOI, rad_EOI, vel_EOI, lng_EOI, lat_EOI, fpa_EOI, azi_EOI, R, V))
+	if (EMMXTR(GMT_EOI, rad_EOI, vel_EOI, lng_EOI, lat_EOI, fpa_EOI + PI05, azi_EOI, R, V))
 	{
 		PMXSPT("PMMIEV", 120);
 		return;
@@ -22517,6 +21991,7 @@ int RTCC::PMMXFRCheckConfigThruster(bool CheckConfig, int CCI, const std::bitset
 	{
 		if (CCMI[RTCC_CONFIG_S] && (Thruster == RTCC_ENGINETYPE_LMAPS || Thruster == RTCC_ENGINETYPE_LMDPS || Thruster == RTCC_ENGINETYPE_CSMSPS))
 		{
+			PMXSPT("PMMXFR", 6);
 			return 6;
 		}
 		if (TVC > 2)
@@ -28231,7 +27706,7 @@ int RTCC::PMMMED(std::string med, std::vector<std::string> data)
 		med_m49.SPSFuelRemaining = -1;
 		if (data.size() > 1 && data[1] != "")
 		{
-			if (sscanf_s(data[1].c_str(), "%lf", &temp) == 1)
+			if (sscanf(data[1].c_str(), "%lf", &temp) == 1)
 			{
 				if (temp >= 0)
 				{
@@ -28242,7 +27717,7 @@ int RTCC::PMMMED(std::string med, std::vector<std::string> data)
 		med_m49.CSMRCSFuelRemaining = -1;
 		if (data.size() > 2 && data[2] != "")
 		{
-			if (sscanf_s(data[2].c_str(), "%lf", &temp) == 1)
+			if (sscanf(data[2].c_str(), "%lf", &temp) == 1)
 			{
 				if (temp >= 0)
 				{
@@ -28253,7 +27728,7 @@ int RTCC::PMMMED(std::string med, std::vector<std::string> data)
 		med_m49.SIVBFuelRemaining = -1;
 		if (data.size() > 3 && data[3] != "")
 		{
-			if (sscanf_s(data[3].c_str(), "%lf", &temp) == 1)
+			if (sscanf(data[3].c_str(), "%lf", &temp) == 1)
 			{
 				if (temp >= 0)
 				{
@@ -28264,7 +27739,7 @@ int RTCC::PMMMED(std::string med, std::vector<std::string> data)
 		med_m49.LMAPSFuelRemaining = -1;
 		if (data.size() > 4 && data[4] != "")
 		{
-			if (sscanf_s(data[4].c_str(), "%lf", &temp) == 1)
+			if (sscanf(data[4].c_str(), "%lf", &temp) == 1)
 			{
 				if (temp >= 0)
 				{
@@ -28275,7 +27750,7 @@ int RTCC::PMMMED(std::string med, std::vector<std::string> data)
 		med_m49.LMRCSFuelRemaining = -1;
 		if (data.size() > 5 && data[5] != "")
 		{
-			if (sscanf_s(data[5].c_str(), "%lf", &temp) == 1)
+			if (sscanf(data[5].c_str(), "%lf", &temp) == 1)
 			{
 				if (temp >= 0)
 				{
@@ -28286,7 +27761,7 @@ int RTCC::PMMMED(std::string med, std::vector<std::string> data)
 		med_m49.LMDPSFuelRemaining = -1;
 		if (data.size() > 6 && data[6] != "")
 		{
-			if (sscanf_s(data[6].c_str(), "%lf", &temp) == 1)
+			if (sscanf(data[6].c_str(), "%lf", &temp) == 1)
 			{
 				if (temp >= 0)
 				{
@@ -28409,7 +27884,7 @@ int RTCC::PMMMED(std::string med, std::vector<std::string> data)
 		else
 		{
 			double ang;
-			if (sscanf_s(data[3].c_str(), "%lf", &ang) != 1)
+			if (sscanf(data[3].c_str(), "%lf", &ang) != 1)
 			{
 				return 2;
 			}
@@ -29102,7 +28577,7 @@ int RTCC::GMSMED(std::string med, std::vector<std::string> data)
 			return 2;
 		}
 		double Azi;
-		if (sscanf_s(data[2].c_str(), "%lf", &Azi) != 1)
+		if (sscanf(data[2].c_str(), "%lf", &Azi) != 1)
 		{
 			return 2;
 		}
@@ -29135,7 +28610,7 @@ int RTCC::GMSMED(std::string med, std::vector<std::string> data)
 		double val;
 		if (data.size() > 0 && data[0] != "")
 		{
-			if (sscanf_s(data[0].c_str(), "%lf", &val) != 1)
+			if (sscanf(data[0].c_str(), "%lf", &val) != 1)
 			{
 				return 2;
 			}
@@ -29147,7 +28622,7 @@ int RTCC::GMSMED(std::string med, std::vector<std::string> data)
 		}
 		if (data.size() > 1 && data[1] != "")
 		{
-			if (sscanf_s(data[1].c_str(), "%lf", &val) != 1)
+			if (sscanf(data[1].c_str(), "%lf", &val) != 1)
 			{
 				return 2;
 			}
@@ -29167,7 +28642,7 @@ int RTCC::GMSMED(std::string med, std::vector<std::string> data)
 		}
 		int hh, mm;
 		double ss;
-		if (sscanf_s(data[0].c_str(), "%d:%d:%lf", &hh, &mm, &ss) != 3)
+		if (sscanf(data[0].c_str(), "%d:%d:%lf", &hh, &mm, &ss) != 3)
 		{
 			return 2;
 		}
@@ -29186,7 +28661,7 @@ int RTCC::GMSMED(std::string med, std::vector<std::string> data)
 			return 1;
 		}
 		double val;
-		if (sscanf_s(data[0].c_str(), "%lf", &val) != 1)
+		if (sscanf(data[0].c_str(), "%lf", &val) != 1)
 		{
 			return 2;
 		}
@@ -29915,7 +29390,7 @@ int RTCC::GMSMED(std::string med, std::vector<std::string> data)
 			return 1;
 		}
 		double val;
-		if (sscanf_s(data[0].c_str(), "%lf", &val) != 1)
+		if (sscanf(data[0].c_str(), "%lf", &val) != 1)
 		{
 			return 2;
 		}
@@ -29929,7 +29404,7 @@ int RTCC::GMSMED(std::string med, std::vector<std::string> data)
 			return 1;
 		}
 		int Num;
-		if (sscanf_s(data[0].c_str(), "%d", &Num) != 1)
+		if (sscanf(data[0].c_str(), "%d", &Num) != 1)
 		{
 			return 2;
 		}
@@ -29952,15 +29427,15 @@ int RTCC::GMSMED(std::string med, std::vector<std::string> data)
 			return 2;
 		}
 		int Month, Day, Year;
-		if (sscanf_s(data[2].c_str(), "%d", &Month) != 1)
+		if (sscanf(data[2].c_str(), "%d", &Month) != 1)
 		{
 			return 2;
 		}
-		if (sscanf_s(data[3].c_str(), "%d", &Day) != 1)
+		if (sscanf(data[3].c_str(), "%d", &Day) != 1)
 		{
 			return 2;
 		}
-		if (sscanf_s(data[4].c_str(), "%d", &Year) != 1)
+		if (sscanf(data[4].c_str(), "%d", &Year) != 1)
 		{
 			return 2;
 		}
@@ -30405,7 +29880,7 @@ int RTCC::EMGTVMED(std::string med, std::vector<std::string> data)
 			return 2;
 		}
 		double dt;
-		if (sscanf_s(data[3].c_str(), "%lf", &dt) != 1)
+		if (sscanf(data[3].c_str(), "%lf", &dt) != 1)
 		{
 			return 2;
 		}
@@ -31007,7 +30482,7 @@ EphemerisData RTCC::ConvertSVtoEphemData(SV sv)
 	return svnew;
 }
 
-SV RTCC::ConvertEphemDatatoSV(EphemerisData sv)
+SV RTCC::ConvertEphemDatatoSV(EphemerisData sv, double mass)
 {
 	SV svnew;
 
@@ -31022,6 +30497,7 @@ SV RTCC::ConvertEphemDatatoSV(EphemerisData sv)
 	{
 		svnew.gravref = hMoon;
 	}
+	svnew.mass = mass;
 
 	return svnew;
 }
@@ -32988,9 +32464,13 @@ bool RTCC::RTEManeuverCodeLogic(char *code, double lmascmass, double lmdscmass, 
 			{
 				thruster = RTCC_ENGINETYPE_CSMRCSMINUS4;
 			}
-			else
+			else if (UllageNum == -2)
 			{
 				thruster = RTCC_ENGINETYPE_CSMRCSMINUS2;
+			}
+			else
+			{
+				return true;
 			}
 		}
 		else
@@ -33047,9 +32527,13 @@ bool RTCC::RTEManeuverCodeLogic(char *code, double lmascmass, double lmdscmass, 
 			{
 				thruster = RTCC_ENGINETYPE_LMRCSMINUS4;
 			}
-			else
+			else if (UllageNum == -2)
 			{
 				thruster = RTCC_ENGINETYPE_LMRCSMINUS2;
+			}
+			else
+			{
+				return true;
 			}
 			if (code[2] == 'D')
 			{
