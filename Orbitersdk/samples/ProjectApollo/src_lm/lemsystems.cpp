@@ -2886,9 +2886,49 @@ void LEM_RadarTape::Init(LEM *s, e_object * dc_src, e_object *ac_src, SURFHANDLE
 // (c) input data loss
 bool LEM_RadarTape::PowerSignalMonOn()
 {
-	if (dc_source->Voltage() > 2.0 && (ac_source->Voltage() < 85.0 || dc_source->Voltage() < 20.0)) {
+	if (dc_source->Voltage() > 2.0 && (PowerFailure() == true || SignalFailure() == true || TimingFailure() == true)) {
+	return true;
+	}
+	return false;
+}
+
+bool LEM_RadarTape::PowerFailure()
+{
+	if (ac_source->Voltage() < 85.0 || dc_source->Voltage() < 20.0) {
 		return true;
 	}
+	return false;
+}
+
+bool LEM_RadarTape::SignalFailure()
+{	
+	if( lem->AltRngMonSwitch.GetState()==TOGGLESWITCH_UP) {
+
+		if (lem->RR.GetNoTrackSignal() == true)
+		return true;
+	} 
+	else {
+		if (lem->ModeSelSwitch.IsUp()) // LR
+		{
+			if (lem->LR.IsRangeDataGood() == false || lem->LR.IsVelocityDataGood() == false)
+			{
+				return true;
+			}
+		}
+		else if (lem->ModeSelSwitch.IsCenter()) //PGNS
+		{
+			return false;
+		}
+		else //AGS
+		{
+			return false;
+		}
+	}
+	return false;
+}
+
+bool LEM_RadarTape::TimingFailure()
+{
 	return false;
 }
 
