@@ -2886,7 +2886,7 @@ void LEM_RadarTape::Init(LEM *s, e_object * dc_src, e_object *ac_src, SURFHANDLE
 // (c) input data loss
 bool LEM_RadarTape::PowerSignalMonOn()
 {
-	if (dc_source->Voltage() > 2.0 && (PowerFailure() == true || SignalFailure() == true || TimingFailure() == true)) {
+	if (dc_source->Voltage() > 2.0 && (PowerFailure() == true || SignalFailure() == true || TimingFailure() == true)) { //Checks if DC power (2V to light the lamp) is present and the logic for power/signal/timing present
 	return true;
 	}
 	return false;
@@ -2894,7 +2894,7 @@ bool LEM_RadarTape::PowerSignalMonOn()
 
 bool LEM_RadarTape::PowerFailure()
 {
-	if (ac_source->Voltage() < 85.0 || dc_source->Voltage() < 20.0) {
+	if (ac_source->Voltage() < 85.0 || dc_source->Voltage() < 20.0) { //Checks AC <85V and DC <20V
 		return true;
 	}
 	return false;
@@ -2902,36 +2902,37 @@ bool LEM_RadarTape::PowerFailure()
 
 bool LEM_RadarTape::SignalFailure()
 {	
-	if( lem->AltRngMonSwitch.GetState()==TOGGLESWITCH_UP) {
-
-		if (lem->RR.GetNoTrackSignal() == true) {
-			return true; //Needs to check rendezvous radar rate and range signals
+	if( lem->AltRngMonSwitch.GetState()==TOGGLESWITCH_UP) 
+	{
+		if (lem->RR.GetNoTrackSignal() == true) 
+		{
+			return true; //Needs to check rendezvous radar rate and range signals and return true if not present
 		}
-		
 	} 
 	else {
 		if (lem->ModeSelSwitch.IsUp()) // LR
 		{
 			if (lem->LR.IsRangeDataGood() == false || lem->LR.IsVelocityDataGood() == false)
 			{
-				return true; //Needs to check landing radar rate and range signals
+				return true; //Needs to check landing radar rate and range signals and return true if not present
 			}
 		}
 		else if (lem->ModeSelSwitch.IsCenter()) //PGNS
 		{
-			return false; //Needs to check LGC rate and range signals
+			return false; //Needs to check LGC rate and range signals and return true if not present
 		}
 		else //AGS
 		{
-			return false; //Needs to check AGS rate and range signals
+			return false; //Needs to check AGS rate and range signals and return true if not present
 		}
+		return false;
 	}
 	return false;
 }
 
 bool LEM_RadarTape::TimingFailure()
 {
-	return false;
+	return false; //Needs to check for 512 KHz PCMTEA timing signal
 }
 
 void LEM_RadarTape::Timestep(double simdt) {
