@@ -2904,24 +2904,26 @@ bool LEM_RadarTape::SignalFailure()
 {	
 	if( lem->AltRngMonSwitch.GetState()==TOGGLESWITCH_UP) {
 
-		if (lem->RR.GetNoTrackSignal() == true)
-		return true;
+		if (lem->RR.GetNoTrackSignal() == true) {
+			return true; //Needs to check rendezvous radar rate and range signals
+		}
+		
 	} 
 	else {
 		if (lem->ModeSelSwitch.IsUp()) // LR
 		{
 			if (lem->LR.IsRangeDataGood() == false || lem->LR.IsVelocityDataGood() == false)
 			{
-				return true;
+				return true; //Needs to check landing radar rate and range signals
 			}
 		}
 		else if (lem->ModeSelSwitch.IsCenter()) //PGNS
 		{
-			return false;
+			return false; //Needs to check LGC rate and range signals
 		}
 		else //AGS
 		{
-			return false;
+			return false; //Needs to check AGS rate and range signals
 		}
 	}
 	return false;
