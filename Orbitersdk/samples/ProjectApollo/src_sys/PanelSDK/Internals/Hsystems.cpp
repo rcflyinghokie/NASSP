@@ -1238,7 +1238,7 @@ void h_MixingPipe::refresh(double dt) {
 		}
 
 		if (in2_p > out_p) {
-			h_volume v = in2->GetFlow((1.0 - ratio) * dt * (in2_p - out_p), 0.0, sqrt(in1->size * out->size));
+			h_volume v = in2->GetFlow((1.0 - ratio) * dt * (in2_p - out_p), 0.0, sqrt(in2->size * out->size));
 			out->Flow(v);
 		}
 	}
