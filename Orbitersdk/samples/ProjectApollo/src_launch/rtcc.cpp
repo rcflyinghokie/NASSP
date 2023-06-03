@@ -4640,11 +4640,6 @@ void RTCC::LunarEntryPAD(LunarEntryPADOpt *opt, AP11ENT &pad)
 
 	EntryPADHorChkGET = EIGET - 17.0*60.0;
 
-	double Entrytrunnion, Entryshaft, EntryBSSpitch, EntryBSSXPos;
-	int Entrystaroct, EntryCOASstaroct;
-	OrbMech::checkstar(opt->REFSMMAT, _V(OrbMech::round(EIangles.x*DEG)*RAD, OrbMech::round(EIangles.y*DEG)*RAD, OrbMech::round(EIangles.z*DEG)*RAD), svSxtCheck.R, OrbMech::R_Earth, Entrystaroct, Entrytrunnion, Entryshaft);
-	OrbMech::coascheckstar(opt->REFSMMAT, _V(OrbMech::round(EIangles.x*DEG)*RAD, OrbMech::round(EIangles.y*DEG)*RAD, OrbMech::round(EIangles.z*DEG)*RAD), svSxtCheck.R, OrbMech::R_Earth, EntryCOASstaroct, EntryBSSpitch, EntryBSSXPos);
-
 	double horang, coastang, IGA, cosIGA, sinIGA;
 	VECTOR3 X_NB, Y_NB, Z_NB, X_SM, Y_SM, Z_SM, A_MG;
 
@@ -4664,6 +4659,23 @@ void RTCC::LunarEntryPAD(LunarEntryPADOpt *opt, AP11ENT &pad)
 	IGA = atan2(sinIGA, cosIGA);
 
 	EntryPADHorChkPit = PI2 - (horang + coastang + 31.7*RAD) + IGA;
+
+	VECTOR3 SextantStarCheckAtt;
+	double Entrytrunnion, Entryshaft, EntryBSSpitch, EntryBSSXPos;
+	int Entrystaroct, EntryCOASstaroct;
+
+	//Sextant star check either at entry attitude or at horizon check attitude
+	if (opt->SxtStarCheckAttitudeOpt)
+	{
+		SextantStarCheckAtt = _V(OrbMech::round(EIangles.x*DEG)*RAD, OrbMech::round(EIangles.y*DEG)*RAD, OrbMech::round(EIangles.z*DEG)*RAD);
+	}
+	else
+	{
+		SextantStarCheckAtt = _V(0, OrbMech::round(EntryPADHorChkPit*DEG)*RAD, 0);
+	}
+
+	OrbMech::checkstar(opt->REFSMMAT, SextantStarCheckAtt, svSxtCheck.R, OrbMech::R_Earth, Entrystaroct, Entrytrunnion, Entryshaft);
+	OrbMech::coascheckstar(opt->REFSMMAT, SextantStarCheckAtt, svSxtCheck.R, OrbMech::R_Earth, EntryCOASstaroct, EntryBSSpitch, EntryBSSXPos);
 
 	pad.Att05[0] = _V(OrbMech::imulimit(EIangles.x*DEG), OrbMech::imulimit(EIangles.y*DEG), OrbMech::imulimit(EIangles.z*DEG));
 	pad.BSS[0] = EntryCOASstaroct;
@@ -12569,17 +12581,35 @@ bool RTCC::PoweredDescentAbortProgram(PDAPOpt opt, PDAPResults &res)
 			R_a = 2.0*A_Ins - r_Ins;
 			t_CSI = t_Ins + dt_CSI;
 
-			if (K3 == false || dt_CAN <= 0.0 || opt.dv_CAN <= 0.0)
+			if (opt.LongProfileFirst)
 			{
-				conopt.sv_A = sv_LM_Ins;
+				if (K3 == false)
+				{
+					t_CAN = t_Ins + dt_CAN;
+					sv_CAN = coast(sv_LM_Ins, t_CAN - t_Ins);
+					sv_CAN_apo = sv_CAN;
+					sv_CAN_apo.V += tmul(OrbMech::LVLH_Matrix(sv_CAN.R, sv_CAN.V), _V(opt.dv_CAN, 0.0, 0.0));
+					conopt.sv_A = sv_CAN_apo;
+				}
+				else
+				{
+					conopt.sv_A = sv_LM_Ins;
+				}
 			}
 			else
 			{
-				t_CAN = t_Ins + dt_CAN;
-				sv_CAN = coast(sv_LM_Ins, t_CAN - t_Ins);
-				sv_CAN_apo = sv_CAN;
-				sv_CAN_apo.V += tmul(OrbMech::LVLH_Matrix(sv_CAN.R, sv_CAN.V), _V(opt.dv_CAN, 0.0, 0.0));
-				conopt.sv_A = sv_CAN_apo;
+				if (K3 == false || dt_CAN <= 0.0 || opt.dv_CAN <= 0.0)
+				{
+					conopt.sv_A = sv_LM_Ins;
+				}
+				else
+				{
+					t_CAN = t_Ins + dt_CAN;
+					sv_CAN = coast(sv_LM_Ins, t_CAN - t_Ins);
+					sv_CAN_apo = sv_CAN;
+					sv_CAN_apo.V += tmul(OrbMech::LVLH_Matrix(sv_CAN.R, sv_CAN.V), _V(opt.dv_CAN, 0.0, 0.0));
+					conopt.sv_A = sv_CAN_apo;
+				}
 			}
 
 			conopt.sv_P = sv_CSM_Ins;
@@ -12606,6 +12636,7 @@ bool RTCC::PoweredDescentAbortProgram(PDAPOpt opt, PDAPResults &res)
 				dt_CSI += opt.dt_2CSI;
 				conopt.t_TPI += opt.dt_2TPI;
 				res.Theta_LIM = theta_apo + (theta_D - theta_apo) / (R_a - R_a_apo)*(res.R_amin - R_a_apo);
+				res.R_amin = length(opt.R_LS) + opt.h_2amin;
 				if (dt_CAN >= dt_CSI)
 				{
 					dt_CAN = 0.0;
