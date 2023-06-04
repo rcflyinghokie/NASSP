@@ -2922,8 +2922,8 @@ bool LEM_RadarTape::SignalFailure()
 		{
 			return false; //Needs to check LGC rate and range signals and return true if not present
 		}
-		else if (lem->ModeSelSwitch.IsDown()) //AGS
-		{
+		else //AGS
+
 			return false; //Needs to check AGS rate and range signals and return true if not present
 		}
 		return false;
@@ -3054,6 +3054,7 @@ void LEM_RadarTape::SystemTimestep(double simdt) {
 
 	if (dc_source)
 		dc_source->DrawPower(2.1);
+
 }
 
 bool LEM_RadarTape::IsPowered()
