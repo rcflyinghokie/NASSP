@@ -1560,6 +1560,7 @@ protected:
 
 	LEMPanelOrdeal PanelOrdeal;		// Dummy switch/display for checklist controller
 	PowerMerge AOTLampFeeder;
+	PowerMerge NumDockCompLTGFeeder;
 
 	int ordealEnabled;
 
