@@ -2922,7 +2922,7 @@ bool LEM_RadarTape::SignalFailure()
 		{
 			return false; //Needs to check LGC rate and range signals and return true if not present
 		}
-		else //AGS
+		else if (lem->ModeSelSwitch.IsDown()) //AGS
 		{
 			return false; //Needs to check AGS rate and range signals and return true if not present
 		}
