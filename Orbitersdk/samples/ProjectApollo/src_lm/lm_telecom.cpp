@@ -3190,13 +3190,13 @@ bool LM_DSEA::LMPVoiceXmit()
 
 bool LM_DSEA::CDRVoiceXmit() 
 {
-	/*
+	///*
 	//This logic will be necessary along with a signal that voice is being transmitted, commented out for now as voice is not simulated.
 	if ((lem->CDRAudVOXSwitch.IsCenter() && lem->COMM_CDR_AUDIO_CB.Voltage() > SP_MIN_DCVOLTAGE))  //ICS/PTT
 	{
 		return true;
 	}
-	*/
+	//*/
 
 	return false;
 	//voice not simulated yet

@@ -1213,11 +1213,10 @@
 #define AID_VC_SWITCH_P12_20    4228
 #define AID_VC_SWITCH_P12_21    4229
 #define AID_VC_SWITCH_P12_22    4230
-#define AID_VC_ROT_P12_01		4231    //
-#define AID_VC_ROT_P12_02		4232    //
-#define AID_VC_ROT_P12_03		4233    //
-#define AID_VC_ROT_P12_04		4234    //
-#define AID_VC_RECORDER_TALKBACK 4235
+#define AID_VC_ROT_P12_01		4231
+#define AID_VC_ROT_P12_02		4232 
+#define AID_VC_ROT_P12_03		4233
+#define AID_VC_ROT_P12_04		4234
 
 // VC Active Areas (Panel 14)
 #define AID_VC_PANEL_14			((id >= 4400) && (id <= 4430))
