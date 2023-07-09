@@ -467,7 +467,7 @@ void LEM::SystemsInit()
 	PCM.Init(this, (h_HeatLoad *)Panelsdk.GetPointerByString("HYDRAULIC:PCMHEAT"));
 	// DSEA
 	DSEA.Init(this, (h_HeatLoad *)Panelsdk.GetPointerByString("HYDRAULIC:DSEHEAT"));
-	TapeRecorderTB.WireTo(&INST_PCMTEA_CB); //Tape Recorder TB powered by PCM/TE cb
+	TapeRecorderTB.WireTo(&COMM_DISP_CB); //Tape Recorder TB powered by COMM DISP cb
 
 	// CBs
 	INST_SIG_CONDR_1_CB.MaxAmps = 2.0;

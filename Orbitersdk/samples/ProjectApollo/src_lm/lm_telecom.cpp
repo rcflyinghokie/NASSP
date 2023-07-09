@@ -3106,7 +3106,7 @@ void LM_DSEA::Stop()
 void LM_DSEA::Record()
 	//Records constantly if powered, tape recorder on, and in ICS/PTT.  
 	//Will also record if in VOX if voice activates or in PTT when PTT switch depressed with recorder power and switch on
-	//PCM/TE power required for PCM timestamp recording and for for TB functionality
+	//PCM/TE power required for PCM timestamp recording
 	//SE Audio power required for switch to function
 {
 	double tapeSpeed = 0.6;  // 0.6 inches per second from LM AOH

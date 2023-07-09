@@ -1163,7 +1163,7 @@ void LEM::RegisterActiveAreas()
 		oapiVCSetAreaClickmode_Spherical(AID_VC_TW_P12_01 + i, P12_TW_POS[i] + ofs, 0.02);
 	}
 
-	//oapiVCRegisterArea(AID_VC_RECORDER_TALKBACK, _R(806, 1460, 829, 1483), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE, PANEL_MAP_BACKGROUND, MainPanelTex2);
+	oapiVCRegisterArea(AID_VC_RECORDER_TALKBACK, _R(806, 1460, 829, 1483), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE, PANEL_MAP_BACKGROUND, MainPanelTex2);
 
 	// Panel 14
 
@@ -1827,9 +1827,9 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 		ManualEngineStart.DoDrawSwitchVC(surf, srf[SRF_ENGSTARTSTOP_VC]);
 		return true;
 
-	/*case AID_VC_RECORDER_TALKBACK:
+	case AID_VC_RECORDER_TALKBACK:
 		TapeRecorderTB.DrawSwitchVC(surf, srf[SRF_INDICATORVC]);
-		return true;*/
+		return true;
 	}
 
 	return MainPanelVC.VCRedrawEvent(id, event, surf);
@@ -2790,7 +2790,7 @@ void LEM::DefineVCAnimations()
 	Panel12SignalStrengthMeter.SetReference(P12_NEEDLE_POS[2], P12_ROT_AXIS);
 	Panel12SignalStrengthMeter.DefineMeshGroup(VC_GRP_Needle_P12_03);
 
-	//MainPanelVC.AddSwitch(&TapeRecorderTB, AID_VC_RECORDER_TALKBACK);
+	MainPanelVC.AddSwitch(&TapeRecorderTB, AID_VC_RECORDER_TALKBACK);
 
 	//Panel 14
 
