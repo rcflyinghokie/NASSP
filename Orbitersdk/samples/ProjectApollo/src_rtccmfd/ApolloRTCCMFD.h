@@ -18,8 +18,8 @@
 #include "ARCore.h"
 #include "soundlib.h"
 #include "apolloguidance.h"
-#include "csmcomputer.h"
-#include "lemcomputer.h"
+#include "CSMcomputer.h"
+#include "LEMcomputer.h"
 #include "saturn.h"
 #include "saturnv.h"
 #include "LEM.h"
@@ -97,10 +97,9 @@ public:
 	void menuCycleGMPManeuverVehicle();
 	void menuCycleGMPManeuverPoint();
 	void menuCycleGMPManeuverType();
-	void menuCycleGMPMarkerUp();
-	void menuCycleGMPMarkerDown();
+	void menuCycleMarkerUp();
+	void menuCycleMarkerDown();
 	void menuSetGMPInput();
-	void menuCycleOrbAdjAltRef();
 	void menuMissionNumberInput();
 	void set_MissionNumber(int mission);
 	void SPQcalc();
@@ -122,11 +121,9 @@ public:
 	bool ThrusterType(std::string name, int &id);
 	void MPTAttitudeName(char *Buff, int n);
 	void SStoHHMMSS(double time, int &hours, int &minutes, double &seconds);
-	double timetoperi();
-	double timetoapo();
 	void CycleREFSMMATopt();
 	void UploadREFSMMAT();
-	void menuIUUplink();
+	void menuSLVTLITargetingUplink();
 	void menuP30Uplink();
 	void menuP30UplinkCalc();
 	void menuRetrofireEXDVUplink();
@@ -205,7 +202,6 @@ public:
 	void menuCalcMapUpdate();
 	void menuSwitchMapUpdate();
 	void menuSetMapUpdateGET();
-	void menuSwitchUplinkInhibit();
 	void menuCycleSPQMode();
 	void set_CDHtimemode();
 	void menuCycleSPQChaser();
@@ -213,15 +209,13 @@ public:
 	void set_launchdate(int year, int month, int day);
 	void menuSetLaunchTime();
 	void set_LaunchTime(int hours, int minutes, double seconds);
-	void menuSetAGCEpoch();
-	void set_AGCEpoch(int epoch);
 	void menuChangeVesselStatus();
 	void menuCycleLMStage();
 	void menuUpdateLiftoffTime();
-	void AGCSignedValue(int &val);
 	void set_svtarget();
 	void TwoImpulseOffset();
 	void GetREFSMMATfromAGC();
+	void menuCycleLunarEntryPADSxtOption();
 	void GetEntryTargetfromAGC();
 	void menuSetRTEReentryTime();
 	void set_RTEReentryTime(double t);
@@ -310,23 +304,12 @@ public:
 	void menuSetLDPPPoweredDescTime();
 	void menuLDPPCalc();
 	void menuSetDescPlanCalcPage();
+	void menuTranslunarPage();
 	void menuSetLDPPMode();
 	void menuSetLDPPSequence();
 	void menuTLANDUplinkCalc();
 	void menuTLANDUpload();
-	void menuSetSkylabPage();
-	void menuSwitchSkylabManeuver();
-	void menuSetSkylabGET();
-	void set_SkylabGET(double time);
-	void menuSkylabCalc();
-	void menuSetSkylabNC();
-	void menuSetSkylabDH1();
-	void menuSetSkylabDH2();
-	void menuSetSkylabEL();
 	void set_t_TPI(double time);
-	void menuCyclePlaneChange();
-	void menuCyclePCManeuver();
-	void set_SkylabDTTPM(double dt);
 	void menuSetDescPlanInitPage();
 	void menuCycleLLWPChaserOption();
 	void menuSetLiftoffguess();
@@ -361,6 +344,10 @@ public:
 	void menuTerrainModelCalc();
 	void set_TLand(double time);
 	void menuTLCCCalc();
+	void menuTLIProcessorCalc();
+	void menuTLIProcessorMode();
+	void menuTLIProcessorGET();
+	void menuTLIEllipseApogee();
 	void menuNavCheckPADCalc();
 	void menuSetNavCheckGET();
 	void menuLAPCalc();
@@ -564,21 +551,10 @@ public:
 	void menuMPTDirectInputTrimAngleInd();
 	void menuTransferPoweredAscentToMPT();
 	void menuTransferPoweredDescentToMPT();
-	void menuMPTMEDM49();
 	void CheckoutMonitorCalc();
-	void menuMPTInitM50M55Table();
-	void menuMPTInitM50CSMWT();
-	void menuMPTInitM50LMWT();
-	void menuMPTInitM50LMAscentWT();
-	void menuMPTInitM50SIVBWT();
-	void set_MPTInitM50CSMWT(double mass);
-	void set_MPTInitM50LMWT(double mass);
-	void set_MPTInitM50LMAscentWT(double mass);
-	void set_MPTInitM50SIVBWT(double mass);
-	void menuMPTInitM55Config();
+	void menuSetMPTInitInput();
 	void set_MPTInitM55Config(char *cfg);
-	void menuMPTM50Update();
-	void menuMPTM55Update();
+	void menuMPTUpdate();
 	void menuMPTInitAutoUpdate();
 	void menuMPTInitM50M55Vehicle();
 	void menuMPTTrajectoryUpdateCSM();
@@ -778,6 +754,7 @@ public:
 	void menuLWP_RINS();
 	void menuLWP_VINS();
 	void menuLWP_GAMINS();
+	void menuLWP_PhaseFlags();
 	void menuLWPCycleDELNOF();
 	void menuLWP_DELNO();
 	void menuSetLWPDisplayPage();
@@ -807,6 +784,7 @@ protected:
 	LEM *lem;
 	int screen;
 	int marker;
+	int markermax;
 	int RTETradeoffScreen;
 	static struct ScreenData {
 		int screen;

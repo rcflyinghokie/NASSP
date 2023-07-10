@@ -25,11 +25,11 @@
 #ifndef __ESYSTEMS_H_
 #define __ESYSTEMS_H_
 
-#include "thermal.h"
-// To force orbitersdk.h to use <fstream> in any compiler version
+#include "Thermal.h"
+// To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
-#include "hsystems.h"
+#include "Hsystems.h"
 
 class E_system;
 
@@ -246,10 +246,9 @@ public:
 	double reactant;
 	int start_handle;	//start, stop
 	int purge_handle;	// -1-no purging 1-H2 purge 2-O2 purge
-	int status;			//what are we doing? 0-running, 1-starting, 2-stopped, 3-H2 purging , 4-O2 purging
-	double running;		//for tb indicators only;they need a float
 	double condenserTemp;	// condenser exhaust temp, only for display
-	int tempTooLowCount; 
+	int tempTooLowCount;
+	bool tooCold;
 	double outputImpedance;
 	double voltsLastTimestep;
 	double ampsLastTimestep;

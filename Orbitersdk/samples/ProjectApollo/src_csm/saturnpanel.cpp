@@ -23,7 +23,7 @@
 
   **************************************************************************/
 
-// To force orbitersdk.h to use <fstream> in any compiler version
+// To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
 #include <stdio.h>
@@ -40,7 +40,7 @@
 #include "toggleswitch.h"
 #include "apolloguidance.h"
 #include "dsky.h"
-#include "csmcomputer.h"
+#include "CSMcomputer.h"
 #include "ioChannels.h"
 
 #include "saturn.h"
@@ -215,16 +215,15 @@ void Saturn::InitReticle() {
 		ReticleLine[1][1][i] = std::get<1>(line[i]);
 	}
 
-	ReticlePoint = new POINT[ReticleLineMaxLen];
+	ReticlePoint = new oapi::IVECTOR2[ReticleLineMaxLen];
 	//printf("RetMaxlen:%d\n", ReticleLineMaxLen);
 }
 
-void drawReticle(SURFHANDLE surf, double shaft, double panelPixelHeight, int reticleLineCnt, int reticleLineLen[], double **reticleLine, POINT ptbuf[]) {
-	HGDIOBJ oldObj;
-	HDC hDC = oapiGetDC(surf);
-	HPEN pen = CreatePen(PS_SOLID, 1, RGB(211, 171, 23));
-	oldObj = SelectObject(hDC, pen);
-	double reticleMul = 0.5*panelPixelHeight / tan(oapiCameraAperture());
+void drawReticle(SURFHANDLE surf, double shaft, double panelPixelHeight, int reticleLineCnt, int reticleLineLen[], double **reticleLine, oapi::IVECTOR2 ptbuf[]) {
+	oapi::Sketchpad* skp = oapiGetSketchpad(surf);
+	oapi::Pen* pen = oapiCreatePen(1, 1, RGB(211, 171, 23));
+	skp->SetPen(pen);
+	double reticleMul = 0.5 * panelPixelHeight / tan(oapiCameraAperture());
 	double cosShaft = cos(shaft), sinShaft = sin(shaft);
 	int idx = 0;
 	for (int i = 0; i < reticleLineCnt; i++) {
@@ -234,11 +233,10 @@ void drawReticle(SURFHANDLE surf, double shaft, double panelPixelHeight, int ret
 			ptbuf[k].y = 268L - (LONG (reticleMul*(-sinShaft*xorig + cosShaft*yorig)));
 			idx++;
 		}
-		Polyline(hDC, ptbuf, reticleLineLen[i]);
+		skp->Polyline(ptbuf, reticleLineLen[i]);
 	}
-	SelectObject(hDC, oldObj);
-	DeleteObject(pen);
-	oapiReleaseDC(surf, hDC);
+	oapiReleasePen(pen);
+	oapiReleaseSketchpad(skp);
 }
 
 void setCameraLOS(double shaft, double trunnion) {
@@ -254,18 +252,18 @@ void setCameraLOS(double shaft, double trunnion) {
 
 void Saturn::RedrawPanel_MFDButton(SURFHANDLE surf, int mfd, int side, int xoffset, int yoffset, int ydist) {
 
-	HDC hDC = oapiGetDC (surf);
-	SelectObject (hDC, g_Param.font[2]);
-	SetTextColor (hDC, RGB(196, 196, 196));
-	SetTextAlign (hDC, TA_CENTER);
-	SetBkMode (hDC, TRANSPARENT);
+	oapi::Sketchpad *skp = oapiGetSketchpad(surf);
+	skp->SetFont(g_Param.font[2]);
+	skp->SetTextColor (RGB(196, 196, 196));
+	skp->SetTextAlign(oapi::Sketchpad::CENTER);
+	skp->SetBackgroundMode(oapi::Sketchpad::BK_TRANSPARENT);
 	const char *label;
 	for (int bt = 0; bt < 6; bt++) {
 		if (label = oapiMFDButtonLabel (mfd, bt+side*6))
-			TextOut (hDC, 10 + xoffset, 3 + ydist * bt + yoffset, label, strlen(label));
+			skp->Text (10 + xoffset, 3 + ydist * bt + yoffset, label, strlen(label));
 		else break;
 	}
-	oapiReleaseDC (surf, hDC);
+	oapiReleaseSketchpad (skp);
 }
 
 
@@ -674,17 +672,21 @@ void Saturn::InitPanel (int panel)
 	SetSwitches(panel);
 }
 
-int Saturn::GetRenderViewportIsWideScreen() {
+// GetRenderViewportIsWideScreen
+// Return value :
+// 0 = 4:3
+// 1 = 16:10
+// 2 = 16:9
 
-	HMODULE hpac = GetModuleHandle("Modules\\Startup\\ProjectApolloConfigurator.dll");
-	if (hpac) {
-		int (*pacRenderViewportIsWideScreen)();
-		pacRenderViewportIsWideScreen = (int (*)()) GetProcAddress(hpac, "pacRenderViewportIsWideScreen");
-		if (pacRenderViewportIsWideScreen) {
-			return pacRenderViewportIsWideScreen();
-		}
-	}
-	return 0;
+int Saturn::GetRenderViewportIsWideScreen() {
+	unsigned long w, h;
+	oapiGetViewportSize(&w, &h);
+	if (((double)w) / ((double)h) < 1.47)
+		return 0;
+	else if (((double)w) / ((double)h) < 1.69)
+		return 1;
+	else
+		return 2;
 }
 
 bool Saturn::clbkLoadPanel (int id) {
@@ -1557,7 +1559,6 @@ void Saturn::AddLeftMainPanelAreas() {
 	oapiRegisterPanelArea (AID_SPSGIMBALYAWTHUMBWHEEL,						_R( 739, 1067,  775, 1084), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
 	// FDAI
 	fdaiLeft.RegisterMe(AID_FDAI_LEFT, 533, 612);
-	if (!hBmpFDAIRollIndicator)	hBmpFDAIRollIndicator = LoadBitmap(g_Param.hDLL, MAKEINTRESOURCE (IDB_FDAI_ROLLINDICATOR));
 	// ORDEAL
 	oapiRegisterPanelArea (AID_ORDEALSWITCHES,								_R( 359,   28,  836,  230), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN|PANEL_MOUSE_LBPRESSED|PANEL_MOUSE_UP,	PANEL_MAP_BACKGROUND);
 }
@@ -1591,7 +1592,6 @@ void Saturn::AddLeftMiddleMainPanelAreas(int offset) {
 
 	// FDAI
 	fdaiRight.RegisterMe(AID_FDAI_RIGHT, 1090 + offset, 284);
-	if (!hBmpFDAIRollIndicator)	hBmpFDAIRollIndicator = LoadBitmap(g_Param.hDLL, MAKEINTRESOURCE (IDB_FDAI_ROLLINDICATOR));
 
 	// MFDs
 	MFDSPEC mfds_mainleft = {{1405 + offset, 1019, 1715 + offset, 1328}, 6, 6, 55, 44 };
@@ -2762,14 +2762,12 @@ void Saturn::SetSwitches(int panel) {
 	RightIntegralRotarySwitch.Init(0, 0, 90, 90, srf[SRF_ROTATIONALSWITCH], srf[SRF_BORDER_90x90], RightInteriorLightRotariesRow);
 	RightFloodRotarySwitch.Init( 133,  0, 90, 90, srf[SRF_ROTATIONALSWITCH], srf[SRF_BORDER_90x90], RightInteriorLightRotariesRow);
 
-	SystemTestAttenuator.Init(this, &LeftSystemTestRotarySwitch, &RightSystemTestRotarySwitch, &FlightBus);
-
 	SystemTestRotariesRow.Init(AID_SYSTEMTESTROTARIES, MainPanel);
 	LeftSystemTestRotarySwitch.Init(0, 0, 90, 90, srf[SRF_ROTATIONALSWITCH], srf[SRF_BORDER_90x90], SystemTestRotariesRow);
 	RightSystemTestRotarySwitch.Init(120, 0, 90, 90, srf[SRF_ROTATIONALSWITCH], srf[SRF_BORDER_90x90], SystemTestRotariesRow);
 
 	SystemTestMeterRow.Init(AID_DCVOLTS_PANEL101, MainPanel);
-	SystemTestVoltMeter.Init(g_Param.pen[4], g_Param.pen[4], SystemTestMeterRow, &SystemTestAttenuator);
+	SystemTestVoltMeter.Init(g_Param.pen[4], g_Param.pen[4], SystemTestMeterRow, this, &LeftSystemTestRotarySwitch, &RightSystemTestRotarySwitch);
 
 	SystemTestVoltMeter.SetSurface(srf[SRF_DCVOLTS_PANEL101], 110, 110);
 
@@ -3562,7 +3560,7 @@ void Saturn::SetSwitches(int panel) {
 	Altimeter.Init(srf[SRF_ALTIMETER], srf[SRF_ALTIMETER2], this);
 }
 
-void SetupgParam(HINSTANCE hModule) {
+DLLCLBK void InitModule(HINSTANCE hModule) {
 
 	g_Param.hDLL = hModule;
 
@@ -3570,33 +3568,33 @@ void SetupgParam(HINSTANCE hModule) {
 	// allocate GDI resources
 	//
 
-	g_Param.font[0]  = CreateFont (-13, 0, 0, 0, 700, 0, 0, 0, 0, 0, 0, 0, 0, "Arial");
-	g_Param.font[1]  = CreateFont (-10, 0, 0, 0, 400, 0, 0, 0, 0, 0, 0, 0, 0, "Arial");
-	g_Param.font[2]  = CreateFont (-8, 0, 0, 0, 400, 0, 0, 0, 0, 0, 0, 0, 0, "Arial");
-	g_Param.brush[0] = CreateSolidBrush (RGB(0,255,0));    // green
-	g_Param.brush[1] = CreateSolidBrush (RGB(255,0,0));    // red
-	g_Param.brush[2] = CreateSolidBrush (RGB(154,154,154));  // Grey
-	g_Param.brush[3] = CreateSolidBrush (RGB(3,3,3));  // Black
-	g_Param.pen[0] = CreatePen (PS_SOLID, 3, RGB(224, 224, 224));
-	g_Param.pen[1] = CreatePen (PS_SOLID, 4, RGB(  0,   0,   0));
-	g_Param.pen[2] = CreatePen (PS_SOLID, 1, RGB(  0,   0,   0));
-	g_Param.pen[3] = CreatePen (PS_SOLID, 3, RGB( 77,  77,  77));
-	g_Param.pen[4] = CreatePen (PS_SOLID, 3, RGB(  0,   0,   0));
-	g_Param.pen[5] = CreatePen (PS_SOLID, 1, RGB(255,   0,   0));
-	g_Param.pen[6] = CreatePen (PS_SOLID, 3, RGB(255, 255, 255));
+	g_Param.font[0] = oapiCreateFont(-13, true, "Arial", FONT_BOLD);
+	g_Param.font[1] = oapiCreateFont(-10, true, "Arial");
+	g_Param.font[2] = oapiCreateFont(-8, true, "Arial");
+	g_Param.brush[0] = oapiCreateBrush (RGB(0,255,0));    // green
+	g_Param.brush[1] = oapiCreateBrush (RGB(255,0,0));    // red
+	g_Param.brush[2] = oapiCreateBrush (RGB(154,154,154));  // Grey
+	g_Param.brush[3] = oapiCreateBrush (RGB(3,3,3));  // Black
+	g_Param.pen[0] = oapiCreatePen (1, 3, RGB(224, 224, 224));
+	g_Param.pen[1] = oapiCreatePen (1, 4, RGB(  0,   0,   0));
+	g_Param.pen[2] = oapiCreatePen (1, 1, RGB(  0,   0,   0));
+	g_Param.pen[3] = oapiCreatePen (1, 3, RGB( 77,  77,  77));
+	g_Param.pen[4] = oapiCreatePen (1, 3, RGB(  0,   0,   0));
+	g_Param.pen[5] = oapiCreatePen (1, 1, RGB(255,   0,   0));
+	g_Param.pen[6] = oapiCreatePen (1, 3, RGB(255, 255, 255));
 }
 
-void DeletegParam() {
+DLLCLBK void ExitModule(HINSTANCE hDll) {
 
 	int i;
 
 	//
-	// deallocate GDI resources
+	// deallocate sketchpad resources
 	//
 
-	for (i = 0; i < 3; i++) DeleteObject (g_Param.font[i]);
-	for (i = 0; i < 4; i++) DeleteObject (g_Param.brush[i]);
-	for (i = 0; i < 6; i++) DeleteObject (g_Param.pen[i]);
+	for (i = 0; i < 3; i++) oapiReleaseFont(g_Param.font[i]);
+	for (i = 0; i < 4; i++) oapiReleaseBrush(g_Param.brush[i]);
+	for (i = 0; i < 6; i++) oapiReleasePen(g_Param.pen[i]);
 }
 
 bool Saturn::clbkPanelMouseEvent (int id, int event, int mx, int my)
@@ -4637,7 +4635,7 @@ bool Saturn::clbkPanelRedrawEvent(int id, int event, SURFHANDLE surf)
 			if(errors.x > 41){ errors.x = 41; }else{ if(errors.x < -41){ errors.x = -41; }}
 			if(errors.y > 41){ errors.y = 41; }else{ if(errors.y < -41){ errors.y = -41; }}
 			if(errors.z > 41){ errors.z = 41; }else{ if(errors.z < -41){ errors.z = -41; }}
-			fdaiLeft.PaintMe(euler_rates, errors, surf, srf[SRF_FDAI], srf[SRF_FDAIROLL], srf[SRF_FDAIOFFFLAG], srf[SRF_FDAINEEDLES], hBmpFDAIRollIndicator, fdaiSmooth);			
+			fdaiLeft.PaintMe(euler_rates, errors, surf, srf[SRF_FDAI], srf[SRF_FDAIROLL], srf[SRF_FDAIOFFFLAG], srf[SRF_FDAINEEDLES], fdaiSmooth);			
 		}
 		return true;
 
@@ -4653,7 +4651,7 @@ bool Saturn::clbkPanelRedrawEvent(int id, int event, SURFHANDLE surf)
 			if(errors.x > 41){ errors.x = 41; }else{ if(errors.x < -41){ errors.x = -41; }}
 			if(errors.y > 41){ errors.y = 41; }else{ if(errors.y < -41){ errors.y = -41; }}
 			if(errors.z > 41){ errors.z = 41; }else{ if(errors.z < -41){ errors.z = -41; }}
-			fdaiRight.PaintMe(euler_rates, errors, surf, srf[SRF_FDAI], srf[SRF_FDAIROLL], srf[SRF_FDAIOFFFLAG], srf[SRF_FDAINEEDLES], hBmpFDAIRollIndicator, fdaiSmooth);
+			fdaiRight.PaintMe(euler_rates, errors, surf, srf[SRF_FDAI], srf[SRF_FDAIROLL], srf[SRF_FDAIOFFFLAG], srf[SRF_FDAINEEDLES], fdaiSmooth);
 		}
 		return true;
 
@@ -4936,18 +4934,14 @@ bool Saturn::clbkPanelRedrawEvent(int id, int event, SURFHANDLE surf)
 
 	case AID_EMS_SCROLL_LEO:
 	{
+		oapi::Sketchpad* skp = oapiGetSketchpad(srf[SRF_EMS_SCROLL_LEO]);
 
-		HDC hDC;
+		skp->SetBackgroundMode(oapi::Sketchpad::BK_TRANSPARENT);
+		skp->SetPen(g_Param.pen[2]);
 
-		hDC = oapiGetDC(srf[SRF_EMS_SCROLL_LEO]);
+		skp->Polyline(ems.ScribePntArray, ems.ScribePntCnt);
 
-		SetBkMode(hDC, TRANSPARENT);
-		HGDIOBJ oldObj = SelectObject(hDC, g_Param.pen[2]);
-
-		Polyline(hDC, ems.ScribePntArray, ems.ScribePntCnt);
-	
-		SelectObject(hDC, oldObj);
-		oapiReleaseDC(srf[SRF_EMS_SCROLL_LEO], hDC);
+		oapiReleaseSketchpad(skp);
 
 		oapiBlt(surf, srf[SRF_EMS_SCROLL_LEO], 5, 4, ems.GetScrollOffset(), 0, 132, 143);
 		oapiBlt(surf, srf[SRF_EMS_SCROLL_BUG], 42, ems.GetGScribe() + 2, 0, 0, 5, 5, SURF_PREDEF_CK);
@@ -4956,10 +4950,6 @@ bool Saturn::clbkPanelRedrawEvent(int id, int event, SURFHANDLE surf)
 	}
 	case AID_EMS_RSI_BKGRND:
 	{
-		HDC hDC;
-		HGDIOBJ brush = NULL;
-		HGDIOBJ pen = NULL;
-
 		oapiBlt(surf, srf[SRF_EMS_RSI_BKGRND], 0, 0, 0, 0, 86, 84);
 		switch (ems.LiftVectLight()) {
 		case 1:
@@ -4974,15 +4964,17 @@ bool Saturn::clbkPanelRedrawEvent(int id, int event, SURFHANDLE surf)
 			break;
 		}
 
-		hDC = oapiGetDC(srf[SRF_EMS_RSI_BKGRND]);
-		SetBkMode(hDC, TRANSPARENT);
-		pen = SelectObject(hDC, GetStockObject(WHITE_PEN));
-		Ellipse(hDC, 14, 14, 71, 68);
-		brush = SelectObject(hDC, GetStockObject(BLACK_BRUSH));
-		Polygon(hDC, ems.RSITriangle, 3);
-		SelectObject(hDC, pen);
-		SelectObject(hDC, brush);
-		oapiReleaseDC(srf[SRF_EMS_RSI_BKGRND], hDC);
+		oapi::Sketchpad* skp = oapiGetSketchpad(srf[SRF_EMS_RSI_BKGRND]);
+		skp->SetBackgroundMode(oapi::Sketchpad::BK_TRANSPARENT);
+		oapi::Brush* whiteBrush = oapiCreateBrush(0xffffff);
+		skp->SetPen(g_Param.pen[6]);
+		skp->SetBrush(whiteBrush);
+		skp->Ellipse(14, 14, 71, 69);
+		skp->SetBrush(g_Param.brush[3]);
+		skp->SetPen(g_Param.pen[2]);
+		skp->Polygon(ems.RSITriangle, 3);
+		oapiReleaseBrush(whiteBrush);
+		oapiReleaseSketchpad(skp);
 		return true;
 	}
 	case AID_EMSDVSETSWITCH:		
@@ -5512,11 +5504,11 @@ void Saturn::InitSwitches() {
 	IMUGuardedCageSwitch.Register(PSH, "IMUGuardedCageSwitch", 0, 0);
 
 	RCSIndicatorsSwitch.AddPosition(0, 280);
-	RCSIndicatorsSwitch.AddPosition(1, 320);
+	RCSIndicatorsSwitch.AddPosition(1, 310);
 	RCSIndicatorsSwitch.AddPosition(2, 340);
 	RCSIndicatorsSwitch.AddPosition(3, 20);
-	RCSIndicatorsSwitch.AddPosition(4, 40);
-	RCSIndicatorsSwitch.AddPosition(5, 70);
+	RCSIndicatorsSwitch.AddPosition(4, 50);
+	RCSIndicatorsSwitch.AddPosition(5, 80);
 	RCSIndicatorsSwitch.Register(PSH, "RCSIndicatorsSwitch", 1);
 
 	LVGuidanceSwitch.Register(PSH, "LVGuidanceSwitch", TOGGLESWITCH_UP, false);
@@ -5601,12 +5593,12 @@ void Saturn::InitSwitches() {
 
 	H2Pressure1Meter.Register(PSH, "H2Pressure1Meter", 0, 400, 10);
 	H2Pressure2Meter.Register(PSH, "H2Pressure2Meter", 0, 400, 10);
-	O2Pressure1Meter.Register(PSH, "O2Pressure1Meter", 100, 1050, 10);
-	O2Pressure2Meter.Register(PSH, "O2Pressure2Meter", 100, 1050, 10);
-	H2Quantity1Meter.Register(PSH, "H2Quantity1Meter", 0, 1, 10);
-	H2Quantity2Meter.Register(PSH, "H2Quantity2Meter", 0, 1, 10);
-	O2Quantity1Meter.Register(PSH, "O2Quantity1Meter", 0, 1, 10);
-	O2Quantity2Meter.Register(PSH, "O2Quantity2Meter", 0, 1, 10);
+	O2Pressure1Meter.Register(PSH, "O2Pressure1Meter", 0, 1000, 10); //Scaled for consistent display in 2D and VC
+	O2Pressure2Meter.Register(PSH, "O2Pressure2Meter", 0, 1000, 10);
+	H2Quantity1Meter.Register(PSH, "H2Quantity1Meter", 0, 5.0, 10);
+	H2Quantity2Meter.Register(PSH, "H2Quantity2Meter", 0, 5.0, 10);
+	O2Quantity1Meter.Register(PSH, "O2Quantity1Meter", 0, 5.0, 10);
+	O2Quantity2Meter.Register(PSH, "O2Quantity2Meter", 0, 5.0, 10);
 
 	CSMACVoltMeter.Register(PSH, "ACVoltMeter", 85, 145, 3);
 	CSMDCVoltMeter.Register(PSH, "DCVoltMeter", 17.5, 47.5, 3);
@@ -5615,7 +5607,7 @@ void Saturn::InitSwitches() {
 
 	FuelCellH2FlowMeter.Register(PSH, "FuelCellH2FlowMeter", 0, 0.2, 2);
 	FuelCellO2FlowMeter.Register(PSH, "FuelCellO2FlowMeter", 0, 1.6, 2);
-	FuelCellTempMeter.Register(PSH, "FuelCellTempMeter", 100, 550, 2);
+	FuelCellTempMeter.Register(PSH, "FuelCellTempMeter", 0, 5, 2);
 	FuelCellCondenserTempMeter.Register(PSH, "FuelCellCondenserTempMeter", 150, 250, 2);
 
 	SuitTempMeter.Register(PSH, "SuitTempMeter", 20, 95, 2);
@@ -5813,12 +5805,12 @@ void Saturn::InitSwitches() {
 	DCIndicatorsRotary.SetSource(9, &PyroBusAFeeder);
 	DCIndicatorsRotary.SetSource(10, &PyroBusBFeeder);
 
-	ACIndicatorRotary.AddPosition(0, 290);
-	ACIndicatorRotary.AddPosition(1, 315);
+	ACIndicatorRotary.AddPosition(0, 280);
+	ACIndicatorRotary.AddPosition(1, 310);
 	ACIndicatorRotary.AddPosition(2, 340);
 	ACIndicatorRotary.AddPosition(3, 20);
-	ACIndicatorRotary.AddPosition(4, 45);
-	ACIndicatorRotary.AddPosition(5, 70);
+	ACIndicatorRotary.AddPosition(4, 50);
+	ACIndicatorRotary.AddPosition(5, 80);
 	ACIndicatorRotary.Register(PSH, "ACIndicatorRotary", 5);
 
 	ACIndicatorRotary.SetSource(0, &ACBus1PhaseA);

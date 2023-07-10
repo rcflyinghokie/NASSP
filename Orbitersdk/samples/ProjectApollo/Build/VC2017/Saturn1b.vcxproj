@@ -150,6 +150,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src_aux\animations.cpp" />
+    <ClCompile Include="..\..\src_aux\CueCard.cpp" />
+    <ClCompile Include="..\..\src_aux\CueCardLocation.cpp" />
+    <ClCompile Include="..\..\src_aux\CueCardManager.cpp" />
     <ClCompile Include="..\..\src_aux\Mission.cpp" />
     <ClCompile Include="..\..\src_aux\vesim.cpp" />
     <ClCompile Include="..\..\src_csm\csmsensors.cpp" />
@@ -447,10 +450,12 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
-    <ClCompile Include="..\..\src_aux\IMFD\IMFD_Client.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src_aux\animations.h" />
+    <ClInclude Include="..\..\src_aux\CueCard.h" />
+    <ClInclude Include="..\..\src_aux\CueCardLocation.h" />
+    <ClInclude Include="..\..\src_aux\CueCardManager.h" />
     <ClInclude Include="..\..\src_aux\Mission.h" />
     <ClInclude Include="..\..\src_aux\RF_calc.h" />
     <ClInclude Include="..\..\src_aux\vesim.h" />
@@ -518,8 +523,6 @@
     <ClInclude Include="..\..\src_aux\tracer.h" />
     <ClInclude Include="..\..\src_sys\yaAGC\agc_engine.h" />
     <ClInclude Include="..\..\src_sys\yaAGC\yaAGC.h" />
-    <ClInclude Include="..\..\src_aux\IMFD\IMFD_Client.h" />
-    <ClInclude Include="..\..\src_aux\IMFD\IMFD_IPC_com.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\abort.bmp" />

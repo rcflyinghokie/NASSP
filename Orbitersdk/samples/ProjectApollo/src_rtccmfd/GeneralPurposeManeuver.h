@@ -24,6 +24,7 @@ See http://nassp.sourceforge.net/license/ for more details.
 #pragma once
 
 #include "Orbitersdk.h"
+#include "AnalyticEphemerisGenerator.h"
 #include "RTCCModule.h"
 #include "RTCCTables.h"
 
@@ -61,6 +62,7 @@ See http://nassp.sourceforge.net/license/ for more details.
 #define RTCC_GMP_PHA 27
 #define RTCC_GMP_PHP 28
 #define RTCC_GMP_CPL 29
+//Combination circularization maneuver and a plane change at a specified altitude
 #define RTCC_GMP_CPH 30
 #define RTCC_GMP_SAT 31
 //Maneuver to shift line-of-apsides some angle and keep the same apogee and perigee altitudes
@@ -95,8 +97,9 @@ struct GMPOpt
 {
 	int ManeuverCode;
 	EphemerisData sv_in;		//State vector as input or without
-
-	bool AltRef = 0;	//0 = use mean radius, 1 = use launchpad or landing site radius
+	double Area = 0.0;
+	double Weight = 1.0;
+	double KFactor = 1.0;
 
 	//maneuver parameters
 
@@ -133,7 +136,7 @@ protected:
 	void HeightManeuver(bool circ);
 	int OptimumApsidesChange();
 	void NodeShift();
-	int ApsidesChange(int n = 0);
+	int ApsidesChange(bool limit = true);
 	int OptimumPointForApsidesChange();
 	void ApseLineShift(double dang);
 	void ApsidesPlacementNRevsLater();
@@ -176,6 +179,8 @@ protected:
 	AEGDataBlock sv_AP, sv_PE;
 	//Apogee/perigee data returned by PMMAPD
 	double INFO[10];
+	//Apogee/perigee data returned by PMMAPD with option HAS, N revs later
+	double INFO_HAS[10];
 	//Radius of body
 	double R_E;
 	//Gravitational parameter of body

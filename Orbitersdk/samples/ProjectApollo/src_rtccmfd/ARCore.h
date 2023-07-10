@@ -9,11 +9,12 @@
 #include "soundlib.h"
 #include "apolloguidance.h"
 #include "dsky.h"
-#include "csmcomputer.h"
+#include "CSMcomputer.h"
 #include "saturn.h"
 #include "mcc.h"
 #include "rtcc.h"
 #include "LunarTargetingProgram.h"
+#include "thread.h"
 #include <queue>
 
 struct ApolloRTCCMFDData {  // global data storage
@@ -53,7 +54,6 @@ public:
 	void SPQcalc();
 	void GPMPCalc();
 	void REFSMMATCalc();
-	void SkylabCalc();
 	void LunarLaunchTargetingCalc();
 	void LDPPalc();
 	void LunarLiftoffCalc();
@@ -103,9 +103,8 @@ public:
 	void TransferRTEToMPT();
 	void SLVNavigationUpdateCalc();
 	void SLVNavigationUpdateUplink();
-	void UpdateGRRTime();
+	void UpdateGRRTime(VESSEL *v);
 	void PerigeeAdjustCalc();
-	bool vesselinLOS();
 	void MinorCycle(double SimT, double SimDT, double mjd);
 
 	void UplinkData(bool isCSM);
@@ -146,6 +145,8 @@ public:
 	void UpdateTLITargetTable();
 	void GenerateSpaceDigitalsNoMPT();
 	void LUNTARCalc();
+	void TLIProcessorCalc();
+	void SaturnVTLITargetUplink();
 	int GetVesselParameters(int Thruster, int &Config, int &TVC, double &CSMMass, double &LMMass);
 
 	int startSubthread(int fcn);
@@ -160,9 +161,9 @@ public:
 	void GenerateAGCCorrectionVectors();
 
 	// SUBTHREAD MANAGEMENT
-	HANDLE hThread;
+	KillableWorker subThreadWorker;
 	int subThreadMode;										// What should the subthread do?
-	int subThreadStatus;									// 0 = done/not busy, 1 = busy, negative = done with error
+	std::atomic<ThreadStatus> subThreadStatus;
 
 	ApolloRTCCMFDData g_Data;
 
@@ -177,10 +178,10 @@ public:
 	int vesseltype;				// 0 = CSM, 1 = LM, 2 = MCC
 	bool vesselisdocked;		// false = undocked, true = docked
 	bool lemdescentstage;		//0 = ascent stage, 1 = descent stage
-	bool inhibUplLOS;
 	bool PADSolGood;
 	int manpadenginetype;
 	double t_TPI;				// Generally used TPI time
+	int mptinitmode;			//0 = MED M49, 1 = MED M50, 2 = MED M51, 3 = MED M55
 
 	//DOCKING INITIATION
 	int TPI_Mode;
@@ -197,7 +198,6 @@ public:
 
 	//ORBIT ADJUSTMENT PAGE
 	int GMPManeuverCode; //Maneuver code
-	bool OrbAdjAltRef;	//0 = use mean radius, 1 = use launchpad or landing site radius
 	double GMPApogeeHeight;		//Desired apoapsis height
 	double GMPPerigeeHeight;	//Desired periapsis height
 	double GMPWedgeAngle;
@@ -235,19 +235,18 @@ public:
 	int GMPManeuverType;
 
 	//REFSMMAT PAGE
-	double REFSMMATTime;
+	double REFSMMAT_LVLH_Time;
+	double REFSMMAT_PTC_MJD;
 	int REFSMMATopt; //Displayed REFSMMAT page: 0 = P30 Maneuver, 1 = P30 Retro, 2 = LVLH, 3 = Lunar Entry, 4 = Launch, 5 = Landing Site, 6 = PTC, 7 = Attitude, 8 = LS during TLC
 	int REFSMMATcur; //Currently saved REFSMMAT
 	bool REFSMMATHeadsUp;
 
-	//ENTY PAGE	
+	//ENTRY PAGE
 	double EntryTIGcor;
 	double EntryLatcor;
 	double EntryLngcor;
 	VECTOR3 Entry_DV;
 	double entryrange;
-	double EntryRET05G; //Time of 0.05g
-	double EntryRRT; //Time of entry interface (400k feet altitude)
 	int landingzone; //0 = Mid Pacific, 1 = East Pacific, 2 = Atlantic Ocean, 3 = Indian Ocean, 4 = West Pacific
 	int entryprecision; //0 = conic, 1 = precision, 2 = PeA=-30 solution
 	double RTEReentryTime; //Desired landing time
@@ -269,10 +268,8 @@ public:
 	//MANEUVER PAD PAGE
 	AP11MNV manpad;
 	AP11LMMNV lmmanpad;
-	char GDCset[64];
 	bool HeadsUp;
-	VECTOR3 TPIPAD_dV_LOS, TPIPAD_BT;
-	double TPIPAD_dH, TPIPAD_R, TPIPAD_Rdot, TPIPAD_ELmin5, TPIPAD_AZ, TPIPAD_ddH;
+	AP7TPI TPI_PAD;
 	int manpadopt; //0 = Maneuver PAD, 1 = TPI PAD, 2 = TLI PAD
 	double sxtstardtime;
 	double manpad_ullage_dt;
@@ -280,10 +277,11 @@ public:
 	TLIPAD tlipad;
 	AP11PDIPAD pdipad;
 
-	///ENTRY PAD PAGE
+	//ENTRY PAD PAGE
 	AP11ENT lunarentrypad;
 	AP7ENT earthentrypad;
 	int entrypadopt; //0 = Earth Entry Update, 1 = Lunar Entry
+	bool EntryPADSxtStarCheckAttOpt; //true = sextant star attitude check at entry attitude, false = sextant star check at horizon check attitude
 
 	//MAP UPDATE PAGE
 	AP10MAPUPDATE mapupdate;
@@ -291,12 +289,7 @@ public:
 	int mappage, mapgs;
 	double mapUpdateGET;
 
-	//TLI PAGE
-	//0 = TLI (nodal), 1 = TLI (free return)
-	int TLImaneuver;
-
 	//TLCC PAGE
-	VECTOR3 R_TLI, V_TLI;
 	int TLCCSolGood;
 
 	//LANDMARK TRACKING PAGE
@@ -312,20 +305,6 @@ public:
 
 	//DOI Page
 	VECTOR3 DOI_dV_LVLH;				//Integrated DV Vector
-
-	//Skylab Page
-	int Skylabmaneuver;					//0 = Presettings, 1 = NC1, 2 = NC2, 3 = NCC, 4 = NSR, 5 = TPI, 6 = TPM, 7 = NPC
-	bool Skylab_NPCOption;				//0 = NC1 or NC2 with out-of-plane component, setting up a NPC maneuver 90° later
-	bool Skylab_PCManeuver;				//0 = NC1 is setting up NPC, 1 = NC2 is setting up NPC
-	double SkylabTPIGuess;
-	double Skylab_n_C;
-	double SkylabDH1;					//Delta Height at NCC
-	double SkylabDH2;					//Delta Height at NSR
-	double Skylab_E_L;
-	bool SkylabSolGood;
-	VECTOR3 Skylab_dV_NSR, Skylab_dV_NCC;//, Skylab_dV_NPC;
-	double Skylab_dH_NC2, Skylab_dv_NC2, Skylab_dv_NCC;
-	double Skylab_t_NC1, Skylab_t_NC2, Skylab_t_NCC, Skylab_t_NSR, Skylab_dt_TPM; //Skylab_t_NPC
 
 	//Terrain Model
 	double TMLat, TMLng, TMAzi, TMDistance, TMStepSize, TMAlt;

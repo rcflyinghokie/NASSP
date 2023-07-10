@@ -153,6 +153,8 @@ private:
 	double DEV;
 	//Density multiplier (0 if no drag)
 	double DRAG;
+	//Vent multiplier (negative if no venting)
+	double VENT;
 	//Bounding variable. 0 = first pass, -1 = not bounded, 1 = bounded
 	int INITE;
 	double DEL, AQ, BQ, DISQ, dtesc[2];
@@ -178,11 +180,15 @@ private:
 	double WT;
 	//Drag acceleration
 	VECTOR3 a_drag;
+	//Vent acceleration
+	VECTOR3 a_vent;
+	//Venting mass loss rate
+	double MDOT_vent;
 	//Minimum output step
 	double MinEphemDT;
 
 	//ACCEL
-	//Rotation matrix from local to global coordinates, left handed
+	//Rotation matrix from global to local coordinates
 	MATRIX3 Rot;
 	//Planet fixed position vector
 	VECTOR3 R_EF;
@@ -227,4 +233,5 @@ private:
 	int P_S;
 	VECTOR3 SRTB, SRDTB, SY, SYP;
 	double SDELT, STRECT;
+	double SWT;
 };

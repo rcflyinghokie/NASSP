@@ -27,7 +27,7 @@ struct RTCCDensityTables
 {
 	RTCCDensityTables()
 	{
-		r0 = 6.373338e6; //Adjusted for Orbiter
+		r0 = 6356766.0; //45°32'33'' latitude
 		C2 = 401.8743008658905; //1.4*8.31432/(28.9644/1000)
 		CSMAX = 269.4412597;
 
@@ -127,33 +127,33 @@ struct RTCCDensityTables
 		T_M_b[11] = 210.65;
 		T_M_b[12] = 180.65;
 
-		A7[0] = 1.509968e+00;
-		A7[1] = 1.261296e+00;
-		A7[2] = 1.139848e+00;
-		A7[3] = 1.090665e+00;
-		A7[4] = 1.062369e+00;
-		A7[5] = 1.042924e+00;
-		A7[6] = 1.027149e+00;
-		A7[7] = 1.017294e+00;
-		A7[8] = 1.009915e+00;
-		A7[9] = 1.002785e+00;
-		A7[10] = 1.004037e+00;
-		A7[11] = 1.006551e+00;
-		A7[12] = 1.009404e+00;
+		A7[0] = 1.511805e+00;
+		A7[1] = 1.262093e+00;
+		A7[2] = 1.140239e+00;
+		A7[3] = 1.090911e+00;
+		A7[4] = 1.062535e+00;
+		A7[5] = 1.043037e+00;
+		A7[6] = 1.027220e+00;
+		A7[7] = 1.017338e+00;
+		A7[8] = 1.009940e+00;
+		A7[9] = 1.002792e+00;
+		A7[10] = 1.004047e+00;
+		A7[11] = 1.006568e+00;
+		A7[12] = 1.009429e+00;
 
-		B7[0] = 3.917293e+01;
-		B7[1] = 2.179340e+01;
-		B7[2] = 1.326051e+01;
-		B7[3] = 1.029873e+01;
-		B7[4] = 8.452409e+00;
-		B7[5] = 6.719323e+00;
-		B7[6] = 4.755860e+00;
-		B7[7] = 3.307261e+00;
-		B7[8] = 2.195564e+00;
-		B7[9] = 1.650191e+00;
-		B7[10] = 3.314703e+00;
-		B7[11] = 6.666556e+00;
-		B7[12] = 1.117693e+01;
+		B7[0] = 3.920299e+01;
+		B7[1] = 2.179890e+01;
+		B7[2] = 1.326098e+01;
+		B7[3] = 1.029864e+01;
+		B7[4] = 8.452201e+00;
+		B7[5] = 6.719039e+00;
+		B7[6] = 4.755544e+00;
+		B7[7] = 3.306984e+00;
+		B7[8] = 2.195356e+00;
+		B7[9] = 1.650043e+00;
+		B7[10] = 3.314444e+00;
+		B7[11] = 6.666131e+00;
+		B7[12] = 1.117639e+01;
 
 		ln_rho_b_T_M_b[0] = -20.539228;
 		ln_rho_b_T_M_b[1] = -19.383705;
@@ -244,11 +244,10 @@ struct RTCCSystemParameters
 		AGCEpoch = 1969;
 		MAT_J2000_BRCS = _M(1, 0, 0, 0, 1, 0, 0, 0, 1);
 
-		//These are calculated with R_E = 6.373338e6
-		MCGMUM = 2.454405845045305e-01;
-		MCEMUU = 19.95468740240253;
-		MCSRMU = 4.954196044814240e-01;
-		MCERMU = 4.467066979842873;
+		MCGMUM = 0.244883757275606;
+		MCEMUU = 19.90941651408238;
+		MCSRMU = 0.494857310015327;
+		MCERMU = 4.461996919999204;
 
 		//Time from launch to EOI, seconds
 		MDLIEV[0] = 0.76673814e3;
@@ -279,9 +278,11 @@ struct RTCCSystemParameters
 
 		MCVLMC = 0.0;
 		MCVCMC = 0.5;
+		MCCMCU = 6378165.0;
 		MCCNMC = 3443.93359;
 		MCSMLR = 1738090.0;
 		MCCRPD = 0.01745329251; // PI/180
+		MCECAP = 6373368.0; //0.999247902 in er
 		MCEBAS = 1.0;
 		MCEASQ = 4.0619437e13;
 		MCEBSQ = 4.0619437e13;
@@ -687,6 +688,8 @@ struct RTCCSystemParameters
 
 	//DEFINITIONS
 
+	//Meters per Earth radii
+	double MCCMCU;
 	//Nautical miles per Earth radii
 	double MCCNMC;
 	//Year of epoch
@@ -695,6 +698,8 @@ struct RTCCSystemParameters
 	double MCSMLR;
 	//Radians per degree
 	double MCCRPD;
+	//Radius of earth at Cape
+	double MCECAP;
 	//Geodetic Earth constant B²/A²
 	double MCEBAS;
 	//Geodetic Earth constant A²
@@ -775,6 +780,8 @@ struct RTCCSystemParameters
 	int MCLTTD = 2400;
 	//Suppress C-band station contacts generation (0 = suppressed, 1 = unsuppressed)
 	int MGRTAG = 1;
+	//Maximum station characteristic blocks
+	int MKRBKS;
 	//Gravitational constant of the Moon (Er^3/hr^2)
 	double MCGMUM;
 	//Gravitational constant of the Earth (Er^3/hr^2)

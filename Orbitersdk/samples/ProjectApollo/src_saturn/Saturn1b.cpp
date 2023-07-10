@@ -22,7 +22,7 @@
 
   **************************************************************************/
 
-// To force orbitersdk.h to use <fstream> in any compiler version
+// To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
 #include "stdio.h"
@@ -36,7 +36,7 @@
 #include "toggleswitch.h"
 
 #include "apolloguidance.h"
-#include "csmcomputer.h"
+#include "CSMcomputer.h"
 #include "ioChannels.h"
 
 #include "s1bsystems.h"
@@ -83,8 +83,6 @@ Saturn1b::Saturn1b (OBJHANDLE hObj, int fmodel) : Saturn (hObj, fmodel),
 Saturn1b::~Saturn1b()
 
 {
-	ReleaseSurfaces();
-
 	if (iu)
 	{
 		delete iu;
@@ -115,7 +113,6 @@ void Saturn1b::initSaturn1b()
 	RelPos = _V(0.0,0.0,0.0);
 	hSoyuz = 0;
 	hAstpDM = 0;
-	hNosecapVessel = 0;
 	Burned = false;
 
 	if (strcmp(GetName(), "AS-211")==0)
@@ -221,8 +218,6 @@ void Saturn1b::DoFirstTimestep(double simt)
 	hesc1 = oapiGetVesselByName(VName);
 	GetApolloName(VName); strcat (VName, "-STG1");
 	hstg1 = oapiGetVesselByName(VName);
-	GetApolloName(VName); strcat (VName, "-S4BSTG");
-	hs4bM = oapiGetVesselByName(VName);
 	GetApolloName(VName); strcat (VName, "-S4B1");
 	hs4b1 = oapiGetVesselByName(VName);
 	GetApolloName(VName); strcat (VName, "-S4B2");
@@ -249,9 +244,7 @@ void Saturn1b::DoFirstTimestep(double simt)
 	GetApolloName(VName); strcat (VName, "-MAINCHUTE");
 	hMainChute = oapiGetVesselByName(VName);	
 	GetApolloName(VName); strcat (VName, "-OPTICSCOVER");
-	hOpticsCover = oapiGetVesselByName(VName);	
-	GetApolloName(VName); strcat(VName, "-NOSECAP");
-	hNosecapVessel = oapiGetVesselByName(VName);
+	hOpticsCover = oapiGetVesselByName(VName);
 }
 
 void Saturn1b::Timestep (double simt, double simdt, double mjd)
