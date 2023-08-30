@@ -1,0 +1,471 @@
+RTCC Post-insertion (Perform before first SV update)
+UTI > REF > DWN
+BCK > BCK > CFG > UPD
+
+SPS-1 (Ullage 2 Jet, 18 sec)
+TAR > ORB
+TYP Input Manuever
+PNT Time
+GET 5:16:00
+DV 300.00
+P 0.00
+Y 90.2, adjust so the avg of HA and HP is 105.0nm
+
+AS-208 Targeting
+Set focus vessel to AS-208-S4BSTG
+CFG > MIS 0
+BCK > UTI > IU
+LOT Input Time
+TLO 38:30:12
+RIN +6577058
+VIN +7787.5
+PHA -90 to 90
+TGT Gumdrop
+DIS > CLC
+Adjust TLO by full seconds until phase angle is about -1 degrees.  Note difference from 38:30:12 and write down the new TLO.
+Save the scenario, exit Orbiter and adjust AS-208 mission time by the time difference. (MISSNTIME in the AS-208-S4BSTG vessel, LAUNCHMJD in the LC37 vessel)
+Restart Orbiter and load the edited scenario.
+CFG > MIS 0
+BCK > UTI > IU
+LOT Input Time
+TLO As determined from previous calc
+RIN +6577058
+VIN +7787.5
+PHA -90 to 90
+TGT Gumdrop
+DIS > CLC
+UPL
+Verify "Uplink accepted!"
+
+SPS Phasing (Ullage 2 Jet, 18 sec)
+UTI > REF > DWN > BCK > BCK
+TAR > ORB
+TYP Height Change
+PNT Time
+GET 23:45:00
+DH Set so the avg of HA and HP is 110.0nm
+
+Correction Burn (IF SPS, Ullage 2 Jet, 18 sec) (RCS Desired)
+TAR > REN > TPI
+TGT Spider
+MOD TPI at X min before sunrise
+DT 26.0
+TPI 25:48:00
+CLC
+Take a screenshot of this display
+BCK > SPQ > INI
+DH 10.0
+E 27.0
+WT 140.0
+TPI Enter TPI GET
+CDH Angle from CSI to CDH
+VAL 180.0
+BCK
+MOD CSI
+TIM Fixed TPI time
+TIG 24:45:00
+CLC > DIS
+Take a screenshot of this display
+BCK > SPQ
+When getting PAD, insert negative Ydot
+
+CDH (IF SPS, Ullage 2 Jet, 18 sec) (SPS Desired)
+TAR > REN > TPI
+TGT Spider
+BCK > SPQ > INI
+DH 10.0
+E 27.0
+WT 140.0
+TPI Enter TPI GET
+BCK
+MOD CDH
+TIM Fixed
+TIG Enter CDH GET
+CLC
+When getting PAD, insert negative Ydot
+
+TPI (Burn onboard solution)
+TAR > REN > TI
+OPT Both fixed
+TGT Spider
+T1 Enter TPI GET
+T2 -1:00:00
+OFF > P51,0,0,27,140;
+DIS > CLC
+Take screenshot of this page
+
+SPS-3 (Ullage 4 Jet, 18 sec)
+TAR > ORB
+TYP Height Change
+PNT Time
+GET 30:20:00
+DH 20.0, adjust so HA is 130.0
+
+SPS-4 (Ullage 4 Jet, 18 sec)
+TAR > ORB
+TYP Circularization
+PNT Apoapsis
+GET 31:05:00
+
+Docked DPS REFSMMAT (CSM)
+Set focus to LM
+TAR > ORB
+TYP Node Shift
+PNT Optimum
+GET 50:00:00
+DLN 7.8
+CLC
+Copy & write down GETI
+TYP Apo/Peri Change + Node Shift
+PNT Time
+GET Enter GETI
+ApA 270.0
+PeA 115.0
+DLN 7.8
+CLC > ENG
+THR D
+UDT 10.0
+UTH 2 Thrusters
+DT 19.0
+TIM Optimum TIG
+CLC > BCK > BCK > BCK > UTI > REF
+OPT P30 (Heads Down)
+CLC
+G00 > G00,LEM,CUR,CSM,CUR;
+Set focus to CSM
+Verify REFSMMAT identical
+BCK > BCK > UPL
+DIS 12
+CLC 2
+UPL
+
+Docked DPS
+TAR > ORB
+TYP Apo/Peri Change + Node Shift
+PNT Time
+GET Enter GETI
+ApA 270.0
+PeA 115.0
+DLN 7.8
+CLC > ENG
+THR D
+UDT 10.0
+UTH 2 Thrusters
+DT 19.0
+TIM Optimum TIG
+CLC
+
+SPS-5 (Ullage 4 Jet, 18 sec)
+TAR > ORB
+TYP Circularization + Plane Change
+PNT Height
+GET 54:00:00
+ALT 133.0
+DW 0.8
+PAD and P30 REFSMMAT Heads Up
+
+EVA REFSMMAT
+UTI > VEC
+OPT Open hatch thermal control
+CLC
+BCK > REF
+OPT REFS from Attitude
+CLC
+
+Rendezvous REFSMMAT (CSM & LM)
+TAR > REN > TPI
+TGT Gumdrop
+MOD TPI at X min before sunrise
+DT 26.0
+TPI 97:20:00
+CLC
+Copy GET of TPI
+BCK > BCK > BCK > UTI > REF
+OPT LVLH
+TIM Enter GET of TPI
+CLC
+Set focus to LM
+OPT LVLH
+TIM Enter GET of TPI
+CLC
+Set focus to CSM
+Verify REFSMMAT different
+Verify GET identical
+
+Phasing
+TAR > REN > TPI
+TGT Gumdrop
+MOD TPI at X min before sunrise
+DT 26.0
+TPI 94:20:00
+CLC
+Copy GET of TPI0
+BCK > BCK > ORB
+TYP Input Manuever
+PNT Time
+GET Enter GET of TPI0 minus 1h 10m
+DV 85.0
+P 90.0
+CLC > ENG
+THR D
+UDT 8.0
+UTH 2 Thrusters
+DT 15.0
+TIM Optimum TIG
+CLC
+PAD Heads Down
+
+SM RCS Sep
+TAR > ORB
+TYP Input Manuever
+PNT Time
+GET 92:25:45
+DV -5.0
+P 90.0
+
+GET of TPI0
+TAR > REN > TPI
+TGT Gumdrop
+MOD TPI at X min before sunrise
+DT 26.0
+TPI 94:20:00
+CLC
+
+TPI0 PAD
+TAR > REN > TPI
+TGT Gumdrop
+MOD TPI at X min before sunrise
+DT 26.0
+TPI 94:20:00
+CLC
+Copy GET of TPI0
+BCK > TI
+OPT Both fixed
+TGT Gumdrop
+T1 Enter TPI0 GET
+T2 -1:00:00
+OFF > P51,0,0,27.5,130;
+DIS > CLC
+
+Insertion
+TAR > REN > TPI
+TGT Gumdrop
+BCK > SPQ
+MOD CDH
+TIM Fixed
+TIG Enter GET of TPI0 plus 41m 42s
+CLC > ENG
+THR D
+ULL 2 8
+DT 26.0
+TIM Optimum TIG
+CLC
+PAD Heads Down
+
+CSI (Burn onboard solution)
+CFG
+STA Ascent Stage
+BCK > TAR > REN > TPI
+TGT Gumdrop
+MOD TPI at X min before sunrise
+DT 26.0
+TPI 97:20:00
+CLC
+Take a screenshot of this display
+BCK > SPQ > INI
+DH 10.0
+E 27.5
+WT 130.0
+TPI Enter TPI GET
+CDH Angle from CSI to CDH
+VAL 180.0
+BCK
+MOD CSI
+TIM Fixed TPI time
+TIG 95:42:00
+CLC > DIS
+Take a screenshot of this display
+BCK > SPQ > ENG
+THR L2
+TIM Optimum TIG
+CLC
+PAD Heads Down
+
+CDH (Burn onboard solution)
+TAR > REN > TPI
+TGT Gumdrop
+BCK > SPQ > INI
+DH 10.0
+E 27.5
+WT 130.0
+TPI Enter TPI GET
+BCK
+MOD CDH
+TIM Fixed
+TIG Enter CDH GET
+CLC
+
+TPI (Burn onboard solution)
+TAR > REN > TI
+OPT Both fixed
+TGT Gumdrop
+T1 Enter TPI GET
+T2 -1:00:00
+OFF > P51,0,0,27.5,130;
+DIS > CLC
+
+APS Burn to Depletion
+Set focus to LM
+TAR > ORB
+TYP Input Manuever
+PNT Longitude
+GET 101:00:00
+LNG -95.0
+DV 7427.5
+P 0.0
+Y -45.0
+CLC > ENG
+THR A
+UDT 4.0
+UTH 4 Thrusters
+ITE Iterate
+TIM Optimum TIG
+CLC
+PAD Heads Down
+
+Jettison Attitude
+CSM Roll: 300 - LM Yaw (LM Yaw = 0)
+CSM Pitch: LM Pitch - 90
+CSM Yaw: 360 - LM Roll
+
+Seperation PAD
+PAD > MAN
+VEH CSM
+ENG CSM RCS -X (4 quads)
+HEA Heads Up
+TIG 100:55:00
+DV 1.0 -1.1 -2.6
+CLC
+LM Jettison is at 100:50:00
+
+SPS-6 (Ullage 2 Jet, 18 sec)
+TAR > ORB
+TYP Apogee and Perigee Change
+PNT Longitude
+GET 121:00:00
+LNG 122.3
+ApA 130.0
+PeA 95.0
+Downlink REFSMMAT after the burn
+
+S065 Update
+PAD > LMK
+TIM Enter GET
+LAT Enter Latitude
+LON Enter Longitude
+CLC
+Copy T1
+BCK > BCK > TAR > ORB
+TYP Input Manuever
+PNT Time
+GET Enter T1 minus 5 min
+DV 0.1
+P 0.0
+Y 0.0
+CLC > ENG
+THR C2
+CLC
+BCK > BCK > BCK > PAD > MAN
+HEA Heads Down
+CLC
+TIG & Attitude is the S065 Update
+
+Day 7 T Align
+PAD > LMK
+TIM 142:00:00
+LAT 29.263
+LON -94.859
+CLC
+T Align is T1
+
+Day 8 T Align
+PAD > LMK
+TIM 167:00:00
+LAT 31.0
+LON -115.5
+CLC
+T Align is T1
+
+SPS-7 (Ullage 2 Jet, 18 sec)
+TAR > ORB
+TYP Apo/Peri Change + Apsides Shift
+PNT Optimum
+GET 171:20:00
+LNG -45.0
+ApA 210.0
+PeA 97.0
+N 43
+Downlink REFSMMAT after the burn
+
+Day 9 T Align
+PAD > LMK
+TIM 187:45:00
+LAT 31.9
+LON -105.0
+CLC
+T Align is T1
+
+HGA Test REFSMMAT
+PAD > MAP
+MOD Earth
+GET 190:30:00
+CLC
+Copy AOS time for CARNARVON
+BCK > BCK > TAR > ORB
+TYP Input Manuever
+PNT Time
+GET Enter AOS time
+DV 1.0
+P 0.0
+Y 270.0
+CLC > ENG
+THR C2
+CLC
+BCK > BCK > BCK > UTI > REF
+OPT P30 (Heads up)
+CLC
+
+HGA Times
+PAD > MAP
+MOD Earth
+GET 190:30:00
+CLC
+Copy AOS/LOS times for CARNARVON
+GET 191:00:00
+CLC
+Copy AOS/LOS times for HAWAII
+
+Day 10 T Align
+PAD > LMK
+TIM 212:00:00
+LAT 34.2
+LON -77.9
+CLC
+T Align is T1
+
+Retrofire (Ullage 4 Jet, 15 sec)
+TAR > DEO > CON
+ENG SPS
+MOD V, Gamma
+ATT 31.7* window line
+ULL 4 18
+BCK > TAR > CLC 236:00:00 -65
+SEL 6
+BCK > DEO
+LAT 26.2
+LNG -60.0
+DIG > CLC
+DOD
+CUR
+CLC
+PAD TTFM
