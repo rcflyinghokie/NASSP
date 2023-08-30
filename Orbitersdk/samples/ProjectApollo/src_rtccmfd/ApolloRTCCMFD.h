@@ -24,12 +24,17 @@
 #include "saturnv.h"
 #include "LEM.h"
 
+class ApolloRTCCMFD;
+
 struct RTCCMFDInputBoxData
 {
 	double *dVal;
-	int *iVal;
+	int *iVal, *iVal2;
+	int min1, max1, min2, max2;
 	VECTOR3 *vVal;
 	double factor;
+	ApolloRTCCMFD *ptr = NULL;
+	void (ApolloRTCCMFD::*func)(void) = NULL;
 };
 
 class ApolloRTCCMFD: public MFD2 {
@@ -65,6 +70,7 @@ public:
 	void SPQDHdialogue();
 	void set_SPQDH(double DH);
 	void set_target();
+	void menuSLVLaunchTargetingPad();
 	void menuSLVLaunchTargeting();
 	void menuSLVLaunchUplink();
 	void menuVoid();
@@ -100,8 +106,8 @@ public:
 	void menuCycleMarkerUp();
 	void menuCycleMarkerDown();
 	void menuSetGMPInput();
-	void menuMissionNumberInput();
-	void set_MissionNumber(int mission);
+	void menuMissionFile();
+	void LoadMissionConstantsFile(char *str);
 	void SPQcalc();
 	void lambertcalc();
 	void Angle_Display(char *Buff, double angle, bool DispPlus = true);
@@ -121,8 +127,6 @@ public:
 	bool ThrusterType(std::string name, int &id);
 	void MPTAttitudeName(char *Buff, int n);
 	void SStoHHMMSS(double time, int &hours, int &minutes, double &seconds);
-	double timetoperi();
-	double timetoapo();
 	void CycleREFSMMATopt();
 	void UploadREFSMMAT();
 	void menuSLVTLITargetingUplink();
@@ -204,7 +208,6 @@ public:
 	void menuCalcMapUpdate();
 	void menuSwitchMapUpdate();
 	void menuSetMapUpdateGET();
-	void menuSwitchUplinkInhibit();
 	void menuCycleSPQMode();
 	void set_CDHtimemode();
 	void menuCycleSPQChaser();
@@ -212,8 +215,6 @@ public:
 	void set_launchdate(int year, int month, int day);
 	void menuSetLaunchTime();
 	void set_LaunchTime(int hours, int minutes, double seconds);
-	void menuSetAGCEpoch();
-	void set_AGCEpoch(int epoch);
 	void menuChangeVesselStatus();
 	void menuCycleLMStage();
 	void menuUpdateLiftoffTime();
@@ -402,8 +403,10 @@ public:
 	void cycleVECPOINTOpt();
 	void menuSetLMAscentPADPage();
 	void menuAscentPADCalc();
+	void menuCycleAscentPADVersion();
 	void menuSetPDAPPage();
 	void menuPDAPCalc();
+	void menuCyclePDAPSegments();
 	void menuCyclePDAPEngine();
 	void menuAP11AbortCoefUplink();
 	void menuSetFIDOOrbitDigitalsCSMPage();
@@ -557,6 +560,8 @@ public:
 	void menuTransferPoweredAscentToMPT();
 	void menuTransferPoweredDescentToMPT();
 	void CheckoutMonitorCalc();
+	void menuCycleMPTTable();
+	void menuCycleMPTMED();
 	void menuSetMPTInitInput();
 	void set_MPTInitM55Config(char *cfg);
 	void menuMPTUpdate();
@@ -663,6 +668,25 @@ public:
 	void menuGOSTSXTCalc();
 	void menuGOSTShowStarVector();
 	void menuGOSTShowLandmarkVector();
+	void menuSetLMOpticsSupportTablePage();
+	void menuLOSTMode();
+	void set_LOSTMode(int mode);
+	void menuLOSTAttitude1();
+	void menuLOSTAttitude2();
+	void menuLOST_REFSMMAT1();
+	bool set_LOST_REFSMMAT1(char *str);
+	void menuLOST_REFSMMAT2();
+	bool set_LOST_REFSMMAT2(char *str);
+	void menuLOST_CSM_REFSMMAT();
+	bool set_LOST_CSM_REFSMMAT(char *str);
+	void menuLOSTOptics1();
+	void menuLOSTOptics2();
+	bool set_LOST_AGS_Star2(int star, char *pos, double ang);
+	void menuLOSTRealign();
+	void menuCalcLOST();
+	void set_LOSTCheckMode(double get,int Detent, int COASAxis);
+	void UpdateLOSTDisplay();
+	void CalculateLOSTDOKOption();
 	void menuSLVNavigationUpdateCalc();
 	void menuSLVNavigationUpdateUplink();
 	void menuVectorPanelSummaryPage();
@@ -774,8 +798,10 @@ public:
 	void menuPerigeeAdjustHeight();
 	void GenericGETInput(double *get, char *message);
 	void GenericDoubleInput(double *val, char* message, double factor = 1.0);
-	void GenericIntInput(int *val, char* message);
-	void GenericVectorInput(VECTOR3 *val, char* message, double factor = 1.0);
+	void GenericIntInput(int *val, char* message, void (ApolloRTCCMFD::*func)(void) = NULL);
+	void GenericInt2Input(int *val1, int *val2, char* message, int min1, int max1, int min2, int max2, void (ApolloRTCCMFD::*func)(void) = NULL);
+	void GenericVectorInput(VECTOR3 *val, char* message, double factor = 1.0, void (ApolloRTCCMFD::*func)(void) = NULL);
+	void Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax = 1024, int ymax = 1024);
 protected:
 	oapi::Font *font;
 	oapi::Font *font2;

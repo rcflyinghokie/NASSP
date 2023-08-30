@@ -85,25 +85,25 @@ EphemerisData Eph2ToEph1(EphemerisData2 in, int RBI)
 	return out;
 }
 
-void papiWriteScenario_Station(FILEHANDLE scn, char *item, int i, Station stat)
+void papiWriteScenario_Station(FILEHANDLE scn, char *item, int i, StationData stat)
 {
 
 	char buffer[256];
 
-	sprintf(buffer, "  %s %d %s %.12lf %.12lf %.12lf %.12lf", item, i, stat.code.c_str(), stat.alt, stat.lat, stat.lng, stat.rad);
+	sprintf(buffer, "  %s %d %s %.12lf %.12lf %.12lf %.12lf", item, i, stat.code.c_str(), stat.H, stat.lat_geod, stat.lng, stat.R_S);
 	oapiWriteLine(scn, buffer);
 }
 
-bool papiReadScenario_Station(char *line, char *item, Station *stat)
+bool papiReadScenario_Station(char *line, char *item, StationData *stat)
 {
 
 	char buffer[256], name[16];
-	Station v;
+	StationData v;
 	int i;
 
 	if (sscanf(line, "%s", buffer) == 1) {
 		if (!strcmp(buffer, item)) {
-			if (sscanf(line, "%s %d %s %lf %lf %lf %lf", buffer, &i, name, &v.alt, &v.lat, &v.lng, &v.rad) == 7) {
+			if (sscanf(line, "%s %d %s %lf %lf %lf %lf", buffer, &i, name, &v.H, &v.lat_geod, &v.lng, &v.R_S) == 7) {
 				v.code.assign(name);
 				stat[i] = v;
 				return true;
@@ -1366,7 +1366,8 @@ RTCC::RendezvousPlanningDisplayData::RendezvousPlanningDisplayData()
 	M = 0;
 }
 
-RTCC::RTCC()
+RTCC::RTCC() :
+	pmmlaeg(this)
 {
 	mcc = NULL;
 	MissionFileName[0] = 0;
@@ -1406,9 +1407,6 @@ RTCC::RTCC()
 	hEarth = oapiGetObjectByName("Earth");
 	hMoon = oapiGetObjectByName("Moon");
 
-	//Load star table
-	EMSGSUPP(0, 0);
-
 	BZLAND.lat[RTCC_LMPOS_BEST] = 0.0;
 	BZLAND.lng[RTCC_LMPOS_BEST] = 0.0;
 	BZLAND.rad[RTCC_LMPOS_BEST] = SystemParameters.MCSMLR;
@@ -1440,8 +1438,88 @@ RTCC::RTCC()
 
 	PZMPTCSM.CommonBlock.ConfigCode = PZMPTLEM.CommonBlock.ConfigCode = 15; //CSM + LM + S-IVB
 
-	//Calculate conversion matrix
-	SystemParameters.MAT_J2000_BRCS = OrbMech::J2000EclToBRCS(SystemParameters.AGCEpoch);
+	//Load station characteristics table
+	GZSTCH[0].data.code = "BDA";
+	GZSTCH[0].RadarMount = 2;
+	GZSTCH[0].SiteType = 13;
+	EMGGPCHR(32.3528*RAD, -64.6592*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[0].data);
+
+	GZSTCH[1].data.code = "CYI";
+	GZSTCH[1].SiteType = 13;
+	EMGGPCHR(27.74055*RAD, -15.60077*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[1].data);
+
+	GZSTCH[2].data.code = "CRO";
+	GZSTCH[2].SiteType = 13;
+	EMGGPCHR(-24.90619*RAD, 113.72595*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[2].data);
+
+	GZSTCH[3].data.code = "HSK";
+	GZSTCH[3].SiteType = 8;
+	EMGGPCHR(-35.40282*RAD, 148.98144*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[3].data);
+
+	GZSTCH[4].data.code = "GYM";
+	GZSTCH[4].SiteType = 13;
+	EMGGPCHR(27.95029*RAD, -110.90846*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[4].data);
+
+	GZSTCH[5].data.code = "HAW";
+	GZSTCH[5].SiteType = 13;
+	EMGGPCHR(21.44719*RAD, -157.76307*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[5].data);
+
+	GZSTCH[6].data.code = "VAN";
+	GZSTCH[6].SiteType = 13;
+	EMGGPCHR(32.7*RAD, -48.0*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[6].data);
+
+	GZSTCH[7].data.code = "ASC";
+	GZSTCH[7].SiteType = 13;
+	EMGGPCHR(-7.94354*RAD, -14.37105*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[7].data);
+
+	GZSTCH[8].data.code = "GWM";
+	GZSTCH[8].SiteType = 13;
+	EMGGPCHR(13.30929*RAD, 144.73694*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[8].data);
+
+	GZSTCH[9].data.code = "MIL";
+	GZSTCH[9].SiteType = 13;
+	EMGGPCHR(28.40433*RAD, -80.60192*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[9].data);
+
+	GZSTCH[10].data.code = "TEX";
+	GZSTCH[10].SiteType = 13;
+	EMGGPCHR(27.65273*RAD, -97.37588*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[10].data);
+
+	GZSTCH[11].data.code = "GBM";
+	GZSTCH[11].SiteType = 13;
+	EMGGPCHR(26.62022*RAD, -78.35825*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[11].data);
+
+	GZSTCH[12].data.code = "ANG";
+	GZSTCH[12].SiteType = 13;
+	EMGGPCHR(17.137222*RAD, -61.775833*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[12].data);
+
+	GZSTCH[13].data.code = "TAN";
+	GZSTCH[13].SiteType = 13;
+	EMGGPCHR(-19.00000*RAD, 47.27556*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[13].data);
+
+	GZSTCH[14].data.code = "MER";
+	GZSTCH[14].SiteType = 13;
+	EMGGPCHR(25.0*RAD, 125.0*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[14].data);
+
+	GZSTCH[15].data.code = "HTV";
+	GZSTCH[15].SiteType = 13;
+	EMGGPCHR(25.0*RAD, -136.0*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[15].data);
+
+	GZSTCH[16].data.code = "RED";
+	GZSTCH[16].SiteType = 13;
+	EMGGPCHR(-24.0*RAD, -118.0*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[16].data);
+
+	GZSTCH[17].data.code = "GDS";
+	GZSTCH[17].SiteType = 8;
+	EMGGPCHR(35.33820*RAD, -116.87421*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[17].data);
+
+	GZSTCH[18].data.code = "MAD";
+	GZSTCH[18].SiteType = 8;
+	EMGGPCHR(40.45443*RAD, -4.16990*RAD, 0.0, BODY_EARTH, 0.0, &GZSTCH[18].data);
+
+	SystemParameters.MKRBKS = 19;
+
+	//Set up the yearly coordinate system (default AGCEpoch = 1969)
+	InitializeCoordinateSystem();
 }
 
 RTCC::~RTCC()
@@ -1850,14 +1928,14 @@ void RTCC::LoadMissionInitParameters(int year, int month, int day)
 	}
 }
 
-void RTCC::LoadMissionConstantsFile(char *file)
+bool RTCC::LoadMissionConstantsFile(char *file)
 {
 	//This function loads mission specific constants that will rarely be changed or saved/loaded
 	char Buff[128];
 	sprintf_s(Buff, ".\\Config\\ProjectApollo\\RTCC\\%s.txt", file);
 
-	ifstream startable(Buff);
-	if (startable.is_open())
+	ifstream missionfile(Buff);
+	if (missionfile.is_open())
 	{
 		std::string line, strtemp;
 		double dtemp;
@@ -1865,19 +1943,18 @@ void RTCC::LoadMissionConstantsFile(char *file)
 		int itemp;
 		double darrtemp[10];
 
-		while (getline(startable, line))
+		while (getline(missionfile, line))
 		{
 			sprintf_s(Buff, line.c_str());
 
-			if (papiReadScenario_int(Buff, "AGCEpoch", SystemParameters.AGCEpoch))
-			{
-				SystemParameters.MAT_J2000_BRCS = OrbMech::J2000EclToBRCS(SystemParameters.AGCEpoch);
-			}
+			papiReadScenario_int(Buff, "AGCEpoch", SystemParameters.AGCEpoch);
+			papiReadScenario_double(Buff, "TEPHEM0", SystemParameters.TEPHEM0); //Only load for Skylark
 			papiReadScenario_int(Buff, "MCCLEX", SystemParameters.MCCLEX);
 			papiReadScenario_int(Buff, "MCCCXS", SystemParameters.MCCCXS);
 			papiReadScenario_int(Buff, "MCCLXS", SystemParameters.MCCLXS);
 			papiReadScenario_int(Buff, "MCLRLS", SystemParameters.MCLRLS);
 			papiReadScenario_int(Buff, "MCLTTD", SystemParameters.MCLTTD);
+			papiReadScenario_int(Buff, "MCLABT", SystemParameters.MCLABT);
 			papiReadScenario_double(Buff, "MCTVEN", SystemParameters.MCTVEN);
 			if (papiReadScenario_double(Buff, "RRBIAS", dtemp))
 			{
@@ -1886,18 +1963,26 @@ void RTCC::LoadMissionConstantsFile(char *file)
 			papiReadScenario_double(Buff, "PZREAP_IRMAX", PZREAP.IRMAX);
 			papiReadScenario_double(Buff, "PDI_K_X", RTCCPDIIgnitionTargets.K_X);
 			papiReadScenario_double(Buff, "PDI_K_V", RTCCPDIIgnitionTargets.K_V);
-			if (papiReadScenario_double(Buff, "MCLADA", dtemp))
+			if (papiReadScenario_double(Buff, "CSMPadLatitude", dtemp))
 			{
-				SystemParameters.MCLSDA = sin(dtemp*RAD);
-				SystemParameters.MCLCDA = cos(dtemp*RAD);
+				SystemParameters.MCLLTP[0] = SystemParameters.MCLLTP[1] = dtemp*RAD;
+				SystemParameters.MCLSDA = sin(SystemParameters.MCLLTP[0]);
+				SystemParameters.MCLCDA = cos(SystemParameters.MCLLTP[0]);
+				SystemParameters.MDVSTP.PHIL = SystemParameters.MCLLTP[0]; //This assumes the TLI is done with the vehicle from the CSM launchpad
 			}
-			else if (papiReadScenario_double(Buff, "MDVSTP_PHIL", dtemp))
-			{
-				SystemParameters.MDVSTP.PHIL = dtemp * RAD;
-			}
-			else if (papiReadScenario_double(Buff, "MCLGRA", dtemp))
+			else if (papiReadScenario_double(Buff, "CSMPadLongitude", dtemp))
 			{
 				SystemParameters.MCLGRA = dtemp * RAD;
+			}
+			else if (papiReadScenario_double(Buff, "LMPadLatitude", dtemp))
+			{
+				SystemParameters.MCLLLP[0] = SystemParameters.MCLLLP[1] = dtemp * RAD;
+				SystemParameters.MCLSLL = sin(SystemParameters.MCLLLP[0]);
+				SystemParameters.MCLCLL = cos(SystemParameters.MCLLLP[0]);
+			}
+			else if (papiReadScenario_double(Buff, "LMPadLongitude", dtemp))
+			{
+				SystemParameters.MCLLPL = dtemp * RAD;
 			}
 			else if (papiReadScenario_int(Buff, "MCCCRF", SystemParameters.MCCCRF))
 			{
@@ -1972,7 +2057,26 @@ void RTCC::LoadMissionConstantsFile(char *file)
 			papiReadConfigFile_CGTable(Buff, "MHVACG", SystemParameters.MHVACG.Weight, SystemParameters.MHVACG.CG);
 			papiReadScenario_int(Buff, "MHVACG_N", SystemParameters.MHVACG.N);
 		}
+
+		//Anything that is mission, but not launch day specific
+		InitializeCoordinateSystem();
+
+		return true;
 	}
+	return false;
+}
+
+void RTCC::InitializeCoordinateSystem()
+{
+	//J2000 ecliptic to BRCS matrix
+	SystemParameters.MAT_J2000_BRCS = OrbMech::J2000EclToBRCS(SystemParameters.AGCEpoch);
+	//Calculate TEPHEM0, the zero time for AGC time keeping. Except for 1950 coordinate system (Skylark), which has to be loaded from the mission file
+	if (SystemParameters.AGCEpoch != 1950)
+	{
+		SystemParameters.TEPHEM0 = OrbMech::TJUDAT(SystemParameters.AGCEpoch - 1, 7, 1) - 2400000.5;
+	}
+	//Convert star table to BRCS
+	EMSGSUPP(0, 0);
 }
 
 void RTCC::AP7BlockData(AP7BLKOpt *opt, AP7BLK &pad)
@@ -2071,7 +2175,7 @@ void RTCC::BlockDataProcessor(EarthEntryOpt *opt, EntryResults *res)
 	}
 	GET = (sv.MJD - GETbase)*24.0*3600.0;
 
-	entry = new EarthEntry(sv.R, sv.V, sv.MJD, sv.gravref, GETbase, opt->TIGguess, opt->ReA, opt->lng, opt->nominal, opt->entrylongmanual);
+	entry = new EarthEntry(this, sv.R, sv.V, sv.MJD, sv.gravref, GETbase, opt->TIGguess, opt->ReA, opt->lng, opt->nominal, opt->entrylongmanual);
 
 	while (!stop)
 	{
@@ -2137,7 +2241,7 @@ void RTCC::EntryTargeting(EntryOpt *opt, EntryResults *res)
 		}
 	}
 
-	entry = new RTEEarth(this, ConvertSVtoEphemData(sv), GetGMTBase(), GMTfromGET(opt->TIGguess), GMTfromGET(opt->t_Z), opt->type);
+	entry = new RTEEarth(this, ConvertSVtoEphemData(sv), GetGMTBase(), SystemParameters.MCLAMD, GMTfromGET(opt->TIGguess), GMTfromGET(opt->t_Z), opt->type);
 	//Check for error (state vector not in Earth SOI)
 	if (entry->errorstate)
 	{
@@ -3755,11 +3859,9 @@ void RTCC::AP11LMManeuverPAD(AP11LMManPADOpt *opt, AP11LMMNV &pad)
 		FDAIangles.z += PI2;
 	}
 
-	VECTOR3 Rsxt, Vsxt;
+	SV sv_sxt = coast(sv1, opt->sxtstardtime);
 
-	OrbMech::oneclickcoast(sv1.R, sv1.V, sv1.MJD, opt->sxtstardtime, Rsxt, Vsxt, sv1.gravref, sv1.gravref);
-
-	OrbMech::coascheckstar(opt->REFSMMAT, _V(OrbMech::round(IMUangles.x*DEG)*RAD, OrbMech::round(IMUangles.y*DEG)*RAD, OrbMech::round(IMUangles.z*DEG)*RAD), Rsxt, oapiGetSize(sv1.gravref), ManCOASstaroct, ManBSSpitch, ManBSSXPos);
+	OrbMech::coascheckstar(EZJGSTAR, opt->REFSMMAT, _V(OrbMech::round(IMUangles.x*DEG)*RAD, OrbMech::round(IMUangles.y*DEG)*RAD, OrbMech::round(IMUangles.z*DEG)*RAD), sv_sxt.R, oapiGetSize(sv1.gravref), ManCOASstaroct, ManBSSpitch, ManBSSXPos);
 	
 	pad.Att = _V(OrbMech::imulimit(FDAIangles.x*DEG), OrbMech::imulimit(FDAIangles.y*DEG), OrbMech::imulimit(FDAIangles.z*DEG));
 	pad.BSSStar = ManCOASstaroct;
@@ -3921,13 +4023,12 @@ void RTCC::AP11ManeuverPAD(AP11ManPADOpt *opt, AP11MNV &pad)
 	IMUangles = _V(OG, IG, MG);
 
 	//Star checks
-	GDCangles = OrbMech::backupgdcalignment(opt->REFSMMAT, sv1.R, R_E, GDCset);
+	GDCangles = OrbMech::backupgdcalignment(EZJGSTAR, opt->REFSMMAT, sv1.R, R_E, GDCset);
 
-	VECTOR3 Rsxt, Vsxt;
-	OrbMech::oneclickcoast(sv1.R, sv1.V, sv1.MJD, opt->sxtstardtime, Rsxt, Vsxt, sv1.gravref, sv1.gravref);
+	SV sv_sxt = coast(sv1, opt->sxtstardtime);
 
-	OrbMech::checkstar(opt->REFSMMAT, _V(OrbMech::round(IMUangles.x*DEG)*RAD, OrbMech::round(IMUangles.y*DEG)*RAD, OrbMech::round(IMUangles.z*DEG)*RAD), Rsxt, R_E, Manstaroct, Mantrunnion, Manshaft);
-	OrbMech::coascheckstar(opt->REFSMMAT, _V(OrbMech::round(IMUangles.x*DEG)*RAD, OrbMech::round(IMUangles.y*DEG)*RAD, OrbMech::round(IMUangles.z*DEG)*RAD), Rsxt, R_E, ManCOASstaroct, ManBSSpitch, ManBSSXPos);
+	OrbMech::checkstar(EZJGSTAR, opt->REFSMMAT, _V(OrbMech::round(IMUangles.x*DEG)*RAD, OrbMech::round(IMUangles.y*DEG)*RAD, OrbMech::round(IMUangles.z*DEG)*RAD), sv_sxt.R, R_E, Manstaroct, Mantrunnion, Manshaft);
+	OrbMech::coascheckstar(EZJGSTAR, opt->REFSMMAT, _V(OrbMech::round(IMUangles.x*DEG)*RAD, OrbMech::round(IMUangles.y*DEG)*RAD, OrbMech::round(IMUangles.z*DEG)*RAD), sv_sxt.R, R_E, ManCOASstaroct, ManBSSpitch, ManBSSXPos);
 
 	pad.Att = _V(OrbMech::imulimit(IMUangles.x*DEG), OrbMech::imulimit(IMUangles.y*DEG), OrbMech::imulimit(IMUangles.z*DEG));
 	pad.BSSStar = ManCOASstaroct;
@@ -4113,7 +4214,7 @@ void RTCC::AP7ManeuverPAD(AP7ManPADOpt *opt, AP7MNV &pad)
 
 	sv_sxt = coast(sv1, opt->sxtstardtime, TotalMass, opt->Area);
 
-	OrbMech::checkstar(opt->REFSMMAT, _V(round(IMUangles.x*DEG)*RAD, round(IMUangles.y*DEG)*RAD, round(IMUangles.z*DEG)*RAD), sv_sxt.R, R_E, pad.Star, pad.Trun, pad.Shaft);
+	OrbMech::checkstar(EZJGSTAR, opt->REFSMMAT, _V(round(IMUangles.x*DEG)*RAD, round(IMUangles.y*DEG)*RAD, round(IMUangles.z*DEG)*RAD), sv_sxt.R, R_E, pad.Star, pad.Trun, pad.Shaft);
 
 	if (opt->navcheckGET != 0.0)
 	{
@@ -4122,7 +4223,7 @@ void RTCC::AP7ManeuverPAD(AP7ManPADOpt *opt, AP7MNV &pad)
 
 		sv_nav = coast(sv1, GMTfromGET(opt->navcheckGET) - sv1.GMT, TotalMass, opt->Area);
 
-		navcheck(sv_nav.R, sv_nav.V, OrbMech::MJDfromGET(sv_nav.GMT, GetGMTBase()), GetGravref(sv1.RBI), lat, lng, alt);
+		navcheck(sv_nav.R, sv_nav.GMT, sv1.RBI, lat, lng, alt);
 
 		pad.NavChk = opt->navcheckGET;
 		pad.lat = lat*DEG;
@@ -4469,7 +4570,7 @@ void RTCC::EarthOrbitEntry(const EarthEntryPADOpt &opt, AP7ENT &pad)
 		if (opt.lat == 0)
 		{
 			double EntryRTGO, EntryVIO, EntryRET, lat, lng;
-			EntryCalculations::Reentry(sv_EI.R, sv_EI.V, sv1.MJD + dt2 / 3600.0 / 24.0, false, lat, lng, EntryRTGO, EntryVIO, EntryRET);
+			EntryCalculations::Reentry(SystemParameters.MAT_J2000_BRCS, sv_EI.R, sv_EI.V, sv1.MJD + dt2 / 3600.0 / 24.0, false, lat, lng, EntryRTGO, EntryVIO, EntryRET);
 
 			pad.Lat[0] = lat*DEG;
 			pad.Lng[0] = lng*DEG;
@@ -4673,8 +4774,8 @@ void RTCC::LunarEntryPAD(LunarEntryPADOpt *opt, AP11ENT &pad)
 		SextantStarCheckAtt = _V(0, OrbMech::round(EntryPADHorChkPit*DEG)*RAD, 0);
 	}
 
-	OrbMech::checkstar(opt->REFSMMAT, SextantStarCheckAtt, svSxtCheck.R, OrbMech::R_Earth, Entrystaroct, Entrytrunnion, Entryshaft);
-	OrbMech::coascheckstar(opt->REFSMMAT, SextantStarCheckAtt, svSxtCheck.R, OrbMech::R_Earth, EntryCOASstaroct, EntryBSSpitch, EntryBSSXPos);
+	OrbMech::checkstar(EZJGSTAR, opt->REFSMMAT, SextantStarCheckAtt, svSxtCheck.R, OrbMech::R_Earth, Entrystaroct, Entrytrunnion, Entryshaft);
+	OrbMech::coascheckstar(EZJGSTAR, opt->REFSMMAT, SextantStarCheckAtt, svSxtCheck.R, OrbMech::R_Earth, EntryCOASstaroct, EntryBSSpitch, EntryBSSXPos);
 
 	pad.Att05[0] = _V(OrbMech::imulimit(EIangles.x*DEG), OrbMech::imulimit(EIangles.y*DEG), OrbMech::imulimit(EIangles.z*DEG));
 	pad.BSS[0] = EntryCOASstaroct;
@@ -4756,7 +4857,7 @@ MATRIX3 RTCC::GetREFSMMATfromAGC(agc_t *agc, bool cmc)
 	REFSMMAT.m32 = OrbMech::DecToDouble(REFSoct[16], REFSoct[17])*2.0;
 	REFSMMAT.m33 = OrbMech::DecToDouble(REFSoct[18], REFSoct[19])*2.0;
 	
-	return mul(REFSMMAT, SystemParameters.MAT_J2000_BRCS);
+	return REFSMMAT;
 }
 
 double RTCC::GetClockTimeFromAGC(agc_t *agc)
@@ -4784,64 +4885,50 @@ double RTCC::GetTEPHEMFromAGC(agc_t *agc)
 	return tephem;
 }
 
-void RTCC::navcheck(VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, double &lat, double &lng, double &alt)
+void RTCC::navcheck(VECTOR3 R, double GMT, int RBI, double &lat, double &lng, double &alt)
 {
-	//R and V in the J2000
-
 	MATRIX3 Rot2;
-	VECTOR3 Requ, Recl, u;
-	double sinl, a, b, gamma,r_0;
+	VECTOR3 Requ, u;
+	double sinl, a, b, gamma,r_0, K;
 
 	a = 6378166;
 	b = 6356784;
 
-	if (gravref == oapiGetObjectByName("Earth"))
+	if (RBI == BODY_EARTH)
 	{
 		gamma = b * b / a / a;
 		r_0 = OrbMech::R_Earth;
-		Rot2 = OrbMech::GetRotationMatrix(BODY_EARTH, MJD);
+		K = 1.0;
+		ELVCNV(GMT, 0, 1, Rot2);
 	}
 	else
 	{
 		gamma = 1;
 		r_0 = BZLAND.rad[RTCC_LMPOS_BEST];
-		Rot2 = OrbMech::GetRotationMatrix(BODY_MOON, MJD);
+		K = 0.0;
+		ELVCNV(GMT, 2, 3, Rot2);
 	}
 
-	Recl = _V(R.x, R.z, R.y);
-
-	Requ = tmul(Rot2, Recl);
-	Requ = _V(Requ.x, Requ.z, Requ.y);
+	Requ = mul(Rot2, R);
 
 	u = unit(Requ);
 	sinl = u.z;
 
 	lat = atan(u.z/(gamma*sqrt(u.x*u.x + u.y*u.y)));
-	lng = atan2(u.y, u.x);
+	lng = atan2(u.y, u.x) - OrbMech::w_Earth*K*GMT;
+	OrbMech::normalizeAngle(lng, false);
 	alt = length(Requ) - r_0;
 }
 
 SV RTCC::StateVectorCalc(VESSEL *vessel, double SVMJD)
 {
-	VECTOR3 R, V;
-	double dt;
-	OBJHANDLE gravref;
 	SV sv, sv1;
+	EphemerisData sv0;
+	double dt;
+	
+	sv0 = StateVectorCalcEphem(vessel);
 
-	gravref = AGCGravityRef(vessel);
-
-	vessel->GetRelativePos(gravref, R);
-	vessel->GetRelativeVel(gravref, V);
-	sv.MJD = oapiGetSimMJD();
-
-	sv.R = _V(R.x, R.z, R.y);
-	sv.V = _V(V.x, V.z, V.y);
-
-	//TBD: Not yet..
-	//sv.R = mul(SystemParameters.MAT_J2000_BRCS, sv.R);
-	//sv.V = mul(SystemParameters.MAT_J2000_BRCS, sv.V);
-
-	sv.gravref = gravref;
+	sv = ConvertEphemDatatoSV(sv0);
 	sv.mass = vessel->GetMass();
 
 	if (SVMJD != 0.0)
@@ -4873,9 +4960,9 @@ EphemerisData RTCC::StateVectorCalcEphem(VESSEL *vessel)
 	sv.R = _V(R.x, R.z, R.y);
 	sv.V = _V(V.x, V.z, V.y);
 
-	//TBD: Not yet..
-	//sv.R = mul(SystemParameters.MAT_J2000_BRCS, sv.R);
-	//sv.V = mul(SystemParameters.MAT_J2000_BRCS, sv.V);
+	//Convert to BRCS
+	sv.R = mul(SystemParameters.MAT_J2000_BRCS, sv.R);
+	sv.V = mul(SystemParameters.MAT_J2000_BRCS, sv.V);
 
 	sv.GMT = OrbMech::GETfromMJD(MJD, SystemParameters.GMTBASE);
 	if (gravref == hEarth)
@@ -4905,11 +4992,11 @@ OBJHANDLE RTCC::AGCGravityRef(VESSEL *vessel)
 	OBJHANDLE gravref;
 	VECTOR3 rsph;
 
-	gravref = oapiGetObjectByName("Moon");
+	gravref = hMoon;
 	vessel->GetRelativePos(gravref, rsph);
 	if (length(rsph) > 64373760.0)
 	{
-		gravref = oapiGetObjectByName("Earth");
+		gravref = hEarth;
 	}
 	return gravref;
 }
@@ -5024,20 +5111,21 @@ MATRIX3 RTCC::REFSMMATCalc(REFSMMATOpt *opt)
 	}
 	else if (opt->REFSMMATopt == 4)
 	{
-		//For now a default LC-39A, 72° launch
-		return OrbMech::LaunchREFSMMAT(28.608202*RAD, -80.604064*RAD, CalcGETBase(), 72 * RAD);
+		double phi, DLNG;
+
+		phi = SystemParameters.MCLLTP[0];
+		DLNG = SystemParameters.MCLGRA + SystemParameters.MCLAMD + SystemParameters.MCERTS * SystemParameters.MCGMTL / 3600.0;
+
+		return GLMRTM(_M(1, 0, 0, 0, 1, 0, 0, 0, 1), DLNG, 3, -PI05 - phi, 2, SystemParameters.MCLABN, 1);
 	}
 	else if (opt->REFSMMATopt == 6)
 	{
 		double MoonPos[12];
-		double PTCMJD;
 		VECTOR3 R_ME;
-
-		PTCMJD = opt->REFSMMATTime;
 
 		CELBODY *cMoon = oapiGetCelbodyInterface(hMoon);
 
-		cMoon->clbkEphemeris(PTCMJD, EPHEM_TRUEPOS, MoonPos);
+		cMoon->clbkEphemeris(opt->REFSMMATTime, EPHEM_TRUEPOS, MoonPos);
 
 		R_ME = -_V(MoonPos[0], MoonPos[1], MoonPos[2]);
 
@@ -5047,26 +5135,28 @@ MATRIX3 RTCC::REFSMMATCalc(REFSMMATOpt *opt)
 
 		UZ = _V(0.0, 0.0, -1.0);
 		UY = crossp(UZ, UX);
-		return _M(UX.x, UX.y, UX.z, UY.x, UY.y, UY.z, UZ.x, UZ.y, UZ.z);
+
+		return mul(_M(UX.x, UX.y, UX.z, UY.x, UY.y, UY.z, UZ.x, UZ.y, UZ.z), OrbMech::tmat(SystemParameters.MAT_J2000_BRCS));
 	}
 	else if (opt->REFSMMATopt == 8)
 	{
 		MATRIX3 Rot2;
 		VECTOR3 R_P, R_LS, R_LPO, V_LPO, H_LPO, axis, H_C;
-		double LSMJD;
 
-		R_P = unit(_V(cos(opt->LSLng)*cos(opt->LSLat), sin(opt->LSLat), sin(opt->LSLng)*cos(opt->LSLat)));
-		LSMJD = opt->REFSMMATTime / 24.0 / 3600.0 + CalcGETBase();
-		Rot2 = OrbMech::GetRotationMatrix(BODY_MOON, LSMJD);
-
+		//Calculate selenographic landing site vector
+		R_P = unit(_V(cos(opt->LSLng)*cos(opt->LSLat), sin(opt->LSLng)*cos(opt->LSLat), sin(opt->LSLat)));
+		//Get rotation matrix from selenographc to selenocentric
+		ELVCNV(GMTfromGET(opt->REFSMMATTime), 3, 2, Rot2);
+		//Convert landing site vector to selenocentric
 		R_LS = mul(Rot2, R_P);
-		R_LS = _V(R_LS.x, R_LS.z, R_LS.y);
 
+		//Get orbital plane in selenocentric coordinatrs
 		OrbMech::adbar_from_rv(1.0, 1.0, opt->LSLng, opt->LSLat, PI05, opt->LSAzi, R_LPO, V_LPO);
 		H_LPO = crossp(R_LPO, V_LPO);
 		axis = unit(H_LPO);
-		H_C = unit(rhmul(Rot2, axis));
+		H_C = unit(mul(Rot2, axis));
 
+		//Calculate REFSMMAT
 		UX = unit(R_LS);
 		UZ = unit(crossp(H_C, R_LS));
 		UY = crossp(UZ, UX);
@@ -5101,23 +5191,15 @@ MATRIX3 RTCC::REFSMMATCalc(REFSMMATOpt *opt)
 
 	if (opt->REFSMMATopt == 5)
 	{
-		double LSMJD;
 		VECTOR3 R_P, R_LS, H_C;
-		MATRIX3 Rot2;
 		SV sv3;
 
-		LSMJD = opt->REFSMMATTime / 24.0 / 3600.0 + CalcGETBase();
+		R_P = unit(_V(cos(opt->LSLng)*cos(opt->LSLat), sin(opt->LSLng)*cos(opt->LSLat), sin(opt->LSLat)));
 
-		R_P = unit(_V(cos(opt->LSLng)*cos(opt->LSLat), sin(opt->LSLat), sin(opt->LSLng)*cos(opt->LSLat)));
+		ELVCNV(R_P, GMTfromGET(opt->REFSMMATTime), 1, 3, 2, R_LS);
 
-		Rot2 = OrbMech::GetRotationMatrix(BODY_MOON, LSMJD);
+		sv3 = coast(sv2, opt->REFSMMATTime - OrbMech::GETfromMJD(sv2.MJD, CalcGETBase()));
 
-		R_LS = mul(Rot2, R_P);
-		R_LS = _V(R_LS.x, R_LS.z, R_LS.y);
-
-		OrbMech::oneclickcoast(sv2.R, sv2.V, sv2.MJD, (LSMJD - sv2.MJD)*24.0*3600.0, sv3.R, sv3.V, sv2.gravref, hMoon);
-		sv3.gravref = hMoon;
-		sv3.mass = sv2.mass;
 		H_C = crossp(sv3.R, sv3.V);
 
 		UX = unit(R_LS);
@@ -5351,7 +5433,7 @@ int RTCC::LunarDescentPlanningProcessor(SV sv)
 	//Mode 6 doesn't work yet
 	if (opt.MODE == 6) return 1;
 
-	LDPP ldpp;
+	LDPP ldpp(this);
 	LDPPResults res;
 	ldpp.Init(opt);
 	int error = ldpp.LDPPMain(res);
@@ -5833,16 +5915,18 @@ bool RTCC::PDI_PAD(PDIPADOpt* opt, AP11PDIPAD &pad)
 
 void RTCC::LunarAscentPAD(ASCPADOpt opt, AP11LMASCPAD &pad)
 {
-	SV sv_Ins, sv_CSM_TIG;
-	MATRIX3 Rot_LG, Rot_VG;
+	EphemerisData sv_Ins, sv_CSM_TIG;
+	MATRIX3 Rot_MCT_MCI;
 	VECTOR3 R_LSP, Q, U_R, Z_B, X_AGS, Y_AGS, Z_AGS;
-	double GETbase, CR, MJD_TIG, SMa, R_D, delta_L, sin_DL, cos_DL;
+	double TIG, CR, SMa, R_D, delta_L, sin_DL, cos_DL;
 
-	GETbase = CalcGETBase();
-	MJD_TIG = OrbMech::MJDfromGET(opt.TIG, GETbase);
-	sv_CSM_TIG = coast(opt.sv_CSM, opt.TIG - OrbMech::GETfromMJD(opt.sv_CSM.MJD, GETbase));
+	TIG = GMTfromGET(opt.TIG);
 
-	ELVCNV(opt.R_LS, GMTfromGET(opt.TIG), 1, 3, 2, R_LSP);
+	sv_CSM_TIG = coast(opt.sv_CSM, TIG - opt.sv_CSM.GMT);
+
+	ELVCNV(TIG, 3, 2, Rot_MCT_MCI);
+
+	R_LSP = mul(Rot_MCT_MCI, opt.R_LS);
 
 	Q = unit(crossp(sv_CSM_TIG.V, sv_CSM_TIG.R));
 	U_R = unit(R_LSP);
@@ -5851,13 +5935,10 @@ void RTCC::LunarAscentPAD(ASCPADOpt opt, AP11LMASCPAD &pad)
 
 	sv_Ins.R = _V(R_D, 0, 0);
 	sv_Ins.V = _V(opt.v_LV, opt.v_LH, 0);
-	sv_Ins.gravref = sv_CSM_TIG.gravref;
-	SMa = GetSemiMajorAxis(sv_Ins);
+	SMa = OrbMech::GetSemiMajorAxis(sv_Ins.R, sv_Ins.V, OrbMech::mu_Moon);
 
-	Rot_LG = OrbMech::GetRotationMatrix(BODY_MOON, MJD_TIG);
-	Rot_VG = OrbMech::GetVesselToGlobalRotMatrix(opt.Rot_VL, Rot_LG);
-	Z_B = mul(Rot_VG, _V(0, 0, 1));
-	Z_B = unit(_V(Z_B.x, Z_B.z, Z_B.y));
+	//Get Z-axis body vector in inertial coordinates. Use Y unit vector because of LM coordinate system in Orbiter
+	Z_B = mul(Rot_MCT_MCI, mul(opt.Rot_VL, _V(0, 1, 0)));
 	X_AGS = U_R;
 	Z_AGS = unit(crossp(-Q, X_AGS));
 	Y_AGS = unit(crossp(Z_AGS, X_AGS));
@@ -5910,7 +5991,6 @@ void RTCC::CMMCMNAV(int veh, int mpt, EphemerisData sv)
 	NavUpdateMakeupBuffer *buf;
 	VECTOR3 pos, vel;
 	double get, tclockzero;
-	MATRIX3 Rot;
 
 	if (veh == 1)
 	{
@@ -5950,7 +6030,6 @@ void RTCC::CMMCMNAV(int veh, int mpt, EphemerisData sv)
 		buf->VehicleID = "LEM";
 	}
 	
-	Rot = SystemParameters.MAT_J2000_BRCS;
 	if (veh == 1)
 	{
 		tclockzero = SystemParameters.MCGZSA*3600.0;
@@ -5960,8 +6039,8 @@ void RTCC::CMMCMNAV(int veh, int mpt, EphemerisData sv)
 		tclockzero = SystemParameters.MCGZSL*3600.0;
 	}
 
-	pos = buf->sv.R = mul(Rot, sv.R);
-	buf->sv.V = mul(Rot, sv.V);
+	pos = buf->sv.R = sv.R;
+	buf->sv.V = sv.V;
 	vel = buf->sv.V*0.01;
 	get = sv.GMT - tclockzero;
 
@@ -6103,14 +6182,12 @@ void RTCC::AGCStateVectorUpdate(char *str, SV sv, bool csm, bool v66)
 	OBJHANDLE hMoon = oapiGetGbodyByName("Moon");
 	OBJHANDLE hEarth = oapiGetGbodyByName("Earth");
 
-	MATRIX3 Rot = SystemParameters.MAT_J2000_BRCS;
-
 	VECTOR3 vel, pos;
 	double get;
 	int emem[24];
 
-	pos = mul(Rot, sv.R);
-	vel = mul(Rot, sv.V)*0.01;
+	pos = sv.R;
+	vel = sv.V*0.01;
 	get = (sv.MJD - CalcGETBase())*24.0*3600.0;
 
 	if (sv.gravref == hMoon) {
@@ -6280,19 +6357,12 @@ void RTCC::SunburstMassUpdate(char *list, double masskg)
 	sprintf(list, "V24N1E1320E%dE%dER", emem[0], emem[1]);
 }
 
-void RTCC::AGCDesiredREFSMMATUpdate(char *list, MATRIX3 REFSMMAT, bool cmc, bool AGCCoordSystem)
+void RTCC::AGCDesiredREFSMMATUpdate(char *list, MATRIX3 REFSMMAT, bool cmc)
 {
 	MATRIX3 a;
 	int emem[24];
 
-	if (AGCCoordSystem)
-	{
-		a = REFSMMAT;
-	}
-	else
-	{
-		a = mul(REFSMMAT, OrbMech::tmat(SystemParameters.MAT_J2000_BRCS));
-	}
+	a = REFSMMAT;
 
 	emem[0] = 24;
 	if (cmc)
@@ -6325,20 +6395,13 @@ void RTCC::AGCDesiredREFSMMATUpdate(char *list, MATRIX3 REFSMMAT, bool cmc, bool
 	V7XUpdate(71, list, emem, 20);
 }
 
-void RTCC::AGCREFSMMATUpdate(char *list, MATRIX3 REFSMMAT, bool cmc, bool AGCCoordSystem)
+void RTCC::AGCREFSMMATUpdate(char *list, MATRIX3 REFSMMAT, bool cmc)
 {
 	MATRIX3 a;
 	int emem[24];
 	int address;
 
-	if (AGCCoordSystem)
-	{
-		a = REFSMMAT;
-	}
-	else
-	{
-		a = mul(REFSMMAT, OrbMech::tmat(SystemParameters.MAT_J2000_BRCS));
-	}
+	a = REFSMMAT;
 
 	if (cmc)
 	{
@@ -6468,9 +6531,9 @@ void RTCC::AGSStateVectorPAD(const AGSSVOpt &opt, AP11AGSSVPAD &pad)
 
 void RTCC::NavCheckPAD(SV sv, AP7NAV &pad, double GET)
 {
+	SV sv1;
+	EphemerisData sv2;
 	double GETbase, lat, lng, alt, navcheckdt;
-	VECTOR3 R1, V1;
-	OBJHANDLE outgrav = NULL;
 
 	GETbase = CalcGETBase();
 	
@@ -6485,8 +6548,9 @@ void RTCC::NavCheckPAD(SV sv, AP7NAV &pad, double GET)
 		pad.NavChk[0] = GET;
 	}
 
-	OrbMech::oneclickcoast(sv.R, sv.V, sv.MJD, navcheckdt, R1, V1, sv.gravref, outgrav);
-	navcheck(R1, V1, sv.MJD + navcheckdt/24.0/3600.0, outgrav, lat, lng, alt);
+	sv1 = coast(sv, navcheckdt);
+	sv2 = ConvertSVtoEphemData(sv1);
+	navcheck(sv2.R, sv2.GMT, sv2.RBI, lat, lng, alt);
 
 	pad.alt[0] = alt / 1852.0;
 	pad.lat[0] = lat*DEG;
@@ -6497,8 +6561,6 @@ void RTCC::P27PADCalc(P27Opt *opt, P27PAD &pad)
 {
 	double lat, lng, alt, get, SVMJD;
 	VECTOR3 pos, vel;
-	OBJHANDLE hMoon = oapiGetGbodyByName("Moon");
-	OBJHANDLE hEarth = oapiGetGbodyByName("Earth");
 	bool csm = true;
 	SV sv, sv1;
 
@@ -6507,7 +6569,7 @@ void RTCC::P27PADCalc(P27Opt *opt, P27PAD &pad)
 	sv = StateVectorCalc(opt->vessel, SVMJD);
 	sv1 = coast(sv, opt->navcheckGET - opt->SVGET);
 
-	navcheck(sv1.R, sv1.V, sv1.MJD, sv1.gravref, lat, lng, alt);
+	navcheck(sv1.R, sv1.MJD, hEarth == sv1.gravref ? BODY_EARTH : BODY_MOON, lat, lng, alt);
 	
 	sprintf(pad.Purpose[0], "SV");
 	pad.GET[0] = opt->SVGET;
@@ -6518,8 +6580,8 @@ void RTCC::P27PADCalc(P27Opt *opt, P27PAD &pad)
 	pad.Index[0] = 21;
 	pad.Verb[0] = 71;
 
-	pos = mul(SystemParameters.MAT_J2000_BRCS, sv.R);
-	vel = mul(SystemParameters.MAT_J2000_BRCS, sv.V)*0.01;
+	pos = sv.R;
+	vel = sv.V*0.01;
 	get = opt->SVGET;
 
 	if (sv.gravref == hMoon) {
@@ -7051,9 +7113,7 @@ SV RTCC::ExecuteManeuver(SV sv, double P30TIG, VECTOR3 dV_LVLH, double attachedM
 		F_average = F;
 	}
 
-	OrbMech::oneclickcoast(sv.R, sv.V, sv.MJD, P30TIG - (sv.MJD - GETbase)*24.0*3600.0, sv2.R, sv2.V, sv.gravref, sv2.gravref);
-	sv2.mass = sv.mass;
-	sv2.MJD = GETbase + P30TIG / 24.0 / 3600.0;
+	sv2 = coast(sv, P30TIG - (sv.MJD - GETbase)*24.0*3600.0);
 
 	UY = unit(crossp(sv2.V, sv2.R));
 	UZ = unit(-sv2.R);
@@ -7122,7 +7182,7 @@ void RTCC::RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res)
 	}
 	else
 	{
-		double TIG = OrbMech::P29TimeOfLongitude(sv1.R, sv1.V, sv1.MJD, hMoon, 180.0*RAD);
+		double TIG = OrbMech::P29TimeOfLongitude(SystemParameters.MAT_J2000_BRCS, sv1.R, sv1.V, sv1.MJD, hMoon, 180.0*RAD);
 		sv2 = coast(sv1, (TIG - sv1.MJD)*24.0*3600.0);
 	}
 
@@ -7177,7 +7237,7 @@ void RTCC::RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res)
 	sv3.R = sv2.R;
 	sv3.V = sv2.V;
 	sv3.GMT = OrbMech::GETfromMJD(sv2.MJD, GetGMTBase());
-	teicalc = new RTEMoon(this, sv3, GetGMTBase());
+	teicalc = new RTEMoon(this, sv3, GetGMTBase(), SystemParameters.MCLAMD);
 	teicalc->ATP(LINE);
 	teicalc->READ(opt->SMODE, PZREAP.IRMAX, PZREAP.VRMAX, PZREAP.RRBIAS, PZREAP.MOTION, PZREAP.HMINMC, 2, 0.3, PZREAP.DVMAX, 0.0, opt->Inclination, 1.0*1852.0, GMTfromGET(TZMINI), 0.0);
 
@@ -7199,7 +7259,7 @@ void RTCC::RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res)
 	res->ReA = teicalc->EntryAng;
 	res->GET400K = GETfromGMT(teicalc->t_R);
 	res->GET05G = res->GET400K + dt22;
-	res->RTGO = OrbMech::CMCEMSRangeToGo(R05G, OrbMech::MJDfromGET(res->GET05G, GETbase), res->latitude, res->longitude);
+	res->RTGO = OrbMech::CMCEMSRangeToGo(SystemParameters.MAT_J2000_BRCS, R05G, OrbMech::MJDfromGET(res->GET05G, GETbase), res->latitude, res->longitude);
 	res->VIO = length(V05G);
 	res->precision = teicalc->precision;
 	res->Incl = teicalc->ReturnInclination;
@@ -7241,19 +7301,19 @@ void RTCC::LunarOrbitMapUpdate(EphemerisData sv0, AP10MAPUPDATE &pad, double pm)
 	hEarth = oapiGetObjectByName("Earth");
 	hSun = oapiGetObjectByName("Sun");
 
-	ttoLOS = OrbMech::sunrise(sv0.R, sv0.V, MJD, gravref, hEarth, 0, 0, true);
-	ttoAOS = OrbMech::sunrise(sv0.R, sv0.V, MJD, gravref, hEarth, 1, 0, true);
+	ttoLOS = OrbMech::sunrise(SystemParameters.MAT_J2000_BRCS, sv0.R, sv0.V, MJD, gravref, hEarth, 0, 0, true);
+	ttoAOS = OrbMech::sunrise(SystemParameters.MAT_J2000_BRCS, sv0.R, sv0.V, MJD, gravref, hEarth, 1, 0, true);
 
 	pad.LOSGET = (MJD - GETbase)*24.0*3600.0 + ttoLOS;
 	pad.AOSGET = (MJD - GETbase)*24.0*3600.0 + ttoAOS;
 
-	ttoSS = OrbMech::sunrise(sv0.R, sv0.V, MJD, gravref, hSun, 0, 0, true);
-	ttoSR = OrbMech::sunrise(sv0.R, sv0.V, MJD, gravref, hSun, 1, 0, true);
+	ttoSS = OrbMech::sunrise(SystemParameters.MAT_J2000_BRCS, sv0.R, sv0.V, MJD, gravref, hSun, 0, 0, true);
+	ttoSR = OrbMech::sunrise(SystemParameters.MAT_J2000_BRCS, sv0.R, sv0.V, MJD, gravref, hSun, 1, 0, true);
 
 	pad.SSGET = (MJD - GETbase)*24.0*3600.0 + ttoSS;
 	pad.SRGET = (MJD - GETbase)*24.0*3600.0 + ttoSR;
 
-	t_lng = OrbMech::P29TimeOfLongitude(sv0.R, sv0.V, MJD, gravref, pm);
+	t_lng = OrbMech::P29TimeOfLongitude(SystemParameters.MAT_J2000_BRCS, sv0.R, sv0.V, MJD, gravref, pm);
 	ttoPM = (t_lng - MJD)*24.0 * 3600.0;
 	pad.PMGET = (MJD - GETbase)*24.0*3600.0 + ttoPM;
 }
@@ -7273,8 +7333,8 @@ void RTCC::LandmarkTrackingPAD(LMARKTRKPADOpt *opt, AP11LMARKTRKPAD &pad)
 
 		R_P = unit(_V(cos(opt->lng[i])*cos(opt->lat[i]), sin(opt->lng[i])*cos(opt->lat[i]), sin(opt->lat[i])))*(oapiGetSize(sv1.gravref) + opt->alt[i]);
 
-		dt1 = OrbMech::findelev_gs(sv1.R, sv1.V, R_P, MJDguess, 180.0*RAD, sv1.gravref, LmkRange);
-		dt2 = OrbMech::findelev_gs(sv1.R, sv1.V, R_P, MJDguess, 145.0*RAD, sv1.gravref, LmkRange);
+		dt1 = OrbMech::findelev_gs(SystemParameters.MAT_J2000_BRCS, sv1.R, sv1.V, R_P, MJDguess, 180.0*RAD, sv1.gravref, LmkRange);
+		dt2 = OrbMech::findelev_gs(SystemParameters.MAT_J2000_BRCS, sv1.R, sv1.V, R_P, MJDguess, 145.0*RAD, sv1.gravref, LmkRange);
 
 		pad.T1[i] = dt1 + (MJDguess - GETbase) * 24.0 * 60.0 * 60.0;
 		pad.T2[i] = dt2 + (MJDguess - GETbase) * 24.0 * 60.0 * 60.0;
@@ -7325,8 +7385,11 @@ EphemerisData RTCC::coast(EphemerisData sv1, double dt)
 	EphemerisData sv2;
 
 	double MJD = OrbMech::MJDfromGET(sv1.GMT,SystemParameters.GMTBASE);
+
 	OrbMech::oneclickcoast(sv1.R, sv1.V, MJD, dt, sv2.R, sv2.V, sv1.RBI, sv2.RBI);
+
 	sv2.GMT = sv1.GMT + dt;
+
 	return sv2;
 }
 
@@ -7408,8 +7471,8 @@ int RTCC::PMMSPT(PMMSPTInput &in)
 	EphemerisDataTable2 ephtab;
 	EphemerisData2 sv_out;
 	EMSMISSInputTable emsin;
-	std::vector<VECTOR3> vec_in, vec_out;
-	double T_TH, alpha_TSS, alpha_TS, beta, T_RP, f, R_N, KP0, KY0, T3_apo, T_ST, tau3R, T2, Vex2, Mdot2, DV_BR, tau2N;
+	MATRIX3 R_true_mean;
+	double T_TH, alpha_TSS, alpha_TS, beta, T_RP, f, R_N, KP0, KY0, T3_apo, T_ST, tau3R, T2, Vex2, Mdot2, DV_BR, tau2N, lambda;
 	int J, OrigTLIInd, CurTLIInd;
 
 	if (in.QUEID == 39)
@@ -7586,16 +7649,12 @@ RTCC_PMMSPT_7_2:
 		return 72;
 	}
 RTCC_PMMSPT_8_2:
-	double lambda = SystemParameters.MCLGRA + GetGMTLO()*3600.0*OrbMech::w_Earth;
+	lambda = SystemParameters.MCLGRA + GetGMTLO()*3600.0*OrbMech::w_Earth;
 
-	vec_in.push_back(_V(1, 0, 0));
-	vec_in.push_back(_V(0, 1, 0));
-	vec_in.push_back(_V(0, 0, 1));
-	if (ELVCNV(vec_in, 0.0, 0, 1, 0, vec_out))
+	if (ELVCNV(GetGMTLO()*3600.0, RTCC_COORDINATES_ECT, RTCC_COORDINATES_ECI, R_true_mean))
 	{
 		return 84;
 	}
-	MATRIX3 R_true_mean = _M(vec_out[0].x, vec_out[1].x, vec_out[2].x, vec_out[0].y, vec_out[1].y, vec_out[2].y, vec_out[0].z, vec_out[1].z, vec_out[2].z);
 
 	MATRIX3 RMAT = mul(R_true_mean, _M(cos(lambda), -sin(lambda), 0, sin(lambda), cos(lambda), 0, 0, 0, 1));
 	MATRIX3 M = mul(_M(1, 0, 0, 0, 0, -1, 0, 1, 0), OrbMech::tmat(RMAT));
@@ -8173,33 +8232,6 @@ double RTCC::GetDockedVesselMass(VESSEL *vessel)
 	return LMmass;
 }
 
-double RTCC::PericynthionTime(VESSEL *vessel)
-{
-	OBJHANDLE gravref;
-	VECTOR3 R_A, V_A, R0, V0;
-	double SVMJD, mu, dt, GETbase;
-
-	GETbase = CalcGETBase();
-	gravref = AGCGravityRef(vessel);
-
-	mu = GGRAV*oapiGetMass(gravref);
-	vessel->GetRelativePos(gravref, R_A);
-	vessel->GetRelativeVel(gravref, V_A);
-	SVMJD = oapiGetSimMJD();
-	R0 = _V(R_A.x, R_A.z, R_A.y);
-	V0 = _V(V_A.x, V_A.z, V_A.y);
-
-	dt = OrbMech::timetoperi(R0, V0, mu);
-	return (SVMJD-GETbase)*24.0*3600.0 + dt;
-}
-
-SV RTCC::FindPericynthion(SV sv0)
-{
-	OBJHANDLE hMoon = oapiGetObjectByName("Moon");
-	double dt = OrbMech::timetoperi_integ(sv0.R, sv0.V, sv0.MJD, sv0.gravref, hMoon);
-	return coast(sv0, dt);
-}
-
 double RTCC::FindOrbitalMidnight(SV sv, double t_TPI_guess)
 {
 	SV sv1;
@@ -8212,7 +8244,7 @@ double RTCC::FindOrbitalMidnight(SV sv, double t_TPI_guess)
 
 	sv1 = coast(sv, dt);
 
-	ttoMidnight = OrbMech::sunrise(sv1.R, sv1.V, sv1.MJD, sv1.gravref, hSun, 1, 1, false);
+	ttoMidnight = OrbMech::sunrise(SystemParameters.MAT_J2000_BRCS, sv1.R, sv1.V, sv1.MJD, sv1.gravref, hSun, 1, 1, false);
 	return t_TPI_guess + ttoMidnight;
 }
 
@@ -8223,8 +8255,8 @@ void RTCC::FindRadarAOSLOS(SV sv, double lat, double lng, double &GET_AOS, doubl
 
 	R_P = unit(_V(cos(lng)*cos(lat), sin(lng)*cos(lat), sin(lat)))*oapiGetSize(sv.gravref);
 
-	dt1 = OrbMech::findelev_gs(sv.R, sv.V, R_P, sv.MJD, 175.0*RAD, sv.gravref, LmkRange);
-	dt2 = OrbMech::findelev_gs(sv.R, sv.V, R_P, sv.MJD, 5.0*RAD, sv.gravref, LmkRange);
+	dt1 = OrbMech::findelev_gs(SystemParameters.MAT_J2000_BRCS, sv.R, sv.V, R_P, sv.MJD, 175.0*RAD, sv.gravref, LmkRange);
+	dt2 = OrbMech::findelev_gs(SystemParameters.MAT_J2000_BRCS, sv.R, sv.V, R_P, sv.MJD, 5.0*RAD, sv.gravref, LmkRange);
 
 	GET_AOS = OrbMech::GETfromMJD(sv.MJD, CalcGETBase()) + dt1;
 	GET_LOS = OrbMech::GETfromMJD(sv.MJD, CalcGETBase()) + dt2;
@@ -8237,7 +8269,7 @@ void RTCC::FindRadarMidPass(SV sv, double lat, double lng, double &GET_Mid)
 
 	R_P = unit(_V(cos(lng)*cos(lat), sin(lng)*cos(lat), sin(lat)))*oapiGetSize(sv.gravref);
 
-	dt = OrbMech::findelev_gs(sv.R, sv.V, R_P, sv.MJD, 90.0*RAD, sv.gravref, LmkRange);
+	dt = OrbMech::findelev_gs(SystemParameters.MAT_J2000_BRCS, sv.R, sv.V, R_P, sv.MJD, 90.0*RAD, sv.gravref, LmkRange);
 
 	GET_Mid = OrbMech::GETfromMJD(sv.MJD, CalcGETBase()) + dt;
 }
@@ -8254,7 +8286,7 @@ double RTCC::FindOrbitalSunrise(SV sv, double t_sunrise_guess)
 
 	sv1 = coast(sv, dt);
 
-	ttoSunrise = OrbMech::sunrise(sv1.R, sv1.V, sv1.MJD, sv1.gravref, hSun, true, false, false);
+	ttoSunrise = OrbMech::sunrise(SystemParameters.MAT_J2000_BRCS, sv1.R, sv1.V, sv1.MJD, sv1.gravref, hSun, true, false, false);
 	return t_sunrise_guess + ttoSunrise;
 }
 
@@ -8264,7 +8296,7 @@ VECTOR3 RTCC::PointAOTWithCSM(MATRIX3 REFSMMAT, EphemerisData sv, int AOTdetent,
 	VECTOR3 s_REF, U_D, U_OAN, U_A, U_DL, U_AL, U_R, GA;
 	double EL, AZ, A;
 
-	s_REF = navstars[star - 1];
+	s_REF = EZJGSTAR[star - 1];
 	U_D = mul(REFSMMAT, s_REF);
 
 	EL = 45.0*RAD;
@@ -8506,12 +8538,65 @@ RTCC_LLWP_HMALIT_8_1:
 	pmmlaeg.CALL(Header, sv[m], sv_temp[m]);
 }
 
+void RTCC::PMMENS(VECTOR3 R, VECTOR3 V, double dt_pf, double y_s, double theta_PF, double h_bo, double V_H, double V_R, double GMT_LO, VECTOR3 R_LS, VECTOR3 &R_BO, VECTOR3 &V_BO, double &GMT_BO)
+{
+	VECTOR3 H, K, J, U_RLS;
+	double gamma_BO, psi, delta, Gamma, xi, phi, dv_pc, v_BO;
+
+	v_BO = sqrt(V_H*V_H + V_R * V_R);
+	gamma_BO = asin(V_R / V_H);
+
+	ELVCNV(R_LS, GMT_LO, 1, RTCC_COORDINATES_MCT, RTCC_COORDINATES_MCI, R_LS);
+
+	U_RLS = unit(R_LS);
+	H = unit(crossp(R, V));
+	K = unit(crossp(H, U_RLS));
+	J = unit(crossp(K, H));
+
+	psi = asin(dotp(H, U_RLS));
+	delta = asin(sin(psi) / cos(theta_PF));
+	Gamma = asin(sin(theta_PF) / cos(psi));
+	xi = abs(delta) - y_s;
+
+	if (y_s <= 0)
+	{
+		dv_pc = 2.0*v_BO*sin(delta / 2.0);
+	}
+	else if (xi <= 0)
+	{
+		dv_pc = 0.0;
+		Gamma = acos(cos(theta_PF) / cos(psi));
+	}
+	else
+	{
+		double acos_term = acos(cos(theta_PF) / cos(y_s));
+		delta = abs(asin(sin(psi) / cos(acos_term))) - y_s;
+		Gamma = acos(abs(sqrt(1.0 - pow(sin(acos_term) / cos(psi), 2))));
+		dv_pc = 2.0*v_BO*sin(delta / 2.0);
+	}
+
+	phi = psi / abs(psi)*delta;
+
+	MATRIX3 JKH1, JKH2;
+
+	JKH1 = mul(_M(J.x, K.x, H.x, J.y, K.y, H.y, J.z, K.z, H.z), _M(cos(Gamma), -sin(Gamma), 0, sin(Gamma), cos(Gamma), 0, 0, 0, 1));
+	if (xi > 0)
+	{
+		JKH1 = mul(JKH1, OrbMech::_MRy(phi));
+	}
+
+	JKH2 = mul(JKH1, OrbMech::_MRz(gamma_BO));
+	R_BO = _V(JKH1.m11, JKH1.m21, JKH1.m31)*(length(R_LS) + h_bo);
+	V_BO = _V(JKH2.m12, JKH2.m22, JKH2.m32)*v_BO;
+	GMT_BO = GMT_LO + dt_pf;
+}
+
 //Lunar Launch Targeting from 68-FM-67
 void RTCC::PMMLTR(AEGBlock sv_CSM, double T_LO, double V_H, double V_R, double h_BO, double t_PF, double P_FA, double Y_S, double r_LS, double lat_LS, double lng_LS, double &deltaw0, double &DR, double &deltaw, double &Yd, double &AZP)
 {
 	AEGDataBlock sv_temp, sv_L;
 	VECTOR3 R_LS_sg, R_LSV, R_C, V_C, H_C, r_C, v_C, h_C, r_LSV, Q, c, R_LSP, r_LSP, R_BO, V_BO;
-	double YSS, MJD_BO, DH, CXX, CYY, TRS, TS, phi_star, theta, DN, h_CA, h_CA_dot;
+	double YSS, GMT_BO, DH, CXX, CYY, TRS, TS, phi_star, theta, DN, h_CA, h_CA_dot;
 	int N, M;
 
 	N = 1;
@@ -8528,7 +8613,7 @@ void RTCC::PMMLTR(AEGBlock sv_CSM, double T_LO, double V_H, double V_R, double h
 	}
 	R_LS_sg = OrbMech::r_from_latlong(lat_LS, lng_LS, r_LS);
 RTCC_PMMLTR_1:
-	R_LSV = rhmul(OrbMech::GetRotationMatrix(BODY_MOON,SystemParameters.GMTBASE + T_LO / 24.0 / 3600.0), R_LS_sg);
+	ELVCNV(R_LS_sg, T_LO, 1, RTCC_COORDINATES_MCT, RTCC_COORDINATES_MCI, R_LSV);
 	OrbMech::GIMKIC(sv_temp.coe_osc, OrbMech::mu_Moon, R_C, V_C);
 	r_C = unit(R_C);
 	v_C = unit(V_C);
@@ -8555,10 +8640,9 @@ RTCC_PMMLTR_3:
 	//Work on this
 	h_CA = sv_temp.coe_mean.h;
 	h_CA_dot = 0.0;
-	OrbMech::ENSERT(R_C, V_C, t_PF, Y_S, P_FA, h_BO, V_H, V_R,SystemParameters.GMTBASE + T_LO / 24 / 3600.0, R_LS_sg, R_BO, V_BO, MJD_BO);
+	PMMENS(R_C, V_C, t_PF, Y_S, P_FA, h_BO, V_H, V_R, T_LO, R_LS_sg, R_BO, V_BO, GMT_BO);
 	sv_L.coe_osc = OrbMech::GIMIKC(R_BO, V_BO, OrbMech::mu_Moon);
-	sv_L.Item7 =SystemParameters.GMTBASE;
-	sv_L.TS = sv_L.TE = OrbMech::GETfromMJD(MJD_BO,SystemParameters.GMTBASE);
+	sv_L.TS = sv_L.TE = GMT_BO;
 	pmmlaeg.CALL(sv_CSM.Header, sv_L, sv_temp);
 	if (N <= 0)
 	{
@@ -8603,7 +8687,7 @@ void RTCC::LunarLaunchWindowProcessor(const LunarLiftoffTimeOpt &opt)
 	AEGHeader Header;
 	AEGDataBlock sv[2], sv_temp[2], sv_xx, elem_TPI;
 	VECTOR3 R_LS, R_LS_sg, r_LS, R1, V1, r1, Q, h1, H1, v1, C, R_P, r_P, H_D, h_D, R_BO, V_BO, R_TPI, V_TPI, R_XX, V_XX, R_TI_C, V_TI_C, R_TI_T, V_TI_T;
-	double mu, T_TPI, T_hole, t_ca, theta_CA, theta, dt, S1, S2, t_xx, MJD_BO, T_INS, dt_B, t_CSI, t_D, U_R, t_R, r_apo, r_peri, H_S_apo, DH_MIN, DH_CRIT;
+	double mu, T_TPI, T_hole, t_ca, theta_CA, theta, dt, S1, S2, t_xx, T_INS, dt_B, t_CSI, t_D, U_R, t_R, r_apo, r_peri, H_S_apo, DH_MIN, DH_CRIT;
 	double C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12, C13, C14, C15, P_mm, DH_u, theta_w, t_LOR, t_H, dv_CSI, dv_CDH, dv_TPI, dv_TPF, t_CDH, theta_TPI, dt_NSR, P_O, P_Q;
 	double dt_max, B1, B2, B3, B4, DP, P_mm_apo, r_TPM, theta_s, f_TPI, C_R[3], C_V[3], DH_MAX, ddH_c, DH[10], DH_apo[10];
 	int K, m, p, I_SRCH, L_DH, I, J, K_T, i, I_STOP2, M_stop, IPHAS;
@@ -8669,7 +8753,7 @@ void RTCC::LunarLaunchWindowProcessor(const LunarLiftoffTimeOpt &opt)
 	t_ca = t_xx;
 	R_LS_sg = OrbMech::r_from_latlong(opt.lat, opt.lng, opt.R_LLS);
 RTCC_PMMLWP_2:
-	ELVCNV(R_LS_sg, t_ca, 1, 3, 2, R_LS);
+	ELVCNV(R_LS_sg, t_ca, 1, RTCC_COORDINATES_MCT, RTCC_COORDINATES_MCI, R_LS);
 	r_LS = unit(R_LS);
 	OrbMech::GIMKIC(sv_temp[0].coe_osc, mu, R1, V1);
 	r1 = unit(R1);
@@ -8696,11 +8780,9 @@ RTCC_PMMLWP_2:
 	}
 	//sv[0].TE = t_xx;
 	//pmmlaeg.CALL(Header, sv[0], sv_temp);
-	OrbMech::ENSERT(R_XX, V_XX, opt.dt_1, opt.Y_S, opt.theta_1, opt.h_BO, opt.v_LH, opt.v_LV, OrbMech::MJDfromGET(t_xx,SystemParameters.GMTBASE), R_LS_sg, R_BO, V_BO, MJD_BO);
-	T_INS = OrbMech::GETfromMJD(MJD_BO,SystemParameters.GMTBASE);
+	PMMENS(R_XX, V_XX, opt.dt_1, opt.Y_S, opt.theta_1, opt.h_BO, opt.v_LH, opt.v_LV, t_xx, R_LS_sg, R_BO, V_BO, T_INS);
 	
 	sv[1].coe_osc = OrbMech::GIMIKC(R_BO, V_BO, mu);
-	sv[1].Item7 =SystemParameters.GMTBASE;
 	sv[1].TE = sv[1].TS = T_INS;
 	//Initialize
 	pmmlaeg.CALL(Header, sv[1], sv_temp[1]);
@@ -8890,8 +8972,7 @@ RTCC_PMMLLWP_8_8:
 	sv[0].TIMA = 0;
 	pmmlaeg.CALL(Header, sv[0], sv_temp[0]);
 	OrbMech::GIMKIC(sv_temp[0].coe_osc, mu, R1, V1);
-	OrbMech::ENSERT(R1, V1, opt.dt_1, opt.Y_S, opt.theta_1, opt.h_BO, opt.v_LH, opt.v_LV,SystemParameters.GMTBASE + t_LOR / 24.0 / 3600.0, R_LS_sg, R_BO, V_BO, MJD_BO);
-	T_INS = OrbMech::GETfromMJD(MJD_BO,SystemParameters.GMTBASE);
+	PMMENS(R1, V1, opt.dt_1, opt.Y_S, opt.theta_1, opt.h_BO, opt.v_LH, opt.v_LV, t_LOR, R_LS_sg, R_BO, V_BO, T_INS);
 
 	sv[1].coe_osc = OrbMech::GIMIKC(R_BO, V_BO, mu);
 	sv[1].TE = sv[1].TS = T_INS;
@@ -9210,7 +9291,7 @@ void RTCC::EntryUpdateCalc(SV sv0, double entryrange, bool highspeed, EntryResul
 {
 	OBJHANDLE hEarth;
 	VECTOR3 REI, VEI, UREI, R3, V3, R05G, V05G;
-	double EntryInterface, RCON, dt2, MJD_EI, lambda, phi, MJD_l, vEI, t32, dt22, EMSAlt, t2;
+	double EntryInterface, RCON, dt2, MJD_EI, lambda, phi, GMT_l, vEI, t32, dt22, EMSAlt, t2;
 
 	hEarth = oapiGetObjectByName("Earth");
 
@@ -9238,7 +9319,7 @@ void RTCC::EntryUpdateCalc(SV sv0, double entryrange, bool highspeed, EntryResul
 	dt22 = OrbMech::time_radius(R3, V3, length(R3) - (300000.0 * 0.3048 - EMSAlt), -1, OrbMech::mu_Earth);
 	OrbMech::rv_from_r0v0(R3, V3, dt22, R05G, V05G, OrbMech::mu_Earth);
 
-	res->RTGO = EntryCalculations::LNDING(REI, VEI, MJD_EI, 0.3, 2, entryrange, lambda, phi, MJD_l);
+	res->RTGO = EntryCalculations::LNDING(REI, VEI, OrbMech::GETfromMJD(MJD_EI, GetGMTBase()), SystemParameters.MCLAMD, 0.3, 2, entryrange, lambda, phi, GMT_l);
 
 	res->latitude = phi;
 	res->longitude = lambda;
@@ -9264,7 +9345,7 @@ double RTCC::CalculateTPITimes(SV sv0, int tpimode, double t_TPI_guess, double d
 	{
 		sv_TPI_guess = coast(sv0, t_TPI_guess - OrbMech::GETfromMJD(sv0.MJD, CalcGETBase()));
 		double ttoMidnight;
-		ttoMidnight = OrbMech::sunrise(sv_TPI_guess.R, sv_TPI_guess.V, sv_TPI_guess.MJD, sv_TPI_guess.gravref, hSun, 1, 1, false);
+		ttoMidnight = OrbMech::sunrise(SystemParameters.MAT_J2000_BRCS, sv_TPI_guess.R, sv_TPI_guess.V, sv_TPI_guess.MJD, sv_TPI_guess.gravref, hSun, 1, 1, false);
 		t_TPI = t_TPI_guess + ttoMidnight;
 	}
 	else
@@ -9274,7 +9355,7 @@ double RTCC::CalculateTPITimes(SV sv0, int tpimode, double t_TPI_guess, double d
 
 		sv_TPI_guess = coast(sv0, t_TPI_guess - OrbMech::GETfromMJD(sv0.MJD, CalcGETBase()));
 		sv_sunrise_guess = coast(sv_TPI_guess, dt_TPI_sunrise);
-		ttoSunrise = OrbMech::sunrise(sv_sunrise_guess.R, sv_sunrise_guess.V, sv_sunrise_guess.MJD, sv_sunrise_guess.gravref, hSun, 1, 0, false);
+		ttoSunrise = OrbMech::sunrise(SystemParameters.MAT_J2000_BRCS, sv_sunrise_guess.R, sv_sunrise_guess.V, sv_sunrise_guess.MJD, sv_sunrise_guess.gravref, hSun, 1, 0, false);
 		t_TPI = t_TPI_guess + ttoSunrise;
 	}
 
@@ -10302,14 +10383,6 @@ PMMDKI_2_1:
 			OrbMech::GIMKIC(DKI.sv_before[i].coe_osc, mu, PZDKIELM.Block[block].SV_before[i].R, PZDKIELM.Block[block].SV_before[i].V);
 			OrbMech::GIMKIC(DKI.sv_after[i].coe_osc, mu, PZDKIELM.Block[block].SV_before[i].R, PZDKIELM.Block[block].V_after[i]);
 
-			if (aegh.AEGInd == BODY_EARTH)
-			{
-				//For now, back to ecliptic
-				PZDKIELM.Block[block].SV_before[i].R = tmul(SystemParameters.MAT_J2000_BRCS, PZDKIELM.Block[block].SV_before[i].R);
-				PZDKIELM.Block[block].SV_before[i].V = tmul(SystemParameters.MAT_J2000_BRCS, PZDKIELM.Block[block].SV_before[i].V);
-				PZDKIELM.Block[block].V_after[i] = tmul(SystemParameters.MAT_J2000_BRCS, PZDKIELM.Block[block].V_after[i]);
-			}
-
 			PZDKIELM.Block[block].SV_before[i].GMT = DKI.sv_before[i].TS;
 			PZDKIELM.Block[block].SV_before[i].RBI = opt.sv_CSM.RBI;
 			PZDKIT.Block[block].Display[0].ManGMT = PZDKIELM.Block[block].SV_before[i].GMT;
@@ -10638,21 +10711,14 @@ void RTCC::PCPICK(SV sv_C, SV sv_T, double &DH, double &Phase, double &HA, doubl
 	sv_CC[0] = sv_C;
 	sv_CC[1] = coast(sv_CC[0], DT);
 	sv_CC[2] = coast(sv_CC[1], DT);
-	VECTOR3 R_equ, V_equ;
+
 	CELEMENTS elem;
 	double R[3], U[3];
+
 	for (int i = 0;i < 3;i++)
 	{
 		R[i] = length(sv_CC[i].R);
-		if (sv_C.gravref == hEarth)
-		{
-			OrbMech::EclipticToECI(sv_CC[i].R, sv_CC[i].V, sv_CC[i].MJD, R_equ, V_equ);
-		}
-		else
-		{
-			OrbMech::EclipticToMCI(sv_CC[i].R, sv_CC[i].V, sv_CC[i].MJD, R_equ, V_equ);
-		}
-		elem = OrbMech::GIMIKC(R_equ, V_equ, mu);
+		elem = OrbMech::GIMIKC(sv_CC[i].R, sv_CC[i].V, mu);
 		U[i] = OrbMech::MeanToTrueAnomaly(elem.l, elem.e) + elem.g;
 		U[i] = fmod(U[i], PI2);
 		if (U[i] < 0)
@@ -10982,7 +11048,7 @@ int RTCC::ConcentricRendezvousProcessor(const SPQOpt &opt, SPQResults &res)
 	SV sv_C_CSI, sv_T_CSI, sv_C_CDH, sv_C_TPI, sv_T_CDH, sv_C_CSI_apo, sv_T_TPI, sv_C_CDH_apo, sv_PC;
 	CELEMENTS elem;
 	MATRIX3 Q_Xx;
-	VECTOR3 R_equ, V_equ, R_TJ, V_TJ, R_AF, R_AFD;
+	VECTOR3 R_TJ, V_TJ, R_AF, R_AFD;
 	double GETbase, dv_CSI, mu, t_CDH, t_TPI, DH, p_C, c_C, e_C, e_Co, dv_CSIo, V_Cb, V_CRb, gamma_C, V_CHb, a_T, a_C, r_T_dot, r_C_dot, T_TPF;
 	double V_C_apo, gamma_C_apo, V_CHa, DV_H, DV_R, Pitch, Yaw;
 	int s_C, PCMVMR_IND;
@@ -11136,15 +11202,7 @@ RTCC_PMMSPQ_A:
 				double u_CSI, u_CDH, DN = 0;
 
 				//Calculate argument of latitude at CSI
-				if (opt.sv_A.gravref == hEarth)
-				{
-					OrbMech::EclipticToECI(sv_C_CSI_apo.R, sv_C_CSI_apo.V, sv_C_CSI_apo.MJD, R_equ, V_equ);
-				}
-				else
-				{
-					OrbMech::EclipticToMCI(sv_C_CSI_apo.R, sv_C_CSI_apo.V, sv_C_CSI_apo.MJD, R_equ, V_equ);
-				}
-				elem = OrbMech::GIMIKC(R_equ, V_equ, mu);
+				elem = OrbMech::GIMIKC(sv_C_CSI_apo.R, sv_C_CSI_apo.V, mu);
 				u_CSI = OrbMech::MeanToTrueAnomaly(elem.l, elem.e) + elem.g;
 				u_CSI = fmod(u_CSI, PI2);
 				if (u_CSI < 0)
@@ -11316,8 +11374,8 @@ VECTOR3 RTCC::HatchOpenThermalControl(double GMT, MATRIX3 REFSMMAT)
 
 	//Get sun vector
 	PLEFEM(1, GMT / 3600.0, 0, &R_EM, &V_EM, &R_ES, NULL);
-	//Convert vector pointing south to ECI coordinates
-	ELVCNV(_V(0, 0, -1), GMT, 1, 1, 0, U_south);
+	//Vector pointing south in ECI coordinates
+	U_south = _V(0, 0, -1);
 	//Vector pointing from Earth to Sun
 	R_SC = -R_ES;
 
@@ -11389,18 +11447,12 @@ AEGBlock RTCC::SVToAEG(EphemerisData sv, double Area, double Weight, double KFac
 	AEGBlock aeg;
 
 	EphemerisData sv1 = sv;
+
 	if (sv.RBI == BODY_EARTH)
 	{
-		//ECI
-		sv1.R = mul(SystemParameters.MAT_J2000_BRCS, sv.R);
-		sv1.V = mul(SystemParameters.MAT_J2000_BRCS, sv.V);
 		aeg.Data.ICSUBD = KFactor;
 		aeg.Data.VehArea = Area;
 		aeg.Data.Item7 = Weight;
-	}
-	else
-	{
-		aeg.Data.Item7 = GetGMTBase();
 	}
 
 	aeg.Header.AEGInd = sv1.RBI;
@@ -11635,11 +11687,11 @@ RTCC_PMMAPD_1_2:
 		{
 			MATRIX3 L;
 			VECTOR3 P, W, P_apo, W_apo;
-			OrbMech::PIVECT(Z_A.coe_osc.i, Z_A.coe_osc.g, Z_A.coe_osc.h, P, W);
-			PLEFEM(1, Z_A.TS / 3600.0, 0, L);
-			P_apo = tmul(L, P);
-			W_apo = tmul(L, W);
-			OrbMech::PIVECT(P_apo, W_apo, i_temp, g_temp, h_temp);
+			PIVECT(Z_A.coe_osc.i, Z_A.coe_osc.g, Z_A.coe_osc.h, P, W);
+			PLEFEM(5, Z_A.TS / 3600.0, 0, NULL, NULL, NULL, &L);
+			P_apo = mul(L, P);
+			W_apo = mul(L, W);
+			PIVECT(P_apo, W_apo, i_temp, g_temp, h_temp);
 			u_temp = g_temp + Z_A.f;
 			if (u_temp > PI2)
 			{
@@ -11682,11 +11734,11 @@ RTCC_PMMAPD_1_2:
 		{
 			MATRIX3 L;
 			VECTOR3 P, W, P_apo, W_apo;
-			OrbMech::PIVECT(Z_P.coe_osc.i, Z_P.coe_osc.g, Z_P.coe_osc.h, P, W);
-			PLEFEM(1, Z_P.TS / 3600.0, 0, L);
-			P_apo = tmul(L, P);
-			W_apo = tmul(L, W);
-			OrbMech::PIVECT(P_apo, W_apo, i_temp, g_temp, h_temp);
+			PIVECT(Z_P.coe_osc.i, Z_P.coe_osc.g, Z_P.coe_osc.h, P, W);
+			PLEFEM(5, Z_P.TS / 3600.0, 0, NULL, NULL, NULL, &L);
+			P_apo = mul(L, P);
+			W_apo = mul(L, W);
+			PIVECT(P_apo, W_apo, i_temp, g_temp, h_temp);
 			u_temp = g_temp + Z_P.f;
 			if (u_temp > PI2)
 			{
@@ -11715,158 +11767,6 @@ RTCC_PMMAPD_1_2:
 	}
 
 	return 0;
-}
-
-bool RTCC::PMMAPD(SV sv0, SV &sv_a, SV &sv_p)
-{
-	OELEMENTS coe;
-	double mu, DN;
-	bool lowecclogic, error2;
-	
-	mu = GGRAV * oapiGetMass(sv0.gravref);
-	coe = OrbMech::coe_from_sv(sv0.R, sv0.V, mu);
-
-	if (coe.e > 0.005)
-	{
-		lowecclogic = false;
-	}
-	else
-	{
-		lowecclogic = true;
-	}
-
-	if (lowecclogic == false)
-	{
-		DN = 1.0;
-		sv_p = OrbMech::PMMAEGS(sv0, 1, 0.0, error2, DN);
-		if (error2)
-		{
-			return true;
-		}
-		if (coe.TA > PI)
-		{
-			DN = 1.0;
-		}
-		else
-		{
-			DN = 0.0;
-		}
-		sv_a = OrbMech::PMMAEGS(sv0, 1, PI, error2, DN);
-		if (error2)
-		{
-			return true;
-		}
-	}
-	else
-	{
-		MATRIX3 obl;
-		SV sv1, sv2;
-		VECTOR3 R1_equ, V1_equ;
-		double u_x, u_y, u0;
-
-		//First guess
-		ApsidesArgumentofLatitudeDetermination(sv0, u_x, u_y);
-
-		obl = OrbMech::GetObliquityMatrix(sv0.gravref == hEarth ? BODY_EARTH : BODY_MOON, sv0.MJD);
-		R1_equ = rhtmul(obl, sv0.R);
-		V1_equ = rhtmul(obl, sv0.V);
-		coe = OrbMech::coe_from_sv(R1_equ, V1_equ, mu);
-		u0 = fmod(coe.TA + coe.w, PI2);
-
-		if (u0 > u_x)
-		{
-			DN = 1.0;
-		}
-		else
-		{
-			DN = 0.0;
-		}
-		sv1 = OrbMech::PMMAEGS(sv0, 2, u_x, error2, DN);
-		if (error2)
-		{
-			return true;
-		}
-		if (u0 > u_y)
-		{
-			DN = 1.0;
-		}
-		else
-		{
-			DN = 0.0;
-		}
-		sv2 = OrbMech::PMMAEGS(sv0, 2, u_y, error2, DN);
-		if (error2)
-		{
-			return true;
-		}
-
-		if (length(sv1.R) > length(sv2.R))
-		{
-			sv_a = sv1;
-			sv_p = sv2;
-		}
-		else
-		{
-			sv_p = sv1;
-			sv_a = sv2;
-		}
-	}
-	return false;
-}
-
-void RTCC::ApsidesArgumentofLatitudeDetermination(SV sv0, double &u_x, double &u_y)
-{
-	OELEMENTS coe;
-	SV sv[3];
-	MATRIX3 obl;
-	VECTOR3 R1_equ, V1_equ;
-	double u[3], r[3], gamma, u_0, mu;
-	int body;
-
-	if (sv0.gravref == oapiGetObjectByName("Earth"))
-	{
-		mu = OrbMech::mu_Earth;
-		body = BODY_EARTH;
-	}
-	else
-	{
-		mu = OrbMech::mu_Moon;
-		body = BODY_MOON;
-	}
-
-	sv[0] = sv0;
-	sv[1] = coast(sv[0], 15.0*60.0);
-	sv[2] = coast(sv[1], 15.0*60.0);
-
-	for (int i = 0;i < 3;i++)
-	{
-		obl = OrbMech::GetObliquityMatrix(body, sv[i].MJD);
-		R1_equ = rhtmul(obl, sv[i].R);
-		V1_equ = rhtmul(obl, sv[i].V);
-		coe = OrbMech::coe_from_sv(R1_equ, V1_equ, mu);
-		u[i] = fmod(coe.TA + coe.w, PI2);
-		r[i] = length(R1_equ);
-	}
-
-	gamma = (r[0] - r[1]) / (r[0] - r[2]);
-	u_0 = atan2(sin(u[0]) - sin(u[1]) - gamma * (sin(u[0]) - sin(u[2])), gamma*(cos(u[2]) - cos(u[0])) - cos(u[1]) + cos(u[0]));
-	if (u_0 < 0)
-	{
-		u_0 += PI2;
-	}
-
-	u_x = u_0 + PI05;
-	u_y = u_0 - PI05;
-
-	if (u_x < 0)
-	{
-		u_x += PI2;
-	}
-	if (u_y < 0)
-	{
-		u_y += PI2;
-	}
-
 }
 
 bool RTCC::GETEval2(double get)
@@ -12065,7 +11965,7 @@ void RTCC::AGOPCislunarNavigation(SV sv, MATRIX3 REFSMMAT, int star, double yaw,
 	double r_Z, x_H, y_H, A, alpha, beta, A0, A1, a;
 	bool H, k;
 
-	U_S = navstars[star - 1];
+	U_S = EZJGSTAR[star - 1];
 	R_ZC = sv.R;
 	//Near Horizon
 	H = false;
@@ -12125,18 +12025,18 @@ void RTCC::AGOPCislunarNavigation(SV sv, MATRIX3 REFSMMAT, int star, double yaw,
 	OrbMech::CALCSXA(CBNB, U_S, TA, SA);
 }
 
-VECTOR3 RTCC::LOICrewChartUpdateProcessor(SV sv0, MATRIX3 REFSMMAT, double p_EMP, double LOI_TIG, VECTOR3 dV_LVLH_LOI, double p_T, double y_T)
+VECTOR3 RTCC::LOICrewChartUpdateProcessor(EphemerisData sv0, MATRIX3 REFSMMAT, double p_EMP, double LOI_TIG, VECTOR3 dV_LVLH_LOI, double p_T, double y_T)
 {
-	SV sv_tig;
+	EphemerisData sv_tig;
 	MATRIX3 M_EMP, M_R, M, M_RTM;
 	VECTOR3 X_B, UX, UY, UZ, IMUangles;
 	double dt, headsswitch;
 
 	headsswitch = -1.0;
 
-	dt = LOI_TIG - OrbMech::GETfromMJD(sv0.MJD, CalcGETBase());
+	dt = GMTfromGET(LOI_TIG) - sv0.GMT;
 	sv_tig = coast(sv0, dt);
-	M_EMP = OrbMech::EMPMatrix(sv_tig.MJD);
+	ELVCNV(sv_tig.GMT, RTCC_COORDINATES_MCI, RTCC_COORDINATES_EMP, M_EMP);
 	X_B = tmul(M_EMP, _V(-sin(p_EMP), cos(p_EMP), 0));
 
 	UX = X_B;
@@ -12181,10 +12081,10 @@ bool RTCC::PoweredDescentProcessor(VECTOR3 R_LS, double TLAND, SV sv, RTCCNIAuxO
 	sv_D = coast(sv_IG, -t_UL);
 	sv_PDI = sv_IG;
 
-	Rot = OrbMech::GetRotationMatrix(BODY_MOON, sv_IG.MJD);
-	WI = rhmul(Rot, _V(0, 0, 1));
+	ELVCNV(OrbMech::GETfromMJD(sv_IG.MJD, GetGMTBase()), RTCC_COORDINATES_MCT, RTCC_COORDINATES_MCI, Rot);
+	WI = mul(Rot, _V(0, 0, 1));
 	W = mul(REFSMMAT, WI)*OrbMech::w_Moon;
-	R_LSP = mul(REFSMMAT, rhmul(Rot, R_LS));
+	R_LSP = mul(REFSMMAT, mul(Rot, R_LS));
 	descguid.Init(sv_IG.R, sv_IG.V, sv_IG.mass, t_PDI, REFSMMAT, R_LSP, t_PDI, W, t_go, &RTCCDescentTargets);
 	W_TD = sv_IG.mass;
 	U_FDP_abort = tmul(REFSMMAT, unit(U_FDP));
@@ -12203,11 +12103,11 @@ bool RTCC::PoweredDescentProcessor(VECTOR3 R_LS, double TLAND, SV sv, RTCCNIAuxO
 
 	sv_land.gravref = sv.gravref;
 	sv_land.MJD = OrbMech::MJDfromGET(t_D, GETbase);
-	Rot = OrbMech::GetRotationMatrix(BODY_MOON, sv_land.MJD);
-	
+
+	ELVCNV(OrbMech::GETfromMJD(sv_land.MJD, GetGMTBase()), RTCC_COORDINATES_MCT, RTCC_COORDINATES_MCI, Rot);
 	sv_land.mass = W_TD;
-	sv_land.R = rhmul(Rot, R_LS);
-	U_M = rhmul(Rot, _V(0, 0, 1));
+	sv_land.R = mul(Rot, R_LS);
+	U_M = mul(Rot, _V(0, 0, 1));
 	sv_land.V = crossp(U_M, sv_land.R)*OrbMech::w_Moon;
 
 	return true;
@@ -12230,10 +12130,12 @@ void RTCC::LunarAscentProcessor(VECTOR3 R_LS, double m0, SV sv_CSM, double t_lif
 	sv_CSM_TIG = coast(sv_CSM, dt);
 
 	asc.Init(sv_CSM_TIG.R, sv_CSM_TIG.V, m0, length(R_LS), v_LH, v_LV);
-	Rot = OrbMech::GetRotationMatrix(BODY_MOON, sv_CSM_TIG.MJD);
-	R0 = rhmul(Rot, R_LS);
+
+	ELVCNV(OrbMech::GETfromMJD(sv_CSM_TIG.MJD, GetGMTBase()), RTCC_COORDINATES_MCT, RTCC_COORDINATES_MCI, Rot);
+
+	R0 = mul(Rot, R_LS);
 	w_M = OrbMech::w_Moon;
-	U_M = rhmul(Rot, _V(0, 0, 1));
+	U_M = mul(Rot, _V(0, 0, 1));
 	V0 = crossp(U_M, R0)*w_M;
 
 	sv_IG.gravref = sv_CSM.gravref;
@@ -12313,8 +12215,9 @@ bool RTCC::PDIIgnitionAlgorithm(SV sv, VECTOR3 R_LS, double TLAND, SV &sv_IG, do
 	w_M = 2.66169948e-6;
 
 	t_2 = OrbMech::GETfromMJD(sv.MJD, GETbase);
-	Rot = OrbMech::GetRotationMatrix(BODY_MOON, GETbase + TLAND / 24.0 / 3600.0);
-	R_LSI = rhmul(Rot, R_LS);
+
+	ELVCNV(GMTfromGET(TLAND), RTCC_COORDINATES_MCT, RTCC_COORDINATES_MCI, Rot);
+	R_LSI = mul(Rot, R_LS);
 
 	U_XSM = unit(R_LSI);
 	U_ZSM = unit(crossp(crossp(sv.R, sv.V), U_XSM));
@@ -12323,7 +12226,7 @@ bool RTCC::PDIIgnitionAlgorithm(SV sv, VECTOR3 R_LS, double TLAND, SV &sv_IG, do
 
 	R_LSP = mul(REFSMMAT, R_LSI);
 	t_I = TLAND - GUIDDURN;
-	W_I = rhmul(Rot, _V(0.0, 0.0, 1.0));
+	W_I = mul(Rot, _V(0.0, 0.0, 1.0));
 	W_P = mul(REFSMMAT, W_I)*w_M;
 	sv_I = coast(sv, t_I - t_2);
 
@@ -12472,10 +12375,10 @@ bool RTCC::PoweredDescentAbortProgram(PDAPOpt opt, PDAPResults &res)
 	sv_Abort = coast(sv_IG, -t_UL);
 	t_stage = t_PDI + opt.dt_stage;
 
-	Rot = OrbMech::GetRotationMatrix(BODY_MOON, sv_IG.MJD);
-	WI = rhmul(Rot, _V(0, 0, 1));
+	ELVCNV(OrbMech::GETfromMJD(sv_IG.MJD, GetGMTBase()), RTCC_COORDINATES_MCT, RTCC_COORDINATES_MCI, Rot);
+	WI = mul(Rot, _V(0, 0, 1));
 	W = mul(opt.REFSMMAT, WI)*w_M;
-	R_LSP = mul(opt.REFSMMAT, rhmul(Rot, opt.R_LS));
+	R_LSP = mul(opt.REFSMMAT, mul(Rot, opt.R_LS));
 	descguid.Init(sv_IG.R, sv_IG.V, opt.sv_A.mass, t_PDI, opt.REFSMMAT, R_LSP, t_PDI, W, t_go, &RTCCDescentTargets);
 	W_TD = opt.sv_A.mass;
 	U_FDP_abort = tmul(opt.REFSMMAT, unit(U_FDP));
@@ -12704,16 +12607,32 @@ bool RTCC::LunarLiftoffTimePredictionDT(const LLTPOpt &opt, LunarLaunchTargeting
 	TwoImpulseResuls lamres;
 	EphemerisData sv_TH, sv_LS, sv_INS, sv_TPI, sv_TPF;
 	VECTOR3 R_BO, V_BO, R_LS;
-	double T_LO, T_LO_0, MJD_L, MJD_BO, S, DV_Z0, DV_Z, MJD_LS, T_TPI, T_INS, V_H;
-	int i, k, I_max;
+	double lng_LO, T_LO, T_LO_0, S, DV_Z0, DV_Z, T_TPI, T_INS, V_H;
+	int i, k, I_max, AEGERR;
 
 	lamman.mode = 5;
 	sv_INS.RBI = sv_LS.RBI = BODY_MOON;
 
+	//Advance CSM to threshold time
 	sv_TH = coast(opt.sv_CSM, opt.T_TH - opt.sv_CSM.GMT);
-	MJD_LS = OrbMech::P29TimeOfLongitude(sv_TH.R, sv_TH.V,SystemParameters.GMTBASE + sv_TH.GMT / 24.0 / 3600.0, hMoon, opt.lng_LS);
+
+	//Compute first guess of CSM longitude at liftoff time
+	AEGBlock aeg;
+
+	aeg = SVToAEG(sv_TH, 0.0, 1.0, 1.0);
+	PMMAEGS(aeg.Header, aeg.Data, aeg.Data); //Initialize
+
+	lng_LO = opt.lng_LS; //TBD
+
+	//Find longitude
+	PMMTLC(aeg.Header, aeg.Data, aeg.Data, lng_LO, AEGERR, 0);
+	if (AEGERR)
+	{
+		return false;
+	}
+
 	//Bias by 1 minute from CSM over LS
-	T_LO = OrbMech::GETfromMJD(MJD_LS,SystemParameters.GMTBASE) - 60.0;
+	T_LO = aeg.Data.TE - 60.0;
 	sv_LS = coast(sv_TH, T_LO - sv_TH.GMT);
 
 	i = 0;
@@ -12726,9 +12645,7 @@ bool RTCC::LunarLiftoffTimePredictionDT(const LLTPOpt &opt, LunarLaunchTargeting
 
 	do
 	{
-		MJD_L =SystemParameters.GMTBASE + T_LO / 24.0 / 3600.0;
-		OrbMech::ENSERT(sv_LS.R, sv_LS.V, opt.dt_PF, opt.Y_S, opt.alpha_PF, opt.h_INS, V_H, opt.V_Z_NOM, MJD_L, R_LS, R_BO, V_BO, MJD_BO);
-		T_INS = T_LO + opt.dt_PF;
+		PMMENS(sv_LS.R, sv_LS.V, opt.dt_PF, opt.Y_S, opt.alpha_PF, opt.h_INS, V_H, opt.V_Z_NOM, T_LO, R_LS, R_BO, V_BO, T_INS);
 		sv_INS.R = R_BO;
 		sv_INS.V = V_BO;
 		sv_INS.GMT = T_INS;
@@ -12811,13 +12728,6 @@ bool RTCC::LunarLiftoffTimePredictionDT(const LLTPOpt &opt, LunarLaunchTargeting
 	res.HP_T = RP_T - BZLAND.rad[RTCC_LMPOS_BEST];
 
 	return true;
-}
-
-double RTCC::GetSemiMajorAxis(SV sv)
-{
-	double mu = GGRAV * oapiGetMass(sv.gravref);
-	double eps = length(sv.V)*length(sv.V) / 2.0 - mu / (length(sv.R));
-	return -mu / (2.0*eps);
 }
 
 void RTCC::papiWriteScenario_REFS(FILEHANDLE scn, char *item, int tab, int i, REFSMMATData in)
@@ -13317,19 +13227,29 @@ void RTCC::OnlinePrintTimeHHHMMSS(double TIME_SEC, std::string &time)
 	time.assign(Buffer);
 }
 
-void RTCC::EMGGPCHR(double lat, double lng, double alt, int body, Station *stat)
+void RTCC::EMGGPCHR(double lat, double lng, double alt, int body, double GHA, StationData *stat)
 {
-	stat->lat = lat;
 	stat->lng = lng;
-	stat->alt = alt;
+	stat->lat_geoc = stat->lat_geod = lat;
+	stat->lng_iner = lng + GHA;
+	OrbMech::normalizeAngle(stat->lng_iner);
+	stat->sin_lng = sin(lng);
+	stat->cos_lng = cos(lng);
+	stat->sin_lat_geoc = stat->sin_lat_geod = sin(lat);
+	stat->cos_lat_geoc = stat->cos_lat_geod = cos(lat);
 	if (body == BODY_EARTH)
 	{
-		stat->rad = alt + OrbMech::R_Earth;
+		stat->R_E = OrbMech::R_Earth;
 	}
 	else
 	{
-		stat->rad = alt + OrbMech::R_Moon;
+		stat->R_E = OrbMech::R_Moon;
 	}
+	stat->H = alt;
+	stat->R_S = stat->R_E + stat->H;
+	stat->R_sin_dlat = stat->R_cos_dlat = 0.0;
+	stat->R_E_cos_lat = stat->R_E*cos(stat->lat_geoc) + stat->H*cos(stat->lat_geod);
+	stat->R_E_sin_lat = stat->R_E*sin(stat->lat_geoc) + stat->H*sin(stat->lat_geod);
 }
 
 void RTCC::EMMDYNEL(EphemerisData sv, TimeConstraintsTable &tab)
@@ -13355,6 +13275,8 @@ void RTCC::EMMDYNEL(EphemerisData sv, TimeConstraintsTable &tab)
 	if (sv.RBI == BODY_EARTH)
 	{
 		R_E = OrbMech::R_Earth;
+		lng -= OrbMech::w_Earth*sv.GMT;
+		OrbMech::normalizeAngle(lng, false);
 	}
 	else
 	{
@@ -13376,7 +13298,7 @@ void RTCC::EMMDYNEL(EphemerisData sv, TimeConstraintsTable &tab)
 	tab.l = pow(length(H), 2) / mu;
 	tab.lat = lat;
 	tab.lng = lng;
-	tab.RA = acos2(N.z / length(N));
+	tab.RA = acos(N.x / length(N));
 	if (N.y < 0)
 	{
 		tab.RA = PI2 - tab.RA;
@@ -13989,39 +13911,20 @@ void RTCC::EMMDYNMC(int L, int queid, int ind, double param)
 			}
 			else
 			{
-				SV sv_A, sv_a, sv_p;
+				AEGBlock aeg;
+				AEGDataBlock sv_a;
+				double INFO[10];
 
-				sv_A.R = tcontab->sv_present.R;
-				sv_A.V = tcontab->sv_present.V;
-				sv_A.MJD = OrbMech::MJDfromGET(tcontab->sv_present.GMT,SystemParameters.GMTBASE);
-				sv_A.gravref = GetGravref(tcontab->sv_present.RBI);
-				PMMAPD(sv_A, sv_a, sv_p);
+				PIMCKC(tcontab->sv_present.R, tcontab->sv_present.V, tcontab->sv_present.RBI, aeg.Data.coe_osc.a, aeg.Data.coe_osc.e, aeg.Data.coe_osc.i, aeg.Data.coe_osc.g, aeg.Data.coe_osc.h, aeg.Data.coe_osc.l);
 
-				EphemerisData sv_apo, sv_true;
-				double lat, lng;
+				aeg.Header.AEGInd = tcontab->sv_present.RBI;
 
-				sv_apo.R = sv_a.R;
-				sv_apo.V = sv_a.V;
-				sv_apo.GMT = OrbMech::GETfromMJD(sv_a.MJD,SystemParameters.GMTBASE);
-				sv_apo.RBI = tcontab->sv_present.RBI;
+				PMMAPD(aeg.Header, aeg.Data, 1, 0, INFO, &sv_a, NULL);
 
-				int out;
-				if (sv_apo.RBI == BODY_EARTH)
-				{
-					out = 1;
-				}
-				else
-				{
-					out = 3;
-				}
-
-				ELVCNV(sv_apo, out, sv_true);
-
-				OrbMech::latlong_from_r(sv_true.R, lat, lng);
-				tab->HA = (length(sv_true.R) - R_B) / 1852.0;
-				tab->PA = lat * DEG;
-				tab->LA = lng * DEG;
-				tab->GETA = GETfromGMT(sv_true.GMT);
+				tab->HA = INFO[4] / 1852.0;
+				tab->PA = INFO[2] * DEG;
+				tab->LA = INFO[3] * DEG;
+				tab->GETA = GETfromGMT(INFO[0]);
 			}
 		}
 
@@ -14036,39 +13939,20 @@ void RTCC::EMMDYNMC(int L, int queid, int ind, double param)
 			}
 			else
 			{
-				SV sv_A, sv_a, sv_p;
+				AEGBlock aeg;
+				AEGDataBlock sv_p;
+				double INFO[10];
 
-				sv_A.R = tcontab->sv_present.R;
-				sv_A.V = tcontab->sv_present.V;
-				sv_A.MJD = OrbMech::MJDfromGET(tcontab->sv_present.GMT,SystemParameters.GMTBASE);
-				sv_A.gravref = GetGravref(tcontab->sv_present.RBI);
-				PMMAPD(sv_A, sv_a, sv_p);
+				PIMCKC(tcontab->sv_present.R, tcontab->sv_present.V, tcontab->sv_present.RBI, aeg.Data.coe_osc.a, aeg.Data.coe_osc.e, aeg.Data.coe_osc.i, aeg.Data.coe_osc.g, aeg.Data.coe_osc.h, aeg.Data.coe_osc.l);
 
-				EphemerisData sv_peri, sv_true;
-				double lat, lng;
+				aeg.Header.AEGInd = tcontab->sv_present.RBI;
 
-				sv_peri.R = sv_p.R;
-				sv_peri.V = sv_p.V;
-				sv_peri.GMT = OrbMech::GETfromMJD(sv_p.MJD,SystemParameters.GMTBASE);
-				sv_peri.RBI = tcontab->sv_present.RBI;
+				PMMAPD(aeg.Header, aeg.Data, -1, 0, INFO, NULL, &sv_p);
 
-				int out;
-				if (sv_peri.RBI == BODY_EARTH)
-				{
-					out = 1;
-				}
-				else
-				{
-					out = 3;
-				}
-
-				ELVCNV(sv_peri, out, sv_true);
-
-				OrbMech::latlong_from_r(sv_true.R, lat, lng);
-				tab->HP = (length(sv_true.R) - R_B) / 1852.0;
-				tab->PP = lat * DEG;
-				tab->LP = lng * DEG;
-				tab->GETP = GETfromGMT(sv_true.GMT);
+				tab->HP = INFO[9] / 1852.0;
+				tab->PP = INFO[7] * DEG;
+				tab->LP = INFO[8] * DEG;
+				tab->GETP = GETfromGMT(INFO[5]);
 			}
 		}
 	}
@@ -14147,52 +14031,24 @@ void RTCC::EMMDYNMC(int L, int queid, int ind, double param)
 		tab->REVR = CapeCrossingRev(L, sv_pred.GMT);
 		tab->GETBV = GETfromGMT(sv_pred.GMT);
 
-		SV sv_A, sv_a, sv_p;
+		AEGBlock aeg;
+		AEGDataBlock sv_a, sv_p;
+		double INFO[10];
 
-		sv_A.R = sv_pred.R;
-		sv_A.V = sv_pred.V;
-		sv_A.MJD = OrbMech::MJDfromGET(sv_pred.GMT,SystemParameters.GMTBASE);
-		sv_A.gravref = GetGravref(sv_pred.RBI);
-		PMMAPD(sv_A, sv_a, sv_p);
+		PIMCKC(sv_pred.R, sv_pred.V, sv_pred.RBI, aeg.Data.coe_osc.a, aeg.Data.coe_osc.e, aeg.Data.coe_osc.i, aeg.Data.coe_osc.g, aeg.Data.coe_osc.h, aeg.Data.coe_osc.l);
+		aeg.Header.AEGInd = sv_pred.RBI;
 
-		EphemerisData sv_apo, sv_peri, sv_true;
-		double lat, lng;
+		PMMAPD(aeg.Header, aeg.Data, 0, 0, INFO, &sv_a, &sv_p);
 
-		sv_apo.R = sv_a.R;
-		sv_apo.V = sv_a.V;
-		sv_apo.GMT = OrbMech::GETfromMJD(sv_a.MJD,SystemParameters.GMTBASE);
-		sv_apo.RBI = tcontab->sv_present.RBI;
+		tab->HAR = INFO[4] / 1852.0;
+		tab->PAR = INFO[2] * DEG;
+		tab->LAR = INFO[3] * DEG;
+		tab->GETAR = GETfromGMT(INFO[0]);
 
-		int out;
-		if (sv_pred.RBI == BODY_EARTH)
-		{
-			out = 1;
-		}
-		else
-		{
-			out = 3;
-		}
-
-		ELVCNV(sv_apo, out, sv_true);
-
-		OrbMech::latlong_from_r(sv_true.R, lat, lng);
-		tab->HAR = (length(sv_true.R) - R_B) / 1852.0;
-		tab->PAR = lat * DEG;
-		tab->LAR = lng * DEG;
-		tab->GETAR = GETfromGMT(sv_true.GMT);
-
-		sv_peri.R = sv_p.R;
-		sv_peri.V = sv_p.V;
-		sv_peri.GMT = OrbMech::GETfromMJD(sv_p.MJD,SystemParameters.GMTBASE);
-		sv_peri.RBI = tcontab->sv_present.RBI;
-
-		ELVCNV(sv_peri, out, sv_true);
-
-		OrbMech::latlong_from_r(sv_true.R, lat, lng);
-		tab->HPR = (length(sv_true.R) - R_B) / 1852.0;
-		tab->PPR = lat * DEG;
-		tab->LPR = lng * DEG;
-		tab->GETPR = GETfromGMT(sv_true.GMT);
+		tab->HPR = INFO[9] / 1852.0;
+		tab->PPR = INFO[7] * DEG;
+		tab->LPR = INFO[8] * DEG;
+		tab->GETPR = GETfromGMT(INFO[5]);
 	}
 	//U13: Longitude crossing time
 	else if (queid == 4)
@@ -14406,16 +14262,18 @@ int RTCC::EMDSPACENoMPT(SV sv0, int queid, double gmt, double incl, double ascno
 
 		if (newtab.e < 0.85)
 		{
-			SV sv0, sv_a, sv_p;
-			sv0.R = sv.R;
-			sv0.V = sv.V;
-			sv0.MJD = OrbMech::MJDfromGET(sv.GMT, SystemParameters.GMTBASE);
-			sv0.gravref = GetGravref(sv.RBI);
-			PMMAPD(sv0, sv_a, sv_p);
+			AEGBlock aeg;
+			AEGDataBlock sv_a, sv_p;
+			double INFO[10];
 
-			EZSPACE.GETA = OrbMech::GETfromMJD(sv_a.MJD, CalcGETBase());
-			EZSPACE.HA = (length(sv_a.R) - R_E) / 1852.0;
-			EZSPACE.HP = (length(sv_p.R) - R_E) / 1852.0;
+			PIMCKC(sv.R, sv.V, sv.RBI, aeg.Data.coe_osc.a, aeg.Data.coe_osc.e, aeg.Data.coe_osc.i, aeg.Data.coe_osc.g, aeg.Data.coe_osc.h, aeg.Data.coe_osc.l);
+			aeg.Header.AEGInd = sv.RBI;
+
+			PMMAPD(aeg.Header, aeg.Data, 0, 0, INFO, &sv_a, &sv_p);
+
+			EZSPACE.GETA = GETfromGMT(INFO[0]);
+			EZSPACE.HA = INFO[4] / 1852.0;
+			EZSPACE.HP = INFO[9] / 1852.0;
 		}
 		else
 		{
@@ -14871,16 +14729,18 @@ int RTCC::EMDSPACE(int queid, int option, double val, double incl, double ascnod
 
 			if (newtab.e < 0.85)
 			{
-				SV sv0, sv_a, sv_p;
-				sv0.R = sv.R;
-				sv0.V = sv.V;
-				sv0.MJD = OrbMech::MJDfromGET(sv.GMT,SystemParameters.GMTBASE);
-				sv0.gravref = GetGravref(sv.RBI);
-				PMMAPD(sv0, sv_a, sv_p);
+				AEGBlock aeg;
+				AEGDataBlock sv_a, sv_p;
+				double INFO[10];
 
-				EZSPACE.GETA = OrbMech::GETfromMJD(sv_a.MJD, CalcGETBase());
-				EZSPACE.HA = (length(sv_a.R) - R_E) / 1852.0;
-				EZSPACE.HP = (length(sv_p.R) - R_E) / 1852.0;
+				PIMCKC(sv.R, sv.V, sv.RBI, aeg.Data.coe_osc.a, aeg.Data.coe_osc.e, aeg.Data.coe_osc.i, aeg.Data.coe_osc.g, aeg.Data.coe_osc.h, aeg.Data.coe_osc.l);
+				aeg.Header.AEGInd = sv.RBI;
+
+				PMMAPD(aeg.Header, aeg.Data, 0, 0, INFO, &sv_a, &sv_p);
+
+				EZSPACE.GETA = GETfromGMT(INFO[0]);
+				EZSPACE.HA = INFO[4] / 1852.0;
+				EZSPACE.HP = INFO[9] / 1852.0;
 			}
 			else
 			{
@@ -15102,17 +14962,13 @@ void RTCC::EMSTAGEN(int L)
 	}
 	ELFECH(GMT_start, NumVec, 1, L, EPHEM, MANTIMES, LUNSTAY);
 
-	Station station;
 	StationTable contact;
 
-	for (int i = 0;i < NUMBEROFGROUNDSTATIONS;i++)
+	for (int i = 0; i < SystemParameters.MKRBKS; i++)
 	{
-		if (SystemParameters.MGRTAG == 0 && !groundstationslunar[i]) continue;
-		station.alt = 0.0;
-		station.code = gsabbreviations[i];
-		station.lat = groundstations[i][0];
-		station.lng = groundstations[i][1];
-		contact.table.push_back(station);
+		if (SystemParameters.MGRTAG == 0 && GZSTCH[i].SiteType != 8) continue;
+
+		contact.table.push_back(GZSTCH[i].data);
 	}
 
 	OrbitStationContactsTable *tab;
@@ -16949,10 +16805,10 @@ void RTCC::EMSTRAJ(StateVectorTableEntry sv, int L)
 		{
 			RTCCONLINEMON.DoubleBuffer[2] = 999999.0;
 		}
-		RTCCONLINEMON.DoubleBuffer[3] = temptab.i*DEG;
+		RTCCONLINEMON.DoubleBuffer[3] = temptab.e;
 		RTCCONLINEMON.DoubleBuffer[4] = temptab.AoP*DEG;
 		RTCCONLINEMON.DoubleBuffer[5] = temptab.h_p / 1852.0;
-		RTCCONLINEMON.DoubleBuffer[6] = temptab.e;
+		RTCCONLINEMON.DoubleBuffer[6] = temptab.i*DEG;
 		RTCCONLINEMON.DoubleBuffer[7] = temptab.RA*DEG;
 		EMGPRINT("EMSTRAJ", 14);
 	}
@@ -17185,7 +17041,7 @@ StateVectorTableEntry RTCC::EMSEPH(int QUEID, StateVectorTableEntry sv0, int L, 
 				RTCCONLINEMON.TextBuffer[2].assign(Buff);
 
 				double lat, lng, alt;
-				GLSSAT(InTable.NIAuxOutputTable.sv_cutoff, lat, lng, alt);
+				GLSSAT(InTable.NIAuxOutputTable.sv_cutoff.R, InTable.NIAuxOutputTable.sv_cutoff.GMT, InTable.NIAuxOutputTable.sv_cutoff.RBI, lat, lng, alt);
 				RTCCONLINEMON.DoubleBuffer[0] = lat * DEG;
 				RTCCONLINEMON.DoubleBuffer[1] = lng * DEG;
 
@@ -18251,20 +18107,7 @@ PMSVEC_2_2:
 		mu = OrbMech::mu_Moon;
 	}
 
-	VECTOR3 R, V;
-	if (sv.RBI == BODY_EARTH)
-	{
-		MATRIX3 Rot = OrbMech::GetRotationMatrix(sv.RBI,SystemParameters.GMTBASE);
-		R = rhtmul(Rot, sv.R);
-		V = rhtmul(Rot, sv.V);
-	}
-	else
-	{
-		R = sv.R;
-		V = sv.V;
-	}
-
-	elem = OrbMech::GIMIKC(R, V, mu);
+	elem = OrbMech::GIMIKC(sv.R, sv.V, mu);
 	KFactor = mpt->KFactor;
 	StaID = mpt->StationID;
 
@@ -18751,9 +18594,11 @@ void RTCC::PMDPAD()
 
 void RTCC::PMMPAR(VECTOR3 RT, VECTOR3 VT, double TT)
 {
+	//IsCSMLaunch: true = LM launched first and launch targeting is for CSM
+
 	LWPInputTable in;
 	LWPGlobalConstants gl;
-	LaunchWindowProcessor lwp;
+	LaunchWindowProcessor lwp(this);
 
 	gl.mu = OrbMech::mu_Earth;
 	gl.RREF = OrbMech::R_Earth;
@@ -18791,6 +18636,8 @@ void RTCC::PMMPAR(VECTOR3 RT, VECTOR3 VT, double TT)
 	PZSLVTAR.DELNOD = lwp.rlott.DELNOD*DEG;
 	PZSLVTAR.PA = lwp.lwsum.PA*DEG;
 	PZSLVTAR.BIAS = PZSLVCON.BIAS;
+	PZSLVTAR.LATLS = lwp.lwsum.LATLS*DEG;
+	PZSLVTAR.LONGLS = lwp.lwsum.LONGLS*DEG;
 
 	AEGHeader header;
 	AEGDataBlock sv_apo, sv_peri;
@@ -18893,12 +18740,28 @@ void RTCC::EMGENGEN(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES
 	std::vector<StationContact> acquisitions;
 	StationContact current;
 	StationContact empty;
+	int err;
 
 	if (stationlist.table.size() == 0) return;
 
 	for (unsigned i = 0;i < stationlist.table.size();i++)
 	{
-		EMXING(ephemeris, MANTIMES, stationlist.table[i], body, acquisitions, LUNSTAY);
+		err = EMXING(ephemeris, MANTIMES, stationlist.table[i], body, acquisitions, LUNSTAY);
+
+		if (err)
+		{
+			RTCCONLINEMON.IntBuffer[0] = err;
+			if (ephemeris.Header.VEH == RTCC_MPT_CSM)
+			{
+				RTCCONLINEMON.TextBuffer[0] = "CSM";
+			}
+			else
+			{
+				RTCCONLINEMON.TextBuffer[0] = "LEM";
+			}
+			RTCCONLINEMON.TextBuffer[1] = stationlist.table[i].code;
+			EMGPRINT("EMGENGEN", 44);
+		}
 	}
 
 	//Sort
@@ -18936,14 +18799,14 @@ bool RTCC::EMXINGLunarOccultation(EphemerisDataTable2 &ephemeris, ManeuverTimesT
 		return false;
 	}
 
-	VECTOR3 N, rho, R_ES, r_M, rho1, rho_apo1;
+	VECTOR3 N, rho, r_M, rho1, rho_apo1;
 	double sinang;
 	EphemerisData2 sv_E, sv_ET;
 
 	//Calculate elevation
 	OrbMech::EMXINGElev(interout.SV.R, R_S_equ, N, rho, sinang);
 	//Get moon state vector at interpolation time
-	if (PLEFEM(1, interin.GMT / 3600.0, 0, &sv_E.R, &sv_E.V, &R_ES, NULL))
+	if (PLEFEM(4, interin.GMT / 3600.0, 0, &sv_E.R, &sv_E.V, NULL, NULL))
 	{
 		return true;
 	}
@@ -18968,12 +18831,21 @@ bool RTCC::EMXINGLunarOccultation(EphemerisDataTable2 &ephemeris, ManeuverTimesT
 	return false;
 }
 
-bool RTCC::EMXING(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, const Station &station, int body, std::vector<StationContact> &acquisitions, LunarStayTimesTable *LUNSTAY)
+//Calculates station vector in ECT coordinates
+VECTOR3 EMXING_Station_ECT(double GMT, double R_E_sin_lat, double R_E_cos_lat, double stat_lng)
 {
+	double lng = stat_lng + OrbMech::w_Earth*GMT;
+	return _V(R_E_cos_lat*cos(lng), R_E_cos_lat*sin(lng), R_E_sin_lat);
+}
+
+int RTCC::EMXING(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, const StationData &station, int body, std::vector<StationContact> &acquisitions, LunarStayTimesTable *LUNSTAY)
+{
+	//Return codes: 0 = no error, 1 = mismatch between station and ephemeris type, 2 = interpolation error,  3 = convergence error
+
 	if (ephemeris.table.size() == 0) return false;
 	//Has to be ECT or MCT
-	if (body == BODY_EARTH && ephemeris.Header.CSI != 1) return false;
-	if (body == BODY_MOON && ephemeris.Header.CSI != 3) return false;
+	if (body == BODY_EARTH && ephemeris.Header.CSI != 1) return 1;
+	if (body == BODY_MOON && ephemeris.Header.CSI != 3) return 1;
 
 	ELVCTRInputTable interin;
 	ELVCTROutputTable2 interout;
@@ -18995,7 +18867,9 @@ bool RTCC::EMXING(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, 
 	}
 
 	GMT0 = ephemeris.table[0].GMT;
-	R_S_equ = OrbMech::r_from_latlong(station.lat, station.lng, R_E + station.alt);
+
+	//If coordinate system is MCT this only needs to be calculated once
+	if (body == BODY_MOON) R_S_equ = _V(station.R_E_cos_lat*station.cos_lng, station.R_E_cos_lat*station.sin_lng, station.R_E_sin_lat);
 	current.StationID = station.code;
 
 EMXING_LOOP:
@@ -19012,6 +18886,7 @@ EMXING_LOOP:
 		V = ephemeris.table[iter].V;
 		GMT = ephemeris.table[iter].GMT;
 
+		if (body == BODY_EARTH) R_S_equ = EMXING_Station_ECT(GMT, station.R_E_sin_lat, station.R_E_cos_lat, station.lng);
 		OrbMech::EMXINGElev(R, R_S_equ, N, rho, sinang);
 		f = OrbMech::EMXINGElevSlope(R, V, R_S_equ, body);
 
@@ -19025,10 +18900,11 @@ EMXING_LOOP:
 			ELVCTR(interin, interout, ephemeris, MANTIMES, LUNSTAY);
 			if (interout.ErrorCode)
 			{
-				return false;
+				return 2;
 			}
 			svtemp = interout.SV;
 
+			if (body == BODY_EARTH) R_S_equ = EMXING_Station_ECT(interin.GMT, station.R_E_sin_lat, station.R_E_cos_lat, station.lng);
 			OrbMech::EMXINGElev(svtemp.R, R_S_equ, Ntemp, rhotemp, sinangtemp);
 			//Elevation angle above 0, there is an AOS
 			if (sinangtemp >= 0) break;
@@ -19042,8 +18918,8 @@ EMXING_LOOP:
 
 	if (iter == ephemeris.table.size())
 	{
-		//Out of ephemeris
-		return false;
+		//Out of ephemeris, no error
+		return 0;
 	}
 
 	//Already in AOS
@@ -19060,7 +18936,7 @@ EMXING_LOOP:
 		ELVCTR(interin, interout, ephemeris, MANTIMES, LUNSTAY);
 		if (interout.ErrorCode)
 		{
-			return false;
+			return 2;
 		}
 		svtemp = interout.SV;
 
@@ -19072,6 +18948,7 @@ EMXING_LOOP:
 			V = svtemp.V;
 			GMT = svtemp.GMT;
 
+			if (body == BODY_EARTH) R_S_equ = EMXING_Station_ECT(GMT, station.R_E_sin_lat, station.R_E_cos_lat, station.lng);
 			OrbMech::EMXINGElev(R, R_S_equ, N, rho, sinang);
 
 			GMT_AOS = OrbMech::LinearInterpolation(sinang, GMT, LastSinang, LastGMT, 0.0);
@@ -19079,7 +18956,7 @@ EMXING_LOOP:
 			ELVCTR(interin, interout, ephemeris, MANTIMES, LUNSTAY);
 			if (interout.ErrorCode)
 			{
-				return false;
+				return 2;
 			}
 			svtemp = interout.SV;
 
@@ -19100,6 +18977,7 @@ EMXING_LOOP:
 		V = ephemeris.table[iter].V;
 		GMT = ephemeris.table[iter].GMT;
 
+		if (body == BODY_EARTH) R_S_equ = EMXING_Station_ECT(GMT, station.R_E_sin_lat, station.R_E_cos_lat, station.lng);
 		f = OrbMech::EMXINGElevSlope(R, V, R_S_equ, body);
 
 		//EMAX before first SV in ephemeris
@@ -19118,7 +18996,7 @@ EMXING_LOOP:
 			ELVCTR(interin, interout, ephemeris, MANTIMES, LUNSTAY);
 			if (interout.ErrorCode)
 			{
-				return false;
+				return 2;
 			}
 			svtemp = interout.SV;
 
@@ -19151,6 +19029,7 @@ EMXING_LOOP:
 				V = svtemp.V;
 				GMT = svtemp.GMT;
 
+				if (body == BODY_EARTH) R_S_equ = EMXING_Station_ECT(GMT, station.R_E_sin_lat, station.R_E_cos_lat, station.lng);
 				f = OrbMech::EMXINGElevSlope(R, V, R_S_equ, body);
 
 				GMT_EMAX = OrbMech::LinearInterpolation(f, GMT, last_f, LastGMT, 0.0);
@@ -19158,7 +19037,7 @@ EMXING_LOOP:
 				ELVCTR(interin, interout, ephemeris, MANTIMES, LUNSTAY);
 				if (interout.ErrorCode)
 				{
-					return false;
+					return 2;
 				}
 				svtemp = interout.SV;
 
@@ -19169,6 +19048,7 @@ EMXING_LOOP:
 		}
 	}
 
+	if (body == BODY_EARTH) R_S_equ = EMXING_Station_ECT(svtemp.GMT, station.R_E_sin_lat, station.R_E_cos_lat, station.lng);
 	OrbMech::EMXINGElev(svtemp.R, R_S_equ, N, rho, sinang);
 	EMAX = asin(sinang);
 
@@ -19181,6 +19061,7 @@ EMXING_LOOP:
 		V = ephemeris.table[iter].V;
 		GMT = ephemeris.table[iter].GMT;
 
+		if (body == BODY_EARTH) R_S_equ = EMXING_Station_ECT(GMT, station.R_E_sin_lat, station.R_E_cos_lat, station.lng);
 		OrbMech::EMXINGElev(R, R_S_equ, N, rho, sinang);
 		f = OrbMech::EMXINGElevSlope(R, V, R_S_equ, body);
 
@@ -19204,7 +19085,7 @@ EMXING_LOOP:
 		ELVCTR(interin, interout, ephemeris, MANTIMES, LUNSTAY);
 		if (interout.ErrorCode)
 		{
-			return false;
+			return 2;
 		}
 		svtemp = interout.SV;
 
@@ -19216,6 +19097,7 @@ EMXING_LOOP:
 			V = svtemp.V;
 			GMT = svtemp.GMT;
 
+			if (body == BODY_EARTH) R_S_equ = EMXING_Station_ECT(GMT, station.R_E_sin_lat, station.R_E_cos_lat, station.lng);
 			OrbMech::EMXINGElev(R, R_S_equ, N, rho, sinang);
 
 			GMT_LOS = OrbMech::LinearInterpolation(sinang, GMT, LastSinang, LastGMT, 0.0);
@@ -19223,7 +19105,7 @@ EMXING_LOOP:
 			ELVCTR(interin, interout, ephemeris, MANTIMES, LUNSTAY);
 			if (interout.ErrorCode)
 			{
-				return false;
+				return 2;
 			}
 			svtemp = interout.SV;
 
@@ -19245,7 +19127,6 @@ EMXING_LOOP:
 		current.BestAvailableLOS = BestAvailableLOS;
 		current.BestAvailableEMAX = BestAvailableEMAX;
 
-		//TBD: Implement this
 		double g_func, GMT_iter2, g_func_last, LastGMT_lunar, GMT_new;
 		unsigned int iter2 = 0;
 
@@ -19258,7 +19139,14 @@ EMXING_LOOP:
 		}
 
 		//Look if already in AOS at horizon crossing
+		if (body == BODY_EARTH) R_S_equ = EMXING_Station_ECT(GMT_iter2, station.R_E_sin_lat, station.R_E_cos_lat, station.lng);
 		EMXINGLunarOccultation(ephemeris, MANTIMES, GMT_iter2, R_S_equ, g_func, LUNSTAY);
+
+		//Store so that we have any data
+		LastGMT_lunar = GMT_iter2;
+		g_func_last = g_func;
+
+		//If we are in sight, go to logic for finding LOS
 		if (g_func >= 0)
 		{
 			goto RTCC_EMXING_LUNAR_LOS1;
@@ -19271,6 +19159,7 @@ EMXING_LOOP:
 		//Find AOS
 		while (g_func < 0)
 		{
+			if (body == BODY_EARTH) R_S_equ = EMXING_Station_ECT(GMT_iter2, station.R_E_sin_lat, station.R_E_cos_lat, station.lng);
 			EMXINGLunarOccultation(ephemeris, MANTIMES, GMT_iter2, R_S_equ, g_func, LUNSTAY);
 			if (g_func >= 0)
 			{
@@ -19288,13 +19177,18 @@ EMXING_LOOP:
 		}
 
 		//Bracket AOS
+		n = 0;
 		GMT_iter2 = OrbMech::LinearInterpolation(g_func, GMT_iter2, g_func_last, LastGMT_lunar, 0.0);
 		do
 		{
+			if (body == BODY_EARTH) R_S_equ = EMXING_Station_ECT(GMT_iter2, station.R_E_sin_lat, station.R_E_cos_lat, station.lng);
 			EMXINGLunarOccultation(ephemeris, MANTIMES, GMT_iter2, R_S_equ, g_func, LUNSTAY);
 			GMT_new = GMT_iter2;
 			GMT_iter2 = OrbMech::LinearInterpolation(g_func, GMT_iter2, g_func_last, LastGMT_lunar, 0.0);
-		} while (abs(GMT_new - GMT_iter2) > 3.0);
+			n++;
+		} while (abs(GMT_new - GMT_iter2) > 3.0 && n < nmax);
+
+		if (n >= nmax) return 3; //Didn't converge
 
 		current.GMTAOS = GMT_iter2;
 		current.BestAvailableAOS = true;
@@ -19309,6 +19203,7 @@ EMXING_LOOP:
 		GMT_iter2 = ephemeris.table[iter2].GMT;
 		while (g_func >= 0)
 		{
+			if (body == BODY_EARTH) R_S_equ = EMXING_Station_ECT(GMT_iter2, station.R_E_sin_lat, station.R_E_cos_lat, station.lng);
 			EMXINGLunarOccultation(ephemeris, MANTIMES, GMT_iter2, R_S_equ, g_func, LUNSTAY);
 			if (g_func < 0)
 			{
@@ -19327,14 +19222,20 @@ EMXING_LOOP:
 		}
 
 		//Bracket LOS
+		n = 0;
 		GMT_iter2 = OrbMech::LinearInterpolation(g_func, GMT_iter2, g_func_last, LastGMT_lunar, 0.0);
 		do
 		{
+			if (body == BODY_EARTH) R_S_equ = EMXING_Station_ECT(GMT_iter2, station.R_E_sin_lat, station.R_E_cos_lat, station.lng);
 			EMXINGLunarOccultation(ephemeris, MANTIMES, GMT_iter2, R_S_equ, g_func, LUNSTAY);
 			GMT_new = GMT_iter2;
 			GMT_iter2 = OrbMech::LinearInterpolation(g_func, GMT_iter2, g_func_last, LastGMT_lunar, 0.0);
-		} while (abs(GMT_new - GMT_iter2) > 3.0);
+			n++;
+		} while (abs(GMT_new - GMT_iter2) > 3.0 && n < nmax);
 
+		if (n >= nmax) return 3; //Didn't converge
+
+		//If time of LOS (lunar occulation) is after actual LOS (station in sight)
 		if (GMT_iter2 >= GMT_LOS)
 		{
 			GMT_iter2 = GMT_LOS;
@@ -19375,6 +19276,7 @@ EMXING_LOOP:
 			//Calculate EMAX
 			interin.GMT = current.GMTEMAX;
 			ELVCTR(interin, interout, ephemeris, MANTIMES, LUNSTAY);
+			if (body == BODY_EARTH) R_S_equ = EMXING_Station_ECT(interout.SV.GMT, station.R_E_sin_lat, station.R_E_cos_lat, station.lng);
 			OrbMech::EMXINGElev(interout.SV.R, R_S_equ, N, rho, sinang);
 			current.MAXELEV = asin(sinang);
 		}
@@ -19414,7 +19316,7 @@ RTCC_EMXING_END:
 		goto EMXING_LOOP;
 	}
 
-	return true;
+	return 0;
 }
 
 void RTCC::EMDSTAC()
@@ -19490,6 +19392,9 @@ void RTCC::EMDSTAC()
 
 void RTCC::EMDLANDM(int L, double gmt, double dt, int ref)
 {
+	EphemerisData2 sv_glssat;
+	ManeuverTimesTable mantimes;
+	VECTOR3 R_stat;
 	double GMT_Begin, GMT_End;
 	unsigned i = 0, j = 0;
 	int stat_body;
@@ -19497,7 +19402,7 @@ void RTCC::EMDLANDM(int L, double gmt, double dt, int ref)
 	GMT_Begin = gmt;
 	GMT_End = gmt + dt;
 
-	Station station;
+	StationData station;
 	StationTable contact;
 
 	stat_body = EZLASITE.REF;
@@ -19531,14 +19436,17 @@ void RTCC::EMDLANDM(int L, double gmt, double dt, int ref)
 		out = 3;
 	}
 
+	//Get state vectors
 	ELNMVC(GMT_Begin, GMT_End, RTCC_MPT_CSM, NumVec, TUP);
 	ELFECH(GMT_Begin, NumVec, 1, RTCC_MPT_CSM, ephem.EPHEM, ephem.MANTIMES, ephem.LUNRSTAY);
 
+	//Convert to ECT or MCT
 	EphemerisDataTable2 ephem2;
 	ELVCNV(ephem.EPHEM.table, 0, out, ephem2.table);
 	ephem2.Header = ephem.EPHEM.Header;
 	ephem2.Header.CSI = out;
 
+	//Generate station contacts
 	OrbitStationContactsTable res;
 	EMGENGEN(ephem2, ephem.MANTIMES, contact, stat_body, res, &ephem.LUNRSTAY);
 
@@ -19553,11 +19461,8 @@ void RTCC::EMDLANDM(int L, double gmt, double dt, int ref)
 	std::vector<int> maxcont;
 	maxcont.resize(12);
 
-	EphemerisData sv_glssat;
-	sv_glssat.RBI = stat_body;
-
-	Station tempstat;
-	VECTOR3 p, r, R_stat, R_S_equ;
+	StationData tempstat;
+	VECTOR3 p, r;
 	double lambda, lat, lng, alt;
 
 	int numcontacts = 0;
@@ -19578,8 +19483,6 @@ void RTCC::EMDLANDM(int L, double gmt, double dt, int ref)
 					continue;
 				}
 				maxcont[j]++;
-
-				R_S_equ = OrbMech::r_from_latlong(tempstat.lat, tempstat.lng, tempstat.rad);
 				break;
 			}
 		}
@@ -19593,30 +19496,26 @@ void RTCC::EMDLANDM(int L, double gmt, double dt, int ref)
 		tab->BestAvailableCA[tab->pages - 1][numcontacts] = res.Stations[i].BestAvailableEMAX;
 
 		intab.GMT = res.Stations[i].GMTEMAX;
-		ELVCTR(intab, outtab);
-		if (stat_body == BODY_MOON)
+
+		//Interpolate ECT or MCT vector
+		ELVCTR(intab, outtab, ephem2, mantimes, NULL);
+		sv_glssat = outtab.SV;
+
+		//Calculate ground point in ECT or MCT coordinates
+		if (stat_body == BODY_EARTH)
 		{
-			EphemerisData2 sv_moon;
-			ELVCNV(outtab.SV, 0, 2, sv_moon);
-			sv_glssat.R = sv_moon.R;
-			sv_glssat.V = sv_moon.V;
-			sv_glssat.GMT = sv_moon.GMT;
+			R_stat = EMXING_Station_ECT(intab.GMT, tempstat.R_E_sin_lat, tempstat.R_E_cos_lat, tempstat.lng);
 		}
 		else
 		{
-			sv_glssat.R = outtab.SV.R;
-			sv_glssat.V = outtab.SV.V;
-			sv_glssat.GMT = outtab.SV.GMT;
+			R_stat = _V(tempstat.R_E_cos_lat*tempstat.cos_lng, tempstat.R_E_cos_lat*tempstat.sin_lng, tempstat.R_E_sin_lat);
 		}
-
-		//Convert state vector back to inertial, easier this way than interpolating
-		ELVCNV(R_S_equ, sv_glssat.GMT, 1, out, out - 1, R_stat);
 
 		p = unit(sv_glssat.R - R_stat);
 		r = unit(sv_glssat.R);
 		lambda = acos(dotp(p, r));
 
-		GLSSAT(sv_glssat, lat, lng, alt);
+		GLSSAT(sv_glssat.R, sv_glssat.GMT, stat_body, lat, lng, alt);
 
 		tab->h[tab->pages - 1][numcontacts] = alt / 1852.0;
 		tab->Lambda[tab->pages - 1][numcontacts] = lambda*DEG;
@@ -19656,14 +19555,13 @@ void RTCC::EMDLANDM(int L, double gmt, double dt, int ref)
 	tab->err = 0;
 }
 
-void RTCC::ECMEXP(EphemerisData sv, Station *stat, int statbody, double &range, double &alt)
+void RTCC::ECMEXP(EphemerisData sv, StationData *stat, int statbody, double &range, double &alt)
 {
 	EphemerisData sv_out;
 	VECTOR3 Q, U_R;
-	double R_stat;
 	int out;
 
-	U_R = unit(_V(cos(stat->lng)*cos(stat->lat), sin(stat->lng)*cos(stat->lat), sin(stat->lat)));
+	U_R = EMXING_Station_ECT(sv.GMT, stat->R_E_sin_lat, stat->R_E_cos_lat, stat->lng);
 	if (statbody == BODY_EARTH)
 	{
 		out = 1;
@@ -19673,19 +19571,10 @@ void RTCC::ECMEXP(EphemerisData sv, Station *stat, int statbody, double &range, 
 		out = 3;
 	}
 	ELVCNV(sv, out, sv_out);
-	if (statbody == BODY_EARTH)
-	{
-		alt = length(sv_out.R) - OrbMech::R_Earth;
-		R_stat = stat->alt + OrbMech::R_Earth;
-	}
-	else
-	{
-		alt = length(sv_out.R) - BZLAND.rad[RTCC_LMPOS_BEST];
-		R_stat = stat->alt + BZLAND.rad[RTCC_LMPOS_BEST];
-	}
 	
 	Q = unit(crossp(sv_out.V, sv_out.R));
-	range = abs(R_stat * asin(dotp(U_R, Q)));
+	range = abs(stat->R_S * asin(dotp(U_R, Q)));
+	alt = length(sv_out.R) - stat->R_S;
 }
 
 void RTCC::EMDPESAD(int num, int veh, int ind, double vala, double valb, int body)
@@ -19723,7 +19612,7 @@ void RTCC::EMDPESAD(int num, int veh, int ind, double vala, double valb, int bod
 		GMT_Begin = RTCCPresentTimeGMT();
 	}
 
-	Station station;
+	StationData station;
 	StationTable contact;
 
 	//Experimental site
@@ -19738,10 +19627,7 @@ void RTCC::EMDPESAD(int num, int veh, int ind, double vala, double valb, int bod
 		for (int i = 0;i < 12;i++)
 		{
 			if (EZEXSITE.Data[i].code == "") continue;
-			station.alt = EZEXSITE.Data[i].alt;
-			station.code = EZEXSITE.Data[i].code;
-			station.lat = EZEXSITE.Data[i].lat;
-			station.lng = EZEXSITE.Data[i].lng;
+			station = EZEXSITE.Data[i];
 			contact.table.push_back(station);
 		}
 	}
@@ -19749,14 +19635,11 @@ void RTCC::EMDPESAD(int num, int veh, int ind, double vala, double valb, int bod
 	else
 	{
 		stat_body = BODY_EARTH;
-		for (int i = 0;i < NUMBEROFGROUNDSTATIONS;i++)
+		for (int i = 0;i < SystemParameters.MKRBKS;i++)
 		{
-			if (SystemParameters.MGRTAG == 0 && !groundstationslunar[i]) continue;
-			station.alt = 0.0;
-			station.code = gsabbreviations[i];
-			station.lat = groundstations[i][0];
-			station.lng = groundstations[i][1];
-			contact.table.push_back(station);
+			if (SystemParameters.MGRTAG == 0 && GZSTCH[i].SiteType != 8) continue;
+
+			contact.table.push_back(GZSTCH[i].data);
 		}
 	}
 
@@ -19799,7 +19682,7 @@ void RTCC::EMDPESAD(int num, int veh, int ind, double vala, double valb, int bod
 
 		ELVCTRInputTable intab;
 		ELVCTROutputTable2 outtab;
-		Station tempstat;
+		StationData tempstat;
 		double range, alt;
 
 		intab.L = 1;
@@ -19823,7 +19706,7 @@ void RTCC::EMDPESAD(int num, int veh, int ind, double vala, double valb, int bod
 					break;
 				}
 			}
-			ECMEXP(RotateSVToSOI(outtab.SV), &tempstat, stat_body, range, alt);
+			ECMEXP(Eph2ToEph1(outtab.SV, BODY_EARTH), &tempstat, stat_body, range, alt);
 
 			tab->REV[tab->pages - 1][numcontacts] = CapeCrossingRev(veh, res.Stations[i].GMTAOS);
 			tab->STA[tab->pages - 1][numcontacts] = res.Stations[i].StationID;
@@ -19943,6 +19826,11 @@ void RTCC::PMMAEGS(AEGHeader &header, AEGDataBlock &in, AEGDataBlock &out)
 
 void RTCC::PMMTLC(AEGHeader HEADER, AEGDataBlock AEGIN, AEGDataBlock &AEGOUT, double DESLAM, int &K, int INDVEC)
 {
+	//DESLAM: Desired longitude in radians
+	//INDVEC: For Earth only. <0 for ECT, >= 0 for ECI
+
+	//K: -1 = Unrecoverable AEG error, >0 = failure to converge, 0 = no error
+
 	MATRIX3 Rot;
 	double i_CB, g_CB, h_CB, u_CB, g_dot, h_dot, Z, DELTA, lambda_V, lambda_apo, w_CB, dlambda, DELTADOT, dt, u_CB_dot, mu_CB;
 
@@ -19988,11 +19876,11 @@ void RTCC::PMMTLC(AEGHeader HEADER, AEGDataBlock AEGIN, AEGDataBlock &AEGOUT, do
 			VECTOR3 P, W, P_apo, W_apo;
 			double i_SG, g_SG, h_SG;
 
-			PLEFEM(1, AEGOUT.TS / 3600.0, 0, Rot);
-			OrbMech::PIVECT(AEGOUT.coe_osc.i, AEGOUT.coe_osc.g, AEGOUT.coe_osc.h, P, W);
-			P_apo = tmul(Rot, P);
-			W_apo = tmul(Rot, W);
-			OrbMech::PIVECT(P_apo, W_apo, i_SG, g_SG, h_SG);
+			PLEFEM(5, AEGOUT.TS / 3600.0, 0, NULL, NULL, NULL, &Rot);
+			PIVECT(AEGOUT.coe_osc.i, AEGOUT.coe_osc.g, AEGOUT.coe_osc.h, P, W);
+			P_apo = mul(Rot, P);
+			W_apo = mul(Rot, W);
+			PIVECT(P_apo, W_apo, i_SG, g_SG, h_SG);
 			i_CB = i_SG;
 			g_CB = g_SG;
 			h_CB = h_SG;
@@ -20608,13 +20496,13 @@ void RTCC::EMDCHECK(int veh, int opt, double param, double THTime, int ref, bool
 	}
 	else
 	{
-		CONVFACR = 6.371e6;
-		CONVFACV = 6.371e6 / 3600.0;
+		CONVFACR = SystemParameters.MCCMCU;
+		CONVFACV = SystemParameters.MCCMCU / 3600.0;
 	}
 
 	if (ref < 2)
 	{
-		R_E = OrbMech::R_Earth;
+		R_E = SystemParameters.MCECAP;
 		mu = OrbMech::mu_Earth;
 	}
 	else
@@ -20689,18 +20577,16 @@ void RTCC::EMDCHECK(int veh, int opt, double param, double THTime, int ref, bool
 
 	if (coe.e < 0.85)
 	{
-		SV sv_a, sv_p, sv_in;
+		AEGBlock aeg;
+		AEGDataBlock sv_a, sv_p;
+		double INFO[10];
 
-		//Make this better
-		sv_in.R = sv_inert.R;
-		sv_in.V = sv_inert.V;
-		sv_in.MJD = OrbMech::MJDfromGET(sv_inert.GMT,SystemParameters.GMTBASE);
-		sv_in.gravref = GetGravref(sv_inert.RBI);
+		aeg = SVToAEG(sv_inert, 0.0, 1.0, 1.0); //TBD
 
-		PMMAPD(sv_in, sv_a, sv_p);
+		PMMAPD(aeg.Header, aeg.Data, 0, 0, INFO, &sv_a, &sv_p);
 
-		EZCHECKDIS.h_a = (length(sv_a.R) - R_E) / 1852.0;
-		EZCHECKDIS.h_p = (length(sv_p.R) - R_E) / 1852.0;
+		EZCHECKDIS.h_a = INFO[4] / 1852.0;
+		EZCHECKDIS.h_p = INFO[9] / 1852.0;
 	}
 	else
 	{
@@ -20723,11 +20609,39 @@ void RTCC::EMDCHECK(int veh, int opt, double param, double THTime, int ref, bool
 
 	double lat, lng;
 	OrbMech::latlong_from_r(sv_conv.R, lat, lng);
-	EZCHECKDIS.phi_c = EZCHECKDIS.phi_D = lat * DEG;
-	EZCHECKDIS.lambda = EZCHECKDIS.lambda_D = lng * DEG;
+	EZCHECKDIS.phi_c = EZCHECKDIS.phi_D = lat;
+	EZCHECKDIS.lambda = EZCHECKDIS.lambda_D = lng;
 
-	double LunarRightAscension, LunarDeclination, LunarDistance;
-	OrbMech::GetLunarEquatorialCoordinates(OrbMech::MJDfromGET(sv_inert.GMT,SystemParameters.GMTBASE), LunarRightAscension, LunarDeclination, LunarDistance);
+	if (ref == 0)
+	{
+		EZCHECKDIS.lambda_D -= SystemParameters.MCLAMD + sv_out.GMT*OrbMech::w_Earth;
+	}
+	else if (ref == 1)
+	{
+		EZCHECKDIS.lambda_D -= sv_out.GMT*OrbMech::w_Earth;
+	}
+	OrbMech::normalizeAngle(EZCHECKDIS.lambda);
+	OrbMech::normalizeAngle(EZCHECKDIS.lambda_D);
+
+	EZCHECKDIS.phi_c *= DEG;
+	EZCHECKDIS.phi_D *= DEG;
+	EZCHECKDIS.lambda *= DEG;
+	EZCHECKDIS.lambda_D *= DEG;
+
+	VECTOR3 R_EM;
+	double LunarDeclination;
+
+	//Convert a vector at the center of the Moon to ECI coordinates, thereby getting a lunar position vector in ECI
+	int err = ELVCNV(_V(0, 0, 0), sv_inert.GMT, 1, 2, 0, R_EM);
+
+	if (err)
+	{
+		LunarDeclination = 0.0;
+	}
+	else
+	{
+		LunarDeclination = asin(unit(R_EM).z);
+	}
 	EZCHECKDIS.deltaL = LunarDeclination * DEG;
 
 	EZCHECKDIS.UpdateNo = table->CommonBlock.TUP;
@@ -22822,18 +22736,22 @@ void RTCC::PMDLDPP(const LDPPOptions &opt, const LDPPResults &res, LunarDescentP
 		table.MVR[0] = "PPC";
 	}
 
-	SV sv_ig, sv_a, sv_p;
+	SV sv_ig;
+	double r_apo, r_peri;
+
 	sv_ig = opt.sv0;
 
 	for (int i = 0;i < res.i;i++)
 	{
 		sv_ig = coast(sv_ig, res.T_M[i] - OrbMech::GETfromMJD(sv_ig.MJD, opt.GETbase));
-		OrbMech::latlong_from_J2000(sv_ig.R, sv_ig.MJD, sv_ig.gravref, lat, lng);
+		OrbMech::latlong_from_BRCS(SystemParameters.MAT_J2000_BRCS, sv_ig.R, sv_ig.MJD, sv_ig.gravref, lat, lng);
 		table.LIG[i] = lng * DEG;
 		sv_ig.V += tmul(OrbMech::LVLH_Matrix(sv_ig.R, sv_ig.V), res.DeltaV_LVLH[i]);
-		PMMAPD(sv_ig, sv_a, sv_p);
-		table.AC[i] = (length(sv_a.R) - opt.R_LS) / 1852.0;
-		table.HPC[i] = (length(sv_p.R) - opt.R_LS) / 1852.0;
+
+		OrbMech::periapo(sv_ig.R, sv_ig.V, OrbMech::mu_Moon, r_apo, r_peri); //TBD
+
+		table.AC[i] = (r_apo - opt.R_LS) / 1852.0;
+		table.HPC[i] = (r_peri - opt.R_LS) / 1852.0;
 	}
 
 	table.PD_GETTH = opt.T_PD;
@@ -22854,6 +22772,8 @@ void RTCC::PMDLDPP(const LDPPOptions &opt, const LDPPResults &res, LunarDescentP
 
 void RTCC::EMGLMRAT(VECTOR3 X_P, VECTOR3 Y_P, VECTOR3 Z_P, VECTOR3 X_B, VECTOR3 Y_B, VECTOR3 Z_B, double &Pitch, double &Yaw, double &Roll, double &PB, double &YB, double &RB)
 {
+	//X_P, Y_P, Z_P: Unit vectors of platform (stable member) axes in BRCS coordinates
+	//X_B, Y_B, Z_B: Unit vectors of body (navigation base) axes in BRCS coordinates
 	double dot, sin_YB;
 	dot = dotp(X_B, Y_P);
 	if (abs(dot) > 1.0 - 0.0017)
@@ -23138,6 +23058,13 @@ int RTCC::RMMASCND(EphemerisDataTable2 &EPHEM, ManeuverTimesTable &MANTIMES, dou
 
 	double lat;
 	OrbMech::latlong_from_r(sv_true.R, lat, lng_asc);
+
+	if (EPHEM.Header.CSI == 1)
+	{
+		lng_asc -= OrbMech::w_Earth*sv_true.GMT;
+		OrbMech::normalizeAngle(lng_asc, false);
+	}
+
 	return 0;
 }
 
@@ -23148,7 +23075,6 @@ int RTCC::EMMENV(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, d
 	ELVCTROutputTable2 interout;
 	SunriseSunsetData data;
 	EphemerisData2 sv_cur;
-	OBJHANDLE hEarth = oapiGetObjectByName("Earth");
 	VECTOR3 R_EM, V_EM, R_ES, R_MS, s;
 	double R_E, cos_theta, cos_theta_old, GMT_old, GMT;
 	unsigned iter = 0, iter_start;
@@ -24116,7 +24042,7 @@ void RTCC::PMMREAST(int med, EphemerisData *sv)
 			TZMINI = PZREAP.RTETimeOfLanding*3600.0;
 		}
 
-		RTEEarth rte(this, sv_abort, GetGMTBase(), PZREAP.RTET0Min*3600.0, TZMINI, critical);
+		RTEEarth rte(this, sv_abort, GetGMTBase(), SystemParameters.MCLAMD, PZREAP.RTET0Min*3600.0, TZMINI, critical);
 		rte.READ(PZREAP.RRBIAS, dvmax, EPI, PZREAP.VRMAX*0.3048);
 
 		if (critical == 1)
@@ -24230,7 +24156,7 @@ void RTCC::PMMREAST(int med, EphemerisData *sv)
 		sv_abort2.R = sv_abort.R;
 		sv_abort2.V = sv_abort.V;
 		sv_abort2.GMT = sv_abort.GMT;
-		RTEMoon rte(this, sv_abort2, GetGMTBase());
+		RTEMoon rte(this, sv_abort2, GetGMTBase(), SystemParameters.MCLAMD);
 		if (SMODE == 14 || SMODE == 34)
 		{
 			double LINE[10];
@@ -24268,7 +24194,7 @@ void RTCC::PMMREAST(int med, EphemerisData *sv)
 		sv_r.RBI = BODY_EARTH;
 		AST.lat_SPL = rte.EntryLatcor;
 		AST.lng_SPL = rte.EntryLngcor;
-		AST.SplashdownGMT = rte.t_z;
+		AST.SplashdownGMT = rte.t_Landing;
 		AST.DV = rte.DV;
 		AST.h_PC = rte.FlybyPeriAlt;
 	}
@@ -24679,7 +24605,8 @@ void RTCC::PMMREDIG(bool mpt)
 		AST.lat_tgt = astin.lat_SPL;
 		AST.lng_tgt = astin.lng_SPL;
 		AST.lat_r = lat_r;
-		AST.lng_r = lng_r;
+		AST.lng_r = lng_r - OrbMech::w_Earth*sv_EI_ECT.GMT;
+		OrbMech::normalizeAngle(AST.lng_r, false);
 		AST.sv_TIG = astin.sv_IG;
 		AST.sv_r = astin.sv_EI;
 
@@ -25413,7 +25340,8 @@ void RTCC::PMMPAB(const RTEDMEDData &MED, const RTEDASTData &AST, const RTEDSPMD
 	RID.v_EI = v_r;
 	RID.gamma_EI = gamma_r;
 	RID.lat_EI = lat_r;
-	RID.lng_EI = lng_r;
+	RID.lng_EI = lng_r - OrbMech::w_Earth*sv_r_ECT.GMT;
+	OrbMech::normalizeAngle(RID.lng_EI, false);
 	RID.R_Y = outarray.R_Y;
 	RID.R_Z = outarray.R_Z;
 	VECTOR3 h = crossp(outarray.R_r, outarray.V_r);
@@ -26333,6 +26261,20 @@ int RTCC::EMGABMED(int type, std::string med, std::vector<std::string> data)
 			{
 				return 2;
 			}
+			//Valid codes and what they mean:
+			//TMH: REFSMMAT from high speed telemetry
+			//TML: REFSMMAT from low speed telemetry
+			//OST-T: Optics Support Table REFSMMAT using telemetry data
+			//OST-M: Optics Support Table REFSMMAT using manual data
+			//DMT: REFSMMAT for maneuver in LM MPT
+			//DOS: REFSMMAT for maneuver in spacecraft setting
+			//DOM: REFSMMAT for maneuver in manual column of deorbit targeting
+			//OPH: Save optics data from high speed
+			//OPL: Save optics data from low speed
+			//ATH: Save attitude from high speed telemetry
+			//ATL: Save attitude from low speed telemetry
+			//REP: REFSMMAT in RTE primary column
+			//REM: REFSMMAT in RTE manual column
 			if (data[1] == "DMT")
 			{
 				if (data.size() < 5)
@@ -26602,6 +26544,14 @@ int RTCC::EMGABMED(int type, std::string med, std::vector<std::string> data)
 
 			EMMGSTMP();
 		}
+		//Generate LEM Optics Support Table
+		else if (med == "20")
+		{
+			if (EZJGSTBL.MODE != 0)
+			{
+				EMMGLMST(EZJGSTBL.MODE);
+			}
+		}
 		//Acquire and save LEM IMU matrix/optics
 		else if (med == "21")
 		{
@@ -26613,9 +26563,27 @@ int RTCC::EMGABMED(int type, std::string med, std::vector<std::string> data)
 			{
 				return 2;
 			}
+			//Valid codes and what they mean:
+			//TMH: REFSMMAT from high speed telemetry
+			//TML: REFSMMAT from low speed telemetry
+			//OST-T: Optics Support Table REFSMMAT using telemetry data
+			//OST-M: Optics Support Table REFSMMAT using manual data
+			//DMT: REFSMMAT for maneuver in LM MPT
+			//DOS: REFSMMAT for maneuver in spacecraft setting
+			//DOM: REFSMMAT for maneuver in manual column of deorbit targeting
+			//OPH: Save optics data from high speed
+			//OPL: Save optics data from low speed
+			//ATH: Save attitude from high speed telemetry
+			//ATL: Save attitude from low speed telemetry
+			//REP: REFSMMAT in RTE primary column
+			//REM: REFSMMAT in RTE manual column
 			if (data[1] == "LLD")
 			{
 				EMSLSUPP(1, 15);
+			}
+			else if (data[1] == "OST-M")
+			{
+				EMSLSUPP(1, 4);
 			}
 			else if (data[1] == "DMT")
 			{
@@ -26662,8 +26630,17 @@ int RTCC::EMGABMED(int type, std::string med, std::vector<std::string> data)
 				EMSLSUPP(1, 5, refs, man, headsup);
 			}
 		}
+		//Calculate DOK REFSMMAT
+		else if (med == "23")
+		{
+			if (EZGSTMED.G23_Option < 1 || EZGSTMED.G23_Option>3)
+			{
+				return 2;
+			}
+
+			EMSLSUPP(3, EZGSTMED.G23_Option);
+		}
 	}
-	
 	
 	return 0;
 }
@@ -29229,7 +29206,7 @@ int RTCC::GMSMED(std::string med, std::vector<std::string> data)
 						EZEXSITE.REF = BodyInd;
 					}
 					EZEXSITE.Data[freeslot].code = STAID;
-					EMGGPCHR(lat, lng, height, BodyInd, &EZEXSITE.Data[freeslot]);
+					EMGGPCHR(lat, lng, height, BodyInd, 0.0, &EZEXSITE.Data[freeslot]);
 				}
 				else
 				{
@@ -29238,7 +29215,7 @@ int RTCC::GMSMED(std::string med, std::vector<std::string> data)
 						EZLASITE.REF = BodyInd;
 					}
 					EZLASITE.Data[freeslot].code = STAID;
-					EMGGPCHR(lat, lng, height, BodyInd, &EZLASITE.Data[freeslot]);
+					EMGGPCHR(lat, lng, height, BodyInd, 0.0, &EZLASITE.Data[freeslot]);
 				}
 			}
 			//MOD
@@ -29269,11 +29246,11 @@ int RTCC::GMSMED(std::string med, std::vector<std::string> data)
 				}
 				if (DataTableInd == 0)
 				{
-					EMGGPCHR(lat, lng, height, BodyInd, &EZEXSITE.Data[found]);
+					EMGGPCHR(lat, lng, height, BodyInd, 0.0, &EZEXSITE.Data[found]);
 				}
 				else
 				{
-					EMGGPCHR(lat, lng, height, BodyInd, &EZLASITE.Data[found]);
+					EMGGPCHR(lat, lng, height, BodyInd, 0.0, &EZLASITE.Data[found]);
 				}
 			}
 			//DEL
@@ -30649,8 +30626,7 @@ void RTCC::EMGSTGEN(int QUEID, int L1, int ID1, int L2, int ID2, double gmt, MAT
 			}
 		}
 
-		//TBD: For now convert to ecliptic reference
-		MATRIX3 a = mul(EZGSTMED.G01_REFSMMAT, SystemParameters.MAT_J2000_BRCS);
+		MATRIX3 a = EZGSTMED.G01_REFSMMAT;
 		EMGSTSTM(L1, a, EZGSTMED.G01_Type, gmt);
 	}
 }
@@ -30918,6 +30894,11 @@ void RTCC::EMGPRINT(std::string source, int i)
 	case 42:
 		message.push_back("ANCHOR VECTOR IS LUNAR SURFACE");
 		message.push_back("NO ELEMENTS CALCULATED");
+		break;
+	case 44:
+		sprintf_s(Buffer, "ERROR %d FROM EMXING", RTCCONLINEMON.IntBuffer[0]);
+		message.push_back(Buffer);
+		message.push_back("FOR " + RTCCONLINEMON.TextBuffer[0] + ", "  +RTCCONLINEMON.TextBuffer[1]);
 		break;
 	default:
 		return;
@@ -31354,11 +31335,11 @@ void RTCC::PMMDAB(EphemerisData2 XIN, ASTInput ARIN, ASTSettings IRIN, ASTData &
 	}
 
 	//TBD: Off target line?
-	double MJD_L, lat_imp, lng_imp;
+	double GMT_L, lat_imp, lng_imp;
 	sv_r_ECI.R = outarray.R_r;
 	sv_r_ECI.V = outarray.V_r;
 	sv_r_ECI.GMT = outarray.T_r;
-	EntryCalculations::LNDING(sv_r_ECI.R, sv_r_ECI.V, GetGMTBase() + sv_r_ECI.GMT / 24.0 / 3600.0, 0.3, IRIN.EntryProfile, ARIN.RRBIAS, lng_imp, lat_imp, MJD_L);
+	EntryCalculations::LNDING(sv_r_ECI.R, sv_r_ECI.V, sv_r_ECI.GMT, SystemParameters.MCLAMD, 0.3, IRIN.EntryProfile, ARIN.RRBIAS, lng_imp, lat_imp, GMT_L);
 
 	double r_r, v_r, lat_r, lng_r, gamma_r, azi_r;
 	PICSSC(true, outarray.R_r, outarray.V_r, r_r, v_r, lat_r, lng_r, gamma_r, azi_r);
@@ -31382,7 +31363,7 @@ void RTCC::PMMDAB(EphemerisData2 XIN, ASTInput ARIN, ASTSettings IRIN, ASTData &
 	AST.ReentryGMT = outarray.T_r;
 	AST.lat_SPL = lat_imp;
 	AST.lng_SPL = lng_imp;
-	AST.SplashdownGMT = OrbMech::GETfromMJD(MJD_L, GetGMTBase());
+	AST.SplashdownGMT = GMT_L;
 	AST.MissDistance = 0.0;
 	AST.RRBIAS = ARIN.RRBIAS;
 	AST.sv_EI.R = outarray.R_r;
@@ -31589,13 +31570,20 @@ PCMATC_3A:
 		vars->h_a = 0.0;
 	}
 	vars->h_p = r_p - OrbMech::R_Earth;
-	MATRIX3 Rot = OrbMech::GetRotationMatrix(BODY_EARTH, OrbMech::MJDfromGET(sv_r.GMT, vars->GMTBASE));
-	VECTOR3 R_r_equ = rhtmul(Rot, sv_r.R);
-	VECTOR3 V_r_equ = rhtmul(Rot, sv_r.V);
+
+	MATRIX3 Rot;
+	ELVCNV(sv_r.GMT, 1, 0, Rot);
+
+	VECTOR3 R_r_equ = tmul(Rot, sv_r.R);
+	VECTOR3 V_r_equ = tmul(Rot, sv_r.V);
 	double h_r = length(sv_r.R) - OrbMech::R_Earth;
-	double r_r, v_r, lat_r, lng_r, gamma_r, azi_r;
-	PICSSC(true, R_r_equ, V_r_equ, r_r, v_r, lat_r, lng_r, gamma_r, azi_r);
+	double r_r, v_r, lat_r, ra_r, gamma_r, azi_r, lng_r, lambda_G;
+	PICSSC(true, R_r_equ, V_r_equ, r_r, v_r, lat_r, ra_r, gamma_r, azi_r);
 	double T_ar = sv_r.GMT - t_a;
+
+	lambda_G = PIBSHA(sv_r.GMT / 3600.0);
+	lng_r = ra_r - lambda_G;
+	OrbMech::normalizeAngle(lng_r);
 
 	arr[0] = h_r / OrbMech::R_Earth;
 	arr[1] = lat_r;
@@ -32957,187 +32945,156 @@ void RTCC::PMMDMT(int L, unsigned man, RTCCNIAuxOutputTable *aux)
 	mptman->V_S = dotp(Y_PHV, V_G);
 	mptman->V_D = dotp(Z_PHV, V_G);
 
-	double mu, R_E;
-	int out, body;
+	EphemerisData2 sv_BI_true, sv_BO_true;
+
+	int in, out, err;
 
 	if (aux->RBI == BODY_EARTH)
 	{
+		in = 0;
 		out = 1;
-		mu = OrbMech::mu_Earth;
-		body = BODY_EARTH;
-		R_E = OrbMech::R_Earth;
 	}
 	else
 	{
+		in = 2;
 		out = 3;
-		mu = OrbMech::mu_Moon;
-		body = BODY_MOON;
-		R_E = BZLAND.rad[RTCC_LMPOS_BEST];
 	}
 
-	EphemerisData sv_true;
-	EphemerisData sv_BI;
-	EphemerisData sv_BO;
-	AEGDataBlock aeg;
+	if (aux->GMT_BI == 0.0)
+	{
+		sv_BO_true.R = aux->R_BO;
+		sv_BO_true.V = aux->V_BO;
+		sv_BO_true.GMT = aux->GMT_BO;
 
-	sv_BI.R = aux->R_BI;
-	sv_BI.V = aux->V_BI;
-	sv_BI.GMT = aux->GMT_BI;
-	sv_BI.RBI = aux->RBI;
+		err = ELVCNV(sv_BO_true, in, out, sv_BO_true);
 
-	int err = ELVCNV(sv_BI, out, sv_true);
+		sv_BI_true = sv_BO_true;
+	}
+	else
+	{
+		sv_BO_true.R = aux->R_BO;
+		sv_BO_true.V = aux->V_BO;
+		sv_BO_true.GMT = aux->GMT_BO;
+
+		err = ELVCNV(sv_BO_true, in, out, sv_BO_true);
+
+		if (err == 0)
+		{
+			sv_BI_true.R = aux->R_BI;
+			sv_BI_true.V = aux->V_BI;
+			sv_BI_true.GMT = aux->GMT_BI;
+
+			err = ELVCNV(sv_BI_true, in, out, sv_BI_true);
+		}
+	}
+
 	if (err)
 	{
 		PMXSPT("PMMDMT", 69);
-		sv_true = sv_BI;
-		goto RTCC_PMMDMT_PB2_6;
-	}
-
-	if (body == BODY_EARTH)
-	{
-		double R_EE = length(sv_true.R) / sqrt((sv_true.R.x*sv_true.R.x + sv_true.R.y*sv_true.R.y) / SystemParameters.MCEASQ + sv_true.R.z*sv_true.R.z / SystemParameters.MCEBSQ);
-		mptman->h_BI = length(sv_true.R) - R_EE;
-		mptman->lat_BI = atan(SystemParameters.MCEBAS*sv_true.R.z / sqrt(sv_true.R.x*sv_true.R.x + sv_true.R.y*sv_true.R.y));
 	}
 	else
 	{
-		mptman->h_BI = length(sv_true.R) - BZLAND.rad[RTCC_LMPOS_BEST];
-		mptman->lat_BI = asin(sv_true.R.z / sv_true.R.x);
-	}
-	mptman->lng_BI = atan2(sv_true.R.y, sv_true.R.x);
-	double h = length(crossp(sv_true.R, sv_true.V));
-	mptman->eta_BI = atan2(h*dotp(sv_true.R, sv_true.V), h*h - mu * length(sv_true.R));
-	if (mptman->eta_BI < 0)
-	{
-		mptman->eta_BI += PI2;
-	}
+		double mu, R_E, K;
 
-	sv_BO.R = aux->R_BO;
-	sv_BO.V = aux->V_BO;
-	sv_BO.GMT = aux->GMT_BO;
-	sv_BO.RBI = aux->RBI;
+		if (aux->RBI == BODY_EARTH)
+		{
+			mu = OrbMech::mu_Earth;
+			K = 1.0;
+			R_E = OrbMech::R_Earth;
 
-	err = ELVCNV(sv_BO, out, sv_true);
-	if (err)
-	{
-		goto RTCC_PMMDMT_PB2_6;
-	}
+			double R_EE = length(sv_BI_true.R) / sqrt((sv_BI_true.R.x*sv_BI_true.R.x + sv_BI_true.R.y*sv_BI_true.R.y) / SystemParameters.MCEASQ + sv_BI_true.R.z*sv_BI_true.R.z / SystemParameters.MCEBSQ);
+			mptman->h_BI = length(sv_BI_true.R) - R_EE;
+			mptman->lat_BI = atan(SystemParameters.MCEBAS*sv_BI_true.R.z / sqrt(sv_BI_true.R.x*sv_BI_true.R.x + sv_BI_true.R.y*sv_BI_true.R.y));
+		}
+		else
+		{
+			mu = OrbMech::mu_Moon;
+			K = 0.0;
+			R_E = BZLAND.rad[RTCC_LMPOS_BEST];
 
-	PIMCKC(sv_true.R, sv_true.V, body, aeg.coe_osc.a, aeg.coe_osc.e, aeg.coe_osc.i, aeg.coe_osc.l, aeg.coe_osc.g, aeg.coe_osc.h);
-	mptman->e_BO = aeg.coe_osc.e;
-	mptman->i_BO = aeg.coe_osc.i;
-	mptman->g_BO = aeg.coe_osc.g;
+			mptman->h_BI = length(sv_BI_true.R) - BZLAND.rad[RTCC_LMPOS_BEST];
+			mptman->lat_BI = asin(sv_BI_true.R.z / sv_BI_true.R.x);
+		}
 
-	if (aeg.coe_osc.e < 0.85)
-	{
-		SV sv_BO2, sv_a, sv_p;
+		mptman->lng_BI = atan2(sv_BI_true.R.y, sv_BI_true.R.x) - K * OrbMech::w_Earth*sv_BI_true.GMT;
+		while (mptman->lng_BI < 0)
+		{
+			mptman->lng_BI += PI2;
+		}
+		double h = length(crossp(sv_BI_true.R, sv_BI_true.V));
+		mptman->eta_BI = atan2(h*dotp(sv_BI_true.R, sv_BI_true.V), h*h - mu * length(sv_BI_true.R));
+		if (mptman->eta_BI < 0)
+		{
+			mptman->eta_BI += PI2;
+		}
 
-		sv_BO2.R = aux->R_BO;
-		sv_BO2.V = aux->V_BO;
-		sv_BO2.MJD = OrbMech::MJDfromGET(aux->GMT_BO,SystemParameters.GMTBASE);
-		sv_BO2.gravref = GetGravref(aux->RBI);
+		AEGBlock aeg;
 
-		if (PMMAPD(sv_BO2, sv_a, sv_p))
+		PIMCKC(sv_BO_true.R, sv_BO_true.V, aux->RBI, aeg.Data.coe_osc.a, aeg.Data.coe_osc.e, aeg.Data.coe_osc.i, aeg.Data.coe_osc.l, aeg.Data.coe_osc.g, aeg.Data.coe_osc.h);
+		mptman->e_BO = aeg.Data.coe_osc.e;
+		mptman->i_BO = aeg.Data.coe_osc.i;
+		mptman->g_BO = aeg.Data.coe_osc.g;
+
+		//Set up AEG input
+		if (aux->RBI == BODY_MOON) //TBD: Is this necessary?
+		{
+			PIMCKC(aux->R_BO, aux->V_BO, aux->RBI, aeg.Data.coe_osc.a, aeg.Data.coe_osc.e, aeg.Data.coe_osc.i, aeg.Data.coe_osc.l, aeg.Data.coe_osc.g, aeg.Data.coe_osc.h);
+		}
+		aeg.Data.TS = sv_BO_true.GMT;
+		aeg.Header.AEGInd = aux->RBI;
+
+		AEGDataBlock sv_A, sv_P;
+		double INFO[10];
+
+		if (PMMAPD(aeg.Header, aeg.Data, 0, -1, INFO, &sv_A, &sv_P))
 		{
 			PMXSPT("PMMDMT", 108);
 		}
-
-		mptman->h_a = length(sv_a.R) - R_E;
-		mptman->GMT_a = OrbMech::GETfromMJD(sv_a.MJD,SystemParameters.GMTBASE);
-
-		EphemerisData sv_a2;
-		sv_a2.R = sv_a.R;
-		sv_a2.V = sv_a.V;
-		sv_a2.GMT = OrbMech::GETfromMJD(sv_a.MJD,SystemParameters.GMTBASE);
-		if (sv_a.gravref == hEarth)
-		{
-			sv_a2.RBI = BODY_EARTH;
-		}
 		else
 		{
-			sv_a2.RBI = BODY_MOON;
-		}
-		
-		err = ELVCNV(sv_a2, out, sv_true);
-		if (err)
-		{
-			goto RTCC_PMMDMT_PB2_6;
-		}
+			mptman->GMT_a = INFO[0];
+			mptman->GMT_p = INFO[5];
 
-		OrbMech::latlong_from_r(sv_true.R, mptman->lat_a, mptman->lng_a);
-
-		mptman->h_p = length(sv_p.R) - R_E;
-		mptman->GMT_p = OrbMech::GETfromMJD(sv_p.MJD,SystemParameters.GMTBASE);
-
-		EphemerisData sv_p2;
-		sv_p2.R = sv_p.R;
-		sv_p2.V = sv_p.V;
-		sv_p2.GMT = OrbMech::GETfromMJD(sv_p.MJD,SystemParameters.GMTBASE);
-		if (sv_p.gravref == hEarth)
-		{
-			sv_p2.RBI = BODY_EARTH;
-		}
-		else
-		{
-			sv_p2.RBI = BODY_MOON;
-		}
-
-		err = ELVCNV(sv_p2, out, sv_true);
-		if (err)
-		{
-			goto RTCC_PMMDMT_PB2_6;
-		}
-
-		OrbMech::latlong_from_r(sv_true.R, mptman->lat_p, mptman->lng_p);
-
-		bool err2;
-		SV sv_an = OrbMech::PMMAEGS(sv_BO2, 2, 0.0, err2);
-		if (err2 == false)
-		{
-			mptman->GMT_AN = OrbMech::GETfromMJD(sv_an.MJD,SystemParameters.GMTBASE);
-
-			EphemerisData sv_an2;
-			sv_an2.R = sv_an.R;
-			sv_an2.V = sv_an.V;
-			sv_an2.GMT = OrbMech::GETfromMJD(sv_an.MJD,SystemParameters.GMTBASE);
-			if (sv_an.gravref == hEarth)
+			if (INFO[1] != 0.0)
 			{
-				sv_an2.RBI = BODY_EARTH;
+				mptman->h_a = INFO[1] - R_E;
+			}
+			if (INFO[6] != 0.0)
+			{
+				mptman->h_p = INFO[6] - R_E;
+				//TBD: V_P
+			}
+			double h_an;
+			if (aux->RBI == BODY_EARTH)
+			{
+				aeg.Data.TIMA = 2;
+				aeg.Data.Item8 = 0.0;
+				aeg.Data.Item10 = 1.0;
+				pmmaeg.CALL(aeg.Header, aeg.Data, aeg.Data);
+				h_an = aeg.Data.coe_osc.h;
 			}
 			else
 			{
-				sv_an2.RBI = BODY_MOON;
+				if (aeg.Data.coe_osc.e < 1.0)
+				{
+					double isg, gsg, hsg;
+					PIATSU(aeg.Data, aeg.Data, isg, gsg, hsg);
+					h_an = hsg;
+				}
 			}
-
-
-			int err = ELVCNV(sv_an2, out, sv_true);
-			if (err)
+			if (aeg.Header.ErrorInd)
 			{
-				goto RTCC_PMMDMT_PB2_6;
+				RTCCONLINEMON.TextBuffer[0] = mptman->code;
+				PMXSPT("PMMDMT", 65);
 			}
-			double lattemp;
-			OrbMech::latlong_from_r(sv_true.R, lattemp, mptman->lng_AN);
+			else
+			{
+				mptman->GMT_AN = aeg.Data.TE;
+				mptman->lng_AN = h_an - K * OrbMech::w_Earth*mptman->GMT_AN;
+			}
 		}
-	}
-	else
-	{
-		double r_apo, r_peri;
-		OrbMech::periapo(aux->R_BO, aux->V_BO, mu, r_apo, r_peri);
-		if (aeg.coe_osc.e < 1.0)
-		{
-			mptman->h_a = r_apo - R_E;
-		}
-		else
-		{
-			mptman->h_a = 0.0;
-		}
-	
-		mptman->h_p = r_peri - R_E;
 	}
 	//TBD: Day and night
-
-RTCC_PMMDMT_PB2_6:;
-
 }
 
 //CMC External Delta-V Update Generator
@@ -33263,7 +33220,7 @@ void RTCC::CMMRFMAT(int L, int id, int addr)
 	FormatREFSMMATCode(id, refs.ID, buff);
 	block->MatrixID.assign(buff);
 
-	MATRIX3 a = mul(refs.REFSMMAT, OrbMech::tmat(SystemParameters.MAT_J2000_BRCS));
+	MATRIX3 a = refs.REFSMMAT;
 	block->REFSMMAT = a;
 
 	//sprintf(oapiDebugString(), "%f, %f, %f, %f, %f, %f, %f, %f, %f", a.m11, a.m12, a.m13, a.m21, a.m22, a.m23, a.m31, a.m32, a.m33);
@@ -33646,12 +33603,9 @@ void RTCC::BMSVEC()
 	EMSMISSInputTable emsmissin;
 	EphemerisData sv_comp[4];
 	EphemerisData sv_final[4];
-	MATRIX3 Rot;
 
 	//Reset
 	BZCCANOE = VectorCompareTable();
-	//Get transformation matrix
-	Rot = SystemParameters.MAT_J2000_BRCS;
 
 	ELVCTRInputTable intab;
 	ELVCTROutputTable2 outtab;
@@ -33780,10 +33734,6 @@ void RTCC::BMSVEC()
 		//Convert to desired coordinate system
 		ELVCNV(emsmissin.NIAuxOutputTable.sv_cutoff, csi_out, sv_final[i]);
 		sv_final[i] = emsmissin.NIAuxOutputTable.sv_cutoff;
-
-		//ecliptic to BRCS
-		sv_final[i].R = mul(Rot, sv_final[i].R);
-		sv_final[i].V = mul(Rot, sv_final[i].V);
 
 		if (i == 0)
 		{
@@ -34124,29 +34074,28 @@ void RTCC::BMGPRIME(std::string source, std::vector<std::string> message)
 
 void RTCC::LMMGRP(int veh, double gmt)
 {
-	double phi, A;
+	MATRIX3 REFS;
+	double lat, lng, DLNG;
 
-	phi = atan2(SystemParameters.MCLSDA, SystemParameters.MCLCDA);
-	A = SystemParameters.MCLABN;
+	if (veh == 2)
+	{
+		//IU2 (LM)
+		lat = SystemParameters.MCLLLP[0];
+		lng = SystemParameters.MCLLPL;
+	}
+	else
+	{
+		//CSM, IU1 (CSM)
+		lat = SystemParameters.MCLLTP[0];
+		lng = SystemParameters.MCLGRA;
+	}
+
+	DLNG = lng + SystemParameters.MCLAMD + SystemParameters.MCERTS * gmt / 3600.0;
 
 	//CSM
 	if (veh == 0)
 	{
-		VECTOR3 R, R_P, U_Z, REFS6, E, S, REFS0, REFS3;
-
-		//Unit vector in Earth fixed coordinates
-		R = OrbMech::r_from_latlong(phi, SystemParameters.MCLGRA);
-		//In ECI coordinates
-		ELVCNV(R, gmt, 1, 1, 0, R_P);
-		//Z-axis unit vector in ECI
-		ELVCNV(_V(0, 0, 1), gmt, 0, 1, 0, U_Z);
-		//MIT equations
-		REFS6 = unit(-R_P);
-		E = unit(crossp(REFS6, U_Z));
-		S = unit(crossp(E, REFS6));
-		REFS0 = E * sin(A) + S * cos(A);
-		REFS3 = unit(crossp(REFS6, REFS0));
-		MATRIX3 REFS = _M(REFS0.x, REFS0.y, REFS0.z, REFS3.x, REFS3.y, REFS3.z, REFS6.x, REFS6.y, REFS6.z);
+		REFS = GLMRTM(_M(1, 0, 0, 0, 1, 0, 0, 0, 1), DLNG, 3, -PI05 - lat, 2, SystemParameters.MCLABN, 1);
 
 		EZJGMTX1.data[0].ID = 0;
 		EMGSTSTM(1, REFS, RTCC_REFSMMAT_TYPE_CUR, gmt);
@@ -34154,21 +34103,21 @@ void RTCC::LMMGRP(int veh, double gmt)
 	//IU
 	else
 	{
-		//double DLNG = SystemParameters.MCLGRA + SystemParameters.MCLAMD + SystemParameters.MCERTS * gmt / 3600.0;
-		double MJD_GRR = OrbMech::MJDfromGET(gmt, SystemParameters.GMTBASE);
-		MATRIX3 M_equ_ecl_LH = OrbMech::GetRotationMatrix(BODY_EARTH, MJD_GRR);
-		MATRIX3 M_equ_ecl = MatrixRH_LH(M_equ_ecl_LH);
-		MATRIX3 MSG = OrbMech::MSGMatrix(phi, SystemParameters.MCLABN);
-		MATRIX3 MEG = OrbMech::MEGMatrix(SystemParameters.MCLGRA);
-		MATRIX3 MES = mul(OrbMech::tmat(MSG), MEG);
-		GZLTRA.IU1_REFSMMAT = mul(MES, OrbMech::tmat(M_equ_ecl));
+		REFS = GLMRTM(_M(1, 0, 0, 0, 1, 0, 0, 0, 1), DLNG, 3, -lat, 2, -SystemParameters.MCLABN, 1);
 
-		//double DLNG = SystemParameters.MCLGRA + SystemParameters.MCLAMD + SystemParameters.MCERTS * gmt / 3600.0;
-		//GZLTRA.IU1_REFSMMAT = GLMRTM(_M(1, 0, 0, 0, 1, 0, 0, 0, 1), DLNG, 3, -phi, 2, -SystemParameters.MCLABN, 1);
-		//GZLTRA.IU1_REFSMMAT = mul(GZLTRA.IU1_REFSMMAT, SystemParameters.MAT_J2000_BRCS); //Remove when coordinate system is correct
+		if (veh == 1)
+		{
+			GZLTRA.IU1_REFSMMAT = REFS;
+			RTCCONLINEMON.TextBuffer[0] = "IU1";
+			RTCCONLINEMON.MatrixBuffer = GZLTRA.IU1_REFSMMAT;
+		}
+		else
+		{
+			GZLTRA.IU2_REFSMMAT = REFS;
+			RTCCONLINEMON.TextBuffer[0] = "IU2";
+			RTCCONLINEMON.MatrixBuffer = GZLTRA.IU2_REFSMMAT;
+		}
 
-		RTCCONLINEMON.TextBuffer[0] = "IU1";
-		RTCCONLINEMON.MatrixBuffer = GZLTRA.IU1_REFSMMAT;
 		LMXPRNTR("LMMGRP", 10);
 	}
 }
@@ -34214,19 +34163,20 @@ void RTCC::EMSGSUPP(int QUEID, int refs, int refs2, unsigned man, bool headsup)
 	//Initialize star table
 	if (QUEID == 0)
 	{
-		if (EZJGSTAR.size() == 0)
-		{
-			ifstream startable(".\\Config\\ProjectApollo\\RTCC\\Star Table.txt");
-			std::string line;
-			VECTOR3 temp;
+		ifstream startable(".\\Config\\ProjectApollo\\RTCC\\Star Table.txt");
+		std::string line;
+		VECTOR3 temp;
 
-			while (getline(startable, line))
-			{
-				sscanf(line.c_str(), "%lf %lf %lf", &temp.x, &temp.y, &temp.z);
-				EZJGSTAR.push_back(temp);
-			}
-			startable.close();
+		EZJGSTAR.clear();
+
+		while (getline(startable, line))
+		{
+			sscanf(line.c_str(), "%lf %lf %lf", &temp.x, &temp.y, &temp.z);
+			temp = mul(SystemParameters.MAT_J2000_BRCS, temp); //Star table in file is in ecliptic, convert to BRCS
+			EZJGSTAR.push_back(temp);
+
 		}
+		startable.close();
 	}
 	//Acquire and save CSM IMU matrix/optics
 	if (QUEID == 1)
@@ -34350,7 +34300,17 @@ void RTCC::EMSLSUPP(int QUEID, int refs, int refs2, unsigned man, bool headsup)
 				EMGPRINT("EMSLSUPP", 1);
 				return;
 			}
-			EMGSTSTM(3, BZSTLM.LGC_REFSMMAT, RTCC_REFSMMAT_TYPE_TLM, RTCCPresentTimeGMT());
+			EMGSTSTM(RTCC_MPT_LM, BZSTLM.LGC_REFSMMAT, RTCC_REFSMMAT_TYPE_TLM, RTCCPresentTimeGMT());
+		}
+		//OST-M
+		else if (refs == 4)
+		{
+			if (EZJGSTBL.REFSMMATValid == false)
+			{
+				EMGPRINT("EMSLSUPP", 1);
+				return;
+			}
+			EMGSTSTM(RTCC_MPT_LM, EZJGSTBL.StoredREFSMMAT, RTCC_REFSMMAT_TYPE_OST, RTCCPresentTimeGMT());
 		}
 		//DMT
 		else if (refs == 5)
@@ -34398,10 +34358,77 @@ void RTCC::EMSLSUPP(int QUEID, int refs, int refs2, unsigned man, bool headsup)
 			EMGSTSTM(3, EZJGLSAD.LLD_REFSMMAT, RTCC_REFSMMAT_TYPE_LLD, RTCCPresentTimeGMT());
 		}
 	}
+	//Calculate DOK REFSMMAT
+	else if (QUEID == 3)
+	{
+		if (EZJGSTBL.REF1 <= 0)
+		{
+			return;
+		}
+
+		DockAlignOpt opt;
+		REFSMMATData refdata;
+
+		//Get CSM REFSMMAT data
+		if (EZJGSTBL.REFSUSED <= 0)
+		{
+			return;
+		}
+		refdata = EZJGMTX1.data[EZJGSTBL.REFSUSED - 1];
+		if (refdata.ID == 0)
+		{
+			//ERROR: REFSMMAT NOT AVAILABLE
+			EMGPRINT("EMSLSUPP", 1);
+			return;
+		}
+
+		opt.CSM_REFSMMAT = refdata.REFSMMAT;
+
+		if (opt.type != 1)
+		{
+			//Get LM REFSMMAT data
+			refdata = EZJGMTX3.data[EZJGSTBL.REF1 - 1];
+			if (refdata.ID == 0)
+			{
+				//ERROR: REFSMMAT NOT AVAILABLE
+				EMGPRINT("EMSLSUPP", 1);
+				return;
+			}
+			opt.LM_REFSMMAT = refdata.REFSMMAT;
+		}
+
+		opt.DockingAngle = EZJGSTBL.DKAN;
+		opt.CSMAngles = EZJGSTBL.CSM_ATT;
+		opt.LMAngles = EZJGSTBL.LM_ATT;
+		opt.type = refs;
+
+		DockingAlignmentProcessor(opt);
+
+		if (opt.type == 1)
+		{
+			//Save as DOK REFSMMAT
+			EMGSTSTM(RTCC_MPT_LM, opt.LM_REFSMMAT, RTCC_REFSMMAT_TYPE_DOK, RTCCPresentTimeGMT());
+
+			//Display on LOST
+			EZJGSTBL.REF1 = RTCC_REFSMMAT_TYPE_DOK;
+		}
+		else if (opt.type == 2)
+		{
+			EZJGSTBL.LM_ATT = opt.LMAngles;
+		}
+		else
+		{
+			EZJGSTBL.CSM_ATT = opt.CSMAngles;
+		}
+
+		EMDGLMST();
+	}
 }
 
 bool RTCC::EMMGSTCK(VECTOR3 u_star, VECTOR3 R, int body, VECTOR3 R_EM, VECTOR3 R_ES)
 {
+	//Function returns true, if star is occulted
+
 	//Vectors from bodies to spacecraft
 	VECTOR3 R_EV, R_MV, R_SV;
 	if (body == BODY_EARTH)
@@ -34704,8 +34731,6 @@ void RTCC::EMMGSTMP()
 	{
 		EZJGSTTB.Landmark_GET = 0.0;
 		VECTOR3 u = EZJGSTAR[EZGSTMED.G14_Star - 1];
-		MATRIX3 Rot = SystemParameters.MAT_J2000_BRCS;
-		u = mul(Rot, u);
 		char buff[4];
 		sprintf_s(buff, "%03o", EZGSTMED.G14_Star);
 		EZJGSTTB.Landmark_SC.assign(buff);
@@ -34754,7 +34779,7 @@ void RTCC::EMMGSTMP()
 					in = 1;
 					out = 0;
 				}
-				R_BL_equ = OrbMech::r_from_latlong(EZGSTMED.G14_lat, EZGSTMED.G14_lng, r);
+				R_BL_equ = OrbMech::r_from_latlong(EZGSTMED.G14_lat, EZGSTMED.G14_lng + OrbMech::w_Earth*EZGSTMED.G14_GMT, r);
 				if (ELVCNV(R_BL_equ, EZGSTMED.G14_GMT, 1, in, out, R_BL))
 				{
 					err = 2;
@@ -34811,8 +34836,7 @@ void RTCC::EMMGSTMP()
 				}
 				R_VL = R_BL - R_BV;
 
-				MATRIX3 Rot = SystemParameters.MAT_J2000_BRCS;
-				VECTOR3 u = mul(Rot, unit(R_VL));
+				VECTOR3 u = unit(R_VL);
 				EZJGSTTB.Landmark_SC = "";
 				if (EZGSTMED.G14_Vehicle == 1)
 				{
@@ -34907,17 +34931,726 @@ void RTCC::EMDGSUPP(int err)
 	}
 }
 
+void RTCC::EMMGLMST(int mode)
+{
+	EZJGSTBL.showRealign = false;
+
+	if (mode == 1)
+	{
+		//Realign angles
+
+		MATRIX3 REFSMMAT1, REFSMMAT2;
+
+		if (EZJGSTBL.REF1 > 0)
+		{
+			REFSMMATData refs = EZJGMTX3.data[EZJGSTBL.REF1 - 1];
+			if (refs.ID > 0)
+			{
+				REFSMMAT1 = refs.REFSMMAT;
+			}
+			else
+			{
+				EMDGLMST();
+				return;
+			}
+		}
+		else
+		{
+			EMDGLMST();
+			return;
+		}
+
+		if (EZJGSTBL.REF2 > 0)
+		{
+			REFSMMATData refs = EZJGMTX3.data[EZJGSTBL.REF2 - 1];
+			if (refs.ID > 0)
+			{
+				REFSMMAT2 = refs.REFSMMAT;
+			}
+			else
+			{
+				EMDGLMST();
+				return;
+			}
+		}
+		else
+		{
+			EMDGLMST();
+			return;
+		}
+
+		VECTOR3 X_P, Y_P, Z_P, X_B, Y_B, Z_B;
+
+		X_P = _V(REFSMMAT1.m11, REFSMMAT1.m12, REFSMMAT1.m13);
+		Y_P = _V(REFSMMAT1.m21, REFSMMAT1.m22, REFSMMAT1.m23);
+		Z_P = _V(REFSMMAT1.m31, REFSMMAT1.m32, REFSMMAT1.m33);
+		X_B = _V(REFSMMAT2.m11, REFSMMAT2.m12, REFSMMAT2.m13);
+		Y_B = _V(REFSMMAT2.m21, REFSMMAT2.m22, REFSMMAT2.m23);
+		Z_B = _V(REFSMMAT2.m31, REFSMMAT2.m32, REFSMMAT2.m33);
+
+		EZJGSTBL.showRealign = true;
+		EMGLMRAT(X_P, Y_P, Z_P, X_B, Y_B, Z_B, EZJGSTBL.GIMB_ANG.y, EZJGSTBL.GIMB_ANG.x, EZJGSTBL.GIMB_ANG.z, EZJGSTBL.FDAI_ANG.y, EZJGSTBL.FDAI_ANG.z, EZJGSTBL.FDAI_ANG.x);
+	}
+	else if (mode == 2)
+	{
+		//DOK
+		//TBD
+	}
+	else if (mode == 4)
+	{
+		//AGS
+
+		//Star 1 is at center
+		EZJGSTBL.A1_1 = EZJGSTBL.A2_1 = 0.0;
+		//Has to be same detent
+		EZJGSTBL.D2 = EZJGSTBL.D1;
+		EZJGSTBL.StoredREFSMMAT = OrbMech::AGSStarAlignment(EZJGSTAR, EZJGSTBL.Att1, EZJGSTBL.Att2, EZJGSTBL.star1, EZJGSTBL.star2, EZJGSTBL.L2, EZJGSTBL.D1, EZJGSTBL.A1_2);
+		EZJGSTBL.REFSMMATValid = true;
+		//Save as OST (would actually be a second manual step)
+		GMGMED("G21,LEM,OST-M;");
+		//Show as MAT1
+		EZJGSTBL.REF1 = RTCC_REFSMMAT_TYPE_OST;
+		EZJGSTBL.REFSUSED = EZJGSTBL.REF1;
+	}
+	else if (mode == 7)
+	{
+		//CHK
+		MATRIX3 REFSMMAT;
+		double GMT;
+
+		//Reset some data on the display
+		EZJGSTBL.star1 = EZJGSTBL.star2 = 0;
+		EZJGSTBL.A1_1 = EZJGSTBL.A1_2 = EZJGSTBL.A2_1 = EZJGSTBL.A2_2 = 0.0;
+
+		//Get GMT of alignment
+		EZJGSTBL.GETHORIZ = EZGSTMED.G20_HORIZGET;
+		GMT = GMTfromGET(EZJGSTBL.GETHORIZ);
+
+		ELVCTRInputTable in;
+		ELVCTROutputTable2 out;
+
+		in.EphemerisType = 0;
+		in.GMT = GMT;
+		in.L = RTCC_MPT_LM;
+
+		ELVCTR(in, out);
+
+		if (out.ErrorCode > 2)
+		{
+			EZJGSTBL.GETHORIZ = -1.0;
+			EMDGLMST();
+			return;
+		}
+
+		EphemerisData2 sv = out.SV;
+		EphemerisData sv2 = RotateSVToSOI(sv);
+
+		if (EZJGSTBL.REF1 > 0)
+		{
+			REFSMMATData refs = EZJGMTX3.data[EZJGSTBL.REF1 - 1];
+			if (refs.ID > 0)
+			{
+				REFSMMAT = refs.REFSMMAT;
+			}
+			else
+			{
+				EMDGLMST();
+				return;
+			}
+		}
+		else
+		{
+			EMDGLMST();
+			return;
+		}
+
+		EZJGSTBL.REFSUSED = EZJGSTBL.REF1;
+
+		VECTOR3 R_ES, R_EM, V_EM;
+
+		if (PLEFEM(1, sv2.GMT / 3600.0, 0, &R_EM, &V_EM, &R_ES, NULL))
+		{
+			//Error
+			EMDGLMST();
+			return;
+		}
+
+		unsigned num = 0;
+		bool found;
+
+		//AOT
+		double AOT_AZ, AOT_EL;
+
+		//Get azimuth and elevation angles of AOT detent
+		AOT_AZ = SystemParameters.MDGTCD[EZGSTMED.G20_AOT_Detent - 1];
+		AOT_EL = SystemParameters.MDGETA[EZGSTMED.G20_AOT_Detent - 1];
+
+		for (int i = 0; i < 2; i++)
+		{
+			found = false;
+
+			while (num < EZJGSTAR.size())
+			{
+				//Occultation check
+				if (EMMGSTCK(EZJGSTAR[num], sv2.R, sv2.RBI, R_EM, R_ES))
+				{
+					num++;
+					continue;
+				}
+				found = OrbMech::AOTcheckstar(EZJGSTAR[num], REFSMMAT, EZJGSTBL.StoredAttMED, AOT_AZ, AOT_EL);
+				if (found) break;
+				num++;
+			}
+
+			if (found)
+			{
+				if (i == 0)
+				{
+					EZJGSTBL.star1 = num + 1;
+					OrbMech::AOTStarAcquisition(EZJGSTAR[num], REFSMMAT, EZJGSTBL.StoredAttMED, AOT_AZ, AOT_EL, EZJGSTBL.A1_1, EZJGSTBL.A2_1);
+					num++;
+				}
+				else
+				{
+					EZJGSTBL.star2 = num + 1;
+					OrbMech::AOTStarAcquisition(EZJGSTAR[num], REFSMMAT, EZJGSTBL.StoredAttMED, AOT_AZ, AOT_EL, EZJGSTBL.A1_2, EZJGSTBL.A2_2);
+				}
+			}
+			else
+			{
+				if (i == 0)
+				{
+					EZJGSTBL.star1 = 0;
+				}
+				else
+				{
+					EZJGSTBL.star2 = 0;
+				}
+				break;
+			}
+		}
+
+		//Set displayed detents and attitudes for star sightings to input
+		EZJGSTBL.D1 = EZJGSTBL.D2 = EZGSTMED.G20_AOT_Detent;
+		//And use +Y
+		EZJGSTBL.L1 = EZJGSTBL.L2 = 2;
+		EZJGSTBL.Att1 = EZJGSTBL.Att2 = EZJGSTBL.StoredAttMED;
+
+		//COAS
+		double EL, SXP;
+		num = 0;
+		found = false;
+
+		for (int i = 0; i < 2; i++)
+		{
+			found = false;
+
+			while (num < EZJGSTAR.size())
+			{
+				//Occultation check
+				if (EMMGSTCK(EZJGSTAR[num], sv2.R, sv2.RBI, R_EM, R_ES))
+				{
+					num++;
+					continue;
+				}
+				found = OrbMech::LMCOASCheckStar(EZJGSTAR[num], REFSMMAT, EZJGSTBL.StoredAttMED, EZGSTMED.G20_COAS_Axis, EL, SXP);
+				if (found) break;
+				num++;
+			}
+
+			if (found)
+			{
+				if (i == 0)
+				{
+					EZJGSTBL.COAS_star1 = num;
+					EZJGSTBL.COAS_EL1 = EL;
+					EZJGSTBL.COAS_SXP1 = SXP;
+					num++;
+				}
+				else
+				{
+					EZJGSTBL.COAS_star2 = num;
+					EZJGSTBL.COAS_EL2 = EL;
+					EZJGSTBL.COAS_SXP2 = SXP;
+				}
+			}
+			else
+			{
+				if (i == 0)
+				{
+					EZJGSTBL.COAS_star1 = 0;
+				}
+				else
+				{
+					EZJGSTBL.COAS_star2 = 0;
+				}
+			}
+		}
+
+		EZJGSTBL.COAS_AXIS = EZGSTMED.G20_COAS_Axis;
+
+		//TBD: Horizon
+	}
+
+	EMDGLMST();
+}
+
+void RTCC::EMDGLMST()
+{
+	char Buffer[128];
+	LOSTDisplayBuffer.resize(81);
+
+	//Item 1: VEH
+	LOSTDisplayBuffer[0] = MHGVNM.tab[1];
+
+	//Item 2: MODE
+	switch (EZJGSTBL.MODE)
+	{
+	case 2: LOSTDisplayBuffer[1] = "DOK"; break;
+	case 3: LOSTDisplayBuffer[1] = "FLT"; break;
+	case 4: LOSTDisplayBuffer[1] = "AGS"; break;
+	case 5: LOSTDisplayBuffer[1] = "LUN"; break;
+	case 6: LOSTDisplayBuffer[1] = "MAT"; break;
+	case 7: LOSTDisplayBuffer[1] = "CHK"; break;
+	default: LOSTDisplayBuffer[1] = ""; break;
+	}
+
+	//Item 3: DKAN
+	if (EZJGSTBL.MODE == 2)
+	{
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.DKAN);
+		LOSTDisplayBuffer[2].assign(Buffer);
+	}
+	else
+	{
+		LOSTDisplayBuffer[2] = "";
+	}
+
+	//Item 4-6: LM Docking Attitude
+	if (EZJGSTBL.MODE == 2)
+	{
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.LM_ATT.x*DEG);
+		LOSTDisplayBuffer[3].assign(Buffer);
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.LM_ATT.y*DEG);
+		LOSTDisplayBuffer[4].assign(Buffer);
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.LM_ATT.z*DEG);
+		LOSTDisplayBuffer[5].assign(Buffer);
+	}
+	else
+	{
+		LOSTDisplayBuffer[3] = "";
+		LOSTDisplayBuffer[4] = "";
+		LOSTDisplayBuffer[5] = "";
+	}
+
+
+	//Item 7-9: LM Docking Attitude
+	if (EZJGSTBL.MODE == 2)
+	{
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.CSM_ATT.x*DEG);
+		LOSTDisplayBuffer[6].assign(Buffer);
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.CSM_ATT.y*DEG);
+		LOSTDisplayBuffer[7].assign(Buffer);
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.CSM_ATT.z*DEG);
+		LOSTDisplayBuffer[8].assign(Buffer);
+	}
+	else
+	{
+		LOSTDisplayBuffer[6] = "";
+		LOSTDisplayBuffer[7] = "";
+		LOSTDisplayBuffer[8] = "";
+	}
+
+	//Item 10: Matrix used
+	if (EZJGSTBL.MODE == 2 || EZJGSTBL.MODE == 4 || EZJGSTBL.MODE == 7)
+	{
+		if (EZJGSTBL.REFSUSED > 0)
+		{
+			REFSMMATData refs;
+			
+			if (EZJGSTBL.MODE == 2)
+			{
+				refs = EZJGMTX1.data[EZJGSTBL.REFSUSED - 1];
+			}
+			else
+			{
+				refs = EZJGMTX3.data[EZJGSTBL.REFSUSED - 1];
+			}
+
+			if (refs.ID > 0)
+			{
+				FormatREFSMMATCode(EZJGSTBL.REFSUSED, refs.ID, Buffer);
+				LOSTDisplayBuffer[9].assign(Buffer);
+			}
+			else
+			{
+				LOSTDisplayBuffer[9] = "N/A";
+			}
+		}
+		else
+		{
+			LOSTDisplayBuffer[9] = "N/A";
+		}
+	}
+	else
+	{
+		LOSTDisplayBuffer[9] = "";
+	}
+
+	//Item 11: GETHORIZ
+	if (EZJGSTBL.MODE == 7)
+	{
+		if (EZJGSTBL.GETHORIZ < 0.0)
+		{
+			LOSTDisplayBuffer[10] = "N/A";
+		}
+		else
+		{
+			OrbMech::format_time_HHMMSS(Buffer, EZJGSTBL.GETHORIZ);
+			LOSTDisplayBuffer[10].assign(Buffer);
+		}
+	}
+	else
+	{
+		LOSTDisplayBuffer[10] = "";
+	}
+
+	//Item 12: OGA
+	if (EZJGSTBL.MODE == 7)
+	{
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.OGA*DEG);
+		LOSTDisplayBuffer[11].assign(Buffer);
+	}
+	else
+	{
+		LOSTDisplayBuffer[11] = "";
+	}
+
+	//Item 13-14: Stars 1-2
+	if (EZJGSTBL.MODE == 3 || EZJGSTBL.MODE == 4 || EZJGSTBL.MODE == 5 || EZJGSTBL.MODE == 7)
+	{
+		if (EZJGSTBL.star1 > 0)
+		{
+			sprintf_s(Buffer, "%03d", EZJGSTBL.star1);
+			LOSTDisplayBuffer[12].assign(Buffer);
+		}
+		else
+		{
+			LOSTDisplayBuffer[12] = "N/A";
+		}
+		if (EZJGSTBL.star2 > 0)
+		{
+			sprintf_s(Buffer, "%03d", EZJGSTBL.star2);
+			LOSTDisplayBuffer[13].assign(Buffer);
+		}
+		else
+		{
+			LOSTDisplayBuffer[13] = "N/A";
+		}
+	}
+	else
+	{
+		LOSTDisplayBuffer[12] = "";
+		LOSTDisplayBuffer[13] = "";
+	}
+
+	//Item 15-18: RA and DEC
+	if (EZJGSTBL.MODE == 7 && EZJGSTBL.star1 > 0)
+	{
+		double dec, ra;
+		OrbMech::latlong_from_r(EZJGSTAR[EZJGSTBL.star1 - 1], dec, ra);
+		sprintf_s(Buffer, "%06.2lf", ra*DEG);
+		LOSTDisplayBuffer[14].assign(Buffer);
+		sprintf_s(Buffer, "%+06.2lf", dec*DEG);
+		LOSTDisplayBuffer[15].assign(Buffer);
+	}
+	else
+	{
+		LOSTDisplayBuffer[14] = LOSTDisplayBuffer[15] = "";
+	}
+
+	if (EZJGSTBL.MODE == 7 && EZJGSTBL.star2 > 0)
+	{
+		double dec, ra;
+		OrbMech::latlong_from_r(EZJGSTAR[EZJGSTBL.star2 - 1], dec, ra);
+		sprintf_s(Buffer, "%06.2lf", ra*DEG);
+		LOSTDisplayBuffer[16].assign(Buffer);
+		sprintf_s(Buffer, "%+06.2lf", dec*DEG);
+		LOSTDisplayBuffer[17].assign(Buffer);
+	}
+	else
+	{
+		LOSTDisplayBuffer[16] = LOSTDisplayBuffer[17] = "";
+	}
+
+	//Item 19-24: Att 1 and 2
+	if (EZJGSTBL.MODE == 4 || EZJGSTBL.MODE == 5 || EZJGSTBL.MODE == 7)
+	{
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.Att1.x*DEG);
+		LOSTDisplayBuffer[18].assign(Buffer);
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.Att1.y*DEG);
+		LOSTDisplayBuffer[19].assign(Buffer);
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.Att1.z*DEG);
+		LOSTDisplayBuffer[20].assign(Buffer);
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.Att2.x*DEG);
+		LOSTDisplayBuffer[21].assign(Buffer);
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.Att2.y*DEG);
+		LOSTDisplayBuffer[22].assign(Buffer);
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.Att2.z*DEG);
+		LOSTDisplayBuffer[23].assign(Buffer);
+	}
+	else
+	{
+		LOSTDisplayBuffer[18] = LOSTDisplayBuffer[19] = LOSTDisplayBuffer[20] = "";
+		LOSTDisplayBuffer[21] = LOSTDisplayBuffer[22] = LOSTDisplayBuffer[23] = "";
+	}
+
+	//Item 25-26: Reticle line
+	if (EZJGSTBL.MODE == 5 || EZJGSTBL.MODE == 7)
+	{
+		switch (EZJGSTBL.L1)
+		{
+		case 1: LOSTDisplayBuffer[24] = "-X"; break;
+		case 2: LOSTDisplayBuffer[24] = "+Y"; break;
+		case 3: LOSTDisplayBuffer[24] = "-Y"; break;
+		default: LOSTDisplayBuffer[24] = "+X"; break;
+		}
+	}
+	else
+	{
+		LOSTDisplayBuffer[24] = "";
+	}
+
+	if (EZJGSTBL.MODE == 4 || EZJGSTBL.MODE == 5 || EZJGSTBL.MODE == 7)
+	{
+		switch (EZJGSTBL.L2)
+		{
+		case 1: LOSTDisplayBuffer[25] = "-X"; break;
+		case 2: LOSTDisplayBuffer[25] = "+Y"; break;
+		case 3: LOSTDisplayBuffer[25] = "-Y"; break;
+		default: LOSTDisplayBuffer[25] = "+X"; break;
+		}
+	}
+	else
+	{
+		LOSTDisplayBuffer[25] = "";
+	}
+
+	//Item 27-28: A1
+	//Item 29-30: A2
+	if (EZJGSTBL.MODE == 5 || EZJGSTBL.MODE == 7)
+	{
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.A1_1*DEG);
+		LOSTDisplayBuffer[26].assign(Buffer);
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.A2_1*DEG);
+		LOSTDisplayBuffer[28].assign(Buffer);
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.A2_2*DEG);
+		LOSTDisplayBuffer[29].assign(Buffer);
+	}
+	else
+	{
+		LOSTDisplayBuffer[26] = LOSTDisplayBuffer[28] = LOSTDisplayBuffer[29] = "";
+	}
+
+	if (EZJGSTBL.MODE == 4 || EZJGSTBL.MODE == 5 || EZJGSTBL.MODE == 7)
+	{
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.A1_2*DEG);
+		LOSTDisplayBuffer[27].assign(Buffer);
+	}
+	else
+	{
+		LOSTDisplayBuffer[27] = "";
+	}
+
+	//Item 31-32: Detent
+	if (EZJGSTBL.MODE == 4 || EZJGSTBL.MODE == 5 || EZJGSTBL.MODE == 7)
+	{
+		sprintf_s(Buffer, "%d", EZJGSTBL.D1);
+		LOSTDisplayBuffer[30].assign(Buffer);
+
+		sprintf_s(Buffer, "%d", EZJGSTBL.D2);
+		LOSTDisplayBuffer[31].assign(Buffer);
+	}
+	else
+	{
+		LOSTDisplayBuffer[30] = LOSTDisplayBuffer[31] = "";
+	}
+
+	//Item 33-34: COAS stars
+	//Item 35-36: COAS elevation
+	//Item 37-38: COAS SXP
+	//Item 39: COAS axis
+	if (EZJGSTBL.MODE == 7)
+	{
+		if (EZJGSTBL.COAS_star1 != 0)
+		{
+			sprintf(Buffer, "%03d", EZJGSTBL.COAS_star1);
+			LOSTDisplayBuffer[32].assign(Buffer);
+			sprintf(Buffer, "%02.0lf", EZJGSTBL.COAS_EL1*DEG);
+			LOSTDisplayBuffer[34].assign(Buffer);
+			sprintf(Buffer, "%01.0lf", EZJGSTBL.COAS_SXP1*DEG);
+			LOSTDisplayBuffer[36].assign(Buffer);
+		}
+		else
+		{
+			LOSTDisplayBuffer[32] = LOSTDisplayBuffer[34] = LOSTDisplayBuffer[36] = "";
+		}
+
+		if (EZJGSTBL.COAS_star2 != 0)
+		{
+			sprintf(Buffer, "%03d", EZJGSTBL.COAS_star2);
+			LOSTDisplayBuffer[33].assign(Buffer);
+			sprintf(Buffer, "%02.0lf", EZJGSTBL.COAS_EL2*DEG);
+			LOSTDisplayBuffer[35].assign(Buffer);
+			sprintf(Buffer, "%01.0lf", EZJGSTBL.COAS_SXP2*DEG);
+			LOSTDisplayBuffer[37].assign(Buffer);
+		}
+		else
+		{
+			LOSTDisplayBuffer[33] = LOSTDisplayBuffer[35] = LOSTDisplayBuffer[37] = "";
+		}
+
+		if (EZJGSTBL.COAS_star1 == 0 && EZJGSTBL.COAS_star2 == 0)
+		{
+			LOSTDisplayBuffer[33] = "NO STARS AVAILABLE";
+		}
+
+		if (EZJGSTBL.COAS_AXIS == 1)
+		{
+			LOSTDisplayBuffer[38] = "X";
+		}
+		else
+		{
+			LOSTDisplayBuffer[38] = "Z";
+		}
+	}
+	else
+	{
+		LOSTDisplayBuffer[32] = LOSTDisplayBuffer[33] = LOSTDisplayBuffer[34] = LOSTDisplayBuffer[35] = LOSTDisplayBuffer[36] = LOSTDisplayBuffer[37] = LOSTDisplayBuffer[38] = "";
+	}
+	//Item 40-41: Telemetry stars
+	//Item 42-44: Telemetry unit vector 1
+	//Item 45-47: Telemetry unit vector 2
+	//Item 48-50: Realign attitude (IMU)
+	//Item 51-53: Realign attitude (FDAI)
+	if (EZJGSTBL.showRealign)
+	{
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.GIMB_ANG.x*DEG);
+		LOSTDisplayBuffer[47].assign(Buffer);
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.GIMB_ANG.y*DEG);
+		LOSTDisplayBuffer[48].assign(Buffer);
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.GIMB_ANG.z*DEG);
+		LOSTDisplayBuffer[49].assign(Buffer);
+
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.FDAI_ANG.x*DEG);
+		LOSTDisplayBuffer[50].assign(Buffer);
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.FDAI_ANG.y*DEG);
+		LOSTDisplayBuffer[51].assign(Buffer);
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.FDAI_ANG.z*DEG);
+		LOSTDisplayBuffer[52].assign(Buffer);
+	}
+	else
+	{
+		LOSTDisplayBuffer[47] = LOSTDisplayBuffer[48] = LOSTDisplayBuffer[49] = "";
+		LOSTDisplayBuffer[50] = LOSTDisplayBuffer[51] = LOSTDisplayBuffer[52] = "";
+	}
+	//Item 54-56: Presently stored attitude (TLM)
+	//Item 57-59: Presently stored attitude (MED)
+	if (EZJGSTBL.MODE == 7)
+	{
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.StoredAttMED.x*DEG);
+		LOSTDisplayBuffer[56].assign(Buffer);
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.StoredAttMED.y*DEG);
+		LOSTDisplayBuffer[57].assign(Buffer);
+		sprintf_s(Buffer, "%05.1lf", EZJGSTBL.StoredAttMED.z*DEG);
+		LOSTDisplayBuffer[58].assign(Buffer);
+	}
+	else
+	{
+		LOSTDisplayBuffer[56] = LOSTDisplayBuffer[57] = LOSTDisplayBuffer[58] = "";
+	}
+	//Item 60: Matrix 1
+	//Item 61: Matrix 1 GET
+	//Item 62-70: Matrix 1
+	if (EZJGSTBL.REF1 > 0)
+	{
+		REFSMMATData refs = EZJGMTX3.data[EZJGSTBL.REF1 - 1];
+		if (refs.ID > 0)
+		{
+			FormatREFSMMATCode(EZJGSTBL.REF1, refs.ID, Buffer);
+			LOSTDisplayBuffer[59].assign(Buffer);
+			OrbMech::format_time_HHMMSS(Buffer, GETfromGMT(refs.GMT));
+			LOSTDisplayBuffer[60].assign(Buffer);
+
+			for (unsigned i = 0; i < 9; i++)
+			{
+				sprintf_s(Buffer, "%+010.7lf", refs.REFSMMAT.data[i]);
+				LOSTDisplayBuffer[i + 61].assign(Buffer);
+			}
+		}
+		else
+		{
+			LOSTDisplayBuffer[59] = "N/A";
+			LOSTDisplayBuffer[60] = "";
+
+			for (unsigned i = 0; i < 9; i++)
+			{
+				LOSTDisplayBuffer[i + 61] = "";
+			}
+		}
+	}
+	else
+	{
+		LOSTDisplayBuffer[59] = "N/A";
+
+		for (unsigned i = 0; i < 10; i++)
+		{
+			LOSTDisplayBuffer[i + 60] = "";
+		}
+	}
+
+	//Item 71: Matrix 2 ID
+	//Item 72: Matrix 2 GET
+	//Item 73-81: Matrix 2
+	if (EZJGSTBL.REF2 > 0)
+	{
+		REFSMMATData refs = EZJGMTX3.data[EZJGSTBL.REF2 - 1];
+		if (refs.ID > 0)
+		{
+			FormatREFSMMATCode(EZJGSTBL.REF2, refs.ID, Buffer);
+			LOSTDisplayBuffer[70].assign(Buffer);
+			OrbMech::format_time_HHMMSS(Buffer, GETfromGMT(refs.GMT));
+			LOSTDisplayBuffer[71].assign(Buffer);
+
+			for (unsigned i = 0; i < 9; i++)
+			{
+				sprintf_s(Buffer, "%+010.7lf", refs.REFSMMAT.data[i]);
+				LOSTDisplayBuffer[i + 72].assign(Buffer);
+			}
+		}
+		else
+		{
+			LOSTDisplayBuffer[70] = "N/A";
+			LOSTDisplayBuffer[71] = "";
+
+			for (unsigned i = 0; i < 9; i++)
+			{
+				LOSTDisplayBuffer[i + 72] = "";
+			}
+		}
+	}
+	else
+	{
+		LOSTDisplayBuffer[70] = "N/A";
+		for (unsigned i = 0; i < 10; i++)
+		{
+			LOSTDisplayBuffer[i + 71] = "";
+		}
+	}
+}
+
 void RTCC::CMMSLVNAV(VECTOR3 R_ecl, VECTOR3 V_ecl, double GMT)
 {
-	/*double lambda = SystemParameters.MCLGRA + SystemParameters.MCGRIC *3600.0*OrbMech::w_Earth;
-	//Converts from equatorial coordinates (with launchpad longitude as 0) to RTCC ecliptic
-	MATRIX3 RMAT = mul(MatrixRH_LH(OrbMech::GetRotationMatrix(BODY_EARTH,SystemParameters.GMTBASE)), _M(cos(lambda), -sin(lambda), 0, sin(lambda), cos(lambda), 0, 0, 0, 1));
-	//Converts from RTCC ecliptic to S-IVB ephemeral
-	MATRIX3 MRG = mul(_M(1, 0, 0, 0, 0, -1, 0, 1, 0), OrbMech::tmat(RMAT));
-	double phi_L = MDVSTP.PHIL;
-	MATRIX3 MSG = _M(cos(phi_L), sin(phi_L)*SystemParameters.MCLSBN, -sin(phi_L)*SystemParameters.MCLCBN, -sin(phi_L), cos(phi_L)*SystemParameters.MCLSBN, -cos(phi_L)*SystemParameters.MCLCBN, 0, SystemParameters.MCLCBN, SystemParameters.MCLSBN);
-	MATRIX3 MRS = mul(OrbMech::tmat(MSG), MRG);*/
-
 	CZNAVSLV.PosS = mul(GZLTRA.IU1_REFSMMAT, R_ecl);
 	CZNAVSLV.DotS = mul(GZLTRA.IU1_REFSMMAT, V_ecl);
 	CZNAVSLV.NUPTIM = GMT - SystemParameters.MCGRIC * 3600.0;
@@ -35198,7 +35931,7 @@ void RTCC::QMPNREAD(double gmtbase)
 		//Rotate from true coordinates back to midnight before launch. Then rotate to ecliptic coordinates
 		Rot2 = mul(Rot, GLMRTM(E, OrbMech::w_Earth * dt, 3));
 		//Lastly rotate to basic reference coordinate system
-		EZNPMATX.Mat[i] = mul(Rot3, Rot2);
+		EZNPMATX.Mat[i] = OrbMech::tmat(mul(Rot3, Rot2));
 		//One matrix every 6 hours
 		mjd = mjd + 0.25;
 	}
@@ -35209,11 +35942,7 @@ bool RTCC::QMGEPH(int epoch, double gmtbase, double HOURS)
 	MATRIX3 Rot_J_B, Rot_SG_ECL, R_LIB;
 	VECTOR3 R_EM, R_ES, V_EM;
 	double MJD, MoonPos[12], EarthPos[12];
-	OBJHANDLE hMoon, hEarth;
 	CELBODY *cMoon, *cEarth;
-
-	hMoon = oapiGetObjectByName("Moon");
-	hEarth = oapiGetObjectByName("Earth");
 
 	cMoon = oapiGetCelbodyInterface(hMoon);
 	cEarth = oapiGetCelbodyInterface(hEarth);
@@ -35230,20 +35959,20 @@ bool RTCC::QMGEPH(int epoch, double gmtbase, double HOURS)
 
 		//Moon Ephemeris
 		cMoon->clbkEphemeris(MJD, EPHEM_TRUEPOS, MoonPos);
-		R_EM = _V(MoonPos[0], MoonPos[2], MoonPos[1]) / OrbMech::R_Earth;
-		V_EM = _V(MoonPos[3], MoonPos[5], MoonPos[4]) / OrbMech::R_Earth*3600.0;
-		//R_EM = mul(Rot_J_B, R_EM);
-		//V_EM = mul(Rot_J_B, V_EM);
+		R_EM = _V(MoonPos[0], MoonPos[2], MoonPos[1]) / SystemParameters.MCCMCU;
+		V_EM = _V(MoonPos[3], MoonPos[5], MoonPos[4]) / SystemParameters.MCCMCU*3600.0;
+		R_EM = mul(Rot_J_B, R_EM);
+		V_EM = mul(Rot_J_B, V_EM);
 
 		//Sun Ephemeris
 		cEarth->clbkEphemeris(MJD, EPHEM_TRUEPOS | EPHEM_TRUEVEL, EarthPos);
-		R_ES = -OrbMech::Polar2Cartesian(EarthPos[2] * AU, EarthPos[1], EarthPos[0]) / OrbMech::R_Earth;
-		//R_ES = mul(Rot_J_B, R_ES);
+		R_ES = -OrbMech::Polar2Cartesian(EarthPos[2] * AU, EarthPos[1], EarthPos[0]) / SystemParameters.MCCMCU;
+		R_ES = mul(Rot_J_B, R_ES);
 
-		//Libration matrix (already in NBY coordinates, so don't use yet!)
+		//Libration matrix
 		Rot_SG_ECL = OrbMech::GetRotationMatrix(BODY_MOON, MJD);
 		Rot_SG_ECL = MatrixRH_LH(Rot_SG_ECL);
-		R_LIB = mul(Rot_J_B, Rot_SG_ECL);
+		R_LIB = OrbMech::tmat(mul(Rot_J_B, Rot_SG_ECL));
 
 		//Write data
 		MDGSUN.data[i][0] = R_ES.x; MDGSUN.data[i][1] = R_ES.y; MDGSUN.data[i][2] = R_ES.z;
@@ -35336,12 +36065,9 @@ void RTCC::RMDRTSD(EphemerisDataTable2 &tab, int opt, double val, double lng_des
 {
 	if (tab.Header.CSI != BODY_EARTH) return;
 
-	ELVCTRInputTable intab;
-	ELVCTROutputTable2 outtab;
 	ManeuverTimesTable MANTIMES;
-	TimeConstraintsTable tctab;
 	EphemerisData2 sv_ECT;
-	double GMT_cross, out, lng, GMT_guess;
+	double GMT_cross, out, lng, GMT_guess, r_i, v_i, lat_i, lng_i, gamma_i, azi_i;
 	int i;
 
 	RZDRTSD.ErrorMessage = "";
@@ -35373,12 +36099,6 @@ void RTCC::RMDRTSD(EphemerisDataTable2 &tab, int opt, double val, double lng_des
 			//No convergence
 			break;
 		}
-		intab.GMT = GMT_cross;
-		ELVCTR(intab, outtab, tab, MANTIMES);
-		if (outtab.ErrorCode > 2)
-		{
-			break;
-		}
 		RZDRTSD.table[i].DataIndicator = false;
 		if (out == 0)
 		{
@@ -35390,19 +36110,16 @@ void RTCC::RMDRTSD(EphemerisDataTable2 &tab, int opt, double val, double lng_des
 			//Not converged
 			RZDRTSD.table[i].AlternateLongitudeIndicator = true;
 		}
-		ELVCNV(outtab.SV, 0, 1, sv_ECT);
-		EphemerisData sv_ECT2;
-		sv_ECT2.R = sv_ECT.R;
-		sv_ECT2.V = sv_ECT.V;
-		sv_ECT2.GMT = sv_ECT.GMT;
-		sv_ECT2.RBI = 0;
 
-		EMMDYNEL(sv_ECT2, tctab);
-		RZDRTSD.table[i].Azimuth = tctab.azi*DEG;
+		PICSSC(true, sv_inter.R, sv_inter.V, r_i, v_i, lat_i, lng_i, gamma_i, azi_i);
+		lng_i -= OrbMech::w_Earth*sv_inter.GMT;
+		OrbMech::normalizeAngle(lng_i, false);
+
+		RZDRTSD.table[i].Azimuth = azi_i*DEG;
 		RZDRTSD.table[i].GET = GETfromGMT(GMT_cross);
 		RZDRTSD.table[i].GMT = GMT_cross;
-		RZDRTSD.table[i].Latitude = tctab.lat*DEG;
-		RZDRTSD.table[i].Longitude = tctab.lng*DEG;
+		RZDRTSD.table[i].Latitude = lat_i*DEG;
+		RZDRTSD.table[i].Longitude = lng_i*DEG;
 		RZDRTSD.table[i].Rev = CapeCrossingRev(RTCC_MPT_CSM, GMT_cross);
 
 		GMT_guess = GMT_cross;

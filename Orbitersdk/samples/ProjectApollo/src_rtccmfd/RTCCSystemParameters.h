@@ -242,13 +242,13 @@ struct RTCCSystemParameters
 
 		//Epoch of NBY 1969
 		AGCEpoch = 1969;
+		TEPHEM0 = 40038.0;
 		MAT_J2000_BRCS = _M(1, 0, 0, 0, 1, 0, 0, 0, 1);
 
-		//These are calculated with R_E = 6.373338e6
-		MCGMUM = 2.454405845045305e-01;
-		MCEMUU = 19.95468740240253;
-		MCSRMU = 4.954196044814240e-01;
-		MCERMU = 4.467066979842873;
+		MCGMUM = 0.244883757275606;
+		MCEMUU = 19.90941651408238;
+		MCSRMU = 0.494857310015327;
+		MCERMU = 4.461996919999204;
 
 		//Time from launch to EOI, seconds
 		MDLIEV[0] = 0.76673814e3;
@@ -279,6 +279,7 @@ struct RTCCSystemParameters
 
 		MCVLMC = 0.0;
 		MCVCMC = 0.5;
+		MCCMCU = 6378165.0;
 		MCCNMC = 3443.93359;
 		MCSMLR = 1738090.0;
 		MCCRPD = 0.01745329251; // PI/180
@@ -684,10 +685,39 @@ struct RTCCSystemParameters
 
 		MCVCMA = 129.4*0.3048*0.3048;
 		MCVCMW = 5541.0; //Default CM empty + full CM RCS
+
+		MDGTCD[0] = -60.0*RAD;
+		MDGTCD[1] = 0.0*RAD;
+		MDGTCD[2] = 60.0*RAD;
+		MDGTCD[3] = 120.0*RAD;
+		MDGTCD[4] = 180.0*RAD;
+		MDGTCD[5] = 240.0*RAD;
+		MDGETA[0] = 45.0*RAD;
+		MDGETA[1] = 45.0*RAD;
+		MDGETA[2] = 45.0*RAD;
+		MDGETA[3] = 45.0*RAD;
+		MDGETA[4] = 45.0*RAD;
+		MDGETA[5] = 45.0*RAD;
+
+		//Launchpads
+
+		//CSM: LC-39A as default
+		MCLLTP[0] = MCLLTP[1] = 28.608202*RAD;
+		MCLSDA = sin(MCLLTP[0]);
+		MCLCDA = cos(MCLLTP[0]);
+		MCLGRA = -80.604133*RAD;
+
+		//LM: LC-37B as default
+		MCLLLP[0] = MCLLLP[1] = 28.531445*RAD;
+		MCLSLL = sin(MCLLLP[0]);
+		MCLCLL = cos(MCLLLP[0]);
+		MCLLPL = -80.565077*RAD;
 	}
 
 	//DEFINITIONS
 
+	//Meters per Earth radii
+	double MCCMCU;
 	//Nautical miles per Earth radii
 	double MCCNMC;
 	//Year of epoch
@@ -750,12 +780,22 @@ struct RTCCSystemParameters
 	double GMTBASE = 0.0;
 	//Number of hours from January 0 to midnight before launch
 	double MCCBES = 0.0;
-	//Sine of the geodetic latitude of the launch pad
-	double MCLSDA = sin(28.608202*RAD); //LC-39A
-	//Cosine of the geodetic latitude of the launch pad
-	double MCLCDA = cos(28.608202*RAD); //LC-39A
-	//Longitude of launch pad
-	double MCLGRA = -80.604133*RAD;	//LC-39A
+	//Geodetic and geocentric latitude CSM pad (radians)
+	double MCLLTP[2];
+	//Sine of the geodetic latitude of the CSM pad
+	double MCLSDA;
+	//Cosine of the geodetic latitude of the CSM pad
+	double MCLCDA;
+	//Longitude of CSM pad (radians)
+	double MCLGRA;
+	//Geodetic and geocentric latitude LM pad (radians)
+	double MCLLLP[2];
+	//Sine of the geodetic latitude of the LM pad
+	double MCLSLL;
+	//Cosine of the geodetic latitude of the LM pad
+	double MCLCLL;
+	//Longitude of LM pad (radians)
+	double MCLLPL;
 	//CMC address for external DV uplink
 	int MCCCEX = 3404;
 	//LGC address for external DV uplink
@@ -776,8 +816,12 @@ struct RTCCSystemParameters
 	int MCLRLS = 2022;
 	//LGC address for time of landing
 	int MCLTTD = 2400;
+	//LGC address for descent abort constants
+	int MCLABT = 2545;
 	//Suppress C-band station contacts generation (0 = suppressed, 1 = unsuppressed)
 	int MGRTAG = 1;
+	//Maximum station characteristic blocks
+	int MKRBKS;
 	//Gravitational constant of the Moon (Er^3/hr^2)
 	double MCGMUM;
 	//Gravitational constant of the Earth (Er^3/hr^2)
@@ -1105,6 +1149,8 @@ struct RTCCSystemParameters
 
 	//Matrix to convert from J2000 to NBY coordinates
 	MATRIX3 MAT_J2000_BRCS;
+	//MJD of midnight July 1st before launch
+	double TEPHEM0;
 
 	//Reentry
 
@@ -1115,4 +1161,11 @@ struct RTCCSystemParameters
 	double MCVCMA;
 	//CM weight
 	double MCVCMW;
+
+	//Guidance
+
+	//AOT azimuth table
+	double MDGTCD[6];
+	//AOT elevation table
+	double MDGETA[6];
 };
