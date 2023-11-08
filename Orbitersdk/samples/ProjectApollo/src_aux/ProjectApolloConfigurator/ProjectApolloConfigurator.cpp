@@ -69,6 +69,7 @@ static struct {
 	int Saturn_VAGCChecklistAutoSlow;
 	int Saturn_VAGCChecklistAutoEnabled;
 	int Saturn_VcInfoEnabled;
+	int Saturn_VibrationVisualization;
 } gParams;
 
 
@@ -137,6 +138,8 @@ ProjectApolloConfigurator::ProjectApolloConfigurator (): LaunchpadItem ()
 			sscanf(line + 14, "%i", &gParams.Saturn_VESIM);
 		} else if (!strnicmp(line, "VCINFOENABLED", 13)) {
 			sscanf(line + 13, "%i", &gParams.Saturn_VcInfoEnabled);
+		} else if (!strnicmp(line, "VIBRATIONVISUALIZED", 19)) {
+			sscanf(line + 19, "%i", &gParams.Saturn_VibrationVisualization);
 		}
 	}	
 	oapiCloseFile (hFile, FILE_IN);
@@ -216,6 +219,9 @@ void ProjectApolloConfigurator::WriteConfig(FILEHANDLE hFile)
 	oapiWriteLine(hFile, "JOYSTICK_TAUTO");	// Not configurable currently
 
 	sprintf(cbuf, "VCINFOENABLED %d", gParams.Saturn_VcInfoEnabled);
+	oapiWriteLine(hFile, cbuf);
+
+	sprintf(cbuf, "VIBRATIONVISUALIZED %d", gParams.Saturn_VibrationVisualization);
 	oapiWriteLine(hFile, cbuf);
 
 	oapiCloseFile (hFile, FILE_OUT);
@@ -404,6 +410,7 @@ BOOL CALLBACK ProjectApolloConfigurator::DlgProcFrame (HWND hWnd, UINT uMsg, WPA
 				else {
 					gParams.Saturn_VcInfoEnabled = 0;
 				}
+				gParams.Saturn_VibrationVisualization = (int)SendDlgItemMessage(gParams.hDlgTabs[2], IDC_SLIDER1, TBM_GETPOS, 0, 0);
 
 				EndDialog (hWnd, 0);
 				return 0;
@@ -504,6 +511,8 @@ BOOL CALLBACK ProjectApolloConfigurator::DlgProcControl (HWND hWnd, UINT uMsg, W
 		SendDlgItemMessage(hWnd, IDC_CHECK_VAGCCHECKLISTAUTOENABLED, BM_SETCHECK, gParams.Saturn_VAGCChecklistAutoEnabled?BST_CHECKED:BST_UNCHECKED, 0);
 
 		SendDlgItemMessage(hWnd, IDC_CHECK_VCINFOENABLED, BM_SETCHECK, gParams.Saturn_VcInfoEnabled ? BST_CHECKED : BST_UNCHECKED, 0);
+
+		SendDlgItemMessage(hWnd, IDC_SLIDER1, TBM_SETPOS, TRUE, (long)gParams.Saturn_VibrationVisualization);
 
 		UpdateControlState(hWnd);
 		return TRUE;
@@ -679,6 +688,7 @@ DLLCLBK void opcDLLInit (HINSTANCE hDLL)
 	gParams.Saturn_VAGCChecklistAutoSlow = 1;
 	gParams.Saturn_VAGCChecklistAutoEnabled = 0;
 	gParams.Saturn_VcInfoEnabled = 0;
+	gParams.Saturn_VibrationVisualization = 50;
 
 	gParams.item = new ProjectApolloConfigurator;
 	for (i = 0; i < MAX_TABNUM; i++)
