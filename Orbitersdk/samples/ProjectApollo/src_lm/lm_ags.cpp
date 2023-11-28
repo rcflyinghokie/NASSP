@@ -526,7 +526,18 @@ void LEM_AEA::SetOutputChannel(int Type, int Data)
 
 	case 033:
 		//Altitude, Altitude Rate
-		lem->RadarTape.AGSAltitudeAltitudeRate(Data);
+		{
+			AGSChannelValue40 val = GetOutputChannel(IO_ODISCRETES);
+
+			if (val[AGSAltitude] == 0)
+			{
+				lem->RadarTape.SetAGSAltitude(Data);
+			}
+			else if (val[AGSAltitudeRate] == 0)
+			{
+				lem->RadarTape.SetAGSAltitudeRate(Data);
+			}
+		}
 		break;
 
 	case 034:

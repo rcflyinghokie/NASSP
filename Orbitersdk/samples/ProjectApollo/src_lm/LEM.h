@@ -149,18 +149,17 @@ public:
 	void LoadState(FILEHANDLE scn, char *end_str);
 	void Timestep(double simdt);
 	void SystemTimestep(double simdt);
-	void setRange(double range) { reqRange = range; };
-	void setRate(double rate) { reqRate = rate ; }; 
 	void RenderRange(SURFHANDLE surf);
 	void RenderRate(SURFHANDLE surf);
 	void RenderRangeVC(SURFHANDLE surf, SURFHANDLE surf1a, SURFHANDLE surf1b, SURFHANDLE surf2, int xTexMul = 1);
 	void RenderRateVC(SURFHANDLE surf, SURFHANDLE surf1a, SURFHANDLE surf1b, int xTexMul = 1);
 	void SetLGCAltitude(int val);
 	void SetLGCAltitudeRate(int val);
-	void AGSAltitudeAltitudeRate(int Data);
+	void SetAGSAltitude(int Data);
+	void SetAGSAltitudeRate(int Data);
 
-	double GetLGCAltitude() { return lgc_alt; };
-	double GetLGCAltitudeRate() { return lgc_altrate; };
+	double GetAltitude() { return reqRange; };
+	double GetAltitudeRate() { return reqRate; };
 
 	bool PowerSignalMonOn();
 	bool PowerFailure();
@@ -176,12 +175,13 @@ private:
 	double reqRate;
 	double dispRange;
 	double dispRate;
-	double lgc_alt, lgc_altrate;
-	double ags_alt, ags_altrate;
+	double AltitudeDigitalInput; //from PGNS or AGS
+	double AltitudeRateDigitalInput; //from PGNS or AGS
 	SURFHANDLE tape1, tape2;
 	double desRange, desRate;
-	double LGCaltUpdateTime, LGCaltRateUpdateTime;
-	double AGSaltUpdateTime, AGSaltRateUpdateTime;
+	double AltUpdateTime; //Time when digital altitude input was last updated
+	double AltRateUpdateTime; //Time when digital altitude rate input was last updated
+	int ModeSelect; //0 = None (unpowered), 1 = RR, 2 = LR, 3 = PGNS, 4 = AGS
 
 	const double ALTSCALEFACTOR = 0.3048 * 2.345 * pow(2.0, -3.0);
 	const double ALTRATESCALEFACTOR = 0.3048 * pow(2.0, -4.0);

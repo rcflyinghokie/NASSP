@@ -2817,16 +2817,13 @@ LEM_RadarTape::LEM_RadarTape()
 	reqRate = 0;
 	dispRange = 8321;	//Initializes range rate display to zero per LM closeout images
 	dispRate = 3759;	//Initializes range rate display to a non zero number, in this case -240, per LM closeout images
-	lgc_alt = 0;
-	lgc_altrate = 0;
-	ags_alt = 0;
-	ags_altrate = 0;
+	AltitudeDigitalInput = 0;
+	AltitudeRateDigitalInput = 0;
 	desRange = 0;
 	desRate = 0;
-	LGCaltUpdateTime = 0;
-	LGCaltRateUpdateTime = 0;
-	AGSaltUpdateTime = 0;
-	AGSaltRateUpdateTime = 0;
+	AltUpdateTime = 0;
+	AltRateUpdateTime = 0;
+	ModeSelect = 0;
 }
 
 void LEM_RadarTape::Init(LEM* s, e_object* dc_src, e_object* ac_src, SURFHANDLE surf1, SURFHANDLE surf2) {
@@ -2864,7 +2861,7 @@ bool LEM_RadarTape::SignalFailure()
 {
 	if (lem->AltRngMonSwitch.GetState() == TOGGLESWITCH_UP)
 	{
-		if (lem->RR.IsRangeDataGood() == false || lem->RR.IsFrequencyDataGood() == false || lem->RR.GetRadarRange() < 5 || lem->RR.GetRadarRate() < 5)
+		if (lem->RR.GetRadarRange() < 5.0 || abs(lem->RR.GetRadarRate()) < 5.0)
 		{
 			return true; //Needs to check rendezvous radar rate and range signals and return true if not present
 		}
@@ -2872,23 +2869,16 @@ bool LEM_RadarTape::SignalFailure()
 	else {
 		if (lem->ModeSelSwitch.IsUp()) // LR
 		{
-			if (lem->LR.IsRangeDataGood() == false || lem->LR.IsVelocityDataGood() == false || lem->LR.GetAltitude() < 5 || lem->LR.GetAltitudeRate() < 5)
+			if (lem->LR.GetAltitude() < 5.0 || abs(lem->LR.GetAltitudeRate()) < 5.0)
 			{
 				return true; //Needs to check landing radar rate and range signals and return true if not present
 			}
 		}
-		else if (lem->ModeSelSwitch.IsCenter()) //PGNS
+		else //PGNS or AGS
 		{
-			if ((LGCaltUpdateTime + 1.0) < oapiGetSimTime() || (LGCaltRateUpdateTime + 1.0) < oapiGetSimTime() || lgc_alt < 5 || lgc_altrate < 5)
+			if ((AltUpdateTime + 1.0) < oapiGetSimTime() || (AltRateUpdateTime + 1.0) < oapiGetSimTime())
 			{
-				return true; //Needs to check LGC rate and range signals and return true if not present
-			}
-		}
-		else //AGS
-		{
-			if ((AGSaltUpdateTime + 1.0) < oapiGetSimTime() || (AGSaltRateUpdateTime + 1.0) < oapiGetSimTime() || ags_alt < 5 || ags_altrate < 5)
-			{
-				return true; //Needs to check AGS rate and range signals and return true if not present
+				return true; //Needs to check PGNS/AGS rate and range signals and return true if not present
 			}
 		}
 		return false;
@@ -2910,45 +2900,49 @@ void LEM_RadarTape::Timestep(double simdt) {
 	
 	if (!IsPowered())
 	{
+		ModeSelect = 0;
+		AltitudeDigitalInput = AltitudeRateDigitalInput = 0.0; // Digital registers might get reset?
 		return;
 	}
-	
-	if( lem->AltRngMonSwitch.GetState()==TOGGLESWITCH_UP ) {
-		setRange(lem->RR.GetRadarRange());
-		setRate(lem->RR.GetRadarRate());
-	} 
-	else {
+
+	//Mode Select Logic
+	if (lem->AltRngMonSwitch.GetState() == TOGGLESWITCH_UP) // RR
+	{
+		ModeSelect = 1;
+	}
+	else
+	{
 		if (lem->ModeSelSwitch.IsUp()) // LR
 		{
-			if (lem->LR.IsRangeDataGood())
-			{
-				setRange(lem->LR.GetAltitude());
-			}
-			/*else
-			{
-				setRange(0);
-			}*/
-			if (lem->LR.IsVelocityDataGood())
-			{
-				setRate(lem->LR.GetAltitudeRate());
-			}
-			/*else
-			{
-				setRate(0);
-			}*/
+			ModeSelect = 2;
 		}
-		else if (lem->ModeSelSwitch.IsCenter()) //PGNS
+		else if (lem->ModeSelSwitch.IsCenter()) // PGNS
 		{
-			setRange(lgc_alt);
-			setRate(lgc_altrate);
+			ModeSelect = 3;
 		}
-		else //AGS
+		else // AGS
 		{
-			setRange(ags_alt);
-			setRate(ags_altrate);
+			ModeSelect = 4;
 		}
-
 	}
+
+	//Process Input Data
+	if(ModeSelect == 1) // RR
+	{
+		reqRange = lem->RR.GetRadarRange();
+		reqRate = lem->RR.GetRadarRate();
+	}
+	else if (ModeSelect == 2) // LR
+	{
+		reqRange = lem->LR.GetAltitude();
+		reqRate = lem->LR.GetAltitudeRate();
+	}
+	else // PGNS/AGS
+	{
+		reqRange = AltitudeDigitalInput;
+		reqRate = AltitudeRateDigitalInput;
+	}
+
 	// Altitude/Range
 	if (reqRange < (1000.0 * 0.3048))
 	{
@@ -2977,15 +2971,7 @@ void LEM_RadarTape::Timestep(double simdt) {
 
 	//AOH Volume 2: "Range rate of 100 fps can mean rate of 100, 1100, 2100, etc., fps. Also, if rate is between 701 to 999, 1700 to 1999,
 	//etc., fps, the display will read 700 fps and recycle to zero when rate becomes 1000, 2000, etc., fps.
-
-	while (reqRate > 304.8)
-	{
-		reqRate -= 304.8;
-	}
-	while (reqRate < -304.8)
-	{
-		reqRate += 304.8;
-	}
+	reqRate = fmod(reqRate, 304.8);
 
 	desRate  = 2881.0 - 82.0 -  (reqRate * 3.2808399 * 40.0 * 100.0 / 1000.0);
 	TapeDrive(dispRate, desRate, 500.0, simdt);
@@ -3041,7 +3027,8 @@ void LEM_RadarTape::SetLGCAltitude(int val) {
 
 	int pulses;
 
-	if (!IsPowered()) { return; }
+	if (!IsPowered()) return;
+	if (ModeSelect != 3) return;
 
 	//if (val & 040000) { // Negative
 	//	pulses = -((~val) & 077777);
@@ -3050,16 +3037,16 @@ void LEM_RadarTape::SetLGCAltitude(int val) {
 		pulses = val & 077777;
 	//}
 
-	lgc_alt = (2.345*0.3048*pulses);
-
-	LGCaltUpdateTime = oapiGetSimTime();
+	AltitudeDigitalInput = (2.345*0.3048*pulses);
+	AltUpdateTime = oapiGetSimTime();
 }
 
 void LEM_RadarTape::SetLGCAltitudeRate(int val) {
 
 	int pulses;
 
-	if (!IsPowered()) { return; }
+	if (!IsPowered()) return;
+	if (ModeSelect != 3) return;
 
 	if (val & 040000) { // Negative
 		pulses = val & 077777;
@@ -3069,47 +3056,49 @@ void LEM_RadarTape::SetLGCAltitudeRate(int val) {
 		pulses = val & 077777;
 	}
 
-	lgc_altrate = -(0.5*0.3048*pulses);
-
-	LGCaltRateUpdateTime = oapiGetSimTime();
+	AltitudeRateDigitalInput = -(0.5*0.3048*pulses);
+	AltRateUpdateTime = oapiGetSimTime();
 }
 
-void LEM_RadarTape::AGSAltitudeAltitudeRate(int Data) {
+void LEM_RadarTape::SetAGSAltitude(int Data)
+{
+	if (!IsPowered()) return;
+	if (ModeSelect != 4) return;
 
-	if (!IsPowered()) { return; }
+	int DataVal;
 
-		int DataVal;
+	DataVal = Data & 0777777;
 
-		AGSChannelValue40 val = lem->aea.GetOutputChannel(IO_ODISCRETES);
+	AltitudeDigitalInput = (double)DataVal * ALTSCALEFACTOR;
+	AltUpdateTime = oapiGetSimTime();
+}
 
-		if (val[AGSAltitude] == 0)
-		{
-			DataVal = Data & 0777777;
+void LEM_RadarTape::SetAGSAltitudeRate(int Data)
+{
+	if (!IsPowered()) return;
+	if (ModeSelect != 4) return;
 
-			ags_alt = (double)DataVal * ALTSCALEFACTOR;
+	int DataVal;
 
-			AGSaltUpdateTime = oapiGetSimTime();
-		}
-		else if (val[AGSAltitudeRate] == 0)
-		{
-			if (Data & 0400000) { // Negative
-				DataVal = -((~Data) & 0777777);
-				DataVal = -0400000 - DataVal;
-			}
-			else {
-				DataVal = Data & 0777777;
-			}
+	if (Data & 0400000) { // Negative
+		DataVal = -((~Data) & 0777777);
+		DataVal = -0400000 - DataVal;
+	}
+	else {
+		DataVal = Data & 0777777;
+	}
 
-			ags_altrate = -(double)DataVal * ALTRATESCALEFACTOR;
-
-			AGSaltRateUpdateTime = oapiGetSimTime();
-		}
+	AltitudeRateDigitalInput = -(double)DataVal * ALTRATESCALEFACTOR;
+	AltRateUpdateTime = oapiGetSimTime();
 }
 
 void LEM_RadarTape::SaveState(FILEHANDLE scn,char *start_str,char *end_str){
 	oapiWriteLine(scn, start_str);
 	papiWriteScenario_double(scn, "RDRTAPE_RANGE", dispRange);
-	oapiWriteScenario_float(scn, "RDRTAPE_RATE", dispRate);
+	papiWriteScenario_double(scn, "RDRTAPE_RATE", dispRate);
+	papiWriteScenario_double(scn, "ALTITUDEDIGITALINPUT", AltitudeDigitalInput);
+	papiWriteScenario_double(scn, "ALTITUDERATEDIGITALINPUT", AltitudeRateDigitalInput);
+	oapiWriteScenario_int(scn, "MODESELECT", ModeSelect);
 	oapiWriteLine(scn, end_str);
 }
 
@@ -3122,14 +3111,12 @@ void LEM_RadarTape::LoadState(FILEHANDLE scn,char *end_str){
 	while (oapiReadScenario_nextline (scn, line)) {
 		if (!strnicmp(line, end_str, end_len))
 			return;
-		if (!strnicmp (line, "RDRTAPE_RANGE", 13)) {
-			sscanf(line + 13, "%lf", &lfValue);
-			dispRange = lfValue;
-		}
-		if (!strnicmp (line, "RDRTAPE_RATE", 12)) {
-			sscanf(line + 12, "%d", &value);
-			dispRate = value;
-		}
+
+		papiReadScenario_double(line, "RDRTAPE_RANGE", dispRange);
+		papiReadScenario_double(line, "RDRTAPE_RATE", dispRate);
+		papiReadScenario_double(line, "ALTITUDEDIGITALINPUT", AltitudeDigitalInput);
+		papiReadScenario_double(line, "ALTITUDERATEDIGITALINPUT", AltitudeRateDigitalInput);
+		papiReadScenario_int(line, "MODESELECT", ModeSelect);
 	}
 }
 

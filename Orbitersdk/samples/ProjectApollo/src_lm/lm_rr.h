@@ -59,8 +59,6 @@ public:
 	bool IsPowered();
 	bool IsDCPowered();
 	bool IsACPowered();
-	bool IsRangeDataGood() { return RangeLock; };
-	bool IsFrequencyDataGood() { return FrequencyLock; };
 	bool IsRadarDataGood() { return radarDataGood; };
 	bool GetNoTrackSignal() { return NoTrackSignal; }
 	
