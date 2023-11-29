@@ -2542,6 +2542,7 @@ void LEM_LR::Timestep(double simdt){
 		if(clobber == TRUE){ lem->agc.SetInputChannel(033, val33); }
 		rangeGood = 0;
 		velocityGood = 0;
+		range = rate[0] = rate[1] = rate[2] = 0.0;
 		return;
 	}	
 
@@ -2861,7 +2862,7 @@ bool LEM_RadarTape::SignalFailure()
 {
 	if (lem->AltRngMonSwitch.GetState() == TOGGLESWITCH_UP)
 	{
-		if (lem->RR.GetRadarRange() < 5.0 || abs(lem->RR.GetRadarRate()) < 5.0)
+		if ((AltUpdateTime + 1.0) < oapiGetSimTime() || abs(lem->RR.GetRadarRate()) < 5.0)
 		{
 			return true; //Needs to check rendezvous radar rate and range signals and return true if not present
 		}
@@ -2929,7 +2930,9 @@ void LEM_RadarTape::Timestep(double simdt) {
 	//Process Input Data
 	if(ModeSelect == 1) // RR
 	{
-		reqRange = lem->RR.GetRadarRange();
+		UpdateRRRange();
+		reqRange = AltitudeDigitalInput;
+
 		reqRate = lem->RR.GetRadarRate();
 	}
 	else if (ModeSelect == 2) // LR
@@ -3090,6 +3093,15 @@ void LEM_RadarTape::SetAGSAltitudeRate(int Data)
 
 	AltitudeRateDigitalInput = -(double)DataVal * ALTRATESCALEFACTOR;
 	AltRateUpdateTime = oapiGetSimTime();
+}
+
+void LEM_RadarTape::UpdateRRRange()
+{
+	//Try to update input register
+	if (lem->RR.GetRadarRangeTapemeter(AltitudeDigitalInput))
+	{
+		AltUpdateTime = oapiGetSimTime();
+	}
 }
 
 void LEM_RadarTape::SaveState(FILEHANDLE scn,char *start_str,char *end_str){

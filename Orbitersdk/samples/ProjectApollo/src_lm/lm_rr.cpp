@@ -245,6 +245,14 @@ void LEM_RR::GetRadarRateLGC()
 	lem->agc.vagc.Erasable[0][RegRNRAD] = (int16_t)(17000.0 - (rate / 0.191361));
 }
 
+bool LEM_RR::GetRadarRangeTapemeter(double &data)
+{
+	if (!IsPowered()) return false;
+
+	data = range;
+	return true;
+}
+
 void LEM_RR::Timestep(double simdt) {
 
 	// RR mesh animation

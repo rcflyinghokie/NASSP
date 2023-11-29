@@ -55,6 +55,7 @@ public:
 	void SetRCVDrfProp(double freq, double pow, double gain, double phase) { RCVDfreq = freq; RCVDpow = pow; RCVDgain = gain; RCVDPhase = phase; };
 	void GetRadarRangeLGC();
 	void GetRadarRateLGC();
+	bool GetRadarRangeTapemeter(double &data);
 
 	bool IsPowered();
 	bool IsDCPowered();

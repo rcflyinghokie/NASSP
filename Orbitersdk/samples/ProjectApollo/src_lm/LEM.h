@@ -157,6 +157,7 @@ public:
 	void SetLGCAltitudeRate(int val);
 	void SetAGSAltitude(int Data);
 	void SetAGSAltitudeRate(int Data);
+	void UpdateRRRange();
 
 	double GetAltitude() { return reqRange; };
 	double GetAltitudeRate() { return reqRate; };
