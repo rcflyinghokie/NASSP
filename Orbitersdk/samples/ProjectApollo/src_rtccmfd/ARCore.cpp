@@ -764,6 +764,8 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	LUNTAR_pitch_guess = 0.0;
 	LUNTAR_yaw_guess = 0.0;
 	LUNTAR_TIG = 0.0;
+
+	DebugIMUTorquingAngles = _V(0, 0, 0);
 }
 
 ARCore::~ARCore()
@@ -4436,39 +4438,52 @@ int ARCore::subThread()
 	{
 		if (GC->MissionPlanningActive)
 		{
+			//With the MPT, just call the MED function
 			std::vector<std::string> data;
 			GC->rtcc->PMMMED("78", data);
 		}
 		else
 		{
+			//Without the MPT, get the TIG and DV from the MCC or LOI table
+
 			VECTOR3 dv;
-			double tig;
+			double gmt_tig;
+
+			int num = GC->rtcc->med_m78.ManeuverNumber;
 
 			if (GC->rtcc->med_m78.Type)
 			{
-				if (GC->rtcc->med_m78.ManeuverNumber < 1 || GC->rtcc->med_m78.ManeuverNumber > 8)
+				//LOI
+				if (num < 1 || num > 8)
 				{
 					Result = DONE;
 					break;
 				}
-				tig = GC->rtcc->GETfromGMT(GC->rtcc->PZLRBELM.sv_man_bef[GC->rtcc->med_m78.ManeuverNumber - 1].GMT);
-				dv = GC->rtcc->PZLRBELM.V_man_after[GC->rtcc->med_m78.ManeuverNumber - 1] - GC->rtcc->PZLRBELM.sv_man_bef[GC->rtcc->med_m78.ManeuverNumber - 1].V;
+				gmt_tig = GC->rtcc->PZLRBELM.sv_man_bef[num - 1].GMT;
+				dv = GC->rtcc->PZLRBELM.V_man_after[num - 1] - GC->rtcc->PZLRBELM.sv_man_bef[num - 1].V;
 			}
 			else
 			{
-				if (GC->rtcc->med_m78.ManeuverNumber < 1 || GC->rtcc->med_m78.ManeuverNumber > 4)
+				//MCC
+				if (num < 1 || num > 4)
 				{
 					Result = DONE;
 					break;
 				}
-				tig = GC->rtcc->GETfromGMT(GC->rtcc->PZMCCXFR.sv_man_bef[GC->rtcc->med_m78.ManeuverNumber - 1].GMT);
-				dv = GC->rtcc->PZMCCXFR.V_man_after[GC->rtcc->med_m78.ManeuverNumber - 1] - GC->rtcc->PZMCCXFR.sv_man_bef[GC->rtcc->med_m78.ManeuverNumber - 1].V;
+				gmt_tig = GC->rtcc->PZMCCXFR.sv_man_bef[num - 1].GMT;
+				dv = GC->rtcc->PZMCCXFR.V_man_after[num - 1] - GC->rtcc->PZMCCXFR.sv_man_bef[num - 1].V;
 			}
 
-			SV sv_pre, sv_post, sv_tig;
-			double attachedMass = 0.0;
-			SV sv_now = GC->rtcc->StateVectorCalc(vessel);
-			sv_tig = GC->rtcc->coast(sv_now, tig - OrbMech::GETfromMJD(sv_now.MJD, GC->rtcc->CalcGETBase()));
+			EphemerisData sv_now, sv_tig;
+			double mass, dt, attachedMass;
+			int ITS;
+
+			sv_now = GC->rtcc->StateVectorCalcEphem(vessel);
+			mass = vessel->GetMass();
+
+			//Propagate to TIG
+			dt = gmt_tig - sv_now.GMT;
+			GC->rtcc->PMMCEN(sv_now, 0.0, 0.0, 1, abs(dt), dt >= 0.0 ? 1.0 : -1.0, sv_tig, ITS);
 
 			if (vesselisdocked)
 			{
@@ -4478,7 +4493,7 @@ int ARCore::subThread()
 			{
 				attachedMass = 0.0;
 			}
-			GC->rtcc->PoweredFlightProcessor(sv_tig, tig, GC->rtcc->med_m78.Thruster, attachedMass, dv, false, P30TIG, dV_LVLH, sv_pre, sv_post);
+			GC->rtcc->PoweredFlightProcessor(sv_tig, mass, GC->rtcc->GETfromGMT(gmt_tig), GC->rtcc->med_m78.Thruster, attachedMass, dv, false, P30TIG, dV_LVLH);
 		}
 
 		Result = DONE;
@@ -5413,4 +5428,45 @@ int ARCore::GetVesselParameters(int Thruster, int &Config, int &TVC, double &CSM
 	LMMass = m50.LMWT;
 
 	return 0;
+}
+
+void ARCore::menuCalculateIMUComparison()
+{
+	MATRIX3 M_BRCS_SM; //BRCS to stable member, right handed
+	MATRIX3 M_NB_ECL; //Local vessel to global ecliptic
+	MATRIX3 M_SM_NB_est; //Stable member to navigation base, estimated
+	MATRIX3 M_SM_NB_act; //Stable member to navigation base, actual
+	MATRIX3 M_ECL_BRCS; //Ecliptic to BRCS
+	VECTOR3 IMUAngles;
+
+	if (vesseltype == 0)
+	{
+		M_BRCS_SM = GC->rtcc->EZJGMTX1.data[0].REFSMMAT;
+		IMUAngles = ((Saturn*)vessel)->imu.GetTotalAttitude();
+
+		//Get actual orientation (left handed)
+		vessel->GetRotationMatrix(M_NB_ECL);
+		//Convert to right-handed CSM coordinates
+		M_NB_ECL = mul(MatrixRH_LH(M_NB_ECL), _M(0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, -1.0));
+	}
+	else if (vesseltype == 1)
+	{
+		M_BRCS_SM = GC->rtcc->EZJGMTX3.data[0].REFSMMAT;
+		IMUAngles = ((LEM*)vessel)->imu.GetTotalAttitude();
+
+		//Get actual orientation (left handed)
+		vessel->GetRotationMatrix(M_NB_ECL);
+		//Convert to right-handed LM coordinates
+		M_NB_ECL = mul(MatrixRH_LH(M_NB_ECL), _M(0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0));
+	}
+	else return;
+
+	//Stable member to navigation base conversion with current IMU alignment
+	M_SM_NB_est = OrbMech::CALCSMSC(IMUAngles);
+	//Get ecliptic to BRCS rotation matrix from RTCC system parameters
+	M_ECL_BRCS = GC->rtcc->SystemParameters.MAT_J2000_BRCS;
+	//Actual stable member to navigation base conversion
+	M_SM_NB_act = OrbMech::tmat(mul(M_BRCS_SM, mul(M_ECL_BRCS, M_NB_ECL)));
+	//Torquing angles that would be required
+	DebugIMUTorquingAngles = OrbMech::CALCGTA(mul(OrbMech::tmat(M_SM_NB_act), M_SM_NB_est));
 }
