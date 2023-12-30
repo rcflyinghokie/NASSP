@@ -45,10 +45,10 @@ int RTCCGeneralPurposeManeuverProcessor::PCMGPM(const GMPOpt &IOPT)
 
 	TIG_GMT = pRTCC->GMTfromGET(opt->TIG_GET);
 	dt1 = TIG_GMT - opt->sv_in.GMT;
-	sv1 = pRTCC->coast(opt->sv_in, dt1);
+	sv1 = pRTCC->coast(opt->sv_in, dt1, opt->Weight, opt->Area, opt->KFactor, false);
 
 	//Convert to AEG
-	aeg = pRTCC->SVToAEG(sv1);
+	aeg = pRTCC->SVToAEG(sv1, opt->Area, opt->Weight, opt->KFactor);
 
 	//Initialize AEG
 	pRTCC->PMMAEGS(aeg.Header, aeg.Data, aeg.Data);
@@ -65,29 +65,13 @@ int RTCCGeneralPurposeManeuverProcessor::PCMGPM(const GMPOpt &IOPT)
 
 	if (sv1.RBI == BODY_EARTH)
 	{
-		if (opt->AltRef == 0)
-		{
-		R_E = 6371.0e3;
-		}
-		else
-		{
-		R_E = OrbMech::R_Earth;
-		}
-
+		R_E = pRTCC->SystemParameters.MCECAP;
 		mu = OrbMech::mu_Earth;
 	}
 	else
 	{
-	if (opt->AltRef == 0)
-	{
-		R_E = OrbMech::R_Moon;
-	}
-	else
-	{
 		R_E = pRTCC->BZLAND.rad[RTCC_LMPOS_BEST];
-	}
-
-	mu = OrbMech::mu_Moon;
+		mu = OrbMech::mu_Moon;
 	}
 
 	//Calculate
@@ -107,12 +91,11 @@ int RTCCGeneralPurposeManeuverProcessor::PCMGPM(const GMPOpt &IOPT)
 	//VECTOR3 DR = R_A - R_B;
 	//sprintf_s(oapiDebugString(), 128, "%lf %lf %lf", DR.x, DR.y, DR.z);
 
-	if (aeg.Header.AEGInd == BODY_EARTH)
+	//Special HAS logic: show apogee/perigee data in N revs, and not the next one
+	if (opt->ManeuverCode == RTCC_GMP_HAS)
 	{
-		//For now, back to ecliptic
-		R_B = tmul(pRTCC->SystemParameters.MAT_J2000_BRCS, R_B);
-		V_B = tmul(pRTCC->SystemParameters.MAT_J2000_BRCS, V_B);
-		V_A = tmul(pRTCC->SystemParameters.MAT_J2000_BRCS, V_A);
+		INFO[0] = INFO_HAS[0]; INFO[2] = INFO_HAS[2]; INFO[3] = INFO_HAS[3];
+		INFO[5] = INFO_HAS[5]; INFO[7] = INFO_HAS[7]; INFO[8] = INFO_HAS[8];
 	}
 
 	pRTCC->PZGPMELM.code = "GPM";
@@ -566,7 +549,7 @@ void RTCCGeneralPurposeManeuverProcessor::PCGPMP()
 	//Apsides change and shift to longitude N revs later
 	else if (ManeuverType == 14)
 	{
-		ApsidesChange(opt->N);
+		ApsidesChange();
 		if (ErrorIndicator) return;
 		DW = 0.0;
 	}
@@ -642,15 +625,15 @@ void RTCCGeneralPurposeManeuverProcessor::GetSelenographicElements(const AEGData
 {
 	MATRIX3 L;
 	VECTOR3 P, W, P_apo, W_apo;
-	OrbMech::PIVECT(sv.coe_osc.i, sv.coe_osc.g, sv.coe_osc.h, P, W);
-	if (pRTCC->PLEFEM(1, sv.TS / 3600.0, 0, L))
+	pRTCC->PIVECT(sv.coe_osc.i, sv.coe_osc.g, sv.coe_osc.h, P, W);
+	if (pRTCC->PLEFEM(5, sv.TS / 3600.0, 0, NULL, NULL, NULL, &L))
 	{
 		ErrorIndicator = 5;
 		return;
 	}
-	P_apo = tmul(L, P);
-	W_apo = tmul(L, W);
-	OrbMech::PIVECT(P_apo, W_apo, i, g, h);
+	P_apo = mul(L, P);
+	W_apo = mul(L, W);
+	pRTCC->PIVECT(P_apo, W_apo, i, g, h);
 	u = g + sv.f;
 	if (u > PI2)
 	{
@@ -662,15 +645,15 @@ void RTCCGeneralPurposeManeuverProcessor::GetSelenocentricElements(double i, dou
 {
 	MATRIX3 L;
 	VECTOR3 P, W, P_apo, W_apo;
-	OrbMech::PIVECT(i, g, h, P, W);
-	if (pRTCC->PLEFEM(1, sv.TS / 3600.0, 0, L))
+	pRTCC->PIVECT(i, g, h, P, W);
+	if (pRTCC->PLEFEM(5, sv.TS / 3600.0, 0, NULL, NULL, NULL, &L))
 	{
 		ErrorIndicator = 5;
 		return;
 	}
-	P_apo = mul(L, P);
-	W_apo = mul(L, W);
-	OrbMech::PIVECT(P_apo, W_apo, sv.coe_osc.i, sv.coe_osc.g, sv.coe_osc.h);
+	P_apo = tmul(L, P);
+	W_apo = tmul(L, W);
+	pRTCC->PIVECT(P_apo, W_apo, sv.coe_osc.i, sv.coe_osc.g, sv.coe_osc.h);
 	sv.U = sv.coe_osc.g + sv.f;
 	if (sv.U >= PI2)
 	{
@@ -777,6 +760,7 @@ void RTCCGeneralPurposeManeuverProcessor::HeightManeuver(bool circ)
 		pRTCC->PMMAEGS(aeg.Header, sv_a, sv_temp);
 		if (aeg.Header.ErrorInd)
 		{
+			ErrorIndicator = 3;
 			return;
 		}
 		if (I == 0)
@@ -906,7 +890,7 @@ void RTCCGeneralPurposeManeuverProcessor::NodeShift()
 	{
 		sin_u_a = -sin_u_a;
 	}
-	sv_a.U = atan2(sin_u_a , cos_u_a);
+	sv_a.U = pRTCC->GLQATN(sin_u_a , cos_u_a);
 	cos_dw = (cos(opt->dLAN) - cos(u_temp)*cos(sv_a.U)) / (sin(u_temp)*sin(sv_a.U));
 	sin_dw = sin(opt->dLAN)*sin(i_temp) / sin_u_a;
 	DW = atan2(sin_dw, cos_dw);
@@ -928,7 +912,7 @@ void RTCCGeneralPurposeManeuverProcessor::NodeShift()
 	}
 }
 
-int RTCCGeneralPurposeManeuverProcessor::ApsidesChange(int n)
+int RTCCGeneralPurposeManeuverProcessor::ApsidesChange(bool limit)
 {
 	double r_AD, r_PD, dr_a_max, dr_p_max, a_D, e_D, cos_theta_A, theta_A, r_a, r_p, cos_E_a;
 	double dr_ap0, dr_ap1, dr_p0, dr_p1, dr_ap_c, dr_p_c, ddr_ap, ddr_p, E_a;
@@ -945,7 +929,7 @@ int RTCCGeneralPurposeManeuverProcessor::ApsidesChange(int n)
 	}
 
 	//Limit apoapsis and periapsis to current radius, but only for non multi rev cases
-	if (n == 0)
+	if (limit)
 	{
 		if (sv_b.R > r_AD)
 		{
@@ -992,7 +976,7 @@ int RTCCGeneralPurposeManeuverProcessor::ApsidesChange(int n)
 		if (abs(cos_E_a) > 1.0)
 		{
 			//Maneuver type HAS uses multi rev, don't fail for that case
-			if (n == 0 && I > 3)
+			if (limit && I > 3)
 			{
 				//Maneuver cannot be performed
 				return 1;
@@ -1027,18 +1011,8 @@ int RTCCGeneralPurposeManeuverProcessor::ApsidesChange(int n)
 
 		sv_a.ENTRY = 0;
 
-		if (n > 0)
-		{
-			sv_a.TIMA = 1;
-			sv_a.Item8 = sv_a.coe_osc.l;
-			sv_a.Item10 = 1.0 + (double)n;
-			pRTCC->PMMAEGS(aeg.Header, sv_a, sv_temp);
-			err = pRTCC->PMMAPD(aeg.Header, sv_temp, 0, 0, INFO, &sv_AP, &sv_PE);
-		}
-		else
-		{
-			err = pRTCC->PMMAPD(aeg.Header, sv_a, 0, 0, INFO, &sv_AP, &sv_PE);
-		}
+		err = pRTCC->PMMAPD(aeg.Header, sv_a, 0, 0, INFO, &sv_AP, &sv_PE);
+
 		if (aeg.Header.ErrorInd || err)
 		{
 			ErrorIndicator = 4;
@@ -1250,8 +1224,8 @@ void RTCCGeneralPurposeManeuverProcessor::NormalizeAngle(double &ang)
 
 void RTCCGeneralPurposeManeuverProcessor::ApsidesPlacementNRevsLater()
 {
-	double r_AD, r_PD, lng_p, dlng, dt, ddt, dlng_apo, eps, w_E, dt_max;
-	int n, nmax;
+	double r_AD, r_PD, lng_p, dlng, dt, ddt, dlng_apo, eps, w_E, dt_max, l_initial;
+	int n, nmax, err;
 
 	ddt = 5.0*60.0;
 	dt = 0.0;
@@ -1276,19 +1250,43 @@ void RTCCGeneralPurposeManeuverProcessor::ApsidesPlacementNRevsLater()
 
 	aeg.Data.TIMA = 0;
 
+	//Same initial mean anomaly
+	l_initial = aeg.Data.coe_osc.l;
+
 	while (abs(dlng) > eps && n < nmax && dt <= dt_max)
 	{
 		aeg.Data.TE = aeg.Data.TS + dt;
 		pRTCC->PMMAEGS(aeg.Header, aeg.Data, sv_b);
 		if (ErrorIndicator) return;
 		sv_b_apo = sv_a = sv_b;
-		if (ApsidesChange(opt->N) == 0)
+		if (ApsidesChange(false) == 0)
 		{
+			//Find same mean anomaly N revs from now
+			sv_a.TIMA = 1;
+			sv_a.Item8 = sv_a.coe_osc.l;
+			sv_a.Item10 = 1.0 + (double)opt->N;
+
+			//If mean anomaly at maneuver point is smaller than initial mean anomaly, we are in the next rev
+			if (sv_b.coe_osc.l < l_initial)
+			{
+				sv_a.Item10 -= 1.0;
+			}
+
+			pRTCC->PMMAEGS(aeg.Header, sv_a, sv_temp);
+			//Then find apsides
+			err = pRTCC->PMMAPD(aeg.Header, sv_temp, 0, 0, INFO_HAS, &sv_AP, &sv_PE);
+			if (err)
+			{
+				ErrorIndicator = 8;
+				return;
+			}
+
 			//Longitude of periapsis following maneuver
-			lng_p = INFO[8];
+			lng_p = INFO_HAS[8];
 			dlng = OrbMech::calculateDifferenceBetweenAngles(lng_p, opt->long_D);
 
-			if (n > 0 && dlng*dlng_apo < 0 && abs(dlng_apo) < PI05)
+			//Don't switch sign on ddt on first step. Change when dlng also switches sign, but only when passing through zero
+			if (n > 0 && dlng*dlng_apo < 0 && abs(dlng - dlng_apo) < PI05)
 			{
 				ddt = -ddt / 2.0;
 			}
@@ -1310,7 +1308,7 @@ void RTCCGeneralPurposeManeuverProcessor::OptimumApseLineShift(double dang)
 	double f_D, u_D;
 
 	f_D = 0.5*opt->dLOA;
-	u_D = f_D + aeg.Data.coe_osc.g;
+	u_D = f_D + aeg.Data.coe_mean.g;
 	NormalizeAngle(u_D);
 	if (aeg.Data.U < u_D)
 	{

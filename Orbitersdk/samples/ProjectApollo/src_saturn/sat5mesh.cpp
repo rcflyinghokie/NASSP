@@ -23,7 +23,7 @@
 
   **************************************************************************/
 
-// To force orbitersdk.h to use <fstream> in any compiler version
+// To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
 #include <stdio.h>
@@ -35,8 +35,8 @@
 
 #include "toggleswitch.h"
 #include "apolloguidance.h"
-#include "csmcomputer.h"
-#include "lemcomputer.h"
+#include "CSMcomputer.h"
+#include "LEMcomputer.h"
 
 #include "saturn.h"
 #include "saturnv.h"
@@ -207,21 +207,6 @@ static PARTICLESTREAMSPEC stagingvent_spec = {
 	PARTICLESTREAMSPEC::EMISSIVE,
 	PARTICLESTREAMSPEC::LVL_FLAT, 0.1, 0.1,
 	PARTICLESTREAMSPEC::ATM_FLAT, 0.1, 0.1
-};
-
-// "fuel venting" particle streams
-static PARTICLESTREAMSPEC fuel_venting_spec = {
-	0,		// flag
-	0.8,	// size
-	30,		// rate
-	2,	    // velocity
-	0.5,    // velocity distribution
-	20,		// lifetime
-	0.15,	// growthrate
-	0.5,    // atmslowdown 
-	PARTICLESTREAMSPEC::DIFFUSE,
-	PARTICLESTREAMSPEC::LVL_FLAT, 0.6, 0.6,
-	PARTICLESTREAMSPEC::ATM_FLAT, 1.0, 1.0
 };
 
 static MESHHANDLE hsat5stg1;
@@ -902,9 +887,7 @@ void SaturnV::SetThirdStageMesh (double offset)
 	fwdhatchidx = AddMesh(hFHF, &mesh_dir);
 	SetFwdHatchMesh();
 
-	// Optics Cover
-	opticscoveridx = AddMesh (hopticscover, &mesh_dir);
-	SetOpticsCoverMesh();
+	AddCMMeshes(mesh_dir);
 
 	dockringidx = -1;
 	probeidx = -1;
@@ -1050,14 +1033,8 @@ void SaturnV::SetThirdStageEngines (double offset)
 
 	thg_ver = CreateThrusterGroup (th_ver, 2, THGROUP_USER);
 
+	sivb->CreateParticleEffects(1645.1*0.0254); //Approx. CG location in Saturn IB coordinates
 	sivb->RecalculateEngineParameters(THRUST_THIRD_VAC);
-
-	// LOX venting thruster
-
-	th_3rd_lox = CreateThruster(m_exhaust_pos1, _V(0, 0, 1), 3300.0, ph_3rd, 157.0, 157.0);
-
-	fuel_venting_spec.tex = oapiRegisterParticleTexture("ProjectApollo/Contrail_SaturnVenting");
-	AddExhaustStream(th_3rd_lox, &fuel_venting_spec);
 }
 
 void SaturnV::SeparateStage (int new_stage)

@@ -217,6 +217,7 @@ static inline bool papiReadScenario_boolarr(char *line, char *item, bool *v, int
 				v[i] = (in != 0);
 				pos += cur;
 			}
+			return true;
 		}
 	}
 	return false;
@@ -250,6 +251,7 @@ static inline bool papiReadScenario_intarr(char *line, char *item, int *v, int l
 				sscanf(line + pos, "%d %n", &v[i], &cur);
 				pos += cur;
 			}
+			return true;
 		}
 	}
 	return false;
@@ -283,6 +285,7 @@ static inline bool papiReadScenario_doublearr(char *line, char *item, double *v,
 				sscanf(line + pos, "%lf %n", &v[i], &cur);
 				pos += cur;
 			}
+			return true;
 		}
 	}
 	return false;

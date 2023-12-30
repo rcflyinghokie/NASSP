@@ -22,7 +22,7 @@
 
   **************************************************************************/
 
-// To force orbitersdk.h to use <fstream> in any compiler version
+// To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
 #include "stdio.h"
@@ -49,8 +49,8 @@
 MESHHANDLE hLMDescent;
 MESHHANDLE hLMDescentNoLeg;
 MESHHANDLE hLMAscent;
-MESHHANDLE hAstro1;
 MESHHANDLE hLMVC;
+MESHHANDLE hLMXpointerShades;
 
 static PARTICLESTREAMSPEC lunar_dust = {
 	0,		// flag
@@ -69,14 +69,14 @@ static PARTICLESTREAMSPEC lunar_dust = {
 VECTOR3 mesh_asc = _V(0.00, 0.99, 0.00);
 VECTOR3 mesh_dsc = _V(0.00, -1.25, 0.00);
 
-void LEM::ToggleEVA()
-
+void LEM::ToggleEVA(bool isCDR)
 {
-	ToggleEva = false;	
+	ToggleEva = false;
+
+	int i = isCDR ? 0 : 1;
 	
-	if (CDREVA_IP) {
+	if (EVA_IP[i]) {
 		// Nothing for now, the EVA is ended, when the LEVA vessel calls StopEVA
-		/// \todo Support for 2 LEVA vessels
 	}
 	else {
 		VESSELSTATUS vs1;
@@ -85,44 +85,60 @@ void LEM::ToggleEVA()
 		// The LM must be in landed state
 		if (vs1.status != 1) return;
 
-		CDREVA_IP = true;
+		EVA_IP[i] = true;
 
 		OBJHANDLE hbody = GetGravityRef();
 		double radius = oapiGetSize(hbody);
 		vs1.vdata[0].x += 4.5 * sin(vs1.vdata[0].z) / radius;
 		vs1.vdata[0].y += 4.5 * cos(vs1.vdata[0].z) / radius;
 
-		char VName[256]="";
-		strcpy (VName, GetName()); strcat (VName, "-LEVA");
-		hLEVA = oapiCreateVessel(VName,"ProjectApollo/LEVA",vs1);
-		
-		SwitchFocusToLeva = 10;
+		// LEVA starts facing ladder
+		vs1.vdata[0].z += PI;
+		if (vs1.vdata[0].z > PI2) {
+			vs1.vdata[0].z -= PI2;
+		}
 
-		LEVA *leva = (LEVA *) oapiGetVesselInterface(hLEVA);
+		char VName[256] = "";
+		char VSuitName[256] = "";
+		if (isCDR)
+		{
+			strcpy(VName, pMission->GetCDRName().c_str());
+			strcpy(VSuitName, pMission->GetCDRSuitName().c_str());
+			SwitchFocusToLeva = 10;
+		}
+		else
+		{
+			strcpy(VName, pMission->GetLMPName().c_str());
+			strcpy(VSuitName, pMission->GetLMPSuitName().c_str());
+			SwitchFocusToLeva = -10;
+		}
+		hLEVA[i] = oapiCreateVessel(VName,"ProjectApollo/LEVA",vs1);
+
+		LEVA *leva = (LEVA *) oapiGetVesselInterface(hLEVA[i]);
 		if (leva) {
 			LEVASettings evas;
 
 			evas.MissionNo = ApolloNo;
+			evas.isCDR = isCDR;
+			strcpy(evas.LEMName, GetName());
+			strcpy(evas.SuitName, VSuitName);
 			leva->SetEVAStats(evas);
 		}
 	}
 }
 
-
-void LEM::SetupEVA()
-
-{
-	if (CDREVA_IP) {
-		CDREVA_IP = true;
-		// nothing for now...
-	}
-}
-
-void LEM::StopEVA()
+void LEM::StopEVA(bool isCDR)
 
 {
 	// Called by LEVA vessel during destruction
-	CDREVA_IP = false;
+	if (isCDR)
+	{
+		EVA_IP[0] = false;
+	}
+	else
+	{
+		EVA_IP[1] = false;
+	}
 }
 
 void LEM::SetLmVesselDockStage()
@@ -148,6 +164,7 @@ void LEM::SetLmVesselDockStage()
 	// Configure meshes if needed
 	if (!pMission->LMHasLegs()) InsertMesh(hLMDescentNoLeg, dscidx, &mesh_dsc);
 	SetLMMeshVis();
+	if (pMission->GetCrossPointerShades()) ShowXPointerShades();
 
 	if (!ph_Dsc)
 	{
@@ -179,11 +196,10 @@ void LEM::SetLmVesselDockStage()
 
 	AddDust();
 
-	SetCameraOffset(_V(-0.58, 1.60, 1.40) - currentCoG); // Has to be the same as LPD view
-
-	AddRCS_LMH(-5.4616); //254 inches minus the 0.99m offset from mesh_asc = 5.4616 m
 	status = 0;
 	stage = 0;
+	SetView();
+	AddRCS_LMH(-5.4616); //254 inches minus the 0.99m offset from mesh_asc = 5.4616 m
 
 	InitNavRadios (4);
 
@@ -194,10 +210,6 @@ void LEM::SetLmVesselDockStage()
 
 void LEM::SetLmVesselHoverStage()
 {
-	ClearThrusterDefinitions();
-
-	SetEmptyMass(AscentFuelMassKg + AscentEmptyMassKg + DescentEmptyMassKg);
-
 	SetSize (7);
 	SetVisibilityLimit(1e-3, 5.4135e-4);
 	SetPMI(_V(2.5428, 2.2871, 2.7566));
@@ -207,54 +219,11 @@ void LEM::SetLmVesselHoverStage()
 	SetPitchMomentScale (0);
 	SetYawMomentScale (0);
 	SetLiftCoeffFunc (0);
-	ClearBeacons();
-	ClearExhaustRefs();
-	ClearAttExhaustRefs();
 
 	DefineTouchdownPoints(1);
 
-	if (!ph_Dsc){  
-		ph_Dsc  = CreatePropellantResource(DescentFuelMassKg); //2nd stage Propellant
-	}
-	else
-	{
-		SetPropellantMaxMass(ph_Dsc, DescentFuelMassKg);
-	}
-
-	SetDefaultPropellantResource (ph_Dsc); // display 2nd stage propellant level in generic HUD
-
-	if (!ph_RCSA){
-		ph_RCSA = CreatePropellantResource(LM_RCS_FUEL_PER_TANK);
-	}
-	if (!ph_RCSB){
-		ph_RCSB = CreatePropellantResource(LM_RCS_FUEL_PER_TANK);
-	}
-	
-	// orbiter main thrusters
-	//Ascent stage mesh has RCS plane as reference, but it's shifted by 0.99 m up for center of full LM mesh
-	//RCS plane is at 254 inches in LM coordinates. DPS gimbal plane is at 154 inches in LM coordinates
-	//Therefore: 3.9116 m - (6.4516 m - 0.99 m) = -1.55 m for the DPS reference position
-	th_hover[0] = CreateThruster(_V(0.0, -1.55, 0.0), _V(0, 1, 0), 46706.3, ph_Dsc, 3107);
-	thg_hover = CreateThrusterGroup(th_hover, 1, THGROUP_USER);
-
-	EXHAUSTSPEC es_hover[1] = {
-		{ th_hover[0], NULL, NULL, NULL, 10.0, 1.5, 1.16, 0.1, exhaustTex, EXHAUST_CONSTANTPOS }
-	};
-
-	AddExhaust(es_hover);
-
-	AddDust();
-
-	SetCameraOffset(_V(-0.58, 1.60, 1.40) - currentCoG); // Has to be the same as LPD view
 	status = 1;
 	stage = 1;
-	AddRCS_LMH(-5.4616); //254 inches minus the 0.99m offset from mesh_asc = 5.4616 m
-
-	InitNavRadios (4);
-
-	// Exterior lights
-	SetTrackLight();
-	SetDockingLights();
 }
 
 void LEM::SetLmAscentHoverStage()
@@ -321,9 +290,9 @@ void LEM::SetLmAscentHoverStage()
 
 	AddExhaust(es_hover);
 	
-	SetCameraOffset(_V(-0.58, -0.15, 1.40)); // Has to be the same as LPD view
 	status = 2;
 	stage = 2;
+	SetView();
 	AddRCS_LMH(-7.2116);  //254 inches minus the 0.99m offset from mesh_asc and plus 1.75 m from the ShiftCG = 7.2116 m
 
 	if(ph_Dsc){
@@ -367,11 +336,11 @@ void LEM::SeparateStage (UINT stage)
 		Sat5LMDSC *dscstage = static_cast<Sat5LMDSC *> (oapiGetVesselInterface(hdsc));
 		if (!pMission->LMHasLegs())
 		{
-			dscstage->SetState(0);
+			dscstage->SetState(0, ApolloNo);
 		}
 		else
 		{
-			dscstage->SetState(1);
+			dscstage->SetState(1, ApolloNo);
 		}
 
 		SetLmAscentHoverStage();
@@ -389,15 +358,15 @@ void LEM::SeparateStage (UINT stage)
 			Sat5LMDSC *dscstage = static_cast<Sat5LMDSC *> (oapiGetVesselInterface(hdsc));
 			if (!pMission->LMHasLegs())
 			{
-				dscstage->SetState(0);
+				dscstage->SetState(0, ApolloNo);
 			}
 			else if (Landed)
 			{
-				dscstage->SetState(3);
+				dscstage->SetState(3, ApolloNo);
 			}
 			else
 			{
-				dscstage->SetState(2);
+				dscstage->SetState(2, ApolloNo);
 			}
 			
 			vs2.vrot.x = 5.32;
@@ -415,15 +384,15 @@ void LEM::SeparateStage (UINT stage)
 			Sat5LMDSC *dscstage = static_cast<Sat5LMDSC *> (oapiGetVesselInterface(hdsc));
 			if (!pMission->LMHasLegs())
 			{
-				dscstage->SetState(0);
+				dscstage->SetState(0, ApolloNo);
 			}
 			else if (Landed)
 			{
-				dscstage->SetState(3);
+				dscstage->SetState(3, ApolloNo);
 			}
 			else
 			{
-				dscstage->SetState(2);
+				dscstage->SetState(2, ApolloNo);
 			}
 
 			SetLmAscentHoverStage();
@@ -486,6 +455,10 @@ void LEM::SetLMMeshVisDsc() {
 	else
 	{
 		SetMeshVisibilityMode(dscidx, MESHVIS_VCEXTERNAL);
+	}
+
+	if (pMission->LMHasLegs()) {
+		HideDeflectors();
 	}
 }
 
@@ -557,6 +530,34 @@ void LEM::HideProbes() {
 			oapiEditMeshGroup(probes, meshgroup_Probes2[i], &ges);
 		}
 	}
+}
+
+void LEM::HideDeflectors()
+{
+	if (!deflectors)
+		return;
+
+	if (!pMission->LMHasDeflectors()) {
+		static UINT meshgroup_deflectors[2] = { DS_GRP_DeflectorStrut, DS_GRP_RCSdeflector };
+
+		GROUPEDITSPEC ges;
+		ges.flags = (GRPEDIT_ADDUSERFLAG);
+		ges.UsrFlag = 3;
+
+		for (int i = 0; i < 2; i++) {
+			oapiEditMeshGroup(deflectors, meshgroup_deflectors[i], &ges);
+		}
+	}
+}
+
+void LEM::ShowXPointerShades()
+{
+	xpointershadesidx = AddMesh(hLMXpointerShades, &mesh_asc);
+
+	if (xpointershadesidx == -1)
+		return;
+
+	SetMeshVisibilityMode(xpointershadesidx, MESHVIS_VC);
 }
 
 void LEM::SetTrackLight() {
@@ -817,8 +818,8 @@ void LEMLoadMeshes()
 	hLMDescent = oapiLoadMeshGlobal ("ProjectApollo/LM_DescentStage");
 	hLMDescentNoLeg = oapiLoadMeshGlobal("ProjectApollo/LM_DescentStageNoLeg");
 	hLMAscent = oapiLoadMeshGlobal ("ProjectApollo/LM_AscentStage");
-	hAstro1= oapiLoadMeshGlobal ("ProjectApollo/Sat5AstroS");
 	hLMVC = oapiLoadMeshGlobal("ProjectApollo/LM_VC");
+	hLMXpointerShades = oapiLoadMeshGlobal("ProjectApollo/LM_Xpointer_Shades");
 	lunar_dust.tex = oapiRegisterParticleTexture("ProjectApollo/dust");
 }
 

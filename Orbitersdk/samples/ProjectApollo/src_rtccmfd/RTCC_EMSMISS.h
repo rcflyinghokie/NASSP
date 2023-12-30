@@ -101,6 +101,12 @@ protected:
 	//Minimum interval between two state vectors being stored on the ephemeris
 	double min_ephem_dt;
 
+	//Start and end time for venting (TLI cutoff plus X)
+	double T_NV[2];
+
+	//Last processed maneuver
+	unsigned int LastManeuver;
+
 	EMSMISSState state;
 	EphemerisData sv0;
 	int ErrorCode;

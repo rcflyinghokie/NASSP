@@ -18,18 +18,23 @@
 #include "ARCore.h"
 #include "soundlib.h"
 #include "apolloguidance.h"
-#include "csmcomputer.h"
-#include "lemcomputer.h"
+#include "CSMcomputer.h"
+#include "LEMcomputer.h"
 #include "saturn.h"
 #include "saturnv.h"
 #include "LEM.h"
 
+class ApolloRTCCMFD;
+
 struct RTCCMFDInputBoxData
 {
 	double *dVal;
-	int *iVal;
+	int *iVal, *iVal2;
+	int min1, max1, min2, max2;
 	VECTOR3 *vVal;
 	double factor;
+	ApolloRTCCMFD *ptr = NULL;
+	void (ApolloRTCCMFD::*func)(void) = NULL;
 };
 
 class ApolloRTCCMFD: public MFD2 {
@@ -65,6 +70,7 @@ public:
 	void SPQDHdialogue();
 	void set_SPQDH(double DH);
 	void set_target();
+	void menuSLVLaunchTargetingPad();
 	void menuSLVLaunchTargeting();
 	void menuSLVLaunchUplink();
 	void menuVoid();
@@ -97,12 +103,9 @@ public:
 	void menuCycleGMPManeuverVehicle();
 	void menuCycleGMPManeuverPoint();
 	void menuCycleGMPManeuverType();
-	void menuCycleGMPMarkerUp();
-	void menuCycleGMPMarkerDown();
+	void menuCycleMarkerUp();
+	void menuCycleMarkerDown();
 	void menuSetGMPInput();
-	void menuCycleOrbAdjAltRef();
-	void menuMissionNumberInput();
-	void set_MissionNumber(int mission);
 	void SPQcalc();
 	void lambertcalc();
 	void Angle_Display(char *Buff, double angle, bool DispPlus = true);
@@ -122,11 +125,9 @@ public:
 	bool ThrusterType(std::string name, int &id);
 	void MPTAttitudeName(char *Buff, int n);
 	void SStoHHMMSS(double time, int &hours, int &minutes, double &seconds);
-	double timetoperi();
-	double timetoapo();
 	void CycleREFSMMATopt();
 	void UploadREFSMMAT();
-	void menuIUUplink();
+	void menuSLVTLITargetingUplink();
 	void menuP30Uplink();
 	void menuP30UplinkCalc();
 	void menuRetrofireEXDVUplink();
@@ -205,7 +206,6 @@ public:
 	void menuCalcMapUpdate();
 	void menuSwitchMapUpdate();
 	void menuSetMapUpdateGET();
-	void menuSwitchUplinkInhibit();
 	void menuCycleSPQMode();
 	void set_CDHtimemode();
 	void menuCycleSPQChaser();
@@ -213,15 +213,13 @@ public:
 	void set_launchdate(int year, int month, int day);
 	void menuSetLaunchTime();
 	void set_LaunchTime(int hours, int minutes, double seconds);
-	void menuSetAGCEpoch();
-	void set_AGCEpoch(int epoch);
 	void menuChangeVesselStatus();
 	void menuCycleLMStage();
 	void menuUpdateLiftoffTime();
-	void AGCSignedValue(int &val);
 	void set_svtarget();
 	void TwoImpulseOffset();
 	void GetREFSMMATfromAGC();
+	void menuCycleLunarEntryPADSxtOption();
 	void GetEntryTargetfromAGC();
 	void menuSetRTEReentryTime();
 	void set_RTEReentryTime(double t);
@@ -293,6 +291,13 @@ public:
 	void menuSetRTEDigitalsPage();
 	void menuSetRTEConstraintsPage();
 	void menuSetEntryUpdatePage();
+	void menuSetRTCCFilesPage();
+	void menuLoadSystemParametersFile();
+	void LoadSystemParametersFile(char *file);
+	void menuLoadTLIFile();
+	void LoadTLIFile(char *file);
+	void menuLoadSFPFile();
+	void LoadSFPFile(char *file);
 	void menuSetRendezvousPage();
 	void menuSetDKIPage();
 	void menuSetDKIOptionsPage();
@@ -310,23 +315,12 @@ public:
 	void menuSetLDPPPoweredDescTime();
 	void menuLDPPCalc();
 	void menuSetDescPlanCalcPage();
+	void menuTranslunarPage();
 	void menuSetLDPPMode();
 	void menuSetLDPPSequence();
 	void menuTLANDUplinkCalc();
 	void menuTLANDUpload();
-	void menuSetSkylabPage();
-	void menuSwitchSkylabManeuver();
-	void menuSetSkylabGET();
-	void set_SkylabGET(double time);
-	void menuSkylabCalc();
-	void menuSetSkylabNC();
-	void menuSetSkylabDH1();
-	void menuSetSkylabDH2();
-	void menuSetSkylabEL();
 	void set_t_TPI(double time);
-	void menuCyclePlaneChange();
-	void menuCyclePCManeuver();
-	void set_SkylabDTTPM(double dt);
 	void menuSetDescPlanInitPage();
 	void menuCycleLLWPChaserOption();
 	void menuSetLiftoffguess();
@@ -361,6 +355,10 @@ public:
 	void menuTerrainModelCalc();
 	void set_TLand(double time);
 	void menuTLCCCalc();
+	void menuTLIProcessorCalc();
+	void menuTLIProcessorMode();
+	void menuTLIProcessorGET();
+	void menuTLIEllipseApogee();
 	void menuNavCheckPADCalc();
 	void menuSetNavCheckGET();
 	void menuLAPCalc();
@@ -410,8 +408,10 @@ public:
 	void cycleVECPOINTOpt();
 	void menuSetLMAscentPADPage();
 	void menuAscentPADCalc();
+	void menuCycleAscentPADVersion();
 	void menuSetPDAPPage();
 	void menuPDAPCalc();
+	void menuCyclePDAPSegments();
 	void menuCyclePDAPEngine();
 	void menuAP11AbortCoefUplink();
 	void menuSetFIDOOrbitDigitalsCSMPage();
@@ -564,21 +564,12 @@ public:
 	void menuMPTDirectInputTrimAngleInd();
 	void menuTransferPoweredAscentToMPT();
 	void menuTransferPoweredDescentToMPT();
-	void menuMPTMEDM49();
 	void CheckoutMonitorCalc();
-	void menuMPTInitM50M55Table();
-	void menuMPTInitM50CSMWT();
-	void menuMPTInitM50LMWT();
-	void menuMPTInitM50LMAscentWT();
-	void menuMPTInitM50SIVBWT();
-	void set_MPTInitM50CSMWT(double mass);
-	void set_MPTInitM50LMWT(double mass);
-	void set_MPTInitM50LMAscentWT(double mass);
-	void set_MPTInitM50SIVBWT(double mass);
-	void menuMPTInitM55Config();
+	void menuCycleMPTTable();
+	void menuCycleMPTMED();
+	void menuSetMPTInitInput();
 	void set_MPTInitM55Config(char *cfg);
-	void menuMPTM50Update();
-	void menuMPTM55Update();
+	void menuMPTUpdate();
 	void menuMPTInitAutoUpdate();
 	void menuMPTInitM50M55Vehicle();
 	void menuMPTTrajectoryUpdateCSM();
@@ -643,6 +634,7 @@ public:
 	void menuCycleSFPDisplay();
 	void menuAlterationSFPData();
 	void menuTransferMCCPlanToSFP();
+	void menuInterpolateSFP();
 	void menuDeleteMidcourseColumn();
 	void menuSetNodalTargetConversionPage();
 	void menuCycleNodeConvOption();
@@ -682,6 +674,29 @@ public:
 	void menuGOSTSXTCalc();
 	void menuGOSTShowStarVector();
 	void menuGOSTShowLandmarkVector();
+	void menuGOSTEnterStarInCatalog();
+	void menuSaveOSTREFSMMAT();
+	void menuSetLMOpticsSupportTablePage();
+	void menuLOSTMode();
+	void set_LOSTMode(int mode);
+	void menuLOSTAttitude1();
+	void menuLOSTAttitude2();
+	void menuLOST_REFSMMAT1();
+	bool set_LOST_REFSMMAT1(char *str);
+	void menuLOST_REFSMMAT2();
+	bool set_LOST_REFSMMAT2(char *str);
+	void menuLOST_CSM_REFSMMAT();
+	bool set_LOST_CSM_REFSMMAT(char *str);
+	void menuLOSTOptics1();
+	void menuLOSTOptics2();
+	bool set_LOST_AGS_Star2(int star, char *pos, double ang);
+	void menuLOSTRealign();
+	void menuCalcLOST();
+	void set_LOSTCheckMode(double get,int Detent, int COASAxis);
+	void UpdateLOSTDisplay();
+	void CalculateLOSTDOKOption();
+	void menuSetDebugPage();
+	void menuCalculateIMUComparison();
 	void menuSLVNavigationUpdateCalc();
 	void menuSLVNavigationUpdateUplink();
 	void menuVectorPanelSummaryPage();
@@ -778,14 +793,25 @@ public:
 	void menuLWP_RINS();
 	void menuLWP_VINS();
 	void menuLWP_GAMINS();
+	void menuLWP_PhaseFlags();
 	void menuLWPCycleDELNOF();
 	void menuLWP_DELNO();
 	void menuSetLWPDisplayPage();
 	void menuSetRendezvousPlanningDisplayPage();
+	void menuSetPerigeeAdjustInputPage();
+	void menuSetPerigeeAdjustDisplayPage();
+	void menuPerigeeAdjustCalc();
+	void CyclePerigeeAdjustVehicle();
+	void menuPerigeeAdjustVectorTime();
+	void menuPerigeeAdjustThresholdTime();
+	void menuPerigeeAdjustTimeIncrement();
+	void menuPerigeeAdjustHeight();
 	void GenericGETInput(double *get, char *message);
 	void GenericDoubleInput(double *val, char* message, double factor = 1.0);
-	void GenericIntInput(int *val, char* message);
-	void GenericVectorInput(VECTOR3 *val, char* message, double factor = 1.0);
+	void GenericIntInput(int *val, char* message, void (ApolloRTCCMFD::*func)(void) = NULL);
+	void GenericInt2Input(int *val1, int *val2, char* message, int min1, int max1, int min2, int max2, void (ApolloRTCCMFD::*func)(void) = NULL);
+	void GenericVectorInput(VECTOR3 *val, char* message, double factor = 1.0, void (ApolloRTCCMFD::*func)(void) = NULL);
+	void Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax = 1024, int ymax = 1024);
 protected:
 	oapi::Font *font;
 	oapi::Font *font2;
@@ -799,7 +825,9 @@ protected:
 	LEM *lem;
 	int screen;
 	int marker;
+	int markermax;
 	int RTETradeoffScreen;
+	int status; //Page dependent status, reset to 0 when new page is entered
 	static struct ScreenData {
 		int screen;
 		int RTETradeoffScreen;

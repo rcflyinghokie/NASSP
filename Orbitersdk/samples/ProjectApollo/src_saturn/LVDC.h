@@ -69,6 +69,7 @@ public:
 	virtual bool SIVBIULunarImpact(double tig, double dt, double pitch, double yaw) { return false; }
 	virtual bool ExecuteCommManeuver() { return false; }
 	virtual bool LaunchTargetingUpdate(double V_T, double R_T, double theta_T, double inc, double dsc, double dsc_dot, double t_grr0) { return false; }
+	virtual bool TLITargetingUpdate(double T_RP, double C_3, double Inclination, double theta_N, double e, double alpha_D, double f) { return false; }
 	virtual bool DiscreteOutputTest(int bit, bool on) = 0;
 	virtual bool NavigationUpdate(VECTOR3 DCSRVEC, VECTOR3 DCSVVEC, double DCSNUPTIM) = 0;
 	void PrepareToLaunch();
@@ -114,6 +115,7 @@ public:
 	bool ExecuteCommManeuver();
 	bool DiscreteOutputTest(int bit, bool on);
 	bool NavigationUpdate(VECTOR3 DCSRVEC, VECTOR3 DCSVVEC, double DCSNUPTIM);
+	bool TLITargetingUpdate(double T_RP, double C_3, double Inclination, double theta_N, double e, double alpha_D, double f);
 
 	//Public Variables
 	double T_L;									// Time of GRR in seconds since midnight
@@ -525,8 +527,8 @@ private:								// Saturn LV
 	double hx[3][5];								// Azimuth from time polynomial
 	double Rho[6];									// Coasting flight air density polynomial (ref. orbital radius)
 	double Drag_Area[5];							// Coasting flight drag area polynomial (ref. flight path angle)
-	double VENTA[5];								// Orbital vent accelerations
-	double VTIM[4];									// Segment switch times for orbital vent accelerations measured from TB5
+	double VENTA[7];								// Orbital vent accelerations
+	double VTIM[6];									// Segment switch times for orbital vent accelerations measured from TB5
 
 	// LVDC software variables, NOT PAD-LOADED
 	double Azimuth;									// Azimuth
@@ -535,6 +537,7 @@ private:								// Saturn LV
 	VECTOR3 CommandedAttitude;						// Commanded Attitude (RADIANS)
 	VECTOR3 PCommandedAttitude;						// Previous Commanded Attitude (RADIANS), also called DVCC
 	VECTOR3 CurrentAttitude;						// Current Attitude   (RADIANS)	
+	VECTOR3 MidPointAttitude;						// Midpoint attitude for orbital navigation (RADIANS)
 	VECTOR3 N;										// Unit vector normal to parking-orbit plane
 	VECTOR3 T_P;									// Unit target vector in ephemeral coordinates
 	double DVCA[2];									// Average of present and past minor loop commanded CHI at the time of major computer cycle accelerometer read
@@ -1058,6 +1061,7 @@ private:
 	VECTOR3 CommandedAttitude;						// Commanded Attitude (RADIANS)
 	VECTOR3 PCommandedAttitude;						// Previous Commanded Attitude (RADIANS)
 	VECTOR3 CurrentAttitude;						// Current Attitude   (RADIANS)
+	VECTOR3 MidPointAttitude;						// Midpoint attitude for orbital navigation (RADIANS)
 	double F;										// Force in Newtons, I assume.	
 	double A1,A2,A3,A4,A5;
 	double K_p,K_y,K_r;

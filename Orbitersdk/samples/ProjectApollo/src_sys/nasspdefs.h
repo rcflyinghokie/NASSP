@@ -211,7 +211,7 @@
 #define stricmp _stricmp
 #endif 
 
-#define NASSP_VERSION 80000		///< Current NASSP version.
+#define NASSP_VERSION 80002		///< https://nassp.space/index.php/Scenario_File_Options#Scenario_information
 
 ///
 /// We use this structure to store generic Windows information in one place, such as logical colors,
@@ -223,10 +223,10 @@
 ///
 typedef struct {
 	HINSTANCE hDLL;		///< DLL handle.
-	HFONT font[3];		///< GDI fonts.
+	oapi::Font  *font[3];		///< GDI fonts.
 	DWORD col[6];		///< GDI colors.
-	HBRUSH brush[4];	///< GDI brushes.
-	HPEN pen[7];		///< GDI pens.
+	oapi::Brush *brush[4];	///< GDI brushes.
+	oapi::Pen   *pen[7];		///< GDI pens.
 } GDIParams;
 
 //
@@ -382,13 +382,13 @@ static inline void CSMToOrbiterCoordinates(VECTOR3 &vec)
 // SIVB payloads.
 //
 
-#define PAYLOAD_LEM					0	///< Payload is a LEM.
+#define PAYLOAD_LEM					0	///< Payload is a LM.
 #define PAYLOAD_ASTP				1	///< Payload is an ASTP docking adapter.
-#define PAYLOAD_LTA					2	///< Payload is an LTA.
-#define PAYLOAD_LM1					3	///< Payload is LM1.
-#define PAYLOAD_LTA8				4	///< Payload is LTA8.
+#define PAYLOAD_LTA10R				2	///< Payload is LTA-10R (Apollo 4).
+#define PAYLOAD_LM1					3	///< Payload is LM-1.
+#define PAYLOAD_LTAB				4	///< Payload is LTA-B (Apollo 8).
 #define PAYLOAD_TARGET				5	///< Payload is a docking target (e.g. Apollo 7).
-#define PAYLOAD_LTA6				6	///< Payload is LTA6.
+#define PAYLOAD_LTA2R				6	///< Payload is LTA-2R (Apollo 6).
 #define PAYLOAD_EMPTY				7	///< Payload is empty (i.e. no payload).
 #define PAYLOAD_DOCKING_ADAPTER		8	///< Payload is SIVB docking adapter (i.e. Apollo to Venus).
 
@@ -416,5 +416,14 @@ static inline void CSMToOrbiterCoordinates(VECTOR3 &vec)
 //#define LM_DES_H2O_CAPACITY 114795.157			//Pad fill 76%
 #define LM_DES_H2O_CAPACITY 229590.3			//Pad fill 76% for J-Mission Conversion
 #define LM_ASC_H2O_CAPACITY 14651.03355			//Pad fill 76%
+
+//
+// Texture Size (1 = Old ProjectApollo 2K Textures, 2 = New 4K Textures, 4 = New 8K Textures)
+//
+#define TEXTURES_2K 1
+#define TEXTURES_4K 2
+#define TEXTURES_8K 4
+
+const int TexMul = TEXTURES_4K;
 
 #endif

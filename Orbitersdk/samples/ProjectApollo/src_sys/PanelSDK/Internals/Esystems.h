@@ -25,11 +25,11 @@
 #ifndef __ESYSTEMS_H_
 #define __ESYSTEMS_H_
 
-#include "thermal.h"
-// To force orbitersdk.h to use <fstream> in any compiler version
+#include "Thermal.h"
+// To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
-#include "hsystems.h"
+#include "Hsystems.h"
 
 class E_system;
 
@@ -235,6 +235,8 @@ public:
 	h_Valve *H2_SRC;	//source for H2
 	h_Valve *H20_waste;	//pointer to a waste tank
 
+	h_Tank *N2_Blanket; //pointer to N2 Blanket.
+
 	unsigned int numCells = 31;
 
 	double H2_flow, O2_flow, H2_flowPerSecond, O2_flowPerSecond;
@@ -246,10 +248,9 @@ public:
 	double reactant;
 	int start_handle;	//start, stop
 	int purge_handle;	// -1-no purging 1-H2 purge 2-O2 purge
-	int status;			//what are we doing? 0-running, 1-starting, 2-stopped, 3-H2 purging , 4-O2 purging
-	double running;		//for tb indicators only;they need a float
 	double condenserTemp;	// condenser exhaust temp, only for display
-	int tempTooLowCount; 
+	int tempTooLowCount;
+	bool tooCold;
 	double outputImpedance;
 	double voltsLastTimestep;
 	double ampsLastTimestep;
@@ -264,7 +265,7 @@ public:
 	double H2_purity;
 	double O2_purity;
 
-	FCell(char *i_name, int i_status, vector3 i_pos, h_Valve *o2, h_Valve *h2, h_Valve* waste, float r_watts);
+	FCell(char *i_name, int i_status, vector3 i_pos, h_Valve *o2, h_Valve *h2, h_Valve* waste, float r_watts, h_Tank *N2);
 	void DrawPower(double watts);
 	void PUNLOAD(double watts);
 	void refresh(double dt);
@@ -281,10 +282,10 @@ public:
 /// \ingroup PanelSDK
 /// The battery simulation class.
 ///
-class Battery:public e_object,public therm_obj
+class Battery:public e_object, public therm_obj
 {  //battery is a producer / consumer
 public:
-	Battery(char *i_name,e_object *i_src, double i_power, double i_voltage, double i_resistance);
+	Battery(char *i_name, e_object *i_src, double i_power, double i_voltage, double i_resistance, h_Tank *i_tgt);
 	~Battery();
 
 	void UpdateFlow(double dt);
@@ -299,6 +300,7 @@ public:
 	double Temperature();
 	double Capacity() { return power; };
 	virtual therm_obj* GetThermalInterface(){return (therm_obj*)this;};
+	h_Tank* batcase;
 
     double max_power; // in Watt * second
 	double power;   //in Watt * second
@@ -556,7 +558,7 @@ class Boiler : public e_object {
 
 public:
     Boiler(char *i_name, int i_pump, e_object *i_src, double heat_watts, double electric_watts,
-		   int i_type, double i_valueMin, double i_valueMax, therm_obj *i_target);
+		   int i_type, double i_valueMin, double i_valueMax, therm_obj *i_target, bool isramp, double boilerRampRate);
 
 	int h_pump;
 	double pumping;
@@ -566,8 +568,12 @@ public:
 	double valueMin, valueMax;
 	int handleMin, handleMax;
 
-	double boiler_power;
+	double max_boiler_power;
+	double boiler_output_power;
 	double boiler_electrical_power;
+
+	bool ramp;
+	double rampRate;
 
 	virtual void refresh(double dt);
 	virtual void Load(char *line);
@@ -580,6 +586,8 @@ public:
 	void SetPumpOn()   {h_pump = -1; };
 	void SetPumpOff()  {h_pump =  0; };
 	void SetPumpAuto() {h_pump =  1; };
+protected:
+	double pwmThrotle;
 };
 
 ///

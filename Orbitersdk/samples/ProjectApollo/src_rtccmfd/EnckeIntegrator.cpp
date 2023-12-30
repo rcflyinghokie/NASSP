@@ -61,6 +61,7 @@ void EnckeFreeFlightIntegrator::Propagate(EMMENIInputTable &in)
 	STOPVAM = in.MoonRelStopParam;
 	HMULT = in.IsForwardIntegration;
 	DRAG = in.DensityMultiplier;
+	VENT = in.VentPerturbationFactor;
 	CSA = -0.5*in.Area*pRTCC->SystemParameters.MCADRG;
 	if (in.Weight == 0.0)
 	{
@@ -85,8 +86,11 @@ void EnckeFreeFlightIntegrator::Propagate(EMMENIInputTable &in)
 	pEph[2] = in.MCIEphemTableIndicator;
 	pEph[3] = in.MCTEphemTableIndicator;
 	EphemerisBuildIndicator = in.EphemerisBuildIndicator;
+	MinEphemDT = in.MinEphemDT;
 
 	a_drag = _V(0, 0, 0);
+	a_vent = _V(0, 0, 0);
+	MDOT_vent = 0.0;
 	delta = _V(0, 0, 0);
 	nu = _V(0, 0, 0);
 	HD2 = H2D2 = H2D8 = HD6 = HP = 0.0;
@@ -112,7 +116,7 @@ void EnckeFreeFlightIntegrator::Propagate(EMMENIInputTable &in)
 		//1 meter tolerance for radius and height
 		DEV = 1.0;
 	}
-	else if (ISTOPS == 4)
+	else if (ISTOPS == 4 || ISTOPS == 6)
 	{
 		//0.0001° tolerance
 		DEV = 0.0001*RAD;
@@ -143,7 +147,7 @@ void EnckeFreeFlightIntegrator::Propagate(EMMENIInputTable &in)
 		}
 	} while (IEND == 0);
 
-	EphemerisStorage();
+	EphemerisStorage(true);
 	WriteEphemerisHeader();
 
 	in.sv_cutoff.R = R_CON + delta;
@@ -246,6 +250,21 @@ EMMENI_Edit_3B:
 			{
 				RCALC = FUNCT - STOPVAM;
 			}
+		}
+		else if (ISTOPS == 6)
+		{
+			VECTOR3 NVEC, H_ECT;
+			EphemerisData2 sv_temp, sv_ECT;
+
+			sv_temp.R = R;
+			sv_temp.V = V;
+			sv_temp.GMT = CurrentTime();
+
+			pRTCC->ELVCNV(sv_temp, 0, 1, sv_ECT);
+
+			H_ECT = unit(crossp(sv_ECT.R, sv_ECT.V));
+			NVEC = unit(crossp(_V(0, 0, 1), H_ECT));
+			RCALC = OrbMech::PHSANG(sv_ECT.R, sv_ECT.V, NVEC);
 		}
 	}
 
@@ -432,6 +451,11 @@ void EnckeFreeFlightIntegrator::Step()
 	nu = beta + (F1 + (F2 + F3)*2.0 + YPP) *HD6;
 	//Final acceleration
 	adfunc();
+
+	if (VENT > 0.0)
+	{
+		WT = WT - MDOT_vent * dt;
+	}
 }
 
 double EnckeFreeFlightIntegrator::fq(double q)
@@ -451,15 +475,18 @@ void EnckeFreeFlightIntegrator::adfunc()
 		if (INITF == false)
 		{
 			INITF = true;
-			//Maybe something will be here again at some point...
-		}
 
-		Rot = OrbMech::GetRotationMatrix(P, pRTCC->GetGMTBase() + CurrentTime() / 24.0 / 3600.0);
-		U_Z = rhmul(Rot, _V(0, 0, 1));
+			//Get Earth rotation matrix only during initialization. For the Moon the libration matrix is updated by the PLEFEM call below
+			if (P == BODY_EARTH)
+			{
+				pRTCC->ELVCNV(CurrentTime(), RTCC_COORDINATES_ECT, RTCC_COORDINATES_ECI, Rot);
+				U_Z = tmul(Rot, _V(0, 0, 1));
+			}
+		}
 
 		TS = tau;
 		OrbMech::rv_from_r0v0(R0, V0, tau, R_CON, V_CON, mu);
-		pRTCC->PLEFEM(1, CurrentTime() / 3600.0, 0, &R_EM, &V_EM, &R_ES, NULL);
+		pRTCC->PLEFEM(P == BODY_EARTH ? 1 : 2, CurrentTime() / 3600.0, 0, &R_EM, &V_EM, &R_ES, &Rot); //Get Sun and Moon ephemerides and libration matrix (MCI only)
 	}
 
 	//Calculate actual state
@@ -518,6 +545,29 @@ void EnckeFreeFlightIntegrator::adfunc()
 					a_drag = V_R * VRMAG*CDRAG;
 				}
 				a_d += a_drag;
+			}
+		}
+		if (VENT > 0.0)
+		{
+			VECTOR3 VENTDIR = unit(crossp(unit(crossp(R, V)), R));
+			double TV = CurrentTime() - pRTCC->GetGMTLO()*3600.0 - pRTCC->SystemParameters.MCGVEN;
+
+			if (TV < 0.0)
+			{
+				//No venting before MCGVEN
+				a_vent = _V(0.0, 0.0, 0.0);
+				MDOT_vent = 0.0;
+			}
+			else
+			{
+				int i;
+				for (i = 0; i < 8 && pRTCC->SystemParameters.MDTVTV[1][i + 1] < TV; i++);
+				double f = (TV - pRTCC->SystemParameters.MDTVTV[1][i]) / (pRTCC->SystemParameters.MDTVTV[1][i + 1] - pRTCC->SystemParameters.MDTVTV[1][i]);
+				double F_vent = pRTCC->SystemParameters.MCTVEN*(pRTCC->SystemParameters.MDTVTV[0][i] + (pRTCC->SystemParameters.MDTVTV[0][i + 1] - pRTCC->SystemParameters.MDTVTV[0][i]) * f);
+				MDOT_vent = F_vent / pRTCC->SystemParameters.MCTVSP;
+
+				a_vent = VENTDIR * F_vent / WT;
+				a_d += a_vent;
 			}
 		}
 	}
@@ -586,6 +636,7 @@ void EnckeFreeFlightIntegrator::StoreVariables()
 	SDELT = tau;
 	STRECT = TRECT;
 	RES1 = RCALC;
+	SWT = WT;
 }
 
 void EnckeFreeFlightIntegrator::RestoreVariables()
@@ -596,6 +647,7 @@ void EnckeFreeFlightIntegrator::RestoreVariables()
 	nu = SYP;
 	tau = SDELT;
 	TRECT = STRECT;
+	WT = SWT;
 	if (P != P_S)
 	{
 		SetBodyParameters(P_S);
@@ -610,19 +662,56 @@ double EnckeFreeFlightIntegrator::CurrentTime()
 	return (t0 + TRECT + tau);
 }
 
-void EnckeFreeFlightIntegrator::EphemerisStorage()
+void EnckeFreeFlightIntegrator::EphemerisStorage(bool last)
 {
 	if (EphemerisBuildIndicator == false) return;
 
-	EphemerisData2 sv, sv2;
-	int in;
+	bool store = false, wastested = false;
 
 	for (int i = 0;i < 4;i++)
 	{
 		if (bStoreEphemeris[i] && pEph[i])
 		{
-			if (pEph[i]->table.size() == 0 || abs(pEph[i]->table.back().GMT - CurrentTime()) > 0.001)
+			//Only go through this once
+			if (wastested == false)
 			{
+				//Always store first and last vector and store them all if MinEphemDT is zero
+				if (pEph[i]->table.size() == 0 || MinEphemDT == 0.0 || last)
+				{
+					store = true;
+				}
+				else
+				{
+					double T_last, T_next, T_cur;
+
+					//Last stored state vector
+					T_last = pEph[i]->table.back().GMT;
+					//Next desired time to store state vector
+					T_next = T_last + MinEphemDT;
+					//Current time
+					T_cur = CurrentTime();
+					//Don't store if state vectors are too close
+					if (abs(T_last - T_cur) > 0.001)
+					{
+						double dt_next;
+
+						//Time difference from current to next desired store time
+						dt_next = T_next - T_cur;
+						//Algorithm: "when the time required to reach the next minimum output point is less than one-half of the time span of the last integration step"
+						if (dt_next < 0.5*dt)
+						{
+							store = true;
+						}
+					}
+				}
+				wastested = true;
+			}
+
+			if (store)
+			{
+				EphemerisData2 sv, sv2;
+				int in;
+
 				if (P == BODY_EARTH)
 				{
 					in = 0;
@@ -670,7 +759,7 @@ void EnckeFreeFlightIntegrator::ACCEL_GRAV()
 	//Null gravitation acceleration vector
 	G_VEC = _V(0, 0, 0);
 	//Transform position vector to planet fixed coordinates
-	R_EF = rhtmul(Rot, R);
+	R_EF = mul(Rot, R);
 	//Components of the planet fixed position unit vector
 	R_INV = 1.0 / length(R);
 	UR = R_EF * R_INV;
@@ -713,7 +802,7 @@ void EnckeFreeFlightIntegrator::ACCEL_GRAV()
 			{
 				F1 = F1 + (double)N1*MAT_A[N1 - 1][0] * (C[L - 1] * ZETA_REAL[N1 - 1] + S[L - 1] * ZETA_IMAG[N1 - 1]);
 				F2 = F2 + (double)N1*MAT_A[N1 - 1][0] * (S[L - 1] * ZETA_REAL[N1 - 1] - C[L - 1] * ZETA_IMAG[N1 - 1]);
-				DNM = C[L - 1] = ZETA_REAL[N1] + S[L - 1] * ZETA_IMAG[N1];
+				DNM = C[L - 1] * ZETA_REAL[N1] + S[L - 1] * ZETA_IMAG[N1];
 				F3 = F3 + DNM * MAT_A[N1][0];
 				F4 = F4 + DNM * MAT_A[N1][1];
 				L++;
@@ -727,7 +816,7 @@ void EnckeFreeFlightIntegrator::ACCEL_GRAV()
 		G_VEC.z = G_VEC.z + R0_N * F3;
 		AUXILIARY = AUXILIARY + R0_N * F4;
 	}
-	//Lastly, the planet fixed acceleration vector shall be obtained and rotated to ecliptic coordinates
+	//Lastly, the planet fixed acceleration vector shall be obtained and rotated to inertial coordinates
 	G_VEC = G_VEC - UR * AUXILIARY;
-	G_VEC = rhmul(Rot, G_VEC);
+	G_VEC = tmul(Rot, G_VEC);
 }

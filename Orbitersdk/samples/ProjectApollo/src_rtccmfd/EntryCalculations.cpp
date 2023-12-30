@@ -100,7 +100,7 @@ namespace EntryCalculations
 		}
 	}
 
-	void landingsite(VECTOR3 REI, VECTOR3 VEI, double MJD_EI, double &lambda, double &phi)
+	void landingsite(MATRIX3 Rot_J_B, VECTOR3 REI, VECTOR3 VEI, double MJD_EI, double &lambda, double &phi)
 	{
 		double t32, v3, S_FPA, gammaE, phie, te, Sphie, Cphie, tLSMJD, l, m, n;
 		VECTOR3 R3, V3, UR3, U_H3, U_LS, LSEF;
@@ -119,12 +119,14 @@ namespace EntryCalculations
 		Cphie = cos(0.00029088821*phie);
 		U_H3 = unit(crossp(crossp(R3, V3), R3));
 		U_LS = UR3*Cphie + U_H3*Sphie;
-		U_LS = _V(U_LS.x, U_LS.z, U_LS.y);
+
 		R = OrbMech::GetRotationMatrix(BODY_EARTH, tLSMJD);
-		LSEF = tmul(R, U_LS);
+		LSEF = rhtmul(R, tmul(Rot_J_B, U_LS));
+
 		l = LSEF.x;
-		m = LSEF.z;
-		n = LSEF.y;
+		m = LSEF.y;
+		n = LSEF.z;
+
 		phi = asin(n);
 		if (m > 0)
 		{
@@ -137,19 +139,15 @@ namespace EntryCalculations
 		if (lambda > PI) { lambda -= PI2; }
 	}
 
-	void Reentry(VECTOR3 REI, VECTOR3 VEI, double mjd0, bool highspeed, double &EntryLatPred, double &EntryLngPred, double &EntryRTGO, double &EntryVIO, double &EntryRET)
+	void Reentry(MATRIX3 Rot_J_B, VECTOR3 REI, VECTOR3 VEI, double mjd0, bool highspeed, double &EntryLatPred, double &EntryLngPred, double &EntryRTGO, double &EntryVIO, double &EntryRET)
 	{
-		double t32, v3, S_FPA, gammaE, phie, te, t_LS, Sphie, Cphie, tLSMJD, l, m, n, phi, lambda2, EntryInterface, RCON, mu, EMSAlt;
+		double t32, v3, S_FPA, gammaE, phie, te, t_LS, Sphie, Cphie, tLSMJD, l, m, n, phi, lambda2, EntryInterface, RCON, EMSAlt;
 		VECTOR3 R3, V3, UR3, U_H3, U_LS, LSEF;
 		MATRIX3 R;
-		OBJHANDLE hEarth;
 
 		EntryInterface = 400000.0 * 0.3048;
 
-		hEarth = oapiGetObjectByName("Earth");
-
-		RCON = oapiGetSize(hEarth) + EntryInterface;
-		mu = GGRAV*oapiGetMass(hEarth);
+		RCON = OrbMech::R_Earth + EntryInterface;
 
 		if (highspeed)
 		{
@@ -160,8 +158,8 @@ namespace EntryCalculations
 			EMSAlt = 284643.0*0.3048;
 		}
 
-		t32 = OrbMech::time_radius(REI, VEI, RCON - 30480.0, -1, mu);
-		OrbMech::rv_from_r0v0(REI, VEI, t32, R3, V3, mu);
+		t32 = OrbMech::time_radius(REI, VEI, RCON - 30480.0, -1, OrbMech::mu_Earth);
+		OrbMech::rv_from_r0v0(REI, VEI, t32, R3, V3, OrbMech::mu_Earth);
 		UR3 = unit(R3);
 		v3 = length(V3);
 		S_FPA = dotp(UR3, V3) / v3;
@@ -175,13 +173,14 @@ namespace EntryCalculations
 		U_LS = UR3*Cphie + U_H3*Sphie;
 
 		tLSMJD = mjd0 + t_LS / 24.0 / 3600.0;
-		//U_LS = tmul(Rot, U_LS);
-		U_LS = _V(U_LS.x, U_LS.z, U_LS.y);
+
 		R = OrbMech::GetRotationMatrix(BODY_EARTH, tLSMJD);
-		LSEF = tmul(R, U_LS);
+		LSEF = rhtmul(R, tmul(Rot_J_B, U_LS));
+
 		l = LSEF.x;
-		m = LSEF.z;
-		n = LSEF.y;
+		m = LSEF.y;
+		n = LSEF.z;
+
 		phi = asin(n);
 		if (m > 0)
 		{
@@ -197,8 +196,8 @@ namespace EntryCalculations
 		EntryLngPred = lambda2;
 
 		VECTOR3 R05G, V05G;
-		double dt22 = OrbMech::time_radius(R3, V3, length(R3) - (300000.0 * 0.3048 - EMSAlt), -1, mu);
-		OrbMech::rv_from_r0v0(R3, V3, dt22, R05G, V05G, mu);
+		double dt22 = OrbMech::time_radius(R3, V3, length(R3) - (300000.0 * 0.3048 - EMSAlt), -1, OrbMech::mu_Earth);
+		OrbMech::rv_from_r0v0(R3, V3, dt22, R05G, V05G, OrbMech::mu_Earth);
 
 		EntryRTGO = phie - 3437.7468*acos(dotp(unit(R3), unit(R05G)));
 		EntryVIO = length(V05G);
@@ -288,11 +287,18 @@ namespace EntryCalculations
 		return a * cos(gamma) + y_unit * sin(gamma);
 	}
 
-	void EGTR(VECTOR3 R_geoc, VECTOR3 V_geoc, double MJD, VECTOR3 &R_geogr, VECTOR3 &V_geogr)
+	void EGTR(VECTOR3 R_geoc, VECTOR3 V_geoc, double GMT, double alpha_SID0, VECTOR3 &R_geogr, VECTOR3 &V_geogr)
 	{
-		MATRIX3 Rot = OrbMech::GetRotationMatrix(BODY_EARTH, MJD);
-		R_geogr = rhtmul(Rot, R_geoc);
-		V_geogr = rhtmul(Rot, V_geoc);
+		MATRIX3 Rot;
+		VECTOR3 V_e;
+		double alpha_SID;
+
+		alpha_SID = alpha_SID0 + GMT * OrbMech::w_Earth;
+		Rot = _M(cos(alpha_SID), sin(alpha_SID), 0, -sin(alpha_SID), cos(alpha_SID), 0, 0, 0, 1);
+
+		V_e = _V(-OrbMech::w_Earth*R_geoc.y, OrbMech::w_Earth*R_geoc.x, 0);
+		R_geogr = mul(Rot, R_geoc);
+		V_geogr = mul(Rot, V_geoc - V_e);
 	}
 
 	double INTER(const double *X, const double *Y, int IMAX, double x)
@@ -421,14 +427,29 @@ namespace EntryCalculations
 		return u_r;
 	}
 
-	void AESR(double r1, double r2, double beta1, double T, double R, double mu, double eps, double &a, double &e, int &k2, int &info, double &V1)
+	void AESR(double r1, double r2, double beta1, double T, double R, double mu, double eps, double &a, double &e, bool &k2, int &info, double &V1)
 	{
+		//INPUT:
+		//r1: first radial distance
+		//r2: second radial distance
+		//beta1: flight-path angle for first radius
+		//T: flight time
+		//R: radius of the central body
+		//mu: gravitational constant
+		//eps: tolerance on time
+		//OUTPUT:
+		//a: semimajor axis; or p, the semilatus rectum
+		//e: eccentricity
+		//k2: 0 = no apogee passage, 1 = apogee passage
+		//INFO: 0 = no solution found, 1 = solution found
+		//V1: reentry velocity
+
 		double tan_eta1_2, M_1, q, p, tan_eta2_2, M_2, T_P, DT, T_m, a_m, T_1, DDT_m, esinE_1, ecosE_1, E_1, DT_m, Q, k_1_apo, DT_1;
 		double esinE_2, ecosE_2, E_2, T_12, k_apo, k, B, sec2_eta12;
 		int iter, IH, C_2;
 
 		C_2 = 1;
-		k2 = 0;
+		k2 = false;
 		//On parabolic trajectories the flight path angle (measured from local horizontal!) is always one-half the true anomaly
 		tan_eta1_2 = OrbMech::cot(beta1);
 		//M_1 is twice of parabolic mean anomaly
@@ -504,7 +525,7 @@ namespace EntryCalculations
 			{
 				//We have an apogee passage
 				Q = -1.0;
-				k2 = 1;
+				k2 = true;
 				iter = 2;
 				k_1_apo = 0.0;
 				T_1 = T_P;
@@ -513,7 +534,7 @@ namespace EntryCalculations
 			{
 				//We have no apogee passage
 				Q = 1.0;
-				k2 = 0;
+				k2 = false;
 				if (T <= 1.2*T_P)
 				{
 					iter = 1;
@@ -536,9 +557,9 @@ namespace EntryCalculations
 			V1 = sqrt(mu*(2.0 / r1 - 1.0 / a));
 			esinE_1 = r1 * V1*cos(beta1) / sqrt(abs(a)*mu);
 			ecosE_1 = 1.0 - r1 / a;
-			e = sqrt(esinE_1*esinE_1 + ecosE_1 * ecosE_1);
 			if (a > 0.0)
 			{
+				e = sqrt(ecosE_1 * ecosE_1 + esinE_1 * esinE_1); //Pythagorean identity for ellipses
 				E_1 = atan2(esinE_1, ecosE_1);
 				if (E_1 < 0)
 				{
@@ -554,6 +575,7 @@ namespace EntryCalculations
 			}
 			else
 			{
+				e = sqrt(ecosE_1 * ecosE_1 - esinE_1 * esinE_1); //Pythagorean identity for hyperbolas
 				E_1 = atanh(esinE_1 / ecosE_1);
 				E_2 = acosh(1.0 / e * (1.0 - r2 / a));
 				esinE_2 = e * sinh(E_2);
@@ -661,21 +683,18 @@ namespace EntryCalculations
 		return 0;
 	}
 
-	double LNDING(VECTOR3 REI, VECTOR3 VEI, double MJD_EI, double LD, int ICRNGG, double r_rbias, double &lambda, double &phi, double &MJD_L)
+	double LNDING(VECTOR3 REI, VECTOR3 VEI, double GMT_EI, double alpha_SIDO0, double LD, int ICRNGG, double r_rbias, double &lambda, double &phi, double &GMT_L)
 	{
-		MATRIX3 Rot;
-		VECTOR3 R_equ, V_equ, H, R_EI_u, V_EI_u, R_1_u, N_u, R_1_apo, R_geo, V_geo;
+		VECTOR3 H, R_EI_u, V_EI_u, R_1_u, N_u, R_1_apo, R_geo, V_geo;
 		double i_r, rmag, vmag, rtasc, decl, fpav, az, eta_rzI, theta_cr, T, NMPER;
 
 		NMPER = 3443.93359;
 		
 		R_EI_u = unit(REI);
 		V_EI_u = unit(VEI);
-		Rot = OrbMech::GetRotationMatrix(BODY_EARTH, MJD_EI);
-		R_equ = rhtmul(Rot, REI);
-		V_equ = rhtmul(Rot, VEI);
-		OrbMech::rv_from_adbar(R_equ, V_equ, rmag, vmag, rtasc, decl, fpav, az);
-		H = crossp(R_equ, V_equ);
+
+		OrbMech::rv_from_adbar(REI, VEI, rmag, vmag, rtasc, decl, fpav, az);
+		H = crossp(REI, VEI);
 		i_r = acos(H.z / length(H));
 
 		REENTRYNew(LD, ICRNGG, vmag, i_r, az, decl, r_rbias, eta_rzI, theta_cr, T);
@@ -683,13 +702,13 @@ namespace EntryCalculations
 		R_1_u = TVECT(R_EI_u, V_EI_u, fpav, eta_rzI);
 		N_u = unit(crossp(REI, VEI));
 		R_1_apo = R_1_u * cos(theta_cr) + N_u * sin(theta_cr);
-		MJD_L = MJD_EI + T / 24.0 / 3600.0;
+		GMT_L = GMT_EI + T;
 		if (theta_cr*(R_1_u.z - R_1_apo.z) < 0)
 		{
 			R_1_apo = R_1_u * cos(theta_cr) - N_u * sin(theta_cr);
 		}
 
-		EGTR(R_1_apo, _V(0, 0, 0), MJD_L, R_geo, V_geo);
+		EGTR(R_1_apo, _V(0, 0, 0), GMT_L, alpha_SIDO0, R_geo, V_geo);
 		OrbMech::latlong_from_r(R_geo, phi, lambda);
 
 		return eta_rzI * NMPER;
@@ -724,254 +743,34 @@ namespace EntryCalculations
 		T = fmod(alpha_go, PI2);
 	}
 
-	void Abort(VECTOR3 R0, VECTOR3 V0, double RCON, double dt, double mu, VECTOR3 &DV, VECTOR3 &R_EI, VECTOR3 &V_EI)
+	double XDOTX2(VECTOR3 a, VECTOR3 b, double DIFG)
 	{
-		double k4, x2, v2, x2_apo, x2_err;
-		VECTOR3 V2;
+		//Calculate alpha given a, b, and DIFG
 
-		k4 = -0.10453;
+		double alpha, k;
 
-		x2 = k4;
-		x2_err = 1.0;
-
-		while (abs(x2_err) > 0.00001)
+		alpha = acos2(dotp(unit(a), unit(b)));
+		k = DIFG * (a.x*b.y - a.y*b.x);
+		if (k < 0)
 		{
-			time_reentry(R0, V0, RCON, x2, dt, mu, V2, R_EI, V_EI);
-
-			v2 = length(V_EI);
-			x2_apo = x2;
-			x2 = ReentryTargetLineTan(v2, false);
-			x2_err = x2 - x2_apo;
+			alpha = PI2 - alpha;
 		}
-		DV = V2 - V0;
+		return alpha;
 	}
 
-	bool Abort_plane(VECTOR3 R0, VECTOR3 V0, double MJD0, double RCON, double dt, double mu, double Incl, double INTER, VECTOR3 &DV, VECTOR3 &R_EI, VECTOR3 &V_EI, double &Incl_apo)
+	void RA2XYZ4(VECTOR3 R, VECTOR3 V, double &beta, double &A_Z)
 	{
-		bool NIR;
-		double k4, x2, v2, x2_apo, x2_err, ra, dec, Omega, MJD_EI;
-		VECTOR3 V2, R0_equ, U_H;
-		MATRIX3 Rot;
+		//Calculate beta, A_Z given R and V
+		double c, r;
 
-		k4 = -0.10453;
-		NIR = false;
-
-		x2 = k4;
-		x2_err = 1.0;
-
-		MJD_EI = MJD0 + dt / 24.0 / 3600.0;
-		Rot = OrbMech::GetRotationMatrix(BODY_EARTH, MJD_EI);
-		R0_equ = rhtmul(Rot, R0);
-		OrbMech::ra_and_dec_from_r(R0_equ, ra, dec);
-		//Make sure the inclination is larger than the declination
-		if (Incl <= abs(dec))
+		r = length(R);
+		beta = XDOTX2(unit(R), unit(V), 0.0);
+		c = dotp(R, V) / r;
+		A_Z = atan2(R.x*V.y - R.y*V.x, r*V.z - c * R.z);
+		if (A_Z < 0)
 		{
-			Incl_apo = abs(dec) + 0.0001;
-			NIR = true;
+			A_Z += PI2;
 		}
-		else
-		{
-			Incl_apo = Incl;
-		}
-
-		if (INTER > 0)
-		{
-			Omega = ra + asin(tan(dec) / tan(Incl_apo)) + PI;
-		}
-		else
-		{
-			Omega = ra - asin(tan(dec) / tan(Incl_apo));
-		}
-		U_H = unit(_V(sin(Omega)*sin(Incl_apo), -cos(Omega)*sin(Incl_apo), cos(Incl_apo)));
-		U_H = rhmul(Rot, U_H);
-
-		while (abs(x2_err) > 0.00001)
-		{
-			time_reentry_plane(R0, U_H, RCON, x2, dt, mu, V2, R_EI, V_EI);
-
-			v2 = length(V_EI);
-			x2_apo = x2;
-			x2 = ReentryTargetLineTan(v2, false);
-			x2_err = x2 - x2_apo;
-		}
-		DV = V2 - V0;
-
-		return NIR;
-	}
-
-	void time_reentry(VECTOR3 R0, VECTOR3 V0, double r1, double x2, double dt, double mu, VECTOR3 &V, VECTOR3 &R_EI, VECTOR3 &V_EI)
-	{
-		VECTOR3 U_R1, U_V1, eta, U_H;
-		double r0, lambda, MA1, MA2, beta1, beta5, theta1, theta2, theta3, beta10, xmin, xmax, dxmax, C0, C1, C2, C3, x, dx;
-		double x_old, dt_err, p, dt_act, dt_err_old, C_FPA;
-		int i;
-
-		MA1 = -6.986643e7;
-		C0 = 1.81000432e8;
-		C1 = 1.5078514;
-		C2 = -6.49993054e-9;
-		C3 = 9.769389245e-18;
-
-		U_R1 = unit(R0);
-		U_V1 = unit(V0);
-		r0 = length(R0);
-		C_FPA = dotp(U_R1, U_V1);
-		if (abs(C_FPA) < 0.99966)
-		{
-			eta = crossp(R0, V0);
-		}
-		else
-		{
-			eta = _V(0.0, 0.0, 1.0);
-		}
-
-		if (eta.z < 0)
-		{
-			eta = -eta;
-		}
-		U_H = unit(crossp(eta, R0));
-
-		MA2 = C0 + C1*r0 + C2*r0*r0 + C3*r0*r0*r0;
-
-		lambda = r0 / r1;
-		beta1 = 1.0 + x2*x2;
-		beta5 = lambda*beta1;
-		theta1 = beta5*lambda - 1.0;
-		theta2 = 2.0*r0*(lambda - 1.0);
-		theta3 = sqrt(mu) / r0;
-		beta10 = beta5*(MA1 - r0) / (MA1 - r1) - 1.0;
-		if (beta10 < 0.0)
-		{
-			xmin = 0.0;
-		}
-		else
-		{
-			xmin = -sqrt(beta10);
-		}
-		dxmax = -xmin / 16.0;
-		beta10 = beta5*(MA2 - r0) / (MA2 - r1) - 1.0;
-		if (beta10 < 0.0)
-		{
-			xmax = 0.0;
-		}
-		else
-		{
-			xmax = sqrt(beta10);
-		}
-
-
-		x = xmin;
-		dx = dxmax;
-		dt_err = 10.0;
-		i = 0;
-		while (abs(dt_err)>0.005)
-		{
-			p = theta2 / (theta1 - x*x);
-			V = (U_R1*x + U_H)*theta3*sqrt(p);
-			dt_act = OrbMech::time_radius(R0, V, r1, -1.0, mu);
-
-			dt_err = dt - dt_act;
-
-			if (i == 0)
-			{
-				dx = -dxmax;
-			}
-			else
-			{
-				dx = (x - x_old) / (dt_err - dt_err_old)*dt_err;
-				if (abs(dx) > dxmax)
-				{
-					dx = OrbMech::sign(dx)*dxmax;
-				}
-			}
-
-			dt_err_old = dt_err;
-			x_old = x;
-			x -= dx;
-
-			i++;
-		}
-		OrbMech::rv_from_r0v0(R0, V, dt, R_EI, V_EI, mu);
-	}
-
-	void time_reentry_plane(VECTOR3 R0, VECTOR3 eta, double r1, double x2, double dt, double mu, VECTOR3 &V, VECTOR3 &R_EI, VECTOR3 &V_EI)
-	{
-		VECTOR3 U_R1, U_H;
-		double r0, lambda, MA1, MA2, beta1, beta5, theta1, theta2, theta3, beta10, xmin, xmax, dxmax, C0, C1, C2, C3, x, dx;
-		double x_old, dt_err, p, dt_act, dt_err_old;
-		int i;
-
-		MA1 = -6.986643e7;
-		C0 = 1.81000432e8;
-		C1 = 1.5078514;
-		C2 = -6.49993054e-9;
-		C3 = 9.769389245e-18;
-
-		U_R1 = unit(R0);
-		r0 = length(R0);
-		U_H = unit(crossp(eta, R0));
-
-		MA2 = C0 + C1 * r0 + C2 * r0*r0 + C3 * r0*r0*r0;
-
-		lambda = r0 / r1;
-		beta1 = 1.0 + x2 * x2;
-		beta5 = lambda * beta1;
-		theta1 = beta5 * lambda - 1.0;
-		theta2 = 2.0*r0*(lambda - 1.0);
-		theta3 = sqrt(mu) / r0;
-		beta10 = beta5 * (MA1 - r0) / (MA1 - r1) - 1.0;
-		if (beta10 < 0.0)
-		{
-			xmin = 0.0;
-		}
-		else
-		{
-			xmin = -sqrt(beta10);
-		}
-		dxmax = -xmin / 16.0;
-		beta10 = beta5 * (MA2 - r0) / (MA2 - r1) - 1.0;
-		if (beta10 < 0.0)
-		{
-			xmax = 0.0;
-		}
-		else
-		{
-			xmax = sqrt(beta10);
-		}
-
-
-		x = xmin;
-		dx = dxmax;
-		dt_err = 10.0;
-		i = 0;
-		while (abs(dt_err)>0.005)
-		{
-			p = theta2 / (theta1 - x * x);
-			V = (U_R1*x + U_H)*theta3*sqrt(p);
-			dt_act = OrbMech::time_radius(R0, V, r1, -1.0, mu);
-
-			dt_err = dt - dt_act;
-
-			if (i == 0)
-			{
-				dx = -dxmax;
-			}
-			else
-			{
-				dx = (x - x_old) / (dt_err - dt_err_old)*dt_err;
-				if (abs(dx) > dxmax)
-				{
-					dx = OrbMech::sign(dx)*dxmax;
-				}
-			}
-
-			dt_err_old = dt_err;
-			x_old = x;
-			x -= dx;
-
-			i++;
-		}
-		OrbMech::rv_from_r0v0(R0, V, dt, R_EI, V_EI, mu);
 	}
 
 	double landingzonelong(int zone, double lat)
@@ -1659,6 +1458,7 @@ bool RetrofirePlanning::RMSDBMP(EphemerisData sv, double GETI, double lat_T, dou
 	}
 
 	MAINITER = 0;
+	HASCONVERGED = false;
 
 	do
 	{
@@ -2064,6 +1864,10 @@ void RetrofirePlanning::RMMDBM()
 	{
 		DVBURN = F / mdot * log(CSMmass / (CSMmass - mdot * pRTCC->RZJCTTC.R31_dt));
 	}
+	else
+	{
+		DVBURN = 0.0;
+	}
 
 	iter = 0;
 	do
@@ -2202,7 +2006,7 @@ void RetrofirePlanning::RMMDBM()
 		}
 
 		//Calculate landing point
-		EntryCalculations::landingsite(sv_EI.R, sv_EI.V, pRTCC->GetGMTBase() + sv_EI.GMT / 24.0 / 3600.0, lng_IP, lat_IP);
+		EntryCalculations::landingsite(pRTCC->SystemParameters.MAT_J2000_BRCS, sv_EI.R, sv_EI.V, pRTCC->GetGMTBase() + sv_EI.GMT / 24.0 / 3600.0, lng_IP, lat_IP);
 		//EntryCalculations::LNDING(sv_EI.R, sv_EI.V, pRTCC->GetGMTBase() + sv_EI.GMT / 24.0 / 3600.0, 0.3, 1, 0.0, lng_IP, lat_IP, MJD_L);
 		
 		dlng = lng_T - lng_IP;
@@ -2613,7 +2417,7 @@ void RetrofirePlanning::RMMATT(int entry, int opt, bool calcDesired, VECTOR3 Att
 void RetrofirePlanning::RMSTTF()
 {
 	//Just for convenience, later we should have primary and contingency tables, too
-	RetrofireDisplayParametersTable *tab = &pRTCC->RZRFDP;
+	RetrofireDisplayParametersTableData *tab = &pRTCC->RZRFDP.data[2];
 
 	TimeConstraintsTable elem;
 	double r_apo, r_peri;
@@ -3014,6 +2818,9 @@ void RetrofirePlanning::RMGTTF(std::string source, int i)
 		break;
 	case 100: //The big one
 		std::string Buffer2, Buffer3;
+
+		RetrofireDisplayParametersTableData *tab = &pRTCC->RZRFDP.data[2];
+
 		//Line 1
 		sprintf_s(Buffer, "MANUAL TIME-TO-FIRE PARAMETERS TYPE %d COMPUTATION", pRTCC->RZJCTTC.R32_Code);
 		message.push_back(Buffer);
@@ -3031,10 +2838,10 @@ void RetrofirePlanning::RMGTTF(std::string source, int i)
 			sprintf_s(Buffer, "%06.2lf", Area / 0.3048 / 0.3048);
 			Buffer2.append(Buffer);
 			Buffer2 += " WT=";
-			sprintf_s(Buffer, "%08.2lf", pRTCC->RZRFDP.CSMWeightSep);
+			sprintf_s(Buffer, "%08.2lf", tab->CSMWeightSep);
 			Buffer2.append(Buffer);
 			Buffer2 += " GETI=";
-			pRTCC->OnlinePrintTimeHHHMMSS(pRTCC->RZRFDP.GETI_Sep, Buffer3);
+			pRTCC->OnlinePrintTimeHHHMMSS(tab->GETI_Sep, Buffer3);
 			Buffer2 += Buffer3;
 			Buffer2 += " THR=";
 
@@ -3070,16 +2877,16 @@ void RetrofirePlanning::RMGTTF(std::string source, int i)
 			}
 			Buffer2 += Buffer3;
 			Buffer2 += " DV=";
-			sprintf_s(Buffer, "%08.2lf", pRTCC->RZRFDP.DVT_Sep);
+			sprintf_s(Buffer, "%08.2lf", tab->DVT_Sep);
 			Buffer2.append(Buffer);
 			Buffer2 += " DT=";
-			sprintf_s(Buffer, "%06.2lf", pRTCC->RZRFDP.BurnTime_Sep);
+			sprintf_s(Buffer, "%06.2lf", tab->BurnTime_Sep);
 			Buffer2.append(Buffer);
 			Buffer2 += " DT ULL=";
-			sprintf_s(Buffer, "%05.2lf", pRTCC->RZRFDP.UllageDT_Sep);
+			sprintf_s(Buffer, "%05.2lf", tab->UllageDT_Sep);
 			Buffer2.append(Buffer);
 			Buffer2 += " ";
-			sprintf_s(Buffer, "%d", pRTCC->RZRFDP.UllageQuads_Sep);
+			sprintf_s(Buffer, "%d", tab->UllageQuads_Sep);
 			Buffer2.append(Buffer);
 			Buffer2 += " QUADS";
 			message.push_back(Buffer2);
@@ -3096,15 +2903,15 @@ void RetrofirePlanning::RMGTTF(std::string source, int i)
 			}
 			message.push_back(Buffer2);
 			//Line 5
-			sprintf_s(Buffer, "LVLH BODY-ROLL=%+07.2lf PITCH=%+07.2lf YAW=%+07.2lf TRIM ANGLES--PITCH=%+07.2lf YAW=%+07.2lf", pRTCC->RZRFDP.Att_LVLH_Sep.x, pRTCC->RZRFDP.Att_LVLH_Sep.y, pRTCC->RZRFDP.Att_LVLH_Sep.z, pRTCC->RZRFDP.P_G_Sep, pRTCC->RZRFDP.Y_G_Sep);
+			sprintf_s(Buffer, "LVLH BODY-ROLL=%+07.2lf PITCH=%+07.2lf YAW=%+07.2lf TRIM ANGLES--PITCH=%+07.2lf YAW=%+07.2lf", tab->Att_LVLH_Sep.x, tab->Att_LVLH_Sep.y, tab->Att_LVLH_Sep.z, tab->P_G_Sep, tab->Y_G_Sep);
 			Buffer2.assign(Buffer);
 			message.push_back(Buffer2);
 			//Line 6
-			sprintf_s(Buffer, "IMU-------ROLL=%+07.2lf PITCH=%+07.2lf YAW=%+07.2lf DT SEP=", pRTCC->RZRFDP.Att_IMU_Sep.x, pRTCC->RZRFDP.Att_IMU_Sep.y, pRTCC->RZRFDP.Att_IMU_Sep.z);
+			sprintf_s(Buffer, "IMU-------ROLL=%+07.2lf PITCH=%+07.2lf YAW=%+07.2lf DT SEP=", tab->Att_IMU_Sep.x, tab->Att_IMU_Sep.y, tab->Att_IMU_Sep.z);
 			Buffer2.assign(Buffer);
 			pRTCC->OnlinePrintTimeHHHMMSS(pRTCC->RZJCTTC.R30_DeltaT_Sep, Buffer3);
 			Buffer2 += Buffer3;
-			sprintf_s(Buffer, " TRUE ANOMALY AT GETI(SEP)=%+07.2lf", pRTCC->RZRFDP.TrueAnomalySep);
+			sprintf_s(Buffer, " TRUE ANOMALY AT GETI(SEP)=%+07.2lf", tab->TrueAnomalySep);
 			Buffer2.append(Buffer);
 			message.push_back(Buffer2);
 		}
@@ -3113,10 +2920,10 @@ void RetrofirePlanning::RMGTTF(std::string source, int i)
 		sprintf_s(Buffer, "%06.2lf", Area / 0.3048 / 0.3048);
 		Buffer2.append(Buffer);
 		Buffer2 += " WT=";
-		sprintf_s(Buffer, "%08.2lf", pRTCC->RZRFDP.CSMWeightRetro);
+		sprintf_s(Buffer, "%08.2lf", tab->CSMWeightRetro);
 		Buffer2.append(Buffer);
 		Buffer2 += " GETI=";
-		pRTCC->OnlinePrintTimeHHHMMSS(pRTCC->RZRFDP.GETI, Buffer3);
+		pRTCC->OnlinePrintTimeHHHMMSS(tab->GETI, Buffer3);
 		Buffer2 += Buffer3;
 		Buffer2 += " THR=";
 
@@ -3156,16 +2963,16 @@ void RetrofirePlanning::RMGTTF(std::string source, int i)
 		}
 		Buffer2 += Buffer3;
 		Buffer2 += " DV=";
-		sprintf_s(Buffer, "%08.2lf", pRTCC->RZRFDP.DVT);
+		sprintf_s(Buffer, "%08.2lf", tab->DVT);
 		Buffer2.append(Buffer);
 		Buffer2 += " DT=";
-		sprintf_s(Buffer, "%06.2lf", pRTCC->RZRFDP.BurnTime);
+		sprintf_s(Buffer, "%06.2lf", tab->BurnTime);
 		Buffer2.append(Buffer);
 		Buffer2 += " DT ULL=";
-		sprintf_s(Buffer, "%05.2lf", pRTCC->RZRFDP.UllageDT);
+		sprintf_s(Buffer, "%05.2lf", tab->UllageDT);
 		Buffer2.append(Buffer);
 		Buffer2 += " ";
-		sprintf_s(Buffer, "%d", pRTCC->RZRFDP.UllageQuads);
+		sprintf_s(Buffer, "%d", tab->UllageQuads);
 		Buffer2.append(Buffer);
 		Buffer2 += " QUADS POSTBURN WT=";
 		sprintf_s(Buffer, "%08.2lf", burnaux.WTEND*LBS*1000.0);
@@ -3184,11 +2991,11 @@ void RetrofirePlanning::RMGTTF(std::string source, int i)
 		}
 		message.push_back(Buffer2);
 		//Line 5
-		sprintf_s(Buffer, "LVLH BODY-ROLL=%+07.2lf PITCH=%+07.2lf YAW=%+07.2lf TRIM ANGLES--PITCH=%+07.2lf YAW=%+07.2lf", BodyAtt.x*DEG, BodyAtt.y*DEG, BodyAtt.z*DEG, pRTCC->RZRFDP.P_G, pRTCC->RZRFDP.Y_G);
+		sprintf_s(Buffer, "LVLH BODY-ROLL=%+07.2lf PITCH=%+07.2lf YAW=%+07.2lf TRIM ANGLES--PITCH=%+07.2lf YAW=%+07.2lf", BodyAtt.x*DEG, BodyAtt.y*DEG, BodyAtt.z*DEG, tab->P_G, tab->Y_G);
 		Buffer2.assign(Buffer);
 		message.push_back(Buffer2);
 		//Line 6
-		sprintf_s(Buffer, "IMU-------ROLL=%+07.2lf PITCH=%+07.2lf YAW=%+07.2lf HT AT RETRO=%+07.2lf TRUE ANOMALY AT GETI(RET)=%+07.2lf", IMUAtt.x*DEG, IMUAtt.y*DEG, IMUAtt.z*DEG, pRTCC->RZRFDP.H_Retro, pRTCC->RZRFDP.TrueAnomalyRetro);
+		sprintf_s(Buffer, "IMU-------ROLL=%+07.2lf PITCH=%+07.2lf YAW=%+07.2lf HT AT RETRO=%+07.2lf TRUE ANOMALY AT GETI(RET)=%+07.2lf", IMUAtt.x*DEG, IMUAtt.y*DEG, IMUAtt.z*DEG, tab->H_Retro, tab->TrueAnomalyRetro);
 		Buffer2.assign(Buffer);
 		message.push_back(Buffer2);
 		//Line 7
@@ -3207,7 +3014,7 @@ void RetrofirePlanning::RMGTTF(std::string source, int i)
 		Buffer2.assign(Buffer);
 		message.push_back(Buffer2);
 		//Line 10
-		sprintf_s(Buffer, "LVLH XDV(TRUE) VGX=%+09.2lf VGY=%+09.2lf VGZ=%+09.2lf", pRTCC->RZRFDP.VG_XDX.x, pRTCC->RZRFDP.VG_XDX.y, pRTCC->RZRFDP.VG_XDX.z);
+		sprintf_s(Buffer, "LVLH XDV(TRUE) VGX=%+09.2lf VGY=%+09.2lf VGZ=%+09.2lf", tab->VG_XDX.x, tab->VG_XDX.y, tab->VG_XDX.z);
 		Buffer2.assign(Buffer);
 		message.push_back(Buffer2);
 		//Line 11
@@ -3237,77 +3044,77 @@ void RetrofirePlanning::RMGTTF(std::string source, int i)
 		}
 		Buffer2.append(Buffer);
 		Buffer2 += " GETRB=";
-		pRTCC->OnlinePrintTimeHHHMMSS(pRTCC->GETfromGMT(sv_EI.GMT + pRTCC->RZRFDP.RETRB), Buffer3);
+		pRTCC->OnlinePrintTimeHHHMMSS(pRTCC->GETfromGMT(sv_EI.GMT + tab->RETRB), Buffer3);
 		Buffer2.append(Buffer3);
 		message.push_back(Buffer2);
 		//Line 14
 		Buffer2.assign("TARGET LAT=");
-		if (pRTCC->RZRFDP.lat_T >= 0.0)
+		if (tab->lat_T >= 0.0)
 		{
-			sprintf_s(Buffer, "%07.4lfN", pRTCC->RZRFDP.lat_T);
+			sprintf_s(Buffer, "%07.4lfN", tab->lat_T);
 		}
 		else
 		{
-			sprintf_s(Buffer, "%07.4lfS", abs(pRTCC->RZRFDP.lat_T));
+			sprintf_s(Buffer, "%07.4lfS", abs(tab->lat_T));
 		}
 		Buffer2.append(Buffer);
 		Buffer2.append(" LONG=");
-		if (pRTCC->RZRFDP.lng_T >= 0.0)
+		if (tab->lng_T >= 0.0)
 		{
-			sprintf_s(Buffer, "%08.4lfE", pRTCC->RZRFDP.lng_T);
+			sprintf_s(Buffer, "%08.4lfE", tab->lng_T);
 		}
 		else
 		{
-			sprintf_s(Buffer, "%08.4lfW", abs(pRTCC->RZRFDP.lng_T));
+			sprintf_s(Buffer, "%08.4lfW", abs(tab->lng_T));
 		}
 		Buffer2.append(Buffer);
 		message.push_back(Buffer2);
 		//Line 15
 		Buffer2.assign("IMPACT LAT=");
-		if (pRTCC->RZRFDP.lat_IP >= 0.0)
+		if (tab->lat_IP >= 0.0)
 		{
-			sprintf_s(Buffer, "%07.4lfN", pRTCC->RZRFDP.lat_IP);
+			sprintf_s(Buffer, "%07.4lfN", tab->lat_IP);
 		}
 		else
 		{
-			sprintf_s(Buffer, "%07.4lfS", abs(pRTCC->RZRFDP.lat_IP));
+			sprintf_s(Buffer, "%07.4lfS", abs(tab->lat_IP));
 		}
 		Buffer2.append(Buffer);
 		Buffer2.append(" LONG=");
-		if (pRTCC->RZRFDP.lng_IP >= 0.0)
+		if (tab->lng_IP >= 0.0)
 		{
-			sprintf_s(Buffer, "%08.4lfE", pRTCC->RZRFDP.lng_IP);
+			sprintf_s(Buffer, "%08.4lfE", tab->lng_IP);
 		}
 		else
 		{
-			sprintf_s(Buffer, "%08.4lfW", abs(pRTCC->RZRFDP.lng_IP));
+			sprintf_s(Buffer, "%08.4lfW", abs(tab->lng_IP));
 		}
 		Buffer2.append(Buffer);
 		Buffer2.append(" GETEI=");
 		pRTCC->OnlinePrintTimeHHHMMSS(pRTCC->GETfromGMT(sv_EI.GMT), Buffer3);
 		Buffer2.append(Buffer3);
-		sprintf_s(Buffer, " VEI=%08.2lf GEI= %+06.2lf", pRTCC->RZRFDP.V400k, pRTCC->RZRFDP.Gamma400k);
+		sprintf_s(Buffer, " VEI=%08.2lf GEI= %+06.2lf", tab->V400k, tab->Gamma400k);
 		Buffer2.append(Buffer);
 		message.push_back(Buffer2);
 		//Line 16
 		Buffer2.assign("MAX IP LAT=");
-		if (pRTCC->RZRFDP.lat_ML >= 0.0)
+		if (tab->lat_ML >= 0.0)
 		{
-			sprintf_s(Buffer, "%07.4lfN", pRTCC->RZRFDP.lat_ML);
+			sprintf_s(Buffer, "%07.4lfN", tab->lat_ML);
 		}
 		else
 		{
-			sprintf_s(Buffer, "%07.4lfS", abs(pRTCC->RZRFDP.lat_ML));
+			sprintf_s(Buffer, "%07.4lfS", abs(tab->lat_ML));
 		}
 		Buffer2.append(Buffer);
 		Buffer2.append(" LONG=");
-		if (pRTCC->RZRFDP.lng_ML >= 0.0)
+		if (tab->lng_ML >= 0.0)
 		{
-			sprintf_s(Buffer, "%08.4lfE", pRTCC->RZRFDP.lng_ML);
+			sprintf_s(Buffer, "%08.4lfE", tab->lng_ML);
 		}
 		else
 		{
-			sprintf_s(Buffer, "%08.4lfW", abs(pRTCC->RZRFDP.lng_ML));
+			sprintf_s(Buffer, "%08.4lfW", abs(tab->lng_ML));
 		}
 		Buffer2.append(Buffer);
 		sprintf_s(Buffer, " MAX G=%05.2lf GET OF MAX G=", gmax);
@@ -3317,23 +3124,23 @@ void RetrofirePlanning::RMGTTF(std::string source, int i)
 		message.push_back(Buffer2);
 		//Line 17
 		Buffer2.assign("MIN IP LAT=");
-		if (pRTCC->RZRFDP.lat_ZL >= 0.0)
+		if (tab->lat_ZL >= 0.0)
 		{
-			sprintf_s(Buffer, "%07.4lfN", pRTCC->RZRFDP.lat_ZL);
+			sprintf_s(Buffer, "%07.4lfN", tab->lat_ZL);
 		}
 		else
 		{
-			sprintf_s(Buffer, "%07.4lfS", abs(pRTCC->RZRFDP.lat_ZL));
+			sprintf_s(Buffer, "%07.4lfS", abs(tab->lat_ZL));
 		}
 		Buffer2.append(Buffer);
 		Buffer2.append(" LONG=");
-		if (pRTCC->RZRFDP.lng_ZL >= 0.0)
+		if (tab->lng_ZL >= 0.0)
 		{
-			sprintf_s(Buffer, "%08.4lfE", pRTCC->RZRFDP.lng_ZL);
+			sprintf_s(Buffer, "%08.4lfE", tab->lng_ZL);
 		}
 		else
 		{
-			sprintf_s(Buffer, "%08.4lfW", abs(pRTCC->RZRFDP.lng_ZL));
+			sprintf_s(Buffer, "%08.4lfW", abs(tab->lng_ZL));
 		}
 		Buffer2.append(Buffer);
 		message.push_back(Buffer2);
@@ -3342,7 +3149,8 @@ void RetrofirePlanning::RMGTTF(std::string source, int i)
 	pRTCC->OnlinePrint(source, message);
 }
 
-EarthEntry::EarthEntry(VECTOR3 R0B, VECTOR3 V0B, double mjd, OBJHANDLE gravref, double GETbase, double EntryTIG, double EntryAng, double EntryLng, bool entrynominal, bool entrylongmanual)
+EarthEntry::EarthEntry(RTCC *r, VECTOR3 R0B, VECTOR3 V0B, double mjd, OBJHANDLE gravref, double GETbase, double EntryTIG, double EntryAng, double EntryLng, bool entrynominal, bool entrylongmanual)
+	: RTCCModule(r)
 {
 	MA1 = -6.986643e7;//8e8;
 	C0 = 1.81000432e8;
@@ -3395,7 +3203,7 @@ EarthEntry::EarthEntry(VECTOR3 R0B, VECTOR3 V0B, double mjd, OBJHANDLE gravref, 
 
 	dt0 = EntryTIGcor - get;
 
-	OrbMech::oneclickcoast(R0B, V0B, mjd, dt0, R11B, V11B, gravref, hEarth);
+	OrbMech::oneclickcoast(pRTCC->SystemParameters.AGCEpoch, R0B, V0B, mjd, dt0, R11B, V11B, gravref, hEarth);
 
 	x2 = OrbMech::cot(PI05 - EntryAng);
 
@@ -3612,7 +3420,7 @@ void EarthEntry::coniciter(VECTOR3 R1B, VECTOR3 V1B, double t1, double &theta_lo
 	}
 	t2 = t1 + t21;
 	OrbMech::rv_from_r0v0(R1B, V2, t21, REI, VEI, mu);
-	EntryCalculations::landingsite(REI, VEI, GETbase + t2 / 24.0 / 3600.0, theta_long, theta_lat);
+	EntryCalculations::landingsite(pRTCC->SystemParameters.MAT_J2000_BRCS, REI, VEI, GETbase + t2 / 24.0 / 3600.0, theta_long, theta_lat);
 }
 
 void EarthEntry::precisioniter(VECTOR3 R1B, VECTOR3 V1B, double t1, double &t21, double &x, double &theta_long, double &theta_lat, VECTOR3 &V2)
@@ -3687,7 +3495,7 @@ void EarthEntry::precisioniter(VECTOR3 R1B, VECTOR3 V1B, double t1, double &t21,
 		n2++;
 	}
 	t2 = t1 + t21;
-	EntryCalculations::landingsite(RPRE, VPRE, GETbase + t2 / 24.0 / 3600.0, theta_long, theta_lat);
+	EntryCalculations::landingsite(pRTCC->SystemParameters.MAT_J2000_BRCS, RPRE, VPRE, GETbase + t2 / 24.0 / 3600.0, theta_long, theta_lat);
 	if (n1 == 21)
 	{
 		errorstate = 1;
@@ -3729,13 +3537,13 @@ void EarthEntry::precisionperi(VECTOR3 R1B, VECTOR3 V1B, double t1, double &t21,
 		x = (VR0 - dv*fac2) / (VT0 - dv*fac1);
 		i++;
 	}
-	t21 = OrbMech::time_radius_integ(R1B, V2, mjd + (dt0 + dt1) / 24.0 / 3600.0, RD, -1, hEarth, hEarth, RPRE, VPRE);
+	t21 = OrbMech::time_radius_integ(pRTCC->SystemParameters.AGCEpoch, R1B, V2, mjd + (dt0 + dt1) / 24.0 / 3600.0, RD, -1, hEarth, hEarth, RPRE, VPRE);
 	N = crossp(unit(RPRE), unit(VPRE));
 	sing = length(N);
 	cosg = dotp(unit(RPRE), unit(VPRE));
 	x2 = cosg / sing;
 	t2 = t1 + t21;
-	EntryCalculations::landingsite(RPRE, VPRE, GETbase + t2 / 24.0 / 3600.0, theta_long, theta_lat);
+	EntryCalculations::landingsite(pRTCC->SystemParameters.MAT_J2000_BRCS, RPRE, VPRE, GETbase + t2 / 24.0 / 3600.0, theta_long, theta_lat);
 }
 
 void EarthEntry::newrcon(int n1, double RD, double rPRE, double R_ERR, double &dRCON, double &rPRE_apo)
@@ -3769,7 +3577,7 @@ void EarthEntry::finalstatevector(VECTOR3 R1B, VECTOR3 V2, double beta1, double 
 	VECTOR3 N;
 	double beta12, x2PRE, c3, alpha_N, sing, cosg, p_N, beta2, beta3, beta4, RF, phi4, dt21, beta13, dt21apo, beta14;
 
-	OrbMech::oneclickcoast(R1B, V2, mjd + (dt0 + dt1) / 24.0 / 3600.0, t21, RPRE, VPRE, hEarth, hEarth);
+	OrbMech::oneclickcoast(pRTCC->SystemParameters.AGCEpoch, R1B, V2, mjd + (dt0 + dt1) / 24.0 / 3600.0, t21, RPRE, VPRE, hEarth, hEarth);
 
 	beta12 = 100.0;
 	x2PRE = 1000000;
@@ -3826,7 +3634,7 @@ void EarthEntry::finalstatevector(VECTOR3 R1B, VECTOR3 V2, double beta1, double 
 			dt21 = beta14*dt21apo;
 		}
 		dt21apo = dt21;
-		OrbMech::oneclickcoast(RPRE, VPRE, mjd + (dt0 + dt1 + t21) / 24.0 / 3600.0, dt21, RPRE, VPRE, hEarth, hEarth);
+		OrbMech::oneclickcoast(pRTCC->SystemParameters.AGCEpoch, RPRE, VPRE, mjd + (dt0 + dt1 + t21) / 24.0 / 3600.0, dt21, RPRE, VPRE, hEarth, hEarth);
 		t21 += dt21;
 		//}
 	}
@@ -4016,7 +3824,7 @@ bool EarthEntry::EntryIter()
 	errorstate = 0;
 
 	dt1 = EntryTIGcor - get - dt0;
-	OrbMech::oneclickcoast(R11B, V11B, mjd + dt0 / 24.0 / 3600.0, dt1, R1B, V1B, hEarth, hEarth);
+	OrbMech::oneclickcoast(pRTCC->SystemParameters.AGCEpoch, R11B, V11B, mjd + dt0 / 24.0 / 3600.0, dt1, R1B, V1B, hEarth, hEarth);
 	if (precision == 2)
 	{
 		precisionperi(R1B, V1B, EntryTIGcor, t21, x, theta_long, theta_lat, V2);
@@ -4076,7 +3884,7 @@ bool EarthEntry::EntryIter()
 	}
 	else
 	{
-		if (precision && entrynominal)
+		if (precision == 1 && entrynominal)
 		{
 			if (abs(x - xlim) < OrbMech::power(2.0, -20.0) || abs(x + xlim) < OrbMech::power(2.0, -20.0) || ii == 60)
 				//if (ii == 40)
@@ -4090,7 +3898,7 @@ bool EarthEntry::EntryIter()
 		double t32, dt22, v3, S_FPA;
 
 		t2 = EntryTIGcor + t21;
-		OrbMech::time_radius_integ(R1B, V2, mjd + (dt0 + dt1) / 24.0 / 3600.0, RD, -1, hEarth, hEarth, REI, VEI);//Maneuver to Entry Interface (400k ft)
+		OrbMech::time_radius_integ(pRTCC->SystemParameters.AGCEpoch, R1B, V2, mjd + (dt0 + dt1) / 24.0 / 3600.0, RD, -1, hEarth, hEarth, REI, VEI);//Maneuver to Entry Interface (400k ft)
 
 		t32 = OrbMech::time_radius(REI, VEI, length(REI) - 30480.0, -1, mu);
 		OrbMech::rv_from_r0v0(REI, VEI, t32, R3, V3, mu); //Entry Interface to 300k ft
@@ -4104,7 +3912,7 @@ bool EarthEntry::EntryIter()
 
 		VECTOR3 Rsph, Vsph;
 
-		OrbMech::oneclickcoast(R1B, V1B, mjd + (dt0 + dt1) / 24.0 / 3600.0, 0.0, Rsph, Vsph, hEarth, hEarth);
+		OrbMech::oneclickcoast(pRTCC->SystemParameters.AGCEpoch, R1B, V1B, mjd + (dt0 + dt1) / 24.0 / 3600.0, 0.0, Rsph, Vsph, hEarth, hEarth);
 		DV = V2 - V1B;
 		VECTOR3 i, j, k;
 		MATRIX3 Q_Xx;
@@ -4115,7 +3923,7 @@ bool EarthEntry::EntryIter()
 
 		Entry_DV = mul(Q_Xx, DV);
 
-		EntryRTGO = OrbMech::CMCEMSRangeToGo(R05G, OrbMech::MJDfromGET(t2 + t32 + dt22, GETbase), theta_lat, theta_long);
+		EntryRTGO = OrbMech::CMCEMSRangeToGo(pRTCC->SystemParameters.MAT_J2000_BRCS, R05G, OrbMech::MJDfromGET(t2 + t32 + dt22, GETbase), theta_lat, theta_long);
 		EntryVIO = length(V05G);
 		EntryRET = t2 + t32 + dt22;
 		EntryAng = atan(x2);//asin(dotp(unit(REI), VEI) / length(VEI));
@@ -4132,7 +3940,7 @@ bool EarthEntry::EntryIter()
 	}
 }
 
-RTEEarth::RTEEarth(RTCC *r, EphemerisData sv0, double GMTbase, double EntryTIG, double t_Z, int critical) : RTCCModule(r)
+RTEEarth::RTEEarth(RTCC *r, EphemerisData sv0, double GMTbase, double alpha_SID0, double EntryTIG, double t_Z, int critical) : RTCCModule(r)
 {
 	MA1 = -6.986643e7;//8e8;
 	C0 = 1.81000432e8;
@@ -4146,15 +3954,24 @@ RTEEarth::RTEEarth(RTCC *r, EphemerisData sv0, double GMTbase, double EntryTIG, 
 
 	this->GMTbase = GMTbase;
 	this->critical = critical;
+	this->alpha_SID0 = alpha_SID0;
 
-	hEarth = oapiGetObjectByName("Earth");
 	RCON = OrbMech::R_Earth + 400000.0 * 0.3048;
 	RD = RCON;
 	mu = OrbMech::mu_Earth;
 
 	ii = 0;
 
+	//Propagate state vector to TIG
 	pRTCC->PMMCEN(sv0, 0.0, 0.0, 1, EntryTIG - sv0.GMT, 1.0, sv_ig, ITS);
+
+	//State vector at TIG needs to be in Earth SOI
+	if (sv_ig.RBI != BODY_EARTH)
+	{
+		errorstate = 3;
+		return;
+	}
+
 	sv_ig_apo = sv_ig;
 
 	EMSAlt = 297431.0*0.3048;
@@ -4296,7 +4113,7 @@ void RTEEarth::reentryconstraints(int n1, VECTOR3 R1B, VECTOR3 REI, VECTOR3 VEI)
 void RTEEarth::coniciter(VECTOR3 R1B, VECTOR3 V1B, double t1, double &theta_long, double &theta_lat, VECTOR3 &V2, double &x, double &dx, double &t21)
 {
 	VECTOR3 U_R1, U_H, REI, VEI;
-	double MA2, x2_err, MJD_L;
+	double MA2, x2_err, GMT_L;
 	int n1;
 
 	x2_err = 1.0;
@@ -4315,12 +4132,12 @@ void RTEEarth::coniciter(VECTOR3 R1B, VECTOR3 V1B, double t1, double &theta_long
 	}
 	t2 = t1 + t21;
 	OrbMech::rv_from_r0v0(R1B, V2, t21, REI, VEI, mu);
-	EntryCalculations::LNDING(REI, VEI, GMTbase + t2 / 24.0 / 3600.0, 0.3, ICRNGG, r_rbias, theta_long, theta_lat, MJD_L);
+	EntryCalculations::LNDING(REI, VEI, t2, alpha_SID0, 0.3, ICRNGG, r_rbias, theta_long, theta_lat, GMT_L);
 }
 
 void RTEEarth::precisioniter(VECTOR3 R1B, VECTOR3 V1B, double t1, double &t21, double &x, double &theta_long, double &theta_lat, VECTOR3 &V2)
 {
-	double R_ERR, dRCON, rPRE_apo, r1b, lambda, beta1, beta5, theta1, theta2, p_CON, C_FPA, MA2, x2_err, MJD_L;
+	double R_ERR, dRCON, rPRE_apo, r1b, lambda, beta1, beta5, theta1, theta2, p_CON, C_FPA, MA2, x2_err, GMT_L;
 	VECTOR3 U_R1, U_V1, RPRE, VPRE, U_H, eta;
 	int n1, n2;
 
@@ -4390,7 +4207,7 @@ void RTEEarth::precisioniter(VECTOR3 R1B, VECTOR3 V1B, double t1, double &t21, d
 		n2++;
 	}
 	t2 = t1 + t21;
-	EntryCalculations::LNDING(RPRE, VPRE, GMTbase + t2 / 24.0 / 3600.0, 0.3, ICRNGG, r_rbias, theta_long, theta_lat, MJD_L);
+	EntryCalculations::LNDING(RPRE, VPRE, t2, alpha_SID0, 0.3, ICRNGG, r_rbias, theta_long, theta_lat, GMT_L);
 	if (n1 == 21)
 	{
 		errorstate = 1;
@@ -4844,7 +4661,7 @@ bool RTEEarth::EntryIter()
 	{
 		EphemerisData sv_EI;
 		VECTOR3 R05G, V05G, R3, V3, UR3;
-		double t32, dt22, v3, S_FPA, MJD_L;
+		double t32, dt22, v3, S_FPA;
 
 		sv_ig_apo.V = V2;
 		pRTCC->PMMCEN(sv_ig_apo, 0.0, 10.0*24.0*3600.0, 3, RD, 1.0, sv_EI, ITS);
@@ -4854,8 +4671,7 @@ bool RTEEarth::EntryIter()
 		V_r = sv_EI.V;
 		t2 = sv_EI.GMT;
 
-		EntryCalculations::LNDING(sv_EI.R, sv_EI.V, GMTbase + t2 / 24.0 / 3600.0, 0.3, ICRNGG, r_rbias, theta_long, theta_lat, MJD_L);
-		t_Z = (MJD_L - GMTbase)*24.0*3600.0;
+		EntryCalculations::LNDING(sv_EI.R, sv_EI.V, t2, alpha_SID0, 0.3, ICRNGG, r_rbias, theta_long, theta_lat, t_Z);
 
 		t32 = OrbMech::time_radius(sv_EI.R, sv_EI.V, length(sv_EI.R) - 30480.0, -1, mu);
 		OrbMech::rv_from_r0v0(sv_EI.R, sv_EI.V, t32, R3, V3, mu); //Entry Interface to 300k ft
@@ -4877,7 +4693,7 @@ bool RTEEarth::EntryIter()
 
 		Entry_DV = mul(Q_Xx, DV);
 
-		EntryRTGO = OrbMech::CMCEMSRangeToGo(R05G, OrbMech::MJDfromGET(t2 + t32 + dt22, GMTbase), theta_lat, theta_long);
+		EntryRTGO = OrbMech::CMCEMSRangeToGo(pRTCC->SystemParameters.MAT_J2000_BRCS, R05G, OrbMech::MJDfromGET(t2 + t32 + dt22, GMTbase), theta_lat, theta_long);
 		EntryVIO = length(V05G);
 		EntryRET = t2 + t32 + dt22;
 		EntryAng = atan(x2);//asin(dotp(unit(REI), VEI) / length(VEI));
@@ -4945,7 +4761,8 @@ void ConicRTEEarthNew::MAIN()
 	//Pre-initialization
 	VECTOR3 DV, V_a_uncal, V_a_cal;
 	double beta_r, dv, U_r, DVC, T, VT_a, VR_a, v_a, beta_a, T_z, alpha, delta, lambda, p, eta_ar, phi, phi_z, theta_z, TP;
-	int J, J_m, FLAG, QA;
+	int J, J_m, FLAG;
+	bool QA;
 	EphemerisData2 sv;
 
 	J = 0;
@@ -4954,8 +4771,6 @@ void ConicRTEEarthNew::MAIN()
 	do
 	{
 		sv = XArray[J];
-
-		OrbMech::EclipticToECI(sv.R, sv.V, OrbMech::MJDfromGET(sv.GMT, GMTbase), sv.R, sv.V);
 
 		X0 = sv.R / KMPER / 1000.0;
 		U0 = sv.V*SCPHR / KMPER / 1000.0;
@@ -5084,10 +4899,9 @@ void ConicRTEEarthNew::StoreSolution(VECTOR3 dv, double lat, double t0, double t
 		//Discrete
 		SolData.delta_z = lat * DEG;
 		SolData.T_r = (T0 + T_ar_stored) * SCPHR;
-		double MJD_r = GMTbase + SolData.T_r / 24.0 / 3600.0;
-		SolData.RR = OrbMech::ECIToEcliptic(RR_vec * KMPER * 1000.0, MJD_r);
-		SolData.U_r = OrbMech::ECIToEcliptic(VV_vec /SCPHR * KMPER * 1000.0, MJD_r);
-		SolData.DV = OrbMech::ECIToEcliptic(dv / SCPHR * KMPER * 1000.0, MJD_r);
+		SolData.RR = RR_vec * KMPER * 1000.0;
+		SolData.U_r = VV_vec /SCPHR * KMPER * 1000.0;
+		SolData.DV = dv / SCPHR * KMPER * 1000.0;
 		SolData.NOSOLN = NOSOLN;
 		END = true;
 		NOSOLN = 1;
@@ -5099,7 +4913,8 @@ void ConicRTEEarthNew::INITAL()
 	VECTOR3 R4, R5, R_p, U0_apo;
 	double SAZ, CAZ, T1, T2, A_m, beta_r, p, R_a, A, DV, e, V_a, beta_a, T_1i, T_s, delta_0, Am1, Am2, beta_r_apo, A_Z;
 	double theta_mu, theta_md, K1, K2, U_rmin, T_apo, DNDT, I_0, T, delta, U_r, VR_a, VT_a, eta_ar;
-	int QA, FLAG;
+	int FLAG;
+	bool QA;
 
 	NOSOLN = 0;
 	STORE = false;
@@ -5367,9 +5182,9 @@ bool ConicRTEEarthNew::RUBR(int QA, int QE, double R_a, double U_0, double U_r, 
 	//Change in velocity
 	DV = sqrt(U_0*U_0 + V_a * V_a - 2.0*U_0*V_a*cos(beta_a - beta_0));
 	//Time from abort to perigee
-	pRTCC->PITFPC(mu, 1 - QA, A, e, R_a, T_ap, Period);
+	pRTCC->PITFPC(mu, QA, A, e, R_a, T_ap, Period);
 	//Time from reentry to perigee
-	pRTCC->PITFPC(mu, 1 - QA, A, e, RR, T_rp, Period);
+	pRTCC->PITFPC(mu, QA, A, e, RR, T_rp, Period);
 	//Time from abort to reentry
 	T = T_ap - T_rp;
 	if (T < 0)
@@ -5434,7 +5249,7 @@ void ConicRTEEarthNew::VARMIN()
 	return;
 }
 
-void ConicRTEEarthNew::VELCOM(double T, double R_a, double &beta_r, double &dt, double &p, int &QA, int &sw6, double &U_r, double &VR_a, double &VT_a, double &beta_a, double &eta_ar, double &DV)
+void ConicRTEEarthNew::VELCOM(double T, double R_a, double &beta_r, double &dt, double &p, bool &QA, int &sw6, double &U_r, double &VR_a, double &VT_a, double &beta_a, double &eta_ar, double &DV)
 {
 	double V_a, C0, C1, C2, S1, DVR, DVT, a, e, beta_rp;
 	int info, TEMP;
@@ -6125,7 +5940,8 @@ void ConicRTEEarthNew::TMIN(double &dv, int &FLAG, double &T, double &U_r, doubl
 {
 	VECTOR3 V_a;
 	double A, e, v_a, beta_a, T1, p, eta_ar, eps1, eps2, T2;
-	int QA, SW;
+	int SW;
+	bool QA;
 
 	//Tolerances
 	eps1 = 1e-3;
@@ -6326,11 +6142,11 @@ void ConicRTEEarthNew::VACOMP(double VR_a, double VT_a, double beta_r, double th
 
 	if (beta_a > PI05)
 	{
-		k = 1;
+		k = 0;
 	}
 	else
 	{
-		k = 0;
+		k = 1;
 	}
 
 	pRTCC->PITFPC(mu, k, A, e, r0, T_ap, Period);
@@ -6383,7 +6199,6 @@ void ConicRTEEarthNew::VUP2(VECTOR3 R_a, VECTOR3 V_a, double T_ar, double beta_r
 
 	pRTCC->PLEFEM(1, T0, 0, &R_EM, &V_EM, &R_ES, NULL);
 	R_Moon = R_EM / (KMPER*1000.0);
-	R_Moon = OrbMech::EclipticToECI(R_Moon, GMTbase + T0 / 24.0);
 
 	r_a = length(R_a);
 	v_a = length(V_a);
@@ -6420,7 +6235,6 @@ void ConicRTEEarthNew::VUP2(VECTOR3 R_a, VECTOR3 V_a, double T_ar, double beta_r
 		TJ = T0 + TAA;
 		pRTCC->PLEFEM(1, TJ, 0, &R_EM, &V_EM, &R_ES, NULL);
 		RMAP = R_EM / (KMPER*1000.0);
-		RMAP = OrbMech::EclipticToECI(RMAP, GMTbase + T0 / 24.0);
 		theta = PI - eta - beta_a;
 		RAPOG = (V_a*cos(theta) / v_a + (V_a*cos(beta_a) / v_a - R_a / r_a)*sin(theta) / sin(beta_a))*R_p;
 		R_apo = RMAP - RAPOG;
@@ -6543,11 +6357,11 @@ double ConicRTEEarthNew::TripTime(double v_a, double beta_a)
 
 	if (beta_a > PI05)
 	{
-		k = 1;
+		k = 0;
 	}
 	else
 	{
-		k = 0;
+		k = 1;
 	}
 
 	pRTCC->PITFPC(mu, k, A, e, r0, T_ap, Period);
@@ -6560,28 +6374,25 @@ double ConicRTEEarthNew::TripTime(double v_a, double beta_a)
 	return T;
 }
 
-RTEMoon::RTEMoon(RTCC *r, EphemerisData2 sv0, double GMTBASE) : RTCCModule(r)
+RTEMoon::RTEMoon(RTCC *r, EphemerisData2 sv0, double GMTBASE, double alpha_SID0) : RTCCModule(r)
 {
-	hMoon = oapiGetObjectByName("Moon");
-	hEarth = oapiGetObjectByName("Earth");
-
-	this->mjd0 = mjd0;
 	this->GMTBASE = GMTBASE;
+	this->alpha_SID0 = alpha_SID0;
 	this->sv0 = sv0;
 
-	mu_E = GGRAV*oapiGetMass(hEarth);
-	mu_M = GGRAV*oapiGetMass(hMoon);
-	w_E = PI2 / oapiGetPlanetPeriod(hEarth);
-	R_E = oapiGetSize(hEarth);
-	R_M = oapiGetSize(hMoon);
+	hMoon = BODY_MOON;
+	mu_E = OrbMech::mu_Earth;
+	mu_M = OrbMech::mu_Moon;
+	w_E = OrbMech::w_Earth;
+	R_E = OrbMech::R_Earth;
+	R_M = OrbMech::R_Moon;
+	r_r = R_E + 400000.0*0.3048;
 
-	INRFVsign = true;
-
-	cMoon = oapiGetCelbodyInterface(hMoon);
 	dTIG = 30.0;
 	precision = 1;
 	ReturnInclination = 0.0;
 	EntryLng = 0.0;
+	t_Landing = 0.0;
 }
 
 void RTEMoon::READ(int SMODEI, double IRMAXI, double URMAXI, double RRBI, int CIRI, double HMINI, int EPI, double L2DI, double DVMAXI, double MUZI, double IRKI, double MDMAXI, double TZMINI, double TZMAXI)
@@ -6643,11 +6454,13 @@ void RTEMoon::ATP(double *line)
 
 bool RTEMoon::MASTER()
 {
-	OELEMENTS coe;
 	VECTOR3 DVARR, TIGARR;
-	double i_r, theta_long, theta_lat, dlng, dt, INTER, R_S, dv, MJD_L;
+	double i_r, theta_long, theta_lat, dlng, dt, INTER, dv, t_z;
+	double r_0, v_0, delta_0, alpha_0, beta_0, A_0, z_0, e_0;
 	int IPART, ii;
-	bool ISOL, IOUT;
+	bool ISOL, IOUT, q_0;
+	//0 = noncircumlunar, 1 = circumlunar
+	bool q_m;
 
 	IOUT = false;
 	IPART = 1;
@@ -6655,52 +6468,63 @@ bool RTEMoon::MASTER()
 
 	while (IOUT == false)
 	{
-		coe = OrbMech::coe_from_sv(sv0.R, sv0.V, mu_M);
-		if (coe.e > 0.5)
+		pRTCC->PICSSC(true, sv0.R, sv0.V, r_0, v_0, delta_0, alpha_0, beta_0, A_0);
+		beta_0 = PI05 - beta_0;
+
+		q_0 = false;
+		z_0 = sv0.R.x*sv0.V.y - sv0.R.y*sv0.V.x;
+		//Is motion prograde?
+		if (z_0 >= 0)
 		{
-			if (coe.TA > PI)
-			{
-				//Flyby case (pre pericynthion)
-				INRFVsign = false;
-			}
-			else
-			{
-				//PC+2 case (post pericynthion)
-				INRFVsign = true;
-			}
+			q_0 = true;
 		}
-		else
+		e_0 = sqrt(1.0 - r_0 * v_0*v_0 / mu_M * (2.0 - r_0 * v_0*v_0 / mu_M)*pow(sin(beta_0), 2));
+
+		if (pRTCC->PLEFEM(4, sv0.GMT / 3600.0, 0, &X_m0, &U_m0, NULL, NULL))
 		{
-			//TEI case
-			INRFVsign = true;
+			//TBD: Error
 		}
 
 		//Normally the pseudostate sphere is 24 Earth radii. Probably doesn't iterate very well if the spacecraft is close to that, so use a slightly larger radius then
 		if (length(sv0.R) >= 23.0*R_E)
 		{
-			R_S = length(sv0.R) + R_E;
+			r_s = length(sv0.R) + R_E;
 		}
 		else
 		{
-			R_S = 24.0*R_E;
+			r_s = 24.0*R_E;
 		}
 
-		//QDFLG = 0;
+		//Direction of motion logic
+		QDFLG = false;
 		if (bRTCC)
 		{
+			double EAI;
 
+			//Is position on transearth side of earth-moon line?
+			EAI = sv0.R.x*X_m0.y - sv0.R.y*X_m0.x;
+			if (EAI >= 0 || q_0)
+			{
+				//Yes, only allow non-circumlunar motion
+				CIRCUM = 1;
+			}
+			//Is trajectory elliptical?
+			else if (e_0 < 1.0)
+			{
+				//Yes, only allow retrograde motion with respect to the Moon
+				CIRCUM = 1;
+				QDFLG = true;
+			}
 		}
 
 		if (CRIT == 4)
 		{
-			ISOL = CLL(i_r, INTER, dv);
+			ISOL = CLL(i_r, INTER, q_m, t_z, dv);
 		}
 		else
 		{
-			ISOL = MCUA(i_r, INTER, dv);
+			ISOL = MCUA(i_r, INTER, q_m, t_z, dv);
 		}
-
-		if (ISOL == false) return false;
 
 		if (LETSGO == 1) break;
 
@@ -6708,20 +6532,20 @@ bool RTEMoon::MASTER()
 
 		if (IOUT == false)
 		{
-			OrbMech::oneclickcoast(sv0.R, sv0.V, GMTBASE + sv0.GMT / 24.0 / 3600.0, dTIG, sv0.R, sv0.V, hMoon, hMoon);
+			OrbMech::oneclickcoast(pRTCC->SystemParameters.AGCEpoch, sv0.R, sv0.V, GMTBASE + sv0.GMT / 24.0 / 3600.0, dTIG, sv0.R, sv0.V, hMoon, hMoon);
 			sv0.GMT += dTIG;
-			IPART++;
 		}
 	}
 
+	if (ISOL == false) return false;
+
 	//Precision Solution
-	double TIG = OrbMech::MJDfromGET(sv0.GMT, GMTBASE);
-	double EIMJD;
+	t_R = t_z;
 	do
 	{
-		Vig_apo = ThreeBodyAbort(sv0.R, sv0.V, sv0.GMT, t_z, INRFVsign, R_EI, V_EI, i_r, INTER > 0);
-		EIMJD = OrbMech::MJDfromGET(t_z, GMTBASE);
-		EntryCalculations::LNDING(R_EI, V_EI, EIMJD, LD, ICRNGG, r_rbias, theta_long, theta_lat, MJD_L);
+		Vig_apo = ThreeBodyAbort(sv0.R, sv0.V, sv0.GMT, t_R, q_m, i_r, INTER, R_EI, V_EI);
+
+		EntryCalculations::LNDING(R_EI, V_EI, t_R, alpha_SID0, LD, ICRNGG, r_rbias, theta_long, theta_lat, t_Landing);
 		if (CRIT == 6) break;
 
 		 EntryCalculations::TBLOOK(LINE, theta_lat, EntryLng);
@@ -6733,11 +6557,10 @@ bool RTEMoon::MASTER()
 		}
 
 		dt = dlng / w_E;
-		t_z += dt;
+		t_R += dt;
 
 		ii++;
 	} while (abs(dt) > 0.2);
-	t_R = (EIMJD - GMTBASE)*24.0*3600.0;
 
 	// Final Calculations
 	double sing, cosg, x2;
@@ -6758,13 +6581,11 @@ bool RTEMoon::MASTER()
 	x2 = cosg / sing;
 	EntryAng = atan(x2);
 
-	H_EI_equ = rhtmul(OrbMech::GetRotationMatrix(BODY_EARTH, EIMJD), unit(N));
+	H_EI_equ = unit(N);
 	ReturnInclination = -acos(H_EI_equ.z)*INTER;
 
-	OrbMech::timetoperi_integ(sv0.R, Vig_apo, TIG, hMoon, hMoon, R_peri, V_peri);
-	FlybyPeriAlt = length(R_peri) - oapiGetSize(hMoon);
-
-	t_z = (MJD_L - GMTBASE)*24.0*3600.0;
+	OrbMech::timetoperi_integ(pRTCC->SystemParameters.AGCEpoch, sv0.R, Vig_apo, OrbMech::MJDfromGET(sv0.GMT, GMTBASE), pRTCC->GetGravref(hMoon), pRTCC->GetGravref(hMoon), R_peri, V_peri);
+	FlybyPeriAlt = length(R_peri) - R_M;
 
 	return true;
 }
@@ -6796,9 +6617,9 @@ void RTEMoon::MCSS()
 void RTEMoon::MCSSLM(bool &REP, double t_z_apo)
 {
 	VECTOR3 UZTAB1, LAMZTAB1, Vig_apo;
-	double DV_maxs, h_mins, t_zmin_apo, Di_r, T_ar, i_r, INTER, i_r_apo, u_r, indvar, r_p, t_z, t_z1_apo, t_z1_aapo, mu_min, mu_max, MJD_L;
+	double DV_maxs, h_mins, t_zmin_apo, Di_r, T_ar, i_r, INTER, i_r_apo, u_r, indvar, r_p, t_z, t_z1_apo, t_z1_aapo, mu_min, mu_max, GMT_L;
 	int KK, XNRMSS, XX, n2, n1;
-	bool MCSOL, SRFLG, STAYFL, REPP, NIR, IREP, KIP;
+	bool MCSOL, SRFLG, STAYFL, REPP, NIR, IREP, KIP, q_d;
 
 	if (MD_max == 0.0)
 	{
@@ -6810,7 +6631,7 @@ void RTEMoon::MCSSLM(bool &REP, double t_z_apo)
 		DV_maxs = DV_max;
 		h_mins = h_min;
 		SRFLG = 0;
-		h_min = -0.3*oapiGetSize(hEarth);
+		h_min = -0.3*R_E;
 		DV_max = 100.0*20925738.2 / 3600.0;
 		STAYFL = 0;
 		t_zmin_apo = t_zmin;
@@ -6845,9 +6666,8 @@ void RTEMoon::MCSSLM(bool &REP, double t_z_apo)
 		{
 			indvar = u_r;
 		}
-		Vig_apo = MCDRIV(sv0.R, sv0.V, sv0.GMT, indvar, INRFVsign, i_r, INTER, KIP, t_zmin, R_EI, V_EI, t_z, NIR, i_r_apo, r_p);
-		REP = 1;
-		EntryCalculations::LNDING(R_EI, V_EI, OrbMech::MJDfromGET(t_z, GMTBASE), LD, ICRNGG, r_rbias, lambda_z1, mu_z1, MJD_L);
+		REP = MCDRIV(sv0.R, sv0.V, sv0.GMT, indvar, false, i_r, INTER, KIP, t_zmin, Vig_apo, R_EI, V_EI, t_z, NIR, i_r_apo, r_p, q_d); //TBD
+		EntryCalculations::LNDING(R_EI, V_EI, t_z, alpha_SID0, LD, ICRNGG, r_rbias, lambda_z1, mu_z1, GMT_L);
 
 		//A
 		UZTAB1.x = mu_z1;
@@ -6879,9 +6699,8 @@ void RTEMoon::MCSSLM(bool &REP, double t_z_apo)
 			{
 				indvar = u_r;
 			}
-			Vig_apo = MCDRIV(sv0.R, sv0.V, sv0.GMT, indvar, INRFVsign, i_r, INTER, KIP, t_zmin, R_EI, V_EI, t_z, NIR, i_r_apo, r_p);
-			REP = 1;
-			EntryCalculations::LNDING(R_EI, V_EI, OrbMech::MJDfromGET(t_z, GMTBASE), LD, ICRNGG, r_rbias, lambda_z1, mu_z1, MJD_L);
+			REP = MCDRIV(sv0.R, sv0.V, sv0.GMT, indvar, false, i_r, INTER, KIP, t_zmin, Vig_apo, R_EI, V_EI, t_z, NIR, i_r_apo, r_p, q_d); //TBD
+			EntryCalculations::LNDING(R_EI, V_EI, t_z, alpha_SID0, LD, ICRNGG, r_rbias, lambda_z1, mu_z1, GMT_L);
 
 			UZTAB1.y = mu_z1;
 			LAMZTAB1.y = lambda_z1;
@@ -6891,21 +6710,32 @@ void RTEMoon::MCSSLM(bool &REP, double t_z_apo)
 	}
 }
 
-bool RTEMoon::CLL(double &i_r, double &INTER, double &dv)
+bool RTEMoon::CLL(double &i_r, double &INTER, bool &q_m, double &t_z, double &dv)
 {
 	VECTOR3 IRTAB, DVTAB, ZTAB, Vig_apo;
-	double theta_long, theta_lat, dlng, dt, i_r_apo, TOL, i_rmin, DV_min, delta_S, i_rc, h_p, r_p, D1, D2, DVS, DVSS, i_rs, INS, u_r;
-	double t_z1, t_z_apo, indvar, eps, MJD_L, h_mins;
-	int ISUB, KOUNT, ICNT, jj, ICONVG, ii, ITCNT, LOPCNT;
-	bool NIR, IOPT, NIRS, KIP;
+	double theta_long, theta_lat, dlng, dt, i_r_apo, TOL, i_rmin, DV_min, delta_S, i_rc, h_p, r_p, D1, D2, DVSS, i_rs, INS, u_r;
+	double t_z1, t_z_apo, indvar, eps, GMT_L, h_mins;
+	int ISUB, KOUNT, ICNT, jj, ICONVG, ii, ITCNT, LOPCNT, REP;
+	bool NIR, IOPT, NIRS, KIP, KFLG, q_d;
 
-	ii = 0;
-	jj = 0;
+	q_m = false;
 	h_mins = h_min;
 	DV_min = pow(10, 10);
 	ZTAB = _V(0, 0, 0);
-	DVS = pow(10, 10);
+	KFLG = false;
+	solution.dv = pow(10, 10);
 	t_z_apo = 0.0;
+
+	if (CIRCUM == 0)
+	{
+		KFLG = true;
+	}
+	else if (CIRCUM == 2)
+	{
+	RTEMoon_CLL_1_AA:
+		q_m = true;
+		KFLG = false;
+	}
 
 	KIP = 0;
 	u_r = u_rmax;
@@ -6932,9 +6762,9 @@ bool RTEMoon::CLL(double &i_r, double &INTER, double &dv)
 	{
 		indvar = u_r;
 	}
-	Vig_apo = MCDRIV(sv0.R, sv0.V, sv0.GMT, indvar, INRFVsign, i_r, INTER, KIP, t_zmin, R_EI, V_EI, t_z, NIR, i_r_apo, r_p);
+	REP = MCDRIV(sv0.R, sv0.V, sv0.GMT, indvar, q_m, i_r, INTER, KIP, t_zmin, Vig_apo, R_EI, V_EI, t_z, NIR, i_r_apo, r_p, q_d);
 	h_p = r_p - R_M;
-	EntryCalculations::LNDING(R_EI, V_EI, OrbMech::MJDfromGET(t_z, GMTBASE), LD, ICRNGG, r_rbias, theta_long, theta_lat, MJD_L);
+	EntryCalculations::LNDING(R_EI, V_EI, t_z, alpha_SID0, LD, ICRNGG, r_rbias, theta_long, theta_lat, GMT_L);
 
 	t_z1 = t_z;
 	KOUNT = 0;
@@ -6982,9 +6812,9 @@ bool RTEMoon::CLL(double &i_r, double &INTER, double &dv)
 		{
 			indvar = u_r;
 		}
-		Vig_apo = MCDRIV(sv0.R, sv0.V, sv0.GMT, indvar, INRFVsign, i_r, INTER, KIP, t_zmin, R_EI, V_EI, t_z, NIR, i_r_apo, r_p);
+		REP = MCDRIV(sv0.R, sv0.V, sv0.GMT, indvar, q_m, i_r, INTER, KIP, t_zmin, Vig_apo, R_EI, V_EI, t_z, NIR, i_r_apo, r_p, q_d);
 		dv = length(Vig_apo - sv0.V);
-		EntryCalculations::LNDING(R_EI, V_EI, OrbMech::MJDfromGET(t_z, GMTBASE), LD, ICRNGG, r_rbias, theta_long, theta_lat, MJD_L);
+		EntryCalculations::LNDING(R_EI, V_EI, t_z, alpha_SID0, LD, ICRNGG, r_rbias, theta_long, theta_lat, GMT_L);
 		LOPCNT = 0;
 	} while (ITCNT <= 0 || abs(dlng) >= eps);
 
@@ -6993,12 +6823,13 @@ bool RTEMoon::CLL(double &i_r, double &INTER, double &dv)
 	//This checks if the inclination was specified
 	if (eps != 0.05)
 	{
-		return true;
+		goto RTEMoon_CLL_17_B;
 	}
 
 	TOL = 0.01745;
 	ISUB = 0;
 	DVSS = pow(10, 10);
+	jj = 0;
 	INTER = -1.0;
 	i_r = i_rmax;
 	ICNT = 0;
@@ -7011,8 +6842,8 @@ bool RTEMoon::CLL(double &i_r, double &INTER, double &dv)
 		ii = 0;
 		do
 		{
-			Vig_apo = MCDRIV(sv0.R, sv0.V, sv0.GMT, t_z_apo, INRFVsign, i_r, INTER, true, t_zmin, R_EI, V_EI, t_z, NIR, i_r_apo, r_p);
-			EntryCalculations::LNDING(R_EI, V_EI, OrbMech::MJDfromGET(t_z, GMTBASE), LD, ICRNGG, r_rbias, theta_long, theta_lat, MJD_L);
+			REP = MCDRIV(sv0.R, sv0.V, sv0.GMT, t_z_apo, q_m, i_r, INTER, true, t_zmin, Vig_apo, R_EI, V_EI, t_z, NIR, i_r_apo, r_p, q_d);
+			EntryCalculations::LNDING(R_EI, V_EI, t_z, alpha_SID0, LD, ICRNGG, r_rbias, theta_long, theta_lat, GMT_L);
 			EntryCalculations::TBLOOK(LINE, theta_lat, EntryLng);
 
 			dlng = theta_long - EntryLng;
@@ -7028,10 +6859,9 @@ bool RTEMoon::CLL(double &i_r, double &INTER, double &dv)
 
 		h_p = r_p - R_M;
 		dv = length(Vig_apo - sv0.V);
-		if (INRFVsign == false && h_p < h_min)
+		if (q_d && h_p < h_min)
 		{
-			//TBD
-			//dv_new = pow(10, 10);
+			dv = pow(10, 10);
 		}
 
 		if (NIR && IOPT)
@@ -7056,7 +6886,7 @@ bool RTEMoon::CLL(double &i_r, double &INTER, double &dv)
 			{
 				INTER = 1.0;
 				i_r = 0.0;
-				DV_min = pow(10, 10);
+				DV_min = 1e-8;
 				ICONVG = 0;
 			}
 			else if (jj == 1)
@@ -7079,7 +6909,7 @@ bool RTEMoon::CLL(double &i_r, double &INTER, double &dv)
 
 		if (i_rk == 0)
 		{
-			if (abs(dv - DV_min) <= 0.1*0.3048)
+			if (abs(dv - DV_min) <= 0.1772) //0.0001 er/hr
 			{
 				ICONVG++;
 				if (ICONVG != 1)
@@ -7123,33 +6953,65 @@ bool RTEMoon::CLL(double &i_r, double &INTER, double &dv)
 		}
 	}
 
+	//Restore best solution
 	i_r_apo = i_rs;
 	INTER = INS;
 	i_r = i_r_apo;
 	dv = DVSS;
 
-	return true;
+RTEMoon_CLL_17_B:
+	//Store if DV is smaller than stored solution
+	if (dv < solution.dv)
+	{
+		STORE(1, dv, i_r, INTER, t_z, q_m);
+	}
+	if (KFLG)
+	{
+		//Other direction of motion still to do?
+		goto RTEMoon_CLL_1_AA;
+	}
+
+	bool ISOL = false;
+
+	if (solution.dv < DV_max)
+	{
+		ISOL = true;
+		STORE(2, dv, i_r, INTER, t_z, q_m);
+	}
+
+	return ISOL;
 }
 
-bool RTEMoon::MCUA(double &i_r, double &INTER, double &dv)
+bool RTEMoon::MCUA(double &i_r, double &INTER, bool &q_m, double &t_z, double &dv)
 {
 	VECTOR3 IRTAB, DVTAB, ZTAB, DVTAB1, IRTAB1, TZTAB1, Vig_apo;
 	double u_r, r_p, di_r, i_rmin, Di_r, Dt_z, TOL, zc, DV_est1, DV_est2, D1, D2, indvar, i_rmax_apo, SDV, Si_r, SSDV, SSi_r, t_z_apo, eps_ir;
-	double SSt_z, DVSSS, i_rest, i_rmins, i_rmaxs, Xi_r, t_zmin_apo;
-	int LOOP, LOCATE, ISUB, LOOPTZ, ISUBP, MM;
-	bool NIR, KIP, IOPT, IEND, IOPT1, IRFLAG, IRSCAN, ISOL;
-
-	SDV = SSDV = pow(10, 10);
-	i_rmax_apo = i_rmax;
-	t_zmin_apo = t_zmin;
+	double SSt_z, DVSSS, i_rest, i_rmins, i_rmaxs, Xi_r, t_zmin_apo, eps_dv;
+	int LOOP, LOCATE, ISUB, LOOPTZ, ISUBP, REP;
+	bool NIR, KIP, IOPT, IEND, IOPT1, IRFLAG, IRSCAN, ISOL, q_d;
 
 	zc = 0.0;
+
+	solution.dv = pow(10, 10);
+	i_rmax_apo = i_rmax;
+	t_zmin_apo = t_zmin;
+	eps_dv = 0.1772; //0.0001 er/hr
+	if (CIRCUM < 2)
+	{
+		q_m = false;
+	}
+	else
+	{
+		q_m = true;
+	}
+RTEMoon_MCUA_1_A:
 	i_r = 0.0;
 	LOOP = LOOPTZ = 0;
 	di_r = 0.0;
 	u_r = u_rmax;
 	eps_ir = 0.01;
 	DV_est1 = DV_est2 = pow(10, 10);
+	SDV = SSDV = pow(10, 10);
 	KIP = false;
 	LOCATE = 5;
 	IRSCAN = 0;
@@ -7176,8 +7038,15 @@ bool RTEMoon::MCUA(double &i_r, double &INTER, double &dv)
 			{
 				indvar = u_r;
 			}
-			Vig_apo = MCDRIV(sv0.R, sv0.V, sv0.GMT, indvar, INRFVsign, i_r, INTER, KIP, t_zmin, R_EI, V_EI, t_z, NIR, Xi_r, r_p);
-			dv = length(Vig_apo - sv0.V);
+			REP = MCDRIV(sv0.R, sv0.V, sv0.GMT, indvar, q_m, i_r, INTER, KIP, t_zmin, Vig_apo, R_EI, V_EI, t_z, NIR, Xi_r, r_p, q_d);
+			if (REP == 0)
+			{
+				dv = pow(10, 10);
+			}
+			else
+			{
+				dv = length(Vig_apo - sv0.V);
+			}
 			i_r = (i_r - di_r)*INTER;
 
 			if (dv <= SDV)
@@ -7236,7 +7105,7 @@ bool RTEMoon::MCUA(double &i_r, double &INTER, double &dv)
 					}
 				}
 				TOL = min(0.017, 0.5*Di_r);
-				if (LOOP > 20 || abs(i_r) < 0.001 || abs(dv - DV_est1) < 0.1*0.3048 || (ISUB != 0 && dv > DVTAB.data[ISUB - 1]))
+				if (LOOP > 20 || abs(i_r) < 0.001 || abs(dv - DV_est1) < eps_dv || (ISUB != 0 && dv > DVTAB.data[ISUB - 1]))
 				{
 					break;
 				}
@@ -7295,7 +7164,7 @@ bool RTEMoon::MCUA(double &i_r, double &INTER, double &dv)
 		}
 		dv = SDV;
 		i_r = Si_r;
-		if (LOOPTZ > 20 || (ISUBP != 0 && SDV > DVTAB1.data[ISUBP - 1]) || abs(dv - DV_est2) < 0.1*0.3048)
+		if (LOOPTZ > 20 || (ISUBP != 0 && SDV > DVTAB1.data[ISUBP - 1]) || abs(dv - DV_est2) < eps_dv)
 		{
 			i_r = SSi_r;
 			t_z_apo = SSt_z;
@@ -7322,7 +7191,6 @@ bool RTEMoon::MCUA(double &i_r, double &INTER, double &dv)
 		{
 			D1 = 5.0*TZTAB1.y - 4.0*TZTAB1.x;
 			D2 = 5.0*TZTAB1.y - 4.0*TZTAB1.z;
-			MM = 1;
 			if (D1 < TZTAB1.z)
 			{
 				t_z_apo = (TZTAB1.y + TZTAB1.z) / 2.0;
@@ -7337,7 +7205,7 @@ bool RTEMoon::MCUA(double &i_r, double &INTER, double &dv)
 			i_rmins = i_rmin;
 			i_rmaxs = i_rmax;
 			Di_r = 0.25*i_rmax;
-			if (Di_r > 0.017453293)
+			if (Di_r > 0.17453293)
 			{
 				IRSCAN = 1;
 				i_rmin = max(i_rmins, SSi_r);
@@ -7366,36 +7234,63 @@ bool RTEMoon::MCUA(double &i_r, double &INTER, double &dv)
 			INTER = 1.0;
 		}
 		i_r = abs(i_r) + di_r;
-		Vig_apo = MCDRIV(sv0.R, sv0.V, sv0.GMT, t_z_apo, INRFVsign, i_r, INTER, KIP, t_zmin, R_EI, V_EI, t_z, NIR, Xi_r, r_p);
+		REP = MCDRIV(sv0.R, sv0.V, sv0.GMT, t_z_apo, q_m, i_r, INTER, KIP, t_zmin, Vig_apo, R_EI, V_EI, t_z, NIR, Xi_r, r_p, q_d);
 		dv = length(Vig_apo - sv0.V);
 		LOOP++;
+
+		//Store solution
+		if (dv < solution.dv)
+		{
+			STORE(1, dv, i_r, INTER, t_z, q_m);
+		}
 	}
 
 	i_rmax = i_rmax_apo;
 	t_zmin = t_zmin_apo;
 	ISOL = false;
-	if (SDV <= pow(10, 9))
+
+	if (CIRCUM == 0 && q_m == false)
 	{
+		q_m = true;
+		goto RTEMoon_MCUA_1_A;
+	}
+
+	if (solution.dv <= pow(10, 9))
+	{
+		//Restore optimum solution
+		STORE(2, dv, i_r, INTER, t_z, q_m);
 		ISOL = true;
 	}
 
 	return ISOL;
 }
 
-VECTOR3 RTEMoon::ThreeBodyAbort(VECTOR3 R_I, VECTOR3 V_I, double t_I, double t_EI, bool INRFVsign, VECTOR3 &R_EI, VECTOR3 &V_EI, double Incl, bool asc)
+VECTOR3 RTEMoon::ThreeBodyAbort(VECTOR3 R_I, VECTOR3 V_I, double t_I, double t_EI, bool q_m, double Incl, double INTER, VECTOR3 &R_EI, VECTOR3 &V_EI)
 {
+	//INPUT:
+	//q_m: 0 = noncircumlunar, 1 = circumlunar
+	//QDFLG: 0 = use circumlunar or noncircumlunar, 1 = use retrograde motion
+
 	EphemerisData sv1, sv2;
 	VECTOR3 R_I_star, delta_I_star, delta_I_star_dot, R_I_sstar, V_I_sstar, V_I_star, R_S, R_I_star_apo, R_E_apo, V_E_apo, V_I_apo;
-	VECTOR3 dV_I_sstar, R_m, V_m, R_s;
-	double t_S, tol, dt_S, r_s, EntryInterface, RCON, Incl_apo;
-	int ITS;
+	VECTOR3 R_m, V_m;
+	double t_S, tol, dt_S, Incl_apo, r_s, a, e, u_r, beta_r, beta_r_apo, t_z, a_H, e_H, p_H, theta, beta_a, beta_x;
+	int ITS, INFO;
+	bool q_m_out, q_d, q_a, NIR;
 
-	r_s = 24.0*OrbMech::R_Earth;
-	EntryInterface = 400000.0 * 0.3048;
-	RCON = OrbMech::R_Earth + EntryInterface;
 	tol = 20.0;
 
-	pRTCC->PLEFEM(1, t_I / 3600.0, 0, &R_m, &V_m, &R_s, NULL);
+	//Normally the pseudostate sphere is 24 Earth radii. Probably doesn't iterate very well if the spacecraft is close to that, so use a slightly larger radius then
+	if (length(sv0.R) >= 23.0*R_E)
+	{
+		r_s = length(sv0.R) + R_E;
+	}
+	else
+	{
+		r_s = 24.0*R_E;
+	}
+
+	pRTCC->PLEFEM(4, t_I / 3600.0, 0, &R_m, &V_m, NULL, NULL);
 
 	R_I_star = delta_I_star = delta_I_star_dot = _V(0.0, 0.0, 0.0);
 	V_I_star = V_I;
@@ -7410,17 +7305,22 @@ VECTOR3 RTEMoon::ThreeBodyAbort(VECTOR3 R_I, VECTOR3 V_I, double t_I, double t_E
 		{
 			R_I_sstar = R_m + R_I_star + delta_I_star;
 			V_I_sstar = V_m + V_I_star + delta_I_star_dot;
-			if (Incl != 0)
+
+			beta_r = 96.5*RAD;
+
+			do
 			{
-				EntryCalculations::Abort_plane(R_I_sstar, V_I_sstar, GMTBASE + t_I / 24.0 / 3600.0, RCON, t_EI - t_I, mu_E, Incl, asc ? 1.0 : -1.0, dV_I_sstar, R_EI, V_EI, Incl_apo);
-			}
-			else
-			{
-				EntryCalculations::Abort(R_I_sstar, V_I_sstar, RCON, t_EI - t_I, mu_E, dV_I_sstar, R_EI, V_EI);
-			}
-			V_I_sstar = V_I_sstar + dV_I_sstar;
+				EntryCalculations::AESR(r_r, length(R_I_sstar), PI - beta_r, t_EI - t_I, R_E, mu_E, 0.001, a, e, q_a, INFO, u_r);
+				NIR = FINDUX(R_I_sstar, t_I, r_r, u_r, beta_r, Incl, INTER, q_a, mu_E, V_I_sstar, R_EI, V_EI, t_z, Incl_apo);
+
+				beta_r_apo = beta_r;
+				beta_r = EntryCalculations::ReentryTargetLine(u_r, ICRNGG == 1);
+
+			} while (abs(beta_r - beta_r_apo) > 0.0002);
+
 			V_I_star = V_I_sstar - V_m - delta_I_star_dot;
-			OrbMech::INRFV(R_I, V_I_star, r_s, INRFVsign, mu_M, V_I_apo, R_S, dt_S);
+
+			INRFV(R_I, V_I_star, r_s, mu_M, q_m, a_H, e_H, p_H, theta, V_I_apo, R_S, dt_S, q_m_out, q_d, beta_a, beta_x);
 			t_S = t_I + dt_S;
 			R_I_star_apo = R_I_star;
 			R_I_star = R_S + V_I_star * (t_I - t_S);
@@ -7445,74 +7345,240 @@ VECTOR3 RTEMoon::ThreeBodyAbort(VECTOR3 R_I, VECTOR3 V_I, double t_I, double t_E
 	return V_I_apo;
 }
 
-VECTOR3 RTEMoon::MCDRIV(VECTOR3 R_I, VECTOR3 V_I, double t_I, double var, bool INRFVsign, double Incl, double INTER, bool KIP, double t_zmin, VECTOR3 &R_EI, VECTOR3 &V_EI, double &T_EI, bool &NIR, double &Incl_apo, double &r_p)
+int RTEMoon::MCDRIV(VECTOR3 Y_0, VECTOR3 V_0, double t_0, double var, bool q_m, double Incl, double INTER, bool KIP, double t_zmin, VECTOR3 &V_a, VECTOR3 &R_EI, VECTOR3 &V_EI, double &T_EI, bool &NIR, double &Incl_apo, double &y_p, bool &q_d)
 {
-	OELEMENTS coe;
-	VECTOR3 R_I_star, R_I_sstar, V_I_sstar, V_I_star, R_S, R_I_star_apo, V_I_apo;
-	VECTOR3 dV_I_sstar, R_m, V_m, R_s;
-	double t_S, tol, dt_S, r_s, EntryInterface, RCON, p_h, beta_r, u_r;
+	//INPUT:
+	//Y_0: Selenocentric preabort position vector
+	//V_0: Selenocentric preabort velocity vector
+	//t_0: Preabort time
+	//var: either reentry velocity (KIP=false) or landing time (KIP=true)
+	//q_m: 0 = noncircumlunar motion postabort, 1 = circumlunar motion postabort
+	//Incl: Return inclination
+	//INTER: -1 = A_zr < reentry azimuth for i_r = delta_x, +1 = A_zr > reentry azimuth for i_r = delta_x
+	//KIP: 0 = reentry velocity is the independent variable, 1 = landing time is the independent variable
+	//t_zmin: minimum landing time allowed
+	//OUTPUT:
+	//REP: 0 = no MCDRIV solution has been found, >0 = a solution has been found in MCDRIV
+	//V_a: Postabort velocity vector
 
-	r_s = 24.0*oapiGetSize(hEarth);
-	EntryInterface = 400000.0 * 0.3048;
-	RCON = oapiGetSize(hEarth) + EntryInterface;
-	tol = 20.0;
+	//Geocentric transearth pseudostate position vector
+	VECTOR3 X_x;
+	//Geocentric transearth pseudostate velocity vector
+	VECTOR3 U_x;
+	//Selenocentric position vector at PTS exit
+	VECTOR3 Y_x;
+	//Previous value of selenocentric PTS exit position
+	VECTOR3 Y_x_apo;
+	//Selenocentric velocity vector at PTS exit
+	VECTOR3 V_x;
+	//Previous value of selenocentric PTS exit velocity
+	VECTOR3 V_x_apo;
+	//Geocentric position vector of the moon at the postpericynthion pseudostate transformation time
+	VECTOR3 X_mx;
+	//Geocentric velocity vector of the moon at the postpericynthion pseudostate transformation time
+	VECTOR3 U_mx;
+	//Fictitious abort position vector
+	VECTOR3 Y_a_apo;
+	//Selenocentric orbital parameters
+	double a_h, e_h, p_h;
+
+	double tol, beta_r, u_r, a, e, beta_r_apo, dy_x, dy_x_apo, v_m, T_EI_apo, T_a, P, T_x, t_x, theta, dt_S, beta_a, beta_x, delta_t, Dy_0, t_x_apo;
+	int INFO, KOUNT, k_x;
+	bool q_m_out, q_a, dy_xf;
+
+	tol = 63.78165;
+	q_a = false;
 
 	if (KIP)
 	{
-		T_EI = var;
+		T_EI_apo = var;
+		u_r = EntryCalculations::URF((T_EI_apo - t_0) / 3600.0, length(X_m0) / 6378165.0)*6378165.0 / 3600.0;
 	}
 	else
 	{
 		u_r = var;
-		beta_r = EntryCalculations::ReentryTargetLine(u_r, false);
 	}
 
-	pRTCC->PLEFEM(1, t_I/3600.0, 0, &R_m, &V_m, &R_s, NULL);
+	beta_r = EntryCalculations::ReentryTargetLine(u_r, ICRNGG == 1);
 
-	for (int i = 0;i < 2;i++)
+RTEMoon_MCDRIV_1_X:
+	//Initialize iteration counters
+	k_x = 1;
+	KOUNT = 0;
+	//Initial guess for pseudostate. Position at the center of the Moon, velocity using preabort value
+	t_x = t_0;
+	X_mx = X_m0;
+	U_mx = U_m0;
+	Y_a_apo = Y_0;
+	X_x = X_mx;
+	Y_x = X_x - X_mx;
+	V_x = V_0; //TBD, not necessary
+RTEMoon_MCDRIV_5_S:
+	//Main loop
+	if (KIP)
 	{
-		R_I_star = _V(0.0, 0.0, 0.0);
-		V_I_star = V_I;
+		//Compute velocity at reentry, if it is not input
+		EntryCalculations::AESR(r_r, length(X_x), PI - beta_r, T_EI_apo - t_x, R_E, mu_E, 0.001, a, e, q_a, INFO, u_r);
+	}
 
-		do
+	//Compute the geocentric conic (velocity vector) from the geocentric pseudostate
+	NIR = FINDUX(X_x, t_x, r_r, u_r, beta_r, Incl, INTER, q_a, mu_E, U_x, R_EI, V_EI, T_EI, Incl_apo);
+	//Save current value of beta_r
+	beta_r_apo = beta_r;
+	//Reset convergence flag
+	dy_xf = false;
+	//Save previous value of V_x
+	V_x_apo = V_x;
+	//Transform the abort velocity vector to selenocentric reference
+	V_x = U_x - U_mx;
+RTEMoon_MCDRIV_7_R:
+	//Given initial position Y_a_apo and velocity at PTS V_x, calculate initial velocity V_a and position at PTS Y_x_apo
+	INRFV(Y_a_apo, V_x, r_s, mu_M, q_m, a_h, e_h, p_h, theta, V_a, Y_x_apo, dt_S, q_m_out, q_d, beta_a, beta_x);
+
+	//Near parabolic orbit?
+	if (abs(e_h - 1.0) < 1e-5)
+	{
+		a_h = p_h;
+	}
+	//Calculate time from pericynthion to PTS
+	pRTCC->PITFPC(mu_M, 0, a_h, e_h, r_s, T_x, P, false);
+	//Calculate pericynthion radius
+	y_p = p_h / (1.0 + e_h);
+	//Near pericynthion
+	if (length(Y_a_apo) < y_p + 1e-6*R_E)
+	{
+		//Assume time to pericynthion is zero
+		T_a = 0.0;
+	}
+	else
+	{
+		//Calculate time from pericynthion to abort
+		pRTCC->PITFPC(mu_M, q_d, a_h, e_h, length(Y_a_apo), T_a, P, false);
+	}
+
+	//Update pseudstate
+	PSTATE(a_h, e_h, p_h, t_0, T_x, Y_0, Y_a_apo, V_x, theta, beta_a, beta_x, T_a, V_a, t_x_apo, Y_x_apo, Dy_0, delta_t, X_mx, U_mx);
+	//
+	dy_x = length(Y_x - Y_x_apo);
+
+	if (dy_xf == false)
+	{
+		//Has converged?
+		if (dy_x <= tol && Dy_0 / length(Y_0) <= tol / 63781650.0 && abs(t_x_apo - t_x) < 0.1)
 		{
-			R_I_sstar = R_m + R_I_star;
-			V_I_sstar = V_m + V_I_star;
-			if (KIP)
+			//Does solution violate minimum landing time constraint?
+			if (KIP == 0 && T_EI < t_zmin)
 			{
-				NIR = EntryCalculations::Abort_plane(R_I_sstar, V_I_sstar, GMTBASE + t_I / 24.0 / 3600.0, RCON, T_EI - t_I, mu_E, Incl, INTER, dV_I_sstar, R_EI, V_EI, Incl_apo);
+				KIP = 1;
+				T_EI_apo = t_zmin;
+				goto RTEMoon_MCDRIV_1_X;
 			}
-			else
-			{
-				double MJD_EI;
-				NIR = FINDUX(R_I_sstar, V_I_sstar, GMTBASE + t_I / 24.0 / 3600.0, RCON, u_r, beta_r, Incl, INTER, false, mu_E, dV_I_sstar, R_EI, V_EI, MJD_EI, Incl_apo);
-				T_EI = (MJD_EI - GMTBASE)*24.0*3600.0;
-			}
-			V_I_sstar = V_I_sstar + dV_I_sstar;
-			V_I_star = V_I_sstar - V_m;
-			OrbMech::INRFV(R_I, V_I_star, r_s, INRFVsign, mu_M, V_I_apo, R_S, dt_S);
-			t_S = t_I + dt_S;
-			R_I_star_apo = R_I_star;
-			R_I_star = R_S + V_I_star * (t_I - t_S);
-
-		} while (length(R_I_star - R_I_star_apo) > tol);
-
-		if (KIP == 0 && T_EI < t_zmin)
-		{
-			KIP = 1;
-			T_EI = t_zmin;
+			//Solution has converged
+			goto RTEMoon_MCDRIV_11_W;
 		}
-		else
+	}
+	k_x++;
+	if (k_x >= k_max)
+	{
+		//Error return
+		return 0;
+	}
+
+	//Are conics diverging?
+	if (k_x % 3 == 0 && (dy_x_apo < 1.15*dy_x && dy_x >= tol))
+	{
+		//Average exit velocity vector
+		v_m = (length(V_x) + length(V_x_apo)) / 2.0;
+		dy_x_apo = 200.0*6378165.0;
+		dy_xf = true;
+		V_x = (V_x + V_x_apo) / 2.0;
+		V_x = unit(V_x)*v_m;
+		goto RTEMoon_MCDRIV_7_R;
+	}
+	else
+	{
+		t_x = t_x_apo;
+		Y_x = Y_x_apo;
+		X_x = Y_x + X_mx;
+		dy_x_apo = dy_x;
+		goto RTEMoon_MCDRIV_5_S;
+	}
+
+RTEMoon_MCDRIV_11_W:
+	//Solution has converged, check if reentry flight-path angle needs to be adjusted
+	if (KOUNT <= 4)
+	{
+		beta_r = EntryCalculations::ReentryTargetLine(u_r, ICRNGG == 1);
+		KOUNT++;
+		if (abs(beta_r - beta_r_apo) >= 0.0002)
 		{
-			break;
+			KOUNT++;
+			k_x = 1;
+			goto RTEMoon_MCDRIV_5_S;
 		}
 	}
 
-	coe = OrbMech::coe_from_sv(R_I, V_I_apo, mu_M);
-	p_h = coe.h*coe.h / mu_M;
-	r_p = p_h / (1.0 + coe.e);
+	//Verification
+	/*char Buffer[128];
+	VECTOR3 rr_S, v_S, v_I_star, r_I_star, R_I_star, V_I_star, R_EI2, V_EI2;
+	double dt;
 
-	return V_I_apo;
+	if (T_a < -3600.0)
+	{
+		double t_I, t_N;
+
+		//Conic propagation to sphere entry point
+		dt = OrbMech::time_radius(Y_0, -V_a, r_s, 1.0, mu_M);
+		dt = -dt;
+		t_N = t_0 + dt;
+		OrbMech::rv_from_r0v0(Y_0, V_a, dt, rr_S, v_S, mu_M);
+		//Linear propagation to original time
+		v_I_star = v_S;
+		r_I_star = rr_S + v_S * (t_0 - t_N);
+		//Convert to geocentric pseudostate
+		R_I_star = X_m0 + r_I_star;
+		V_I_star = U_m0 + v_I_star;
+		//Estimate perilune time
+		dt = OrbMech::timetoperi(Y_0, V_a, mu_M);
+		t_I = t_0 + dt;
+		//Propagate geocentric pseudostate to perilune time
+		OrbMech::rv_from_r0v0(R_I_star, V_I_star, dt, R_I_star, V_I_star, mu_E);
+		//Get Moon state vector at new time
+		pRTCC->PLEFEM(4, t_I / 3600.0, 0, &X_mx, &U_mx, NULL, NULL);
+		//Convert to selenocentric pseudostate
+		r_I_star = R_I_star - X_mx;
+		v_I_star = V_I_star - U_mx;
+		//Linear propagation to sphere entrance
+		dt = (-dotp(r_I_star, v_I_star) - sqrt(pow(dotp(r_I_star, v_I_star), 2) + dotp(v_I_star, v_I_star) * (pow(r_s, 2) - dotp(r_I_star, r_I_star)))) / dotp(v_I_star, v_I_star);
+		t_N = t_I + dt;
+		rr_S = r_I_star + v_I_star * dt;
+		v_S = v_I_star;
+		//Conic propagation to specified time. Real perilune state
+		OrbMech::rv_from_r0v0(rr_S, v_S, t_I - t_N, rr_S, v_S, mu_M);
+
+		//Then same as post-pericynthion
+		dt = OrbMech::time_radius(rr_S, v_S, r_s, 1.0, mu_M);
+		OrbMech::rv_from_r0v0(rr_S, v_S, dt, rr_S, v_S, mu_M);
+		v_I_star = v_S;
+		r_I_star = rr_S - v_S * dt;
+		R_I_star = X_mx + r_I_star;
+		V_I_star = U_mx + v_I_star;
+		OrbMech::rv_from_r0v0(R_I_star, V_I_star, T_EI - t_I, R_EI2, V_EI2, mu_E);
+	}
+	else
+	{
+		dt = OrbMech::time_radius(Y_0, V_a, r_s, 1.0, mu_M);
+		OrbMech::rv_from_r0v0(Y_0, V_a, dt, rr_S, v_S, mu_M);
+		v_I_star = v_S;
+		r_I_star = rr_S - v_S * dt;
+		R_I_star = X_m0 + r_I_star;
+		V_I_star = U_m0 + v_I_star;
+		OrbMech::rv_from_r0v0(R_I_star, V_I_star, T_EI - t_0, R_EI2, V_EI2, mu_E);
+	}
+	sprintf(Buffer, "MCDRIV Debug: Error %lf T_a %lf", length(R_EI - R_EI2), T_a);
+	oapiWriteLog(Buffer);*/
+
+	return 1;
 }
 
 double RTEMoon::SEARCH(int &IPART, VECTOR3 &DVARR, VECTOR3 &TIGARR, double tig, double dv, bool &IOUT)
@@ -7521,8 +7587,8 @@ double RTEMoon::SEARCH(int &IPART, VECTOR3 &DVARR, VECTOR3 &TIGARR, double tig, 
 
 	if (IPART == 1)
 	{
-		DVARR = _V(1.0, 1.0, 1.0)*pow(10, 10);
-		TIGARR = _V(1.0, 1.0, 1.0)*pow(10, 10);
+		DVARR = _V(1e10, 1e10, 1e10);
+		TIGARR = _V(1e10, 1e10, 1e10);
 		IPART = 2;
 	}
 
@@ -7534,7 +7600,7 @@ double RTEMoon::SEARCH(int &IPART, VECTOR3 &DVARR, VECTOR3 &TIGARR, double tig, 
 	TIGARR.z = tig;
 	DVTEST = DVARR.z - DVARR.y;
 	dt = (TIGARR.z - TIGARR.y);
-	if (abs(dt) < 1.0 || abs(DVTEST) < 0.2*0.3048)
+	if (IPART == 4 && (abs(dt) < 1.0 || abs(DVTEST) < 0.2*0.3048))
 	{
 		IOUT = true;
 	}
@@ -7547,33 +7613,48 @@ double RTEMoon::SEARCH(int &IPART, VECTOR3 &DVARR, VECTOR3 &TIGARR, double tig, 
 		IPART = 3;
 		return 120.0;
 	}
-	else if (DVTEST < 0)
+	else if (DVTEST <= 0)
 	{
+		//Most recent DV smaller than the previous one, continue in this direction
 		return dt;
 	}
 	else
 	{
+		//DV increasing again, we went past a minimum
+		IPART = 4;
 		return -dt / 2.0;
 	}
 }
 
-bool RTEMoon::FINDUX(VECTOR3 R0, VECTOR3 V0, double MJD0, double r_r, double u_r, double beta_r, double i_r, double INTER, bool q_a, double mu, VECTOR3 &DV, VECTOR3 &R_EI, VECTOR3 &V_EI, double &MJD_EI, double &Incl_apo)
+bool RTEMoon::FINDUX(VECTOR3 X_x, double t_x, double r_r, double u_r, double beta_r, double i_r, double INTER, bool q_a, double mu, VECTOR3 &U_x, VECTOR3 &R_EI, VECTOR3 &V_EI, double &T_EI, double &Incl_apo) const
 {
-	MATRIX3 Rot;
-	VECTOR3 X_x_equ_u, R_1, u_x_equ, U_x_equ, U_x;
-	double x_x, E, e, a, eta_r, eta_x, eta_xr, T_r, T_x, P, beta_x, alpha_x, delta_x, sin_delta_r, cos_delta_r, theta, alpha_r, eta_x1, t_z, T_xr;
+	//INPUTS:
+	//X_x: Earth-centered position vector at exit from moon's sphere of action (MSA)
+	//t_x: Time of MSA exit from base time
+	//r_r: Reentry radius
+	//beta_r: Reentry flight path angle
+	//i_r: Return inclination
+	//INTER: Indicator for which of the two possible orbital planes for a given i_r is specified
+	//q_a: Apogee passage flag
+
+	//OUTPUT:
+	//U_x: Velocity vector at MSA exit
+	//t_z: Time of landing from base time
+
+	VECTOR3 X_x_u, R_1, U_x_u;
+	double x_x, E, e, a, eta_r, eta_x, eta_xr, T_r, T_x, P, beta_x, alpha_x, delta_x, sin_delta_r, cos_delta_r, theta, alpha_r, eta_x1, t_z, T_xr, T_rz;
 	bool NIR;
 
 	Incl_apo = i_r;
 	NIR = false;
+	T_rz = 0.0; //TBD: for now...
 
-	x_x = length(R0);
-	Rot = OrbMech::GetRotationMatrix(BODY_EARTH, MJD0);
-	X_x_equ_u = unit(rhtmul(Rot, R0));
-	OrbMech::ra_and_dec_from_r(X_x_equ_u, alpha_x, delta_x);
+	x_x = length(X_x);
+	X_x_u = unit(X_x);
+	OrbMech::ra_and_dec_from_r(X_x_u, alpha_x, delta_x);
 
 	E = u_r * u_r / mu - 2.0 / r_r;
-	if (abs(E) < pow(10, -10))
+	if (abs(E) < 1e-3 / 6378165.0)
 	{
 		e = 1.0;
 	}
@@ -7582,10 +7663,10 @@ bool RTEMoon::FINDUX(VECTOR3 R0, VECTOR3 V0, double MJD0, double r_r, double u_r
 		a = -1.0 / E;
 		e = sqrt(1.0 - r_r * r_r*u_r*u_r*sin(beta_r)*sin(beta_r) / (mu*a));
 	}
-	if (abs(e - 1.0) < pow(10, -5))
+	if (abs(e - 1.0) < 1e-5)
 	{
-		a = r_r * u_r*u_r*sin(beta_r)*sin(beta_r) / mu;
-		eta_r = PI2 * acos(a / r_r - 1.0);
+		a = pow(r_r, 2) * pow(u_r, 2)*pow(sin(beta_r), 2) / mu;
+		eta_r = PI2 - acos(a / r_r - 1.0);
 		eta_x = acos(a / x_x - 1.0);
 	}
 	else
@@ -7602,14 +7683,14 @@ bool RTEMoon::FINDUX(VECTOR3 R0, VECTOR3 V0, double MJD0, double r_r, double u_r
 	pRTCC->PITFPC(mu, 0, a, e, x_x, T_x, P, false);
 	if (q_a == 0 || (q_a == 1 && E >= 0))
 	{
-		t_z = T_x - T_r;
+		t_z = t_x + T_x - T_r + T_rz;
 	}
 	else
 	{
-		t_z = P - T_x - T_r;
+		t_z = t_x + P - T_x - T_r + T_rz;
 	}
-	T_xr = -t_z;
-	MJD_EI = MJD0 + T_xr / 24.0 / 3600.0;
+	T_xr = t_z - t_x - T_rz;
+	T_EI = t_x + T_xr;
 
 	beta_x = atan2(1.0 + e * cos(eta_x), e*sin(eta_x));
 	if (Incl_apo <= abs(delta_x))
@@ -7633,11 +7714,254 @@ bool RTEMoon::FINDUX(VECTOR3 R0, VECTOR3 V0, double MJD0, double r_r, double u_r
 	alpha_r = alpha_x + theta;
 	R_1 = _V(cos(alpha_r)*cos_delta_r, sin(alpha_r)*cos_delta_r, sin_delta_r);
 	eta_x1 = eta_xr;
-	u_x_equ = EntryCalculations::TVECT(X_x_equ_u, R_1, eta_x1, beta_x);
-	U_x_equ = u_x_equ * sqrt(u_r*u_r - 2.0*mu*(1.0 / r_r - 1.0 / x_x));
-	U_x = rhmul(Rot, U_x_equ);
-	OrbMech::rv_from_r0v0(R0, U_x, T_xr, R_EI, V_EI, mu);
-	DV = U_x - V0;
+	U_x_u = EntryCalculations::TVECT(X_x_u, R_1, eta_x1, beta_x);
+	U_x = U_x_u * sqrt(u_r*u_r - 2.0*mu*(1.0 / r_r - 1.0 / x_x));
+
+	OrbMech::rv_from_r0v0(X_x, U_x, T_xr, R_EI, V_EI, mu);
 
 	return NIR;
+}
+
+void RTEMoon::INRFV(VECTOR3 R_1, VECTOR3 V_2, double r_2, double mu, bool k3, double &a, double &e, double &p, double &theta, VECTOR3 &V_1, VECTOR3 &R_2, double &dt_2, bool &q_m, bool &k_1, double &beta_1, double &beta_2) const
+{
+	//INPUTS:
+	//R_1: Initial positon vector
+	//V_2: Velocity vector at the second position
+	//r_2: magnitude of the second position vector
+	//mu: gravitational constant
+	//k3: 0 = noncircumlunar or retrograde motion as specified by QDFLG, 1 = circumlunar motion
+	//QDFLG: 0 = use circumlunar or noncircumlunar motion, 1 = use retrograde motion
+
+	//OUTPUTS:
+	//I: counts the roots from the quartic tested, error flag if I > 5
+	//q_m: 0 = noncircumlunar, 1 = circumlunar
+	//k_1: 0 = no pericenter passage, 1 = pericenter passage
+
+	VECTOR3 r_1_cf, v_2_cf, c;
+	double psi, cos_psi, sin_psi, A, B, C, r_1, v_2, sin_beta_2, v_1, f, g, DIFG;
+	double AA[5], RR[4];
+	int N;
+
+	DIFG = 1.0;
+	r_1 = length(R_1);
+	v_2 = length(V_2);
+
+	if (QDFLG)
+	{
+		DIFG = -1.0;
+	}
+
+	psi = EntryCalculations::XDOTX2(unit(R_1), unit(V_2), DIFG);
+
+	if (QDFLG)
+	{
+		if (psi < PI)
+		{
+			q_m = false;
+		}
+		else
+		{
+			q_m = true;
+		}
+	}
+	else
+	{
+		q_m = k3;
+		if (psi < PI || !k3)
+		{
+			if (psi >= PI || k3)
+			{
+				psi = PI2 - psi;
+			}
+		}
+	}
+
+	r_1 = length(R_1);
+	v_2 = length(V_2);
+	r_1_cf = unit(R_1);
+	v_2_cf = unit(V_2);
+
+	cos_psi = cos(psi);
+	sin_psi = sin(psi);
+
+	A = r_2 * r_2*v_2*v_2 / mu / r_1;
+	B = (1.0 - r_2 * v_2*v_2 / mu)*sin_psi;
+	C = cos_psi * cos_psi;
+
+	//solve quartic
+	AA[0] = A * A;
+	AA[1] = 2.0*A*B;
+	AA[2] = B * B + C - 2.0*A;
+	AA[3] = -2.0*B;
+	AA[4] = 1.0 - C;
+
+	OrbMech::SolveQuartic(AA, RR, N);
+
+	if (cos_psi > 0)
+	{
+		sin_beta_2 = RR[N - 2];
+	}
+	else
+	{
+		sin_beta_2 = RR[N - 1];
+	}
+
+	beta_2 = asin(sin_beta_2);
+	c = unit(crossp(r_1_cf, v_2_cf) / sin_psi);
+	theta = psi - beta_2;
+	R_2 = (r_1_cf*cos(theta) + crossp(c, r_1_cf)*sin(theta))*r_2;
+	v_1 = sqrt(v_2 - 2.0*mu / r_2 + 2.0*mu / r_1);
+	p = r_2 * r_2*v_2*v_2*sin_beta_2*sin_beta_2 / mu;
+	f = 1.0 - r_2 * (1.0 - cos(theta)) / p;
+	g = r_2 * r_1*sin(theta) / sqrt(mu*p);
+	V_1 = (R_2 - R_1 * f) / g;
+	a = 1.0 / (2.0 / r_2 - v_2 * v_2 / mu);
+	e = sqrt(1.0 - p / a);
+
+	dt_2 = OrbMech::time_theta(R_1, V_1, theta, mu);
+	//VECTOR3 R2_apo, V2_apo;
+	//OrbMech::rv_from_r0v0(R_1, V_1, dt_2, R2_apo, V2_apo, mu);
+
+	//Determine pericenter passage
+	//r_1 near pericenter?
+	if (r_1 < p / (1.0 + e) + 1e-6*R_E)
+	{
+		//Close to periapsis solution
+		e = p / r_1 - 1.0;
+		beta_1 = PI05;
+		k_1 = true;
+	}
+	else
+	{
+		//Not close to periapsis
+		beta_1 = EntryCalculations::XDOTX2(R_1, V_1, 0.0);
+		if (beta_1 > PI05)
+		{
+			k_1 = true;
+		}
+		else
+		{
+			k_1 = false;
+		}
+	}
+}
+
+void RTEMoon::STORE(int opt, double &dv, double &i_r, double &INTER, double &t_z, bool &q_m)
+{
+	//1 = store, 2 = restore
+	if (opt == 1)
+	{
+		solution.dv = dv;
+		solution.i_r = i_r;
+		solution.INTER = INTER;
+		solution.q_m = q_m;
+		solution.t_z = t_z;
+	}
+	else
+	{
+		dv = solution.dv;
+		i_r = solution.i_r;
+		INTER = solution.INTER;
+		q_m = solution.q_m;
+		t_z = solution.t_z;
+	}
+}
+
+void RTEMoon::PSTATE(double a_H, double e_H, double p_H, double t_0, double T_x, VECTOR3 Y_0, VECTOR3 &Y_a_apo, VECTOR3 V_x, double theta, double beta_a, double beta_x, double T_a, VECTOR3 &V_a, double &t_x_aaapo, VECTOR3 &Y_x_apo, double &Dy_0, double &deltat, VECTOR3 &X_mx, VECTOR3 &U_mx) const
+{
+	//INPUTS:
+	//a_h: semimajor axis of selenocentric conic
+	//e_H: eccentricity of selenocentric conic
+	//p_H: semilatus rectum of selenocentric conic
+	//t_0: time of abort
+	//T_x: flight time from pericynthion to PTS exit
+	//Y_0: Selenocentric preabort position vector
+	//Y_a_apo: Fictitious abort position vector used in last call to INRFV
+	//V_x: Selenocentric PTS exit velocity vector
+	//theta: transfer angle from Y_a_apo to Y_x_apo
+	//beta_a: postabort flight-path angle
+	//beta_x: PTS exit flight-path angle of selenocentric conic
+	//T_a: flight time from pericynthion to the maneuver position
+	//V_a: Selenocentric postabort velocity vector
+	//Y_x_apo: Selenocentric PTS exit position vector
+	//OUTPUTS:
+	//V_a: Corrected postabort velocity vector
+	//t_x_aaapo: Postpericynthion pseudostate transformation time for next iteration
+	//Y_x_apo: Selenocentric PTS exit position vector for next iteration
+	//Dy_0: Magnitude of the abort position mismatch
+
+	if (T_a < -3600.0)
+	{
+		t_x_aaapo = t_0 - T_a;
+		deltat = T_x;
+
+		bool IERR = pRTCC->PLEFEM(4, t_x_aaapo / 3600.0, 0, &X_mx, &U_mx, NULL, NULL);
+		if (IERR)
+		{
+			//Error
+			return;
+		}
+
+		VECTOR3 Y_u, V_u, Y_n_u, V_n_u, Y_n, V_n, U_p_n, X_p_n, X_a_n, U_a_n, Y, V, Y_a, DY_0;
+		double t_n, f_a, f_x, gamma_p, gamma_v, A, B, C, Deltat;
+
+		t_n = t_x_aaapo - T_x;
+		f_a = T_a / abs(T_a)*acos((p_H / length(Y_a_apo) - 1.0) / e_H); //Error in RTCC document
+		f_x = theta + f_a;
+		Y_u = unit(Y_a_apo);
+		V_u = unit(V_a);
+
+		gamma_p = beta_a + f_x + f_a;
+		gamma_v = gamma_p + beta_x - PI;
+
+		Y_n_u = EntryCalculations::TVECT(V_u, Y_u, beta_a, gamma_p);
+		V_n_u = EntryCalculations::TVECT(V_u, Y_u, beta_a, gamma_v);
+
+		//Pseudostate vector at PTS entry
+		Y_n = Y_n_u * r_s;
+		V_n = V_n_u * length(V_x);
+
+		//Linear projection to pericynthion, then convert to geocentric pseudostate
+		U_p_n = V_n + U_mx;
+		X_p_n = Y_n + V_n * T_x + X_mx;
+
+		//Propagate geocentric pseudostate from t_x_aaapo to t_0. X_a_n and U_a_n are geocentric pseudostate at time t_0
+		Deltat = t_x_aaapo - t_0;
+		OrbMech::rv_from_r0v0(X_p_n, -U_p_n, Deltat, X_a_n, U_a_n, mu_E);
+		U_a_n = -U_a_n;
+
+		//Convert to selenocentric pseudostate at time t_0
+		Y = X_a_n - X_m0;
+		V = U_a_n - U_m0;
+
+		//Calculate linear from time from t_0 to PTS entry point
+		A = dotp(V, V);
+		B = dotp(V, Y);
+		C = r_s * r_s - dotp(Y, Y);
+
+		Deltat = (-B - sqrt(B*B + A * C)) / A;
+
+		//Calculate sphere entrance state vector
+		t_n = t_0 + Deltat;
+		V_n = V;
+		Y_n = Y + V * Deltat;
+
+		//Propagate to t_0. New postabort state vector
+		OrbMech::rv_from_r0v0(Y_n, V_n, -Deltat, Y_a, V_a, mu_M);
+
+		DY_0 = Y_0 - Y_a;
+		Y_a_apo = Y_a_apo + DY_0;
+		Dy_0 = length(DY_0);
+	}
+	else
+	{
+		Dy_0 = 0.0;
+		t_x_aaapo = t_0;
+		deltat = T_x - T_a;
+		U_mx = U_m0;
+		X_mx = X_m0;
+		Y_a_apo = Y_0;
+	}
+
+	Y_x_apo = Y_x_apo - V_x * deltat;
 }

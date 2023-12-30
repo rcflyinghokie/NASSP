@@ -20,6 +20,9 @@
 #include "iu.h"
 #include "ARoapiModule.h"
 #include "TLMCC.h"
+#include "nassputils.h"
+
+using namespace nassp;
 
 // ==============================================================
 // Global variables
@@ -77,6 +80,7 @@ ApolloRTCCMFD::ApolloRTCCMFD (DWORD w, DWORD h, VESSEL *vessel, UINT im)
 	}
 
 	marker = 0;
+	markermax = 0;
 }
 
 // Destructor
@@ -126,7 +130,7 @@ void ApolloRTCCMFD::WriteStatus(FILEHANDLE scn) const
 	papiWriteScenario_double(scn, "SXTSTARDTIME", G->sxtstardtime);
 	oapiWriteScenario_int(scn, "REFSMMATcur", G->REFSMMATcur);
 	oapiWriteScenario_int(scn, "REFSMMATopt", G->REFSMMATopt);
-	papiWriteScenario_double(scn, "REFSMMATTime", G->REFSMMATTime);
+	papiWriteScenario_double(scn, "REFSMMAT_LVLH_Time", G->REFSMMAT_LVLH_Time);
 	papiWriteScenario_bool(scn, "REFSMMATHeadsUp", G->REFSMMATHeadsUp);
 	papiWriteScenario_double(scn, "T1", GC->rtcc->med_k30.StartTime);
 	papiWriteScenario_double(scn, "T2", GC->rtcc->med_k30.EndTime);
@@ -140,7 +144,6 @@ void ApolloRTCCMFD::WriteStatus(FILEHANDLE scn) const
 		oapiWriteScenario_string(scn, "TARGET", Buffer2);
 	}
 	oapiWriteScenario_int(scn, "TARGETNUMBER", G->targetnumber);
-	oapiWriteScenario_int(scn, "MISSION", GC->mission);
 	papiWriteScenario_double(scn, "P30TIG", G->P30TIG);
 	papiWriteScenario_vec(scn, "DV_LVLH", G->dV_LVLH);
 	papiWriteScenario_double(scn, "ENTRYTIGCOR", G->EntryTIGcor);
@@ -152,7 +155,6 @@ void ApolloRTCCMFD::WriteStatus(FILEHANDLE scn) const
 	oapiWriteScenario_int(scn, "ENTRYPRECISION", G->entryprecision);
 
 	oapiWriteScenario_int(scn, "MAPPAGE", G->mappage);
-	papiWriteScenario_bool(scn, "INHIBITUPLINK", G->inhibUplLOS);
 	papiWriteScenario_double(scn, "GMPApogeeHeight", G->GMPApogeeHeight);
 	papiWriteScenario_double(scn, "GMPPerigeeHeight", G->GMPPerigeeHeight);
 	papiWriteScenario_double(scn, "GMPWedgeAngle", G->GMPWedgeAngle);
@@ -170,22 +172,7 @@ void ApolloRTCCMFD::WriteStatus(FILEHANDLE scn) const
 	oapiWriteScenario_int(scn, "GMPManeuverCode", G->GMPManeuverCode);
 	papiWriteScenario_double(scn, "SPSGET", G->SPSGET);
 
-	papiWriteScenario_vec(scn, "R_TLI", G->R_TLI);
-	papiWriteScenario_vec(scn, "V_TLI", G->V_TLI);
-
-	papiWriteScenario_bool(scn, "SKYLABNPCOPTION", G->Skylab_NPCOption);
-	papiWriteScenario_bool(scn, "SKYLABPCMANEUVER", G->Skylab_PCManeuver);
-	oapiWriteScenario_int(scn, "SKYLABMANEUVER", G->Skylabmaneuver);
-	papiWriteScenario_double(scn, "SKYLAB_N_C", G->Skylab_n_C);
-	papiWriteScenario_double(scn, "SKYLAB_NC1", G->Skylab_t_NC1);
-	papiWriteScenario_double(scn, "SKYLAB_NC2", G->Skylab_t_NC2);
-	papiWriteScenario_double(scn, "SKYLAB_NCC", G->Skylab_t_NCC);
-	papiWriteScenario_double(scn, "SKYLAB_NSR", G->Skylab_t_NSR);
 	papiWriteScenario_double(scn, "t_TPI", G->t_TPI);
-	papiWriteScenario_double(scn, "SKYLAB_DTTPM", G->Skylab_dt_TPM);
-	papiWriteScenario_double(scn, "SKYLAB_E_L", G->Skylab_E_L);
-	papiWriteScenario_double(scn, "SKYLAB_DH1", G->SkylabDH1);
-	papiWriteScenario_double(scn, "SKYLAB_DH2", G->SkylabDH2);
 
 	papiWriteScenario_double(scn, "LDPPGETTH1", GC->rtcc->med_k16.GETTH1);
 	papiWriteScenario_double(scn, "LDPPGETTH2", GC->rtcc->med_k16.GETTH2);
@@ -213,7 +200,7 @@ void ApolloRTCCMFD::ReadStatus(FILEHANDLE scn)
 		papiReadScenario_double(line, "SXTSTARDTIME", G->sxtstardtime);
 		papiReadScenario_int(line, "REFSMMATcur", G->REFSMMATcur);
 		papiReadScenario_int(line, "REFSMMATopt", G->REFSMMATopt);
-		papiReadScenario_double(line, "REFSMMATTime", G->REFSMMATTime);
+		papiReadScenario_double(line, "REFSMMAT_LVLH_Time", G->REFSMMAT_LVLH_Time);
 		papiReadScenario_bool(line, "REFSMMATHeadsUp", G->REFSMMATHeadsUp);
 		papiReadScenario_double(line, "T1", GC->rtcc->med_k30.StartTime);
 		papiReadScenario_double(line, "T2", GC->rtcc->med_k30.EndTime);
@@ -226,7 +213,7 @@ void ApolloRTCCMFD::ReadStatus(FILEHANDLE scn)
 		if (istarget)
 		{
 			OBJHANDLE obj;
-			obj = oapiGetObjectByName(Buffer2);
+			obj = oapiGetVesselByName(Buffer2);
 			if (obj)
 			{
 				G->target = oapiGetVesselInterface(obj);
@@ -235,7 +222,6 @@ void ApolloRTCCMFD::ReadStatus(FILEHANDLE scn)
 		}
 
 		papiReadScenario_int(line, "TARGETNUMBER", G->targetnumber);
-		papiReadScenario_int(line, "MISSION", GC->mission);
 		papiReadScenario_double(line, "P30TIG", G->P30TIG);
 		papiReadScenario_vec(line, "DV_LVLH", G->dV_LVLH);
 		papiReadScenario_double(line, "ENTRYTIGCOR", G->EntryTIGcor);
@@ -247,7 +233,6 @@ void ApolloRTCCMFD::ReadStatus(FILEHANDLE scn)
 		papiReadScenario_int(line, "ENTRYPRECISION", G->entryprecision);
 
 		papiReadScenario_int(line, "MAPPAGE", G->mappage);
-		papiReadScenario_bool(line, "INHIBITUPLINK", G->inhibUplLOS);
 		papiReadScenario_double(line, "GMPApogeeHeight", G->GMPApogeeHeight);
 		papiReadScenario_double(line, "GMPPerigeeHeight", G->GMPPerigeeHeight);
 		papiReadScenario_double(line, "GMPWedgeAngle", G->GMPWedgeAngle);
@@ -265,22 +250,7 @@ void ApolloRTCCMFD::ReadStatus(FILEHANDLE scn)
 		papiReadScenario_int(line, "GMPManeuverCode", G->GMPManeuverCode);
 		papiReadScenario_double(line, "SPSGET", G->SPSGET);
 
-		papiReadScenario_vec(line, "R_TLI", G->R_TLI);
-		papiReadScenario_vec(line, "V_TLI", G->V_TLI);
-
-		papiReadScenario_bool(line, "SKYLABNPCOPTION", G->Skylab_NPCOption);
-		papiReadScenario_bool(line, "SKYLABPCMANEUVER", G->Skylab_PCManeuver);
-		papiReadScenario_int(line, "SKYLABMANEUVER", G->Skylabmaneuver);
-		papiReadScenario_double(line, "SKYLAB_N_C", G->Skylab_n_C);
-		papiReadScenario_double(line, "SKYLAB_NC1", G->Skylab_t_NC1);
-		papiReadScenario_double(line, "SKYLAB_NC2", G->Skylab_t_NC2);
-		papiReadScenario_double(line, "SKYLAB_NCC", G->Skylab_t_NCC);
-		papiReadScenario_double(line, "SKYLAB_NSR", G->Skylab_t_NSR);
 		papiReadScenario_double(line, "t_TPI", G->t_TPI);
-		papiReadScenario_double(line, "SKYLAB_DTTPM", G->Skylab_dt_TPM);
-		papiReadScenario_double(line, "SKYLAB_E_L", G->Skylab_E_L);
-		papiReadScenario_double(line, "SKYLAB_DH1", G->SkylabDH1);
-		papiReadScenario_double(line, "SKYLAB_DH2", G->SkylabDH2);
 
 		papiReadScenario_double(line, "LDPPGETTH1", GC->rtcc->med_k16.GETTH1);
 		papiReadScenario_double(line, "LDPPGETTH2", GC->rtcc->med_k16.GETTH2);
@@ -303,32 +273,7 @@ bool ApolloRTCCMFD::Text(oapi::Sketchpad *skp, int x, int y, const std::string &
 
 void ApolloRTCCMFD::menuEntryUpdateUpload()
 {
-	if (!G->inhibUplLOS || !G->vesselinLOS())
-	{
-		G->EntryUpdateUplink();
-	}
-}
-
-void ApolloRTCCMFD::menuIUUplink()
-{
-	SevenParameterUpdate coe;
-	SaturnV* testves;
-
-	testves = (SaturnV*)G->vessel;
-	LVDCSV *lvdc = (LVDCSV*)testves->iu->GetLVDC();
-
-	coe = GC->rtcc->TLICutoffToLVDCParameters(G->R_TLI, G->V_TLI, G->P30TIG, lvdc->TB5, lvdc->mu, 578.6);
-
-	lvdc->TU = true;
-	lvdc->TU10 = false;
-
-	lvdc->T_RP = coe.T_RP;
-	lvdc->C_3 = coe.C3;
-	lvdc->Inclination = coe.Inclination;
-	lvdc->e = coe.e;
-	lvdc->alpha_D = coe.alpha_D;
-	lvdc->f = coe.f;
-	lvdc->theta_N = coe.theta_N;
+	G->EntryUpdateUplink();
 }
 
 void ApolloRTCCMFD::menuP30UplinkCalc()
@@ -345,10 +290,7 @@ void ApolloRTCCMFD::menuP30UplinkCalc()
 
 void ApolloRTCCMFD::menuP30Uplink()
 {
-	if (!G->inhibUplLOS || !G->vesselinLOS())
-	{
-		G->P30Uplink(screen == 51);
-	}
+	G->P30Uplink(screen == 51);
 }
 
 void ApolloRTCCMFD::menuRetrofireEXDVUplink()
@@ -726,6 +668,7 @@ void ApolloRTCCMFD::SelectPage(int page)
 {
 	screen = page;
 	coreButtons.SelectPage(this, screen);
+	status = 0;
 }
 
 void ApolloRTCCMFD::menuSetMenu()
@@ -750,6 +693,8 @@ void ApolloRTCCMFD::menuSetSPQPage()
 
 void ApolloRTCCMFD::menuSetOrbAdjPage()
 {
+	marker = 0;
+	markermax = 7;
 	SelectPage(4);
 }
 
@@ -813,7 +758,7 @@ void ApolloRTCCMFD::menuSetDescPlanCalcPage()
 	SelectPage(16);
 }
 
-void ApolloRTCCMFD::menuSetSkylabPage()
+void ApolloRTCCMFD::menuTranslunarPage()
 {
 	SelectPage(17);
 }
@@ -883,6 +828,11 @@ void ApolloRTCCMFD::menuSetEntryUpdatePage()
 	SelectPage(30);
 }
 
+void ApolloRTCCMFD::menuSetRTCCFilesPage()
+{
+	SelectPage(31);
+}
+
 void ApolloRTCCMFD::menuSetRendezvousPage()
 {
 	SelectPage(32);
@@ -905,13 +855,13 @@ void ApolloRTCCMFD::menuSetDAPPADPage()
 
 void ApolloRTCCMFD::menuSetLVDCPage()
 {
-	if (GC->mission >= 8 && GC->mission <= 17)
+	if (utils::IsVessel(G->vessel, utils::SaturnV) || utils::IsVessel(G->vessel, utils::SaturnV_SIVB))
 	{
-		SelectPage(36);
+		SelectPage(36); //Saturn V launch azimuth
 	}
-	else
+	else if (utils::IsVessel(G->vessel, utils::SaturnIB) || utils::IsVessel(G->vessel, utils::SaturnIB_SIVB))
 	{
-		SelectPage(121);
+		SelectPage(121); //Saturn IB LWP
 	}
 }
 
@@ -1021,6 +971,8 @@ void ApolloRTCCMFD::menuSetMPTInitPage()
 	SelectPage(59);
 
 	GC->mptInitError = 0;
+	marker = 0;
+	markermax = 5;
 }
 
 void ApolloRTCCMFD::menuSetDescPlanTablePage()
@@ -1285,6 +1237,63 @@ void ApolloRTCCMFD::menuSetRendezvousPlanningDisplayPage()
 	SelectPage(123);
 }
 
+void ApolloRTCCMFD::menuSetPerigeeAdjustInputPage()
+{
+	SelectPage(124);
+}
+
+void ApolloRTCCMFD::menuSetPerigeeAdjustDisplayPage()
+{
+	SelectPage(125);
+}
+
+void ApolloRTCCMFD::menuSetLMOpticsSupportTablePage()
+{
+	SelectPage(126);
+}
+
+void ApolloRTCCMFD::menuSetDebugPage()
+{
+	SelectPage(127);
+}
+
+void ApolloRTCCMFD::menuPerigeeAdjustCalc()
+{
+	G->PerigeeAdjustCalc();
+}
+
+void ApolloRTCCMFD::CyclePerigeeAdjustVehicle()
+{
+	if (GC->rtcc->med_k28.VEH == RTCC_MPT_CSM)
+	{
+		GC->rtcc->med_k28.VEH = RTCC_MPT_LM;
+	}
+	else
+	{
+		GC->rtcc->med_k28.VEH = RTCC_MPT_CSM;
+	}
+}
+
+void ApolloRTCCMFD::menuPerigeeAdjustVectorTime()
+{
+	GenericGETInput(&GC->rtcc->med_k28.VectorTime, "Enter desired vector GET (Format: HH:MM:SS)");
+}
+
+void ApolloRTCCMFD::menuPerigeeAdjustThresholdTime()
+{
+	GenericGETInput(&GC->rtcc->med_k28.ThresholdTime, "Enter desired threshold GET (Format: HH:MM:SS)");
+}
+
+void ApolloRTCCMFD::menuPerigeeAdjustTimeIncrement()
+{
+	GenericDoubleInput(&GC->rtcc->med_k28.TimeIncrement, "Time increment in seconds:", 1.0);
+}
+
+void ApolloRTCCMFD::menuPerigeeAdjustHeight()
+{
+	GenericDoubleInput(&GC->rtcc->med_k28.H_P, "Perigee height in nautical miles:", 1.0);
+}
+
 void ApolloRTCCMFD::menuLWPLiftoffTimeOption()
 {
 	if (GC->rtcc->PZSLVCON.LOT < 6)
@@ -1304,7 +1313,7 @@ void ApolloRTCCMFD::menuLWPLiftoffTime()
 
 void ApolloRTCCMFD::LUNTAR_TIGInput()
 {
-	GenericGETInput(&G->LUNTAR_TIG, "Enter GET (Format: HH:MM:SS)");
+	GenericGETInput(&G->LUNTAR_TIG, "Enter GET (Format: HH:MM:SS). Enter zero for trajectory evaluation (no maneuver):");
 }
 
 void ApolloRTCCMFD::menuLWP_RINS()
@@ -1330,6 +1339,35 @@ void ApolloRTCCMFD::menuLWPCycleDELNOF()
 void ApolloRTCCMFD::menuLWP_DELNO()
 {
 	GenericDoubleInput(&GC->rtcc->PZSLVCON.DELNO, "Differential nodal regression in degrees:", RAD);
+}
+
+void ApolloRTCCMFD::menuLWP_PhaseFlags()
+{
+	if (GC->rtcc->PZSLVCON.NEGTIV == 2 && GC->rtcc->PZSLVCON.WRAP == 0)
+	{
+		GC->rtcc->PZSLVCON.NEGTIV = 0;
+		GC->rtcc->PZSLVCON.WRAP = 0;
+	}
+	else if (GC->rtcc->PZSLVCON.NEGTIV == 0 && GC->rtcc->PZSLVCON.WRAP == 0)
+	{
+		GC->rtcc->PZSLVCON.NEGTIV = 2;
+		GC->rtcc->PZSLVCON.WRAP = 1;
+	}
+	else if (GC->rtcc->PZSLVCON.NEGTIV == 2 && GC->rtcc->PZSLVCON.WRAP == 1)
+	{
+		GC->rtcc->PZSLVCON.NEGTIV = 0;
+		GC->rtcc->PZSLVCON.WRAP = 1;
+	}
+	else if (GC->rtcc->PZSLVCON.NEGTIV == 0 && GC->rtcc->PZSLVCON.WRAP == 1)
+	{
+		GC->rtcc->PZSLVCON.NEGTIV = 2;
+		GC->rtcc->PZSLVCON.WRAP = 2;
+	}
+	else
+	{
+		GC->rtcc->PZSLVCON.NEGTIV = 2;
+		GC->rtcc->PZSLVCON.WRAP = 0;
+	}
 }
 
 void ApolloRTCCMFD::LUNTAR_BTInput()
@@ -1475,11 +1513,13 @@ bool GenericDoubleInputBox(void *id, char *str, void *data)
 	return false;
 }
 
-void ApolloRTCCMFD::GenericIntInput(int *val, char *message)
+void ApolloRTCCMFD::GenericIntInput(int *val, char *message, void (ApolloRTCCMFD::*func)(void))
 {
 	void *data2;
 
 	tempData.iVal = val;
+	tempData.ptr = this;
+	tempData.func = func;
 	data2 = &tempData;
 
 	bool GenericIntInputBox(void *id, char *str, void *data);
@@ -1494,17 +1534,72 @@ bool GenericIntInputBox(void *id, char *str, void *data)
 	if (sscanf(str, "%d", &val) == 1)
 	{
 		*arr->iVal = val;
+
+		if (arr->func)
+		{
+			ApolloRTCCMFD *ptr = arr->ptr;
+			void (ApolloRTCCMFD::*func)(void) = arr->func;
+
+			(ptr->*func)();
+		}
 		return true;
 	}
 	return false;
 }
 
-void ApolloRTCCMFD::GenericVectorInput(VECTOR3 *val, char* message, double factor)
+void ApolloRTCCMFD::GenericInt2Input(int *val1, int *val2, char* message, int min1, int max1, int min2, int max2, void (ApolloRTCCMFD::*func)(void))
+{
+	void *data2;
+
+	tempData.iVal = val1;
+	tempData.iVal2 = val2;
+	tempData.min1 = min1;
+	tempData.max1 = max1;
+	tempData.min2 = min2;
+	tempData.max2 = max2;
+	tempData.ptr = this;
+	tempData.func = func;
+	data2 = &tempData;
+
+	bool GenericInt2InputBox(void *id, char *str, void *data);
+	oapiOpenInputBox(message, GenericInt2InputBox, 0, 25, data2);
+}
+
+bool GenericInt2InputBox(void *id, char *str, void *data)
+{
+	RTCCMFDInputBoxData *arr = static_cast<RTCCMFDInputBoxData*>(data);
+	int val1, val2;
+
+	if (sscanf(str, "%d %d", &val1, &val2) == 2)
+	{
+		if (val1 < arr->min1) return false;
+		if (val1 > arr->max1) return false;
+		if (val2 < arr->min2) return false;
+		if (val2 > arr->max2) return false;
+
+		*arr->iVal = val1;
+		*arr->iVal2 = val2;
+
+		if (arr->func)
+		{
+			ApolloRTCCMFD *ptr = arr->ptr;
+			void (ApolloRTCCMFD::*func)(void) = arr->func;
+
+			(ptr->*func)();
+		}
+		return true;
+	}
+	return false;
+}
+
+void ApolloRTCCMFD::GenericVectorInput(VECTOR3 *val, char* message, double factor, void(ApolloRTCCMFD::*func)(void))
 {
 	void *data2;
 
 	tempData.vVal = val;
 	tempData.factor = factor;
+	tempData.ptr = this;
+	tempData.func = func;
 	data2 = &tempData;
 
 	bool GenericVectorInputBox(void *id, char *str, void *data);
@@ -1521,6 +1616,14 @@ bool GenericVectorInputBox(void *id, char *str, void *data)
 		arr->vVal->x = val1 * arr->factor;
 		arr->vVal->y = val2 * arr->factor;
 		arr->vVal->z = val3 * arr->factor;
+
+		if (arr->func)
+		{
+			ApolloRTCCMFD *ptr = arr->ptr;
+			void (ApolloRTCCMFD::*func)(void) = arr->func;
+
+			(ptr->*func)();
+		}
 		return true;
 	}
 	return false;
@@ -2195,29 +2298,91 @@ void ApolloRTCCMFD::menuTransferGPMToMPT()
 	G->TransferGPMToMPT();
 }
 
-void ApolloRTCCMFD::menuMissionNumberInput()
+void ApolloRTCCMFD::menuLoadSystemParametersFile()
 {
-	bool MissionNumberInput(void *id, char *str, void *data);
-	oapiOpenInputBox("Choose the mission number (7 to 17, 0 for custom mission):", MissionNumberInput, 0, 20, (void*)this);
+	bool LoadSystemParametersFileInput(void *id, char *str, void *data);
+	oapiOpenInputBox("Enter name of systems parameters file:", LoadSystemParametersFileInput, 0, 20, (void*)this);
 }
 
-bool MissionNumberInput(void *id, char *str, void *data)
+bool LoadSystemParametersFileInput(void *id, char *str, void *data)
 {
-	int Num;
-	if (sscanf(str, "%d", &Num) == 1)
+	((ApolloRTCCMFD*)data)->LoadSystemParametersFile(str);
+	return true;
+}
+
+void ApolloRTCCMFD::LoadSystemParametersFile(char *file)
+{
+	if (GC->rtcc->LoadMissionConstantsFile(file))
 	{
-		((ApolloRTCCMFD*)data)->set_MissionNumber(Num);
-
-		return true;
-
+		GC->rtcc->SystemParametersFile.assign(file);
+		status = 1;
 	}
-	return false;
+	else
+	{
+		status = 2;
+	}
 }
 
-void ApolloRTCCMFD::set_MissionNumber(int mission)
+void ApolloRTCCMFD::menuLoadTLIFile()
 {
-	GC->mission = mission;
-	GC->SetMissionSpecificParameters();
+	bool LoadTLIFileInput(void *id, char *str, void *data);
+	oapiOpenInputBox("Enter name of TLI file:", LoadTLIFileInput, 0, 20, (void*)this);
+}
+
+bool LoadTLIFileInput(void *id, char *str, void *data)
+{
+	((ApolloRTCCMFD*)data)->LoadTLIFile(str);
+	return true;
+}
+
+void ApolloRTCCMFD::LoadTLIFile(char *file)
+{
+	int err = GC->rtcc->QMMBLD(file);
+
+	if (err == 0)
+	{
+		GC->rtcc->TLIFile.assign(file);
+		status = 1; //All good
+	}
+	else if (err == 1)
+	{
+		status = 2; //File not found
+	}
+	else
+	{
+		status = 3; //Other error
+	}
+}
+
+void ApolloRTCCMFD::menuLoadSFPFile()
+{
+	bool LoadSFPFileInput(void *id, char *str, void *data);
+	oapiOpenInputBox("Enter name of SFP file:", LoadSFPFileInput, 0, 20, (void*)this);
+}
+
+bool LoadSFPFileInput(void *id, char *str, void *data)
+{
+	((ApolloRTCCMFD*)data)->LoadSFPFile(str);
+	return true;
+}
+
+void ApolloRTCCMFD::LoadSFPFile(char *file)
+{
+	int err = GC->rtcc->QMSEARCH(file);
+
+	if (err == 0)
+	{
+		GC->rtcc->SFPFile.assign(file);
+		status = 1; //All good
+	}
+	else if (err == 1)
+	{
+		status = 2; //File not found
+	}
+	else
+	{
+		status = 3; //Other error
+	}
 }
 
 void ApolloRTCCMFD::menuMPTDirectInputMPTCode()
@@ -2468,9 +2633,9 @@ void ApolloRTCCMFD::menuCycleGMPManeuverType()
 	G->DetermineGMPCode();
 }
 
-void ApolloRTCCMFD::menuCycleGMPMarkerUp()
+void ApolloRTCCMFD::menuCycleMarkerUp()
 {
-	if (marker >= 8)
+	if (marker >= markermax)
 	{
 		marker = 0;
 	}
@@ -2480,11 +2645,11 @@ void ApolloRTCCMFD::menuCycleGMPMarkerUp()
 	}
 }
 
-void ApolloRTCCMFD::menuCycleGMPMarkerDown()
+void ApolloRTCCMFD::menuCycleMarkerDown()
 {
 	if (marker <= 0)
 	{
-		marker = 8;
+		marker = markermax;
 	}
 	else
 	{
@@ -2512,29 +2677,20 @@ void ApolloRTCCMFD::menuSetGMPInput()
 	}
 	else if (marker == 4)
 	{
-		menuCycleOrbAdjAltRef();
+		GMPInput1Dialogue();
 	}
 	else if (marker == 5)
 	{
-		GMPInput1Dialogue();
+		GMPInput2Dialogue();
 	}
 	else if (marker == 6)
 	{
-		GMPInput2Dialogue();
+		GMPInput3Dialogue();
 	}
 	else if (marker == 7)
 	{
-		GMPInput3Dialogue();
-	}
-	else if (marker == 8)
-	{
 		GMPInput4Dialogue();
 	}
-}
-
-void ApolloRTCCMFD::menuCycleOrbAdjAltRef()
-{
-	G->OrbAdjAltRef = !G->OrbAdjAltRef;
 }
 
 void ApolloRTCCMFD::GPMPCalc()
@@ -2723,20 +2879,6 @@ bool SPQGETInput(void *id, char *str, void *data)
 
 		return true;
 	}
-	else if (strcmp(str, "PeT") == 0)
-	{
-		double pet;
-		pet = ((ApolloRTCCMFD*)data)->timetoperi();
-		((ApolloRTCCMFD*)data)->set_SPQtime(pet);
-		return true;
-	}
-	else if (strcmp(str, "ApT") == 0)
-	{
-		double pet;
-		pet = ((ApolloRTCCMFD*)data)->timetoapo();
-		((ApolloRTCCMFD*)data)->set_SPQtime(pet);
-		return true;
-	}
 	return false;
 }
 
@@ -2777,17 +2919,20 @@ void ApolloRTCCMFD::set_RTED_REFSMMAT(char *str)
 void ApolloRTCCMFD::menuSetRTEDUllage()
 {
 	bool SetRTEDUllageInput(void* id, char *str, void *data);
-	oapiOpenInputBox("Set number of thrusters and duration of ullage (Format: Num Time):", SetRTEDUllageInput, 0, 20, (void*)this);
+	oapiOpenInputBox("Set number of thrusters (All) and duration of ullage (SPS, DPS only). Format: Num Time", SetRTEDUllageInput, 0, 20, (void*)this);
 }
 
 bool SetRTEDUllageInput(void *id, char *str, void *data)
 {
-	double duration;
+	double duration = 0.0;
 	int num;
-	if (sscanf(str, "%d %lf", &num, &duration) == 2)
+	if (sscanf(str, "%d %lf", &num, &duration) >= 1)
 	{
-		((ApolloRTCCMFD*)data)->set_RTEDUllage(num, duration);
-		return true;
+		if (abs(num) == 2 || abs(num) == 4)
+		{
+			((ApolloRTCCMFD*)data)->set_RTEDUllage(num, duration);
+			return true;
+		}
 	}
 	return false;
 }
@@ -2836,12 +2981,12 @@ bool EntryDesiredInclinationInput(void *id, char *str, void *data)
 		{
 			if (strcmp(dir, "A") == 0)
 			{
-				((ApolloRTCCMFD*)data)->set_EntryDesiredInclination(-inc);
+				((ApolloRTCCMFD*)data)->set_EntryDesiredInclination(inc);
 				return true;
 			}
 			else if (strcmp(dir, "D") == 0)
 			{
-				((ApolloRTCCMFD*)data)->set_EntryDesiredInclination(inc);
+				((ApolloRTCCMFD*)data)->set_EntryDesiredInclination(-inc);
 				return true;
 			}
 		}
@@ -2984,10 +3129,14 @@ void ApolloRTCCMFD::set_sextantstartime(double time)
 
 void ApolloRTCCMFD::REFSMMATTimeDialogue()
 {
-	if (G->REFSMMATopt == 2 || G->REFSMMATopt == 6)
+	if (G->REFSMMATopt == 2)
 	{
 		bool REFSMMATGETInput(void *id, char *str, void *data);
 		oapiOpenInputBox("Choose the GET (Format: hhh:mm:ss)", REFSMMATGETInput, 0, 20, (void*)this);
+	}
+	else if (G->REFSMMATopt == 6)
+	{
+		GenericDoubleInput(&GC->REFSMMAT_PTC_MJD, "Enter MJD of average time of TEI:");
 	}
 	else if (G->REFSMMATopt == 5 || G->REFSMMATopt == 8)
 	{
@@ -2997,15 +3146,12 @@ void ApolloRTCCMFD::REFSMMATTimeDialogue()
 
 void ApolloRTCCMFD::UploadREFSMMAT()
 {
-	if (!G->inhibUplLOS || !G->vesselinLOS())
-	{
-		G->REFSMMATUplink(screen == 53);
-	}
+	G->REFSMMATUplink(screen == 53);
 }
 
 void ApolloRTCCMFD::set_REFSMMATTime(double time)
 {
-	this->G->REFSMMATTime = time;
+	G->REFSMMAT_LVLH_Time = time;
 }
 
 void ApolloRTCCMFD::menuREFSMMATLockerMovement()
@@ -3749,132 +3895,125 @@ void ApolloRTCCMFD::menuTransferPoweredDescentToMPT()
 	G->TransferPoweredDescentToMPT();
 }
 
-void ApolloRTCCMFD::menuMPTMEDM49()
+void ApolloRTCCMFD::menuCycleMPTTable()
 {
-	bool menuMPTMEDM49Input(void* id, char *str, void *data);
-	oapiOpenInputBox("Change fuel remaining. Format: M49,MPT code (CSM or LEM),SPS fuel, CSM RCS fuel, S4B fuel, LM APS fuel,LM RCS fuel,LM DPS fuel; (Negative will be ignored)", menuMPTMEDM49Input, "M49,CSM,-1,-1,-1,-1,-1,-1;", 50, (void*)this);
-}
-
-bool menuMPTMEDM49Input(void* id, char *str, void *data)
-{
-	((ApolloRTCCMFD*)data)->GeneralMEDRequest(str);
-	return true;
-}
-
-void ApolloRTCCMFD::menuMPTInitM50M55Table()
-{
-	if (GC->rtcc->med_m50.Table == RTCC_MPT_CSM)
+	if (GC->rtcc->med_m49.Table == RTCC_MPT_CSM)
 	{
-		GC->rtcc->med_m50.Table = RTCC_MPT_LM;
-		GC->rtcc->med_m55.Table = RTCC_MPT_LM;
+		GC->rtcc->med_m49.Table = GC->rtcc->med_m50.Table = GC->rtcc->med_m51.Table = GC->rtcc->med_m55.Table = RTCC_MPT_LM;
 	}
 	else
 	{
-		GC->rtcc->med_m50.Table = RTCC_MPT_CSM;
-		GC->rtcc->med_m55.Table = RTCC_MPT_CSM;
+		GC->rtcc->med_m49.Table = GC->rtcc->med_m50.Table = GC->rtcc->med_m51.Table = GC->rtcc->med_m55.Table = RTCC_MPT_CSM;
 	}
 }
 
-void ApolloRTCCMFD::menuMPTInitM50CSMWT()
+void ApolloRTCCMFD::menuCycleMPTMED()
 {
-	bool MPTInitM50CSMWTInput(void* id, char *str, void *data);
-	oapiOpenInputBox("Input CSM mass in lbs (negative number for no update):", MPTInitM50CSMWTInput, 0, 20, (void*)this);
-}
-
-bool MPTInitM50CSMWTInput(void* id, char *str, void *data)
-{
-	double mass;
-
-	if (sscanf(str, "%lf", &mass) == 1)
+	if (G->mptinitmode < 3)
 	{
-		((ApolloRTCCMFD*)data)->set_MPTInitM50CSMWT(mass);
-
-		return true;
+		G->mptinitmode++;
 	}
-	return false;
-}
-
-void ApolloRTCCMFD::set_MPTInitM50CSMWT(double mass)
-{
-	GC->rtcc->med_m50.CSMWT = mass * 0.45359237;
-}
-
-void ApolloRTCCMFD::menuMPTInitM50LMWT()
-{
-	bool MPTInitM50LMWTInput(void* id, char *str, void *data);
-	oapiOpenInputBox("Input LM total mass in lbs (negative number for no update):", MPTInitM50LMWTInput, 0, 20, (void*)this);
-}
-
-bool MPTInitM50LMWTInput(void* id, char *str, void *data)
-{
-	double mass;
-
-	if (sscanf(str, "%lf", &mass) == 1)
+	else
 	{
-		((ApolloRTCCMFD*)data)->set_MPTInitM50LMWT(mass);
-
-		return true;
+		G->mptinitmode = 0;
 	}
-	return false;
 }
 
-void ApolloRTCCMFD::set_MPTInitM50LMWT(double mass)
+void ApolloRTCCMFD::menuSetMPTInitInput()
 {
-	GC->rtcc->med_m50.LMWT = mass * 0.45359237;
-}
-
-void ApolloRTCCMFD::menuMPTInitM50LMAscentWT()
-{
-	bool MPTInitM50LMAscentWTInput(void* id, char *str, void *data);
-	oapiOpenInputBox("Input LM ascent stage mass in lbs (negative number for no update):", MPTInitM50LMAscentWTInput, 0, 20, (void*)this);
-}
-
-bool MPTInitM50LMAscentWTInput(void* id, char *str, void *data)
-{
-	double mass;
-
-	if (sscanf(str, "%lf", &mass) == 1)
+	switch (marker)
 	{
-		((ApolloRTCCMFD*)data)->set_MPTInitM50LMAscentWT(mass);
-
-		return true;
+	case 0: //Second option on MED
+		switch (G->mptinitmode)
+		{
+		case 0: //M49: SPS Fuel Remaining
+			GenericDoubleInput(&GC->rtcc->med_m49.SPSFuelRemaining, "Input SPS fuel in lbs (negative number for no update):", 0.45359237);
+			break;
+		case 1: //M50: CSM Weight
+			GenericDoubleInput(&GC->rtcc->med_m50.CSMWT, "Input CSM mass in lbs (negative number for no update):", 0.45359237);
+			break;
+		case 2: //M51: CSM Area
+			GenericDoubleInput(&GC->rtcc->med_m51.CSMArea, "Input CSM area in square feet (negative number for no update):", 0.3048*0.3048);
+			break;
+		case 3: //M55: Config
+		{
+			bool MPTInitM55ConfigInput(void* id, char *str, void *data);
+			oapiOpenInputBox("Any combination of C (CSM), S (SIVB), L (Ascent+Descent), A (Ascent Only), D (Descent Only)", MPTInitM55ConfigInput, 0, 20, (void*)this);
+		}
+		break;
+		}
+		break;
+	case 1: //Third option on MED
+		switch (G->mptinitmode)
+		{
+		case 0: //M49: CSM RCS Fuel Remaining
+			GenericDoubleInput(&GC->rtcc->med_m49.CSMRCSFuelRemaining, "Input CSM RCS fuel in lbs (negative number for no update):", 0.45359237);
+			break;
+		case 1: //M50: S-IVB Weight
+			GenericDoubleInput(&GC->rtcc->med_m50.SIVBWT, "Input S-IVB stage mass in lbs (negative number for no update):", 0.45359237);
+			break;
+		case 2: //M51: S-IVB Area
+			GenericDoubleInput(&GC->rtcc->med_m51.SIVBArea, "Input S-IVB area in square feet (negative number for no update):", 0.3048*0.3048);
+			break;
+		case 3: //M55: GET to start venting/initial weights
+			GenericGETInput(&GC->rtcc->med_m55.VentingGET, "Time of initial weights/start of S-IVB venting (negative number for no update):");
+			break;
+		}
+		break;
+	case 2: //Fourth option on MED
+		switch (G->mptinitmode)
+		{
+		case 0: //M49: S-IVB Fuel Remaining
+			GenericDoubleInput(&GC->rtcc->med_m49.SIVBFuelRemaining, "Input S-IVB fuel in lbs (negative number for no update):", 0.45359237);
+			break;
+		case 1: //M50: LM Total Weight
+			GenericDoubleInput(&GC->rtcc->med_m50.LMWT, "Input LM total mass in lbs (negative number for no update):", 0.45359237);
+			break;
+		case 2: //M51: LM Ascent Area
+			GenericDoubleInput(&GC->rtcc->med_m51.LMAscentArea, "Input LM ascent stage area in square feet (negative number for no update):", 0.3048*0.3048);
+			break;
+		case 3: //M55: Delta Docking Angle
+			GenericDoubleInput(&GC->rtcc->med_m55.DeltaDockingAngle, "Delta docking angle (negative number for no update):", RAD);
+			break;
+		}
+		break;
+	case 3: //Fifth option on MED
+		switch (G->mptinitmode)
+		{
+		case 0: //M49: LM APS Fuel Remaining
+			GenericDoubleInput(&GC->rtcc->med_m49.LMAPSFuelRemaining, "Input LM APS fuel in lbs (negative number for no update):", 0.45359237);
+			break;
+		case 1: //M50: LM Ascent Weight
+			GenericDoubleInput(&GC->rtcc->med_m50.LMASCWT, "Input LM ascent stage mass in lbs (negative number for no update):", 0.45359237);
+			break;
+		case 2: //M51: LM Descent Area
+			GenericDoubleInput(&GC->rtcc->med_m51.LMDescentArea, "Input LM descent stage area in square feet (negative number for no update):", 0.3048*0.3048);
+			break;
+		}
+		break;
+	case 4: //Sixth option on MED
+		switch (G->mptinitmode)
+		{
+		case 0: //M49: LM RCS Fuel Remaining
+			GenericDoubleInput(&GC->rtcc->med_m49.LMRCSFuelRemaining, "Input LM RCS fuel in lbs (negative number for no update):", 0.45359237);
+			break;
+		case 1: //M50: Time of weights
+			GenericGETInput(&GC->rtcc->med_m50.WeightGET, "GET when weights are valid:");
+			break;
+		case 2: //M51: K-Factor
+			GenericDoubleInput(&GC->rtcc->med_m51.KFactor, "Input K-Factor feet (-30 to +30):", 1.0);
+			break;
+		}
+		break;
+	case 5: //Seventh option on MED
+		switch (G->mptinitmode)
+		{
+		case 0: //M49: LM DPS Fuel Remaining
+			GenericDoubleInput(&GC->rtcc->med_m49.LMDPSFuelRemaining, "Input DPS fuel in lbs (negative number for no update):", 0.45359237);
+			break;
+		}
+		break;
 	}
-	return false;
-}
-
-void ApolloRTCCMFD::set_MPTInitM50LMAscentWT(double mass)
-{
-	GC->rtcc->med_m50.LMASCWT = mass * 0.45359237;
-}
-
-void ApolloRTCCMFD::menuMPTInitM50SIVBWT()
-{
-	bool MPTInitM50SIVBWTInput(void* id, char *str, void *data);
-	oapiOpenInputBox("Input S-IVB stage mass in lbs (negative number for no update):", MPTInitM50SIVBWTInput, 0, 20, (void*)this);
-}
-
-bool MPTInitM50SIVBWTInput(void* id, char *str, void *data)
-{
-	double mass;
-
-	if (sscanf(str, "%lf", &mass) == 1)
-	{
-		((ApolloRTCCMFD*)data)->set_MPTInitM50SIVBWT(mass);
-
-		return true;
-	}
-	return false;
-}
-
-void ApolloRTCCMFD::set_MPTInitM50SIVBWT(double mass)
-{
-	GC->rtcc->med_m50.SIVBWT = mass * 0.45359237;
-}
-
-void ApolloRTCCMFD::menuMPTInitM55Config()
-{
-	bool MPTInitM55ConfigInput(void* id, char *str, void *data);
-	oapiOpenInputBox("Any combination of C (CSM), S (SIVB), L (Ascent+Descent), A (Ascent Only), D (Descent Only)", MPTInitM55ConfigInput, 0, 20, (void*)this);
 }
 
 bool MPTInitM55ConfigInput(void* id, char *str, void *data)
@@ -3888,28 +4027,35 @@ void ApolloRTCCMFD::set_MPTInitM55Config(char *cfg)
 	GC->rtcc->med_m55.ConfigCode.assign(cfg);
 }
 
-void ApolloRTCCMFD::menuMPTM50Update()
+void ApolloRTCCMFD::menuMPTUpdate()
 {
-	GC->rtcc->med_m50.WeightGET = GC->rtcc->GETfromGMT(GC->rtcc->RTCCPresentTimeGMT());
-	if (GC->rtcc->PMMWTC(50))
+	int med;
+
+	switch (G->mptinitmode)
+	{
+	case 0:
+		med = 49;
+		break;
+	case 1:
+		med = 50;
+		break;
+	case 2:
+		med = 51;
+		break;
+	case 3:
+		med = 55;
+		break;
+	default:
+		return;
+	}
+
+	if (GC->rtcc->PMMWTC(med))
 	{
 		GC->mptInitError = 2;
 	}
 	else
 	{
 		GC->mptInitError = 1;
-	}
-}
-
-void ApolloRTCCMFD::menuMPTM55Update()
-{
-	if (GC->rtcc->PMMWTC(55))
-	{
-		GC->mptInitError = 4;
-	}
-	else
-	{
-		GC->mptInitError = 3;
 	}
 }
 
@@ -4224,7 +4370,10 @@ void ApolloRTCCMFD::VectorControlPBI(int code)
 
 void ApolloRTCCMFD::menuMPTInitAutoUpdate()
 {
-	GC->MPTMassUpdate();
+	if (G->mptinitmode != 2)
+	{
+		GC->MPTMassUpdate();
+	}
 }
 
 void ApolloRTCCMFD::menuMPTInitM50M55Vehicle()
@@ -4257,45 +4406,10 @@ bool CheckoutMonitorCalcInput(void *id, char *str, void *data)
 	return true;
 }
 
-double ApolloRTCCMFD::timetoperi()
-{
-	VECTOR3 R, V;
-	double mu,pet, mjd;
-	OBJHANDLE gravref = GC->rtcc->AGCGravityRef(G->vessel);
-
-	G->vessel->GetRelativePos(gravref, R);
-	G->vessel->GetRelativeVel(gravref, V);
-	mu = GGRAV*oapiGetMass(gravref);
-	pet = OrbMech::timetoperi(R, V, mu);
-	mjd = oapiTime2MJD(oapiGetSimTime() + pet);
-	return (mjd - GC->rtcc->CalcGETBase())*24.0*3600.0;
-}
-
-double ApolloRTCCMFD::timetoapo()
-{
-	VECTOR3 R, V;
-	double mu, pet, mjd;
-	OBJHANDLE gravref = GC->rtcc->AGCGravityRef(G->vessel);
-
-	G->vessel->GetRelativePos(gravref, R);
-	G->vessel->GetRelativeVel(gravref, V);
-	mu = GGRAV*oapiGetMass(gravref);
-	pet = OrbMech::timetoapo(R, V, mu);
-	mjd = oapiTime2MJD(oapiGetSimTime() + pet);
-	return (mjd - GC->rtcc->CalcGETBase())*24.0*3600.0;
-}
-
 bool REFSMMATGETInput(void *id, char *str, void *data)
 {
 	int hh, mm, ss, t1time;
-	if (strcmp(str, "PeT") == 0)
-	{
-		double pet;
-		pet = ((ApolloRTCCMFD*)data)->timetoperi();
-		((ApolloRTCCMFD*)data)->set_REFSMMATTime(pet);
-		return true;
-	}
-	else if (sscanf(str, "%d:%d:%d", &hh, &mm, &ss) == 3)
+	if (sscanf(str, "%d:%d:%d", &hh, &mm, &ss) == 3)
 	{
 		t1time = ss + 60 * (mm + 60 * hh);
 		((ApolloRTCCMFD*)data)->set_REFSMMATTime(t1time);
@@ -4656,7 +4770,7 @@ void ApolloRTCCMFD::set_SVtime(double SVtime)
 
 void ApolloRTCCMFD::menuUpdateGRRTime()
 {
-	G->UpdateGRRTime();
+	G->UpdateGRRTime(G->svtarget);
 }
 
 void ApolloRTCCMFD::menuSetAGSKFactor()
@@ -4707,20 +4821,31 @@ void ApolloRTCCMFD::menuCycleK30Vehicle()
 	}
 }
 
+void ApolloRTCCMFD::menuSLVLaunchTargetingPad()
+{
+	if (GC->rtcc->PZSLVCON.Pad == 1)
+	{
+		GC->rtcc->PZSLVCON.Pad = 2;
+	}
+	else
+	{
+		GC->rtcc->PZSLVCON.Pad = 1;
+	}
+}
+
 void ApolloRTCCMFD::menuSLVLaunchTargeting()
 {
-	if (GC->mission < 8 || GC->mission > 17)
-	{
-		G->SkylabSaturnIBLaunchCalc();
-	}
+	G->SkylabSaturnIBLaunchCalc();
 }
 
 void ApolloRTCCMFD::menuSLVLaunchUplink()
 {
-	if (GC->mission < 8 || GC->mission > 17)
-	{
-		G->SkylabSaturnIBLaunchUplink();
-	}
+	G->SkylabSaturnIBLaunchUplink();
+}
+
+void ApolloRTCCMFD::menuSLVTLITargetingUplink()
+{
+	G->SaturnVTLITargetUplink();
 }
 
 void ApolloRTCCMFD::set_target()
@@ -5116,15 +5241,27 @@ bool ApolloRTCCMFD::set_RTESolution(char *str)
 
 	if (i < 2)
 	{
-		G->P30TIG = GC->rtcc->PZREAP.RTEDTable[i].GETI;
-		G->dV_LVLH = GC->rtcc->PZREAP.RTEDTable[i].DV_XDV;
+		RTEDigitalSolutionTable *tab = &GC->rtcc->PZREAP.RTEDTable[i];
+		if (tab->RTEDCode != "")
+		{
+			G->P30TIG = tab->GETI;
+			G->dV_LVLH = tab->DV_XDV;
+			G->manpadenginetype = tab->ThrusterCode;
+			G->manpad_ullage_dt = tab->dt_ullage;
+			G->manpad_ullage_opt = tab->NumQuads == 4 ? true : false;
+			G->HeadsUp = tab->HeadsUpDownIndicator;
+		}
 	}
 	else
 	{
-		if (GC->rtcc->RZRFDP.Indicator == 0)
+		if (GC->rtcc->RZRFDP.data[2].Indicator == 0)
 		{
-			G->P30TIG = GC->rtcc->RZRFDP.GETI;
+			G->P30TIG = GC->rtcc->RZRFDP.data[2].GETI;
 			G->dV_LVLH = GC->rtcc->RZRFTT.Manual.DeltaV;
+			G->manpadenginetype = GC->rtcc->RZRFTT.Manual.Thruster;
+			G->manpad_ullage_dt = GC->rtcc->RZRFTT.Manual.dt_ullage;
+			G->manpad_ullage_opt = GC->rtcc->RZRFTT.Manual.UllageThrusterOption;
+			G->HeadsUp = true;
 		}
 	}
 	return true;
@@ -5219,28 +5356,25 @@ void ApolloRTCCMFD::menuSwitchSVSlot()
 
 void ApolloRTCCMFD::menuSVUpload()
 {
-	if (!G->inhibUplLOS || !G->vesselinLOS())
+	int type;
+	switch (screen)
 	{
-		int type;
-		switch (screen)
-		{
-		case 48:
-			type = 0;
-			break;
-		case 99:
-			type = 9;
-			break;
-		case 100:
-			type = 21;
-			break;
-		case 101:
-			type = 20;
-			break;
-		default:
-			return;
-		}
-		G->StateVectorUplink(type);
+	case 48:
+		type = 0;
+		break;
+	case 99:
+		type = 9;
+		break;
+	case 100:
+		type = 21;
+		break;
+	case 101:
+		type = 20;
+		break;
+	default:
+		return;
 	}
+	G->StateVectorUplink(type);
 }
 
 void ApolloRTCCMFD::menuCSMLSUplinkCalc()
@@ -5255,18 +5389,12 @@ void ApolloRTCCMFD::menuLMLSUplinkCalc()
 
 void ApolloRTCCMFD::menuCSMLSUpload()
 {
-	if (!G->inhibUplLOS || !G->vesselinLOS())
-	{
-		G->CSMLandingSiteUplink();
-	}
+	G->CSMLandingSiteUplink();
 }
 
 void ApolloRTCCMFD::menuLMLSUpload()
 {
-	if (!G->inhibUplLOS || !G->vesselinLOS())
-	{
-		G->LMLandingSiteUplink();
-	}
+	G->LMLandingSiteUplink();
 }
 
 void ApolloRTCCMFD::menuREFSMMATUplinkCalc()
@@ -5446,11 +5574,6 @@ void ApolloRTCCMFD::menuSetMapUpdateGET()
 	GenericGETInput(&G->mapUpdateGET, "Choose the GET for the anchor vector (Format: hhh:mm:ss)");
 }
 
-void ApolloRTCCMFD::menuSwitchUplinkInhibit()
-{
-	G->inhibUplLOS = !G->inhibUplLOS;
-}
-
 void ApolloRTCCMFD::menuCycleSPQMode()
 {
 	if (G->SPQMode < 2)
@@ -5532,31 +5655,6 @@ void ApolloRTCCMFD::set_LaunchTime(int hours, int minutes, double seconds)
 	GC->rtcc->GMGMED(Buff);
 }
 
-void ApolloRTCCMFD::menuSetAGCEpoch()
-{
-	if (GC->mission == 0)
-	{
-		bool AGCEpochInput(void *id, char *str, void *data);
-		oapiOpenInputBox("Choose the AGC Epoch:", AGCEpochInput, 0, 20, (void*)this);
-	}
-}
-
-bool AGCEpochInput(void *id, char *str, void *data)
-{
-	if (strlen(str)<20)
-	{
-		((ApolloRTCCMFD*)data)->set_AGCEpoch(atoi(str));
-		return true;
-	}
-	return false;
-}
-
-void ApolloRTCCMFD::set_AGCEpoch(int epoch)
-{
-	this->GC->rtcc->SystemParameters.AGCEpoch = epoch;
-	GC->rtcc->SystemParameters.MAT_J2000_BRCS = OrbMech::J2000EclToBRCS(epoch);
-}
-
 void ApolloRTCCMFD::menuChangeVesselStatus()
 {
 	if (G->vesselisdocked == false && G->vessel->DockingStatus(0) == 1)
@@ -5574,64 +5672,32 @@ void ApolloRTCCMFD::menuCycleLMStage()
 	G->lemdescentstage = !G->lemdescentstage;
 }
 
-void ApolloRTCCMFD::AGCSignedValue(int &val)
-{
-	if (val > 037777)
-		val = -(077777 - val);
-}
-
 void ApolloRTCCMFD::menuUpdateLiftoffTime()
 {
 	if (G->vesseltype < 0 || G->vesseltype > 1) return;
 
-	double TEPHEM0, LaunchMJD;
+	double LaunchMJD;
 
-	if (GC->mission < 11)		//NBY 1968/1969
-	{
-		TEPHEM0 = 40038.;
-	}
-	else if (GC->mission < 14)	//NBY 1969/1970
-	{
-		TEPHEM0 = 40403.;
-	}
-	else if (GC->mission < 15)	//NBY 1970/1971
-	{
-		TEPHEM0 = 40768.;
-	}
-	else						//NBY 1971/1972
-	{
-		TEPHEM0 = 41133.;
-	}
-
-	int tephem_int[3];
+	agc_t *agc;
 
 	if (G->vesseltype == 0)
 	{
 		saturn = (Saturn *)G->vessel;
 
-		tephem_int[0] = saturn->agc.vagc.Erasable[0][01706];
-		tephem_int[1] = saturn->agc.vagc.Erasable[0][01707];
-		tephem_int[2] = saturn->agc.vagc.Erasable[0][01710];
+		agc = &saturn->agc.vagc;
 	}
 	else
 	{
 		lem = (LEM *)G->vessel;
 
-		tephem_int[0] = lem->agc.vagc.Erasable[0][01706];
-		tephem_int[1] = lem->agc.vagc.Erasable[0][01707];
-		tephem_int[2] = lem->agc.vagc.Erasable[0][01710];
+		agc = &lem->agc.vagc;
 	}
 
-	//Make negative numbers actually negative
-	for (int i = 0;i < 3;i++)
-	{
-		AGCSignedValue(tephem_int[i]);
-	}
+	//Get TEPHEM in centiseconds
+	double tephem = GC->rtcc->GetTEPHEMFromAGC(agc);
 
-	//Calculate TEPHEM in centiseconds
-	double tephem = tephem_int[2] + tephem_int[1] * pow((double) 2., (double) 14.) + tephem_int[0] * pow((double) 2., (double) 28.);
 	//Calculate MJD of TEPHEM
-	LaunchMJD = (tephem / 8640000.) + TEPHEM0;
+	LaunchMJD = (tephem / 8640000.) + GC->rtcc->SystemParameters.TEPHEM0;
 
 	//Calculate MJD at midnight of launch day
 	double GMTBase = floor(LaunchMJD);
@@ -5651,6 +5717,9 @@ void ApolloRTCCMFD::menuUpdateLiftoffTime()
 	//Update GMT of zeroing LGC clock
 	sprintf_s(Buff, "P15,LGC,%d:%d:%.2lf;", hh, mm, ss);
 	GC->rtcc->GMGMED(Buff);
+
+	//Also update IU, if possible
+	G->UpdateGRRTime(G->vessel);
 }
 
 void ApolloRTCCMFD::cycleREFSMMATHeadsUp()
@@ -5770,6 +5839,14 @@ void ApolloRTCCMFD::GetREFSMMATfromAGC()
 	G->REFSMMATcur = G->REFSMMATopt;
 
 	//sprintf(oapiDebugString(), "%f, %f, %f, %f, %f, %f, %f, %f, %f", G->REFSMMAT.m11, G->REFSMMAT.m12, G->REFSMMAT.m13, G->REFSMMAT.m21, G->REFSMMAT.m22, G->REFSMMAT.m23, G->REFSMMAT.m31, G->REFSMMAT.m32, G->REFSMMAT.m33);
+}
+
+void ApolloRTCCMFD::menuCycleLunarEntryPADSxtOption()
+{
+	if (G->entrypadopt == 1)
+	{
+		G->EntryPADSxtStarCheckAttOpt = !G->EntryPADSxtStarCheckAttOpt;
+	}
 }
 
 void ApolloRTCCMFD::GetEntryTargetfromAGC()
@@ -6337,189 +6414,9 @@ void ApolloRTCCMFD::menuLDPPCalc()
 	menuSetDescPlanTablePage();
 }
 
-void ApolloRTCCMFD::menuSwitchSkylabManeuver()
-{
-	if (G->Skylabmaneuver < 7)
-	{
-		G->Skylabmaneuver++;
-	}
-	else
-	{
-		G->Skylabmaneuver = 0;
-	}
-}
-
-void ApolloRTCCMFD::menuCyclePlaneChange()
-{
-	if (G->Skylabmaneuver == 1 || G->Skylabmaneuver == 2)
-	{
-		G->Skylab_NPCOption = !G->Skylab_NPCOption;
-	}
-}
-
-void ApolloRTCCMFD::menuCyclePCManeuver()
-{
-	if (G->Skylabmaneuver == 7)
-	{
-		G->Skylab_PCManeuver = !G->Skylab_PCManeuver;
-	}
-}
-
-void ApolloRTCCMFD::menuSetSkylabGET()
-{
-	if (G->Skylabmaneuver == 5)
-	{
-		if (G->target == NULL)
-		{
-			return;
-		}
-
-		double mu, SVMJD, dt1;
-		VECTOR3 RA0_orb, VA0_orb, RP0_orb, VP0_orb, RA0, VA0, RP0, VP0;
-		OBJHANDLE gravref = GC->rtcc->AGCGravityRef(G->vessel);
-
-		mu = GGRAV*oapiGetMass(gravref);
-
-		G->vessel->GetRelativePos(gravref, RA0_orb);
-		G->vessel->GetRelativeVel(gravref, VA0_orb);
-		G->target->GetRelativePos(gravref, RP0_orb);
-		G->target->GetRelativeVel(gravref, VP0_orb);
-		SVMJD = oapiGetSimMJD();
-
-		RA0 = _V(RA0_orb.x, RA0_orb.z, RA0_orb.y);	//The following equations use another coordinate system than Orbiter
-		VA0 = _V(VA0_orb.x, VA0_orb.z, VA0_orb.y);
-		RP0 = _V(RP0_orb.x, RP0_orb.z, RP0_orb.y);
-		VP0 = _V(VP0_orb.x, VP0_orb.z, VP0_orb.y);
-
-		dt1 = OrbMech::findelev(RA0, VA0, RP0, VP0, SVMJD, G->Skylab_E_L, gravref);
-		G->t_TPI = dt1 + (SVMJD - GC->rtcc->CalcGETBase()) * 24.0 * 60.0 * 60.0;
-	}
-	else if (G->Skylabmaneuver == 6)
-	{
-		bool SkylabDTTPMInput(void *id, char *str, void *data);
-		oapiOpenInputBox("Choose the relative time to TPI for the maneuver", SkylabDTTPMInput, 0, 20, (void*)this);
-	}
-	else
-	{
-		bool SkylabGETInput(void *id, char *str, void *data);
-		oapiOpenInputBox("Choose the GET for the maneuver (Format: hhh:mm:ss)", SkylabGETInput, 0, 20, (void*)this);
-	}
-}
-
-bool SkylabGETInput(void *id, char *str, void *data)
-{
-	int hh, mm, ss, t1time;
-	if (sscanf(str, "TPI=%d:%d:%d", &hh, &mm, &ss) == 3)
-	{
-		t1time = ss + 60 * (mm + 60 * hh);
-		((ApolloRTCCMFD*)data)->set_t_TPI(t1time);
-		return true;
-	}
-	else if (strcmp(str, "PeT") == 0)
-	{
-		double pet;
-		pet = ((ApolloRTCCMFD*)data)->timetoperi();
-		((ApolloRTCCMFD*)data)->set_SkylabGET(pet);
-		return true;
-	}
-	else if (strcmp(str, "ApT") == 0)
-	{
-		double pet;
-		pet = ((ApolloRTCCMFD*)data)->timetoapo();
-		((ApolloRTCCMFD*)data)->set_SkylabGET(pet);
-		return true;
-	}
-	else if (sscanf(str, "%d:%d:%d", &hh, &mm, &ss) == 3)
-	{
-		t1time = ss + 60 * (mm + 60 * hh);
-		((ApolloRTCCMFD*)data)->set_SkylabGET(t1time);
-		return true;
-	}
-	return false;
-}
-
-void ApolloRTCCMFD::set_SkylabGET(double time)
-{
-	if (G->Skylabmaneuver == 0)
-	{
-		G->SkylabTPIGuess = time;
-	}
-	else if (G->Skylabmaneuver == 1)
-	{
-		G->Skylab_t_NC1 = time;
-	}
-	else if (G->Skylabmaneuver == 2)
-	{
-		G->Skylab_t_NC2 = time;
-	}
-	else if (G->Skylabmaneuver == 3)
-	{
-		G->Skylab_t_NCC = time;
-	}
-	else if (G->Skylabmaneuver == 4)
-	{
-		G->Skylab_t_NSR = time;
-	}
-}
-
-bool SkylabDTTPMInput(void *id, char *str, void *data)
-{
-	if (strlen(str)<20)
-	{
-		((ApolloRTCCMFD*)data)->set_SkylabDTTPM(atof(str));
-		return true;
-	}
-	return false;
-}
-
-void ApolloRTCCMFD::set_SkylabDTTPM(double dt)
-{
-	this->G->Skylab_dt_TPM = dt*60.0;
-}
-
 void ApolloRTCCMFD::set_t_TPI(double time)
 {
 	G->t_TPI = time;
-}
-
-void ApolloRTCCMFD::menuSkylabCalc()
-{
-	if (G->target != NULL)
-	{
-		G->SkylabCalc();
-	}
-}
-
-void ApolloRTCCMFD::menuSetSkylabNC()
-{
-	if (G->Skylabmaneuver == 1)
-	{
-		GenericDoubleInput(&G->Skylab_n_C, "Choose the number of revolutions:", 1.0);
-	}
-}
-
-void ApolloRTCCMFD::menuSetSkylabDH1()
-{
-	if (G->Skylabmaneuver == 1)
-	{
-		GenericDoubleInput(&G->SkylabDH1, "Choose the Delta Height at NCC:", 1852.0);
-	}
-}
-
-void ApolloRTCCMFD::menuSetSkylabDH2()
-{
-	if (G->Skylabmaneuver == 1 || G->Skylabmaneuver == 2 || G->Skylabmaneuver == 3)
-	{
-		GenericDoubleInput(&G->SkylabDH2, "Choose the Delta Height at NSR:", 1852.0);
-	}
-}
-
-void ApolloRTCCMFD::menuSetSkylabEL()
-{
-	if (G->Skylabmaneuver > 0 && G->Skylabmaneuver <= 5)
-	{
-		GenericDoubleInput(&G->Skylab_E_L, "Choose the elevation angle at TPI:", RAD);
-	}
 }
 
 void ApolloRTCCMFD::menuSetTPIguess()
@@ -6639,6 +6536,27 @@ void ApolloRTCCMFD::menuTLCCCalc()
 {
 	G->TLCCSolGood = true;
 	G->TLCCCalc();
+}
+
+void ApolloRTCCMFD::menuTLIProcessorCalc()
+{
+	G->TLCCSolGood = true;
+	G->TLIProcessorCalc();
+}
+
+void ApolloRTCCMFD::menuTLIProcessorMode()
+{
+
+}
+
+void ApolloRTCCMFD::menuTLIProcessorGET()
+{
+	GenericGETInput(&GC->rtcc->PZTLIPLN.GET_TLI, "Input time of ignition or threshold time. Format HH:MM:SS:");
+}
+
+void ApolloRTCCMFD::menuTLIEllipseApogee()
+{
+	GenericDoubleInput(&GC->rtcc->PZTLIPLN.h_ap, "Input height of apogee (2700 to 7000 NM):");
 }
 
 void ApolloRTCCMFD::menuLunarLiftoffCalc()
@@ -6824,7 +6742,14 @@ void ApolloRTCCMFD::menuSetLAPLiftoffTime()
 
 void ApolloRTCCMFD::menuDKINSRLine()
 {
-	GenericDoubleInput(&GC->rtcc->med_k00.NSR, "Enter NSR maneuver line point:");
+	if (GC->rtcc->med_k00.I4)
+	{
+		GenericDoubleInput(&GC->rtcc->med_k00.NCC, "Enter NCC maneuver line point:");
+	}
+	else
+	{
+		GenericDoubleInput(&GC->rtcc->med_k00.NSR, "Enter NSR maneuver line point:");
+	}
 }
 
 void ApolloRTCCMFD::menuDKIMILine()
@@ -7091,8 +7016,7 @@ void ApolloRTCCMFD::menuDAPPADCalc()
 
 void ApolloRTCCMFD::menuLaunchAzimuthCalc()
 {
-	if (!stricmp(G->vessel->GetClassName(), "ProjectApollo\\Saturn5") ||
-		!stricmp(G->vessel->GetClassName(), "ProjectApollo/Saturn5")) {
+	if (utils::IsVessel(G->vessel, utils::SaturnV)) {
 
 		SaturnV *SatV = (SaturnV*)G->vessel;
 		if (SatV->iu)
@@ -7168,7 +7092,7 @@ void ApolloRTCCMFD::menuSetAGCEphemTIMEM0()
 
 void ApolloRTCCMFD::menuSetAGCEphemTLAND()
 {
-	GenericGETInput(&G->AGCEphemTLAND, "Choose the GET of lunar landing (Format: hhh:mm:ss)");
+	GenericDoubleInput(&G->AGCEphemTLAND, "Calculate lunar libration vector to (in days):");
 }
 
 void ApolloRTCCMFD::menuGenerateAGCEphemeris()
@@ -7191,12 +7115,29 @@ void ApolloRTCCMFD::menuAscentPADCalc()
 	}
 }
 
+void ApolloRTCCMFD::menuCycleAscentPADVersion()
+{
+	if (G->AscentPADVersion < 1)
+	{
+		G->AscentPADVersion++;
+	}
+	else
+	{
+		G->AscentPADVersion = 0;
+	}
+}
+
 void ApolloRTCCMFD::menuPDAPCalc()
 {
 	if (G->vesseltype == 1 && G->target != NULL)
 	{
 		G->PDAPCalc();
 	}
+}
+
+void ApolloRTCCMFD::menuCyclePDAPSegments()
+{
+	G->PDAPTwoSegment = !G->PDAPTwoSegment;
 }
 
 void ApolloRTCCMFD::menuCyclePDAPEngine()
@@ -7215,11 +7156,11 @@ void ApolloRTCCMFD::menuAP11AbortCoefUplink()
 {
 	if (G->vesseltype == 1)
 	{
-		if (GC->mission == 11)
+		if (G->PDAPTwoSegment == false)
 		{
 			G->AP11AbortCoefUplink();
 		}
-		else if(GC->mission >= 12)
+		else
 		{
 			G->AP12AbortCoefUplink();
 		}
@@ -7770,6 +7711,18 @@ bool TransferMCCPlanToSFPInput(void* id, char *str, void *data)
 	return true;
 }
 
+void ApolloRTCCMFD::menuInterpolateSFP()
+{
+	bool InterpolateSFPInput(void* id, char *str, void *data);
+	oapiOpenInputBox("Interplation for skeleton flight plan. Format: F62,Days (optional),Opportunity,Azimuth;", InterpolateSFPInput, "F62,,1,72.0;", 50, (void*)this);
+}
+
+bool InterpolateSFPInput(void* id, char *str, void *data)
+{
+	((ApolloRTCCMFD*)data)->GeneralMEDRequest(str);
+	return true;
+}
+
 void ApolloRTCCMFD::menuDeleteMidcourseColumn()
 {
 	bool DeleteMidcourseColumnInput(void* id, char *str, void *data);
@@ -8060,7 +8013,7 @@ bool GOSTBoresightSCTCalcInput(void* id, char *str, void *data)
 	int hh, mm, star;
 	char ref[16];
 
-	if (sscanf_s(str, "%d:%d:%lf %d %s", &hh, &mm, &ss, &star, &ref, _countof(ref)) == 5)
+	if (sscanf(str, "%d:%d:%lf %d %15s", &hh, &mm, &ss, &star, ref) == 5)
 	{
 		std::string med, med2;
 		med2.assign(ref);
@@ -8086,7 +8039,7 @@ bool GOSTSXTCalcInput(void* id, char *str, void *data)
 	int hh, mm, star;
 	char ref[16];
 
-	if (sscanf_s(str, "%d:%d:%lf %d %s", &hh, &mm, &ss, &star, &ref, _countof(ref)) == 5)
+	if (sscanf(str, "%d:%d:%lf %d %15s", &hh, &mm, &ss, &star, &ref) == 5)
 	{
 		std::string med, med2;
 		med2.assign(ref);
@@ -8203,7 +8156,7 @@ bool GOSTShowLandmarkVectorInput(void* id, char *str, void *data)
 	int hh, mm;
 	double ss, lat = 0.0, lng = 0.0, height = 0.0;
 	char buff[16], body;
-	if (sscanf_s(str, "%s %d:%d:%lf %c %lf %lf %lf", buff, (unsigned)_countof(buff), &hh, &mm, &ss, &body, 1, &lat, &lng, &height) >= 3)
+	if (sscanf(str, "%15s %d:%d:%lf %c %lf %lf %lf", buff, &hh, &mm, &ss, &body, &lat, &lng, &height) >= 3)
 	{
 		std::string med, med2;
 		med2.assign(buff);
@@ -8216,6 +8169,264 @@ bool GOSTShowLandmarkVectorInput(void* id, char *str, void *data)
 		return true;
 	}
 	return false;
+}
+
+void ApolloRTCCMFD::menuGOSTEnterStarInCatalog()
+{
+	menuGeneralMEDRequest("Enter target for star catalog. Input format: G13,Position (392 to 400),Right Ascension (hr:min:sec), Declination (deg:min:sec);");
+}
+
+void ApolloRTCCMFD::menuSaveOSTREFSMMAT()
+{
+	GeneralMEDRequest("G11,CSM,OST-M;");
+}
+
+void ApolloRTCCMFD::menuLOSTMode()
+{
+	bool LOSTModeInput(void* id, char *str, void *data);
+	oapiOpenInputBox("Choose mode: DOK, FLT, AGS, LUN, MAT or CHK", LOSTModeInput, 0, 10, (void*)this);
+}
+
+bool LOSTModeInput(void* id, char *str, void *data)
+{
+	std::string Mode(str);
+	int num;
+
+	if (Mode == "DOK"){ num = 2;}
+	else if (Mode == "FLT"){num = 3;}
+	else if (Mode == "AGS"){num = 4;}
+	else if (Mode == "LUN"){num = 5;}
+	else if (Mode == "MAT"){num = 6;}
+	else if (Mode == "CHK"){num = 7;}
+	else return false;
+
+	((ApolloRTCCMFD*)data)->set_LOSTMode(num);
+	return true;
+}
+
+void ApolloRTCCMFD::set_LOSTMode(int mode)
+{
+	GC->rtcc->EZJGSTBL.MODE = mode;
+	GC->rtcc->EMDGLMST();
+}
+
+void ApolloRTCCMFD::menuLOSTAttitude1()
+{
+	if (GC->rtcc->EZJGSTBL.MODE == 2)
+	{
+		GenericVectorInput(&GC->rtcc->EZJGSTBL.LM_ATT, "Enter LM attitude:", RAD, &ApolloRTCCMFD::UpdateLOSTDisplay);
+	}
+	else if (GC->rtcc->EZJGSTBL.MODE == 4)
+	{
+		GenericVectorInput(&GC->rtcc->EZJGSTBL.Att1, "Enter attitude for alignment:", RAD, &ApolloRTCCMFD::UpdateLOSTDisplay);
+	}
+	else if (GC->rtcc->EZJGSTBL.MODE == 7)
+	{
+		GenericVectorInput(&GC->rtcc->EZJGSTBL.StoredAttMED, "Enter attitude for star check:", RAD, &ApolloRTCCMFD::UpdateLOSTDisplay);
+	}
+}
+
+void ApolloRTCCMFD::menuLOSTAttitude2()
+{
+	if (GC->rtcc->EZJGSTBL.MODE == 2)
+	{
+		GenericVectorInput(&GC->rtcc->EZJGSTBL.CSM_ATT, "Enter CSM attitude:", RAD, &ApolloRTCCMFD::UpdateLOSTDisplay);
+	}
+	else if (GC->rtcc->EZJGSTBL.MODE == 4)
+	{
+		GenericVectorInput(&GC->rtcc->EZJGSTBL.Att2, "Enter attitude for alignment:", RAD, &ApolloRTCCMFD::UpdateLOSTDisplay);
+	}
+}
+
+void ApolloRTCCMFD::menuLOST_REFSMMAT1()
+{
+	bool LOST_REFSMMAT_Input1(void* id, char *str, void *data);
+	oapiOpenInputBox("Enter LM REFSMMAT type (CUR, PCR, TLM, OST, MED, DMT, DOD, LCV, AGS, DOK, LLA, LLD):", LOST_REFSMMAT_Input1, "CUR", 10, (void*)this);
+}
+
+bool LOST_REFSMMAT_Input1(void* id, char *str, void *data)
+{
+	return ((ApolloRTCCMFD*)data)->set_LOST_REFSMMAT1(str);
+}
+
+bool ApolloRTCCMFD::set_LOST_REFSMMAT1(char *str)
+{
+	GC->rtcc->EZJGSTBL.REF1 = GC->rtcc->EMGSTGENCode(str);
+	GC->rtcc->EMDGLMST();
+	return true;
+}
+
+void ApolloRTCCMFD::menuLOST_REFSMMAT2()
+{
+	bool LOST_REFSMMAT_Input2(void* id, char *str, void *data);
+	oapiOpenInputBox("Enter LM REFSMMAT type (CUR, PCR, TLM, OST, MED, DMT, DOD, LCV, AGS, DOK, LLA, LLD):", LOST_REFSMMAT_Input2, "CUR", 10, (void*)this);
+}
+
+bool LOST_REFSMMAT_Input2(void* id, char *str, void *data)
+{
+	return ((ApolloRTCCMFD*)data)->set_LOST_REFSMMAT2(str);
+}
+
+bool ApolloRTCCMFD::set_LOST_REFSMMAT2(char *str)
+{
+	GC->rtcc->EZJGSTBL.REF2 = GC->rtcc->EMGSTGENCode(str);
+	GC->rtcc->EMDGLMST();
+	return true;
+}
+
+void ApolloRTCCMFD::menuLOST_CSM_REFSMMAT()
+{
+	if (GC->rtcc->EZJGSTBL.MODE == 2)
+	{
+		bool LOST_CSM_REFSMMAT_Input(void* id, char *str, void *data);
+		oapiOpenInputBox("Enter CSM REFSMMAT type (CUR, PCR, TLM, OST, MED, DMT, DOD, LCV):", LOST_CSM_REFSMMAT_Input, "CUR", 10, (void*)this);
+	}
+}
+
+bool LOST_CSM_REFSMMAT_Input(void* id, char *str, void *data)
+{
+	return ((ApolloRTCCMFD*)data)->set_LOST_CSM_REFSMMAT(str);
+}
+
+bool ApolloRTCCMFD::set_LOST_CSM_REFSMMAT(char *str)
+{
+	GC->rtcc->EZJGSTBL.REFSUSED = GC->rtcc->EMGSTGENCode(str);
+	GC->rtcc->EMDGLMST();
+	return true;
+}
+
+void ApolloRTCCMFD::menuLOSTOptics1()
+{
+	if (GC->rtcc->EZJGSTBL.MODE == 4)
+	{
+		GenericInt2Input(&GC->rtcc->EZJGSTBL.star1, &GC->rtcc->EZJGSTBL.D1, "Enter star and detent. Format: Star Detent. Limits. Star: 1-400, Detent: 1-6", 1, 400, 1, 6, &ApolloRTCCMFD::UpdateLOSTDisplay);
+	}
+	else if (GC->rtcc->EZJGSTBL.MODE == 5)
+	{
+		//Star, detent, cursor angle, spirale angle
+	}
+}
+
+void ApolloRTCCMFD::menuLOSTOptics2()
+{
+	if (GC->rtcc->EZJGSTBL.MODE == 4)
+	{
+		//Star, detent position, cursor angle
+		bool LOST_AGS_Star2_Input(void* id, char *str, void *data);
+		oapiOpenInputBox("Enter star, detent position and cursor angle. Format: Star Detent-Position Cursor-Angle. Limits. Star: 1-400. Detent position: PX, NX, PY, NY, Angle: 0-360", LOST_AGS_Star2_Input, 0, 30, (void*)this);
+	}
+	else if (GC->rtcc->EZJGSTBL.MODE == 5)
+	{
+		//Star, detent, cursor angle, spirale angle
+	}
+}
+
+bool LOST_AGS_Star2_Input(void* id, char *str, void *data)
+{
+	double Angle;
+	char Buff[3];
+	int star;
+
+	if (sscanf(str, "%d %2s %lf", &star, Buff, &Angle) == 3)
+	{
+		((ApolloRTCCMFD*)data)->set_LOST_AGS_Star2(star, Buff, Angle);
+		return true;
+	}
+	return false;
+}
+
+bool ApolloRTCCMFD::set_LOST_AGS_Star2(int star, char *pos, double ang)
+{
+	int det;
+
+	if (strcmp(pos, "PX") == 0) det = 0;
+	else if (strcmp(pos, "NX") == 0) det = 1;
+	else if (strcmp(pos, "PY") == 0) det = 2;
+	else if (strcmp(pos, "NY") == 0) det = 3;
+	else return false;
+
+	if (star < 1 || star > 400) return false;
+	if (ang < 0.0 || ang > 360.0) return false;
+
+	GC->rtcc->EZJGSTBL.star2 = star;
+	GC->rtcc->EZJGSTBL.L2 = det;
+	GC->rtcc->EZJGSTBL.A1_2 = ang * RAD;
+	GC->rtcc->EMDGLMST();
+	return true;
+}
+
+void ApolloRTCCMFD::menuLOSTRealign()
+{
+	GC->rtcc->EMMGLMST(1);
+}
+
+void ApolloRTCCMFD::menuCalcLOST()
+{
+	if (GC->rtcc->EZJGSTBL.MODE == 2)
+	{
+		GenericIntInput(&GC->rtcc->EZGSTMED.G23_Option, "Docking Alignment. Option: 1 = Calculate LM REFSMMAT, 2 = LM gimbal angles, 3 = CSM gimbal angles", &ApolloRTCCMFD::CalculateLOSTDOKOption);
+	}
+	else if (GC->rtcc->EZJGSTBL.MODE == 4)
+	{
+		GeneralMEDRequest("G20;");
+	}
+	else if (GC->rtcc->EZJGSTBL.MODE == 7)
+	{
+		bool LOSTCheckModeInput(void* id, char *str, void *data);
+		oapiOpenInputBox("Alignment check. Format: GET (HH:MM:SS) Detent (1-6) COAS axis (PX or PZ)", LOSTCheckModeInput, 0, 30, (void*)this);
+	}
+}
+
+bool LOSTCheckModeInput(void* id, char *str, void *data)
+{
+	double hh, mm, ss, get;
+	int Detent, COASAxis;
+	char Buff[16];
+
+	if (sscanf(str, "%lf:%lf:%lf %d %s", &hh, &mm, &ss, &Detent, Buff) == 5)
+	{
+		get = hh * 3600.0 + mm * 60.0 + ss;
+
+		if (Detent < 1 || Detent > 6) return false;
+		if (strcmp(Buff, "PX") == 0)
+		{
+			COASAxis = 1;
+		}
+		else if (strcmp(Buff, "PZ") == 0)
+		{
+			COASAxis = 2;
+		}
+		else return false;
+
+		((ApolloRTCCMFD*)data)->set_LOSTCheckMode(get, Detent, COASAxis);
+
+		return true;
+	}
+	return false;
+}
+
+void ApolloRTCCMFD::set_LOSTCheckMode(double get, int Detent, int COASAxis)
+{
+	GC->rtcc->EZGSTMED.G20_HORIZGET = get;
+	GC->rtcc->EZGSTMED.G20_AOT_Detent = Detent;
+	GC->rtcc->EZGSTMED.G20_COAS_Axis = COASAxis;
+
+	GeneralMEDRequest("G20;");
+}
+
+void ApolloRTCCMFD::CalculateLOSTDOKOption()
+{
+	GeneralMEDRequest("G23;");
+}
+
+void ApolloRTCCMFD::UpdateLOSTDisplay()
+{
+	GC->rtcc->EMDGLMST();
+}
+
+void ApolloRTCCMFD::menuCalculateIMUComparison()
+{
+	G->menuCalculateIMUComparison();
 }
 
 void ApolloRTCCMFD::menuSLVNavigationUpdateCalc()
@@ -8550,6 +8761,9 @@ void ApolloRTCCMFD::SelectMCCScreen(int num)
 	case 229:
 		menuSetGuidanceOpticsSupportTablePage();
 		break;
+	case 239:
+		menuSetLMOpticsSupportTablePage();
+		break;
 	case 1501:
 		menuSetMoonriseMoonsetTablePage();
 		break;
@@ -8848,4 +9062,9 @@ void ApolloRTCCMFD::SStoHHMMSS(double time, int &hours, int &minutes, double &se
 	mins = fmod(time / 60.0, 60.0);
 	minutes = (int)trunc(mins);
 	seconds = (mins - minutes) * 60.0;
+}
+
+void ApolloRTCCMFD::Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax, int ymax)
+{
+	skp->Text(x * W / xmax, y * H / ymax, message.c_str(), message.size());
 }

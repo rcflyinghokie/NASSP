@@ -22,9 +22,9 @@
 
   **************************************************************************/
 
-// To force orbitersdk.h to use <fstream> in any compiler version
+// To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
-#include "orbiterSDK.h"
+#include "Orbitersdk.h"
 
 #include "nasspdefs.h"
 #include "soundlib.h"
@@ -36,16 +36,16 @@
 #include "powersource.h"
 #include "connector.h"
 #include "iu.h"
-#include "SIVBSystems.h"
+#include "sivbsystems.h"
 
 #include "toggleswitch.h"
 #include "apolloguidance.h"
-#include "lemcomputer.h"
+#include "LEMcomputer.h"
 
 #include "payload.h"
 #include "sivb.h"
-#include "astp.h"
-#include "lem.h"
+#include "ASTP.h"
+#include "LEM.h"
 #include "LVDC.h"
 
 #include <stdio.h>
@@ -78,21 +78,6 @@ static MESHHANDLE hapollo8lta;
 static MESHHANDLE hlta_2r;
 
 static SURFHANDLE SMMETex;
-
-// "fuel venting" particle streams
-static PARTICLESTREAMSPEC fuel_venting_spec = {
-	0,		// flag
-	0.8,	// size
-	30,		// rate
-	2,	    // velocity
-	0.5,    // velocity distribution
-	20,		// lifetime
-	0.15,	// growthrate
-	0.5,    // atmslowdown 
-	PARTICLESTREAMSPEC::DIFFUSE,
-	PARTICLESTREAMSPEC::LVL_FLAT, 0.6, 0.6,
-	PARTICLESTREAMSPEC::ATM_FLAT, 1.0, 1.0
-};
 
 //
 // Spew out particles to simulate the junk thrown out by stage
@@ -127,7 +112,7 @@ void SIVbLoadMeshes()
 	hSat1stg23 = oapiLoadMeshGlobal ("ProjectApollo/nsat1stg23");
 	hSat1stg24 = oapiLoadMeshGlobal ("ProjectApollo/nsat1stg24");
 	hSat1stg2cross = oapiLoadMeshGlobal("ProjectApollo/nsat1stg2cross");
-	hastp = oapiLoadMeshGlobal ("ProjectApollo/nASTP3");
+	hastp = oapiLoadMeshGlobal ("ProjectApollo/nASTP2");
 	hCOAStarget = oapiLoadMeshGlobal ("ProjectApollo/sat_target");
 
 	//
@@ -201,7 +186,8 @@ void SIVB_Airfoil_Coeff(VESSEL *v, double aoa, double M, double Re, void *contex
 SIVB::SIVB(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel(hObj, fmodel),
 CSMLVSeparationInitiator("CSM-LV-Separation-Initiator", Panelsdk),
 LMSLASeparationInitiators("LM-SLA-Separation-Initiators", Panelsdk),
-SLAPanelDeployInitiator("SLA-Panel-Deploy-Initiator", Panelsdk)
+SLAPanelDeployInitiator("SLA-Panel-Deploy-Initiator", Panelsdk),
+inertialData(this)
 {
 	PanelSDKInitalised = false;
 
@@ -249,7 +235,6 @@ void SIVB::InitS4b()
 	PayloadType = PAYLOAD_EMPTY;
 	PanelsHinged = false;
 	PanelsOpened = false;
-	State = SIVB_STATE_SETUP;
 	LowRes = false;
 	IUSCContPermanentEnabled = true;
 	PayloadCreated = false;
@@ -267,6 +252,7 @@ void SIVB::InitS4b()
 	EmptyMass = 15000.0;
 	PayloadMass = 0.0;
 	MainFuel = 5000.0;
+	MainFuelMax = 107428.0;
 	ApsFuel1Kg = ApsFuel2Kg = S4B_APS_FUEL_PER_TANK_SV;
 
 	THRUST_THIRD_VAC = 1000.0;
@@ -278,8 +264,6 @@ void SIVB::InitS4b()
 
 	FirstTimestep = false;
 	MissionTime = MINUS_INFINITY;
-	NextMissionEventTime = MINUS_INFINITY;
-	LastMissionEventTime = MINUS_INFINITY;
 
 	for (i = 0; i < 6; i++)
 		th_aps_rot[i] = 0;
@@ -287,7 +271,6 @@ void SIVB::InitS4b()
 		th_aps_ull[i] = 0;
 
 	th_main[0] = 0;
-	th_lox_vent = 0;
 	panelProc = 0;
 	panelProcPlusX = 0;
 	panelTimestepCount = 0;
@@ -366,22 +349,6 @@ void SIVB::InitS4b()
 	}
 
 	MainBattery = static_cast<Battery *> (Panelsdk.GetPointerByString("ELECTRIC:POWER_BATTERY"));
-}
-
-void SIVB::Boiloff()
-
-{
-	//
-	// The SIVB stage boils off a small amount of fuel while in orbit.
-	//
-	// For the time being we'll ignore any thrust created by the venting
-	// of this fuel.
-	//
-
-	if (ph_main) {
-		double NewFuelMass = GetPropellantMass(ph_main) * 0.99998193;
-		SetPropellantMass(ph_main, NewFuelMass);
-	}
 }
 
 bool SIVB::GetDockingPortFromHandle(OBJHANDLE port, UINT &num)
@@ -561,14 +528,14 @@ void SIVB::SetS4b()
 		i++;
 		break;
 
-	case PAYLOAD_LTA:
-	case PAYLOAD_LTA6:
+	case PAYLOAD_LTA10R:
+	case PAYLOAD_LTA2R:
 		SetMeshVisibilityMode(meshLTA_2r, MESHVIS_EXTERNAL);
 		ClearDockDefinitions();
 		mass += PayloadMass;
 		break;
 
-	case PAYLOAD_LTA8:
+	case PAYLOAD_LTAB:
 		SetMeshVisibilityMode(meshApollo8LTA, MESHVIS_EXTERNAL);
 		ClearDockDefinitions();
 		mass += PayloadMass;
@@ -583,7 +550,7 @@ void SIVB::SetS4b()
 		SetMeshVisibilityMode(meshASTP_A, MESHVIS_EXTERNAL);
 		SetMeshVisibilityMode(meshCOASTarget_A, MESHVIS_EXTERNAL);
 		dockpos = _V(0.0, 0.0, 9.1);
-		dockrot = _V(-1.0, 0.0, 0);
+		//dockrot = _V(-1.0, 0.0, 0);
 		SetDockParams(dockpos, dockdir, dockrot);
 		hDock = GetDockHandle(0);
 		hattDROGUE = CreateAttachment(true, dockpos, dockdir, dockrot, "PADROGUE");
@@ -632,6 +599,15 @@ void SIVB::SetS4b()
 
 	}
 	iu->ConnectToLV(&IUCommandConnector);
+
+	//
+	// Set up S-IVB systems
+	//
+	if (sivbsys)
+	{
+		sivbsys->SetVehicleNumber(VehicleNo);
+		sivbsys->CreateParticleEffects(1400.0*0.0254); //CG location
+	}
 }
 
 void SIVB::clbkPreStep(double simt, double simdt, double mjd)
@@ -885,35 +861,18 @@ void SIVB::clbkPreStep(double simt, double simdt, double mjd)
 	}
 
 	//
-	// Now update whatever needs updating.
-	//
-
-	switch (State) {
-	case SIVB_STATE_WAITING:
-
-		//
-		// If we still have fuel left, boil some off.
-		//
-
-		if (MissionTime >= NextMissionEventTime) {
-			Boiloff();
-			NextMissionEventTime = MissionTime + 10.0;
-		}
-		break;
-	}
-
-	//
 	// For a Saturn V SIVB, at some point it will dump all remaining fuel out the engine nozzle to
 	// thrust it out of the way of the CSM.
 	//
 
 	sivbsys->Timestep(simdt);
-	iu->Timestep(MissionTime, simt, simdt, mjd);
+	iu->Timestep(simt, simdt, mjd);
 	Panelsdk.Timestep(MissionTime);
 }
 
 void SIVB::clbkPostStep(double simt, double simdt, double mjd)
 {
+	inertialData.Timestep(simdt);
 	iu->PostStep(simt, simdt, mjd);
 }
 
@@ -932,18 +891,16 @@ void SIVB::clbkSaveState (FILEHANDLE scn)
 	oapiWriteScenario_int (scn, "S4PL", PayloadType);
 	oapiWriteScenario_int (scn, "MAINSTATE", GetMainState());
 	oapiWriteScenario_int (scn, "VECHNO", VehicleNo);
-	oapiWriteScenario_int (scn, "STATE", State);
 	oapiWriteScenario_float (scn, "EMASS", EmptyMass);
 	oapiWriteScenario_float (scn, "PMASS", PayloadMass);
 	oapiWriteScenario_float (scn, "FMASS", MainFuel);
+	oapiWriteScenario_float(scn, "FMAXMASS", MainFuelMax);
 	oapiWriteScenario_float(scn, "APSFMASS1", ApsFuel1Kg);
 	oapiWriteScenario_float(scn, "APSFMASS2", ApsFuel2Kg);
 	oapiWriteScenario_float (scn, "T3V", THRUST_THIRD_VAC);
 	oapiWriteScenario_float (scn, "I3V", ISP_THIRD_VAC);
 	oapiWriteScenario_int(scn, "MISSIONNO", payloadSettings.MissionNo);
 	oapiWriteScenario_float (scn, "MISSNTIME", MissionTime);
-	oapiWriteScenario_float (scn, "NMISSNTIME", NextMissionEventTime);
-	oapiWriteScenario_float (scn, "LMISSNTIME", LastMissionEventTime);
 	oapiWriteScenario_float (scn, "CTR", CurrentThrust);
 	oapiWriteScenario_float (scn, "PANELPROC", panelProc);
 	oapiWriteScenario_float (scn, "PANELPROCPLUSX", panelProcPlusX);
@@ -1083,7 +1040,7 @@ void SIVB::AddRCS_S4B()
 		ph_aps2 = CreatePropellantResource(APSMass, ApsFuel2Kg);
 
 	if (!ph_main)
-		ph_main = CreatePropellantResource(MainFuel);
+		ph_main = CreatePropellantResource(MainFuelMax, MainFuel);
 
 	SetDefaultPropellantResource (ph_main);
 	
@@ -1110,11 +1067,6 @@ void SIVB::AddRCS_S4B()
 
 	sivbsys->RecalculateEngineParameters(THRUST_THIRD_VAC);
 
-	// LOX venting thruster
-
-	th_lox_vent = CreateThruster(mainExhaustPos, _V(0, 0, 1), 3300.0, ph_main, 157.0, 157.0);
-
-	AddExhaustStream(th_lox_vent, &fuel_venting_spec);
 
 	//
 	// Rotational thrusters are 150lb (666N) thrust. ISP is estimated at 3000.0.
@@ -1242,12 +1194,12 @@ void SIVB::clbkLoadStateEx (FILEHANDLE scn, void *vstatus)
 
 			if (SaturnVStage)
 			{
-				sivbsys = new SIVB500Systems(this, th_main[0], ph_main, th_aps_rot, th_aps_ull, th_lox_vent, thg_ver);
+				sivbsys = new SIVB500Systems(this, th_main[0], ph_main, th_aps_rot, th_aps_ull, thg_ver);
 				iu = new IUSV;
 			}
 			else
 			{
-				sivbsys = new SIVB200Systems(this, th_main[0], ph_main, th_aps_rot, th_aps_ull, th_lox_vent, thg_ver);
+				sivbsys = new SIVB200Systems(this, th_main[0], ph_main, th_aps_rot, th_aps_ull, thg_ver);
 				iu = new IU1B;
 			}
 		}
@@ -1269,6 +1221,11 @@ void SIVB::clbkLoadStateEx (FILEHANDLE scn, void *vstatus)
 		{
 			sscanf (line+5, "%g", &flt);
 			MainFuel = flt;
+		}
+		else if (!strnicmp(line, "FMAXMASS", 8))
+		{
+			sscanf(line + 8, "%g", &flt);
+			MainFuelMax = flt;
 		}
 		else if (!strnicmp(line, "APSFMASS1", 9))
 		{
@@ -1299,16 +1256,6 @@ void SIVB::clbkLoadStateEx (FILEHANDLE scn, void *vstatus)
             sscanf (line+9, "%f", &flt);
 			MissionTime = flt;
 		}
-		else if (!strnicmp(line, "NMISSNTIME", 10))
-		{
-            sscanf (line + 10, "%f", &flt);
-			NextMissionEventTime = flt;
-		}
-		else if (!strnicmp(line, "LMISSNTIME", 10))
-		{
-            sscanf (line + 10, "%f", &flt);
-			LastMissionEventTime = flt;
-		}
 		else if (!strnicmp(line, "CTR", 3))
 		{
             sscanf (line + 3, "%f", &flt);
@@ -1333,12 +1280,6 @@ void SIVB::clbkLoadStateEx (FILEHANDLE scn, void *vstatus)
 		{
 			sscanf(line + 20, "%f", &flt);
 			PayloadEjectionForce = flt;
-		}
-		else if (!strnicmp (line, "STATE", 5))
-		{
-			int i;
-			sscanf (line+5, "%d", &i);
-			State = (SIVbState) i;
 		}
 		else if (!strnicmp(line, "LEMCHECK", 8)) {
 			strcpy(payloadSettings.checklistFile, line + 9);
@@ -1504,14 +1445,14 @@ void SIVB::clbkSetClassCaps (FILEHANDLE cfg)
 	meshApollo8LTA = AddMesh(hapollo8lta, &mesh_dir);
 
 	// ShiftMesh in SetS4b wasn't working...
-	mesh_dir = _V(0, -0.15, 7.8);
+	mesh_dir = _V(0, 0.15, 7.05);
 	meshASTP_A = AddMesh(hastp, &mesh_dir);
 
 	mesh_dir = _V(0, 0, 8.6);
 	meshASTP_B = AddMesh(hastp, &mesh_dir);
 
 	// ShiftMesh in SetS4b wasn't working...
-	mesh_dir = _V(-1.04, 1.04, 9.1);
+	mesh_dir = _V(-1.155, 0.015, 8.5); // Position adjusted to make the COAS to line up
 	meshCOASTarget_A = AddMesh(hCOAStarget, &mesh_dir);
 
 	mesh_dir = _V(-1.3, 0, 9.6);
@@ -1643,13 +1584,14 @@ void SIVB::SetState(SIVBSettings &state)
 
 		if (SaturnVStage)
 		{
-			sivbsys = new SIVB500Systems(this, th_main[0], ph_main, th_aps_rot, th_aps_ull, th_lox_vent, thg_ver);
+			sivbsys = new SIVB500Systems(this, th_main[0], ph_main, th_aps_rot, th_aps_ull, thg_ver);
 		}
 		else
 		{
-			sivbsys = new SIVB200Systems(this, th_main[0], ph_main, th_aps_rot, th_aps_ull, th_lox_vent, thg_ver);
+			sivbsys = new SIVB200Systems(this, th_main[0], ph_main, th_aps_rot, th_aps_ull, thg_ver);
 		}
 		iu = state.iu_pointer;
+		state.sivb_pointer->CopyData(sivbsys);
 		iuinitflag = true;
 		iu->DisconnectIU();
 	}
@@ -1663,6 +1605,7 @@ void SIVB::SetState(SIVBSettings &state)
 	if (state.SettingsType.SIVB_SETTINGS_FUEL)
 	{
 		MainFuel = state.MainFuelKg;
+		MainFuelMax = state.MainFuelMaxKg;
 		ApsFuel1Kg = state.ApsFuel1Kg;
 		ApsFuel2Kg = state.ApsFuel2Kg;
 	}
@@ -1673,7 +1616,6 @@ void SIVB::SetState(SIVBSettings &state)
 		ISP_THIRD_VAC = state.ISP_VAC;
 	}
 
-	State = SIVB_STATE_WAITING;
 	//Set these pyros as blown, otherwise the S-IVB wouldn't have been created by the Saturn class anyway
 	CSMLVSeparationInitiator.SetBlown(true);
 	SLAPanelDeployInitiator.SetBlown(true);
@@ -2131,6 +2073,14 @@ bool SIVbToIUCommandConnector::ReceiveMessage(Connector *from, ConnectorMessage 
 		if (OurVessel)
 		{
 			m.val2.bValue = OurVessel->GetWeightVector(*(VECTOR3 *) m.val1.pValue);
+			return true;
+		}
+		break;
+
+	case IULV_GET_INERTIAL_ACCEL:
+		if (OurVessel)
+		{
+			OurVessel->GetInertialData()->getAcceleration(*(VECTOR3 *)m.val1.pValue);
 			return true;
 		}
 		break;

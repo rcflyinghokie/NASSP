@@ -43,6 +43,13 @@ struct EphemerisData2
 	VECTOR3 V = _V(0, 0, 0);
 };
 
+struct SV2
+{
+	EphemerisData sv;
+	double Mass = 0.0;
+	double AttachedMass = 0.0;
+};
+
 struct EphemerisHeader
 {
 	//Update number
@@ -236,7 +243,7 @@ struct EMSMISSAuxOutputTable
 {
 	EphemerisData sv_cutoff;
 	bool landed;
-	//0 = no errors detected, 1 = input time cannot be referenced on sun/moon ephemeris, 2 = MPT is being updated, 3 = error from maneuver integrator
+	//0 = no errors detected, 1 = input time cannot be referenced on sun/moon ephemeris, 2 = MPT is being updated, 3 = error from maneuver integrator, 4 = PLAWDT error
 	//5 = maneuver in interval maybe preventing the minimum number of points from being satisfied, 6 = ephemeris space filled before request was satisfied
 	int ErrorCode;
 	double InputArea;
@@ -338,7 +345,7 @@ struct EMSMISSInputTable
 	//Right limit of ephemeris (time to end ephemeris)
 	double EphemerisRightLimitGMT;
 	//Minimum time between ephemeris points
-	double MinEphemDT;
+	double MinEphemDT = 0.0;
 	//Reference frame of desired stopping parameter (0 = Earth, 1 = Moon, 2 = both)
 	int StopParamRefFrame = 2;
 	//Minimum number of points desired in ephemeris
@@ -487,7 +494,7 @@ struct ReentryConstraintsTable
 	ReentryConstraintsDefinition entry;
 };
 
-struct RetrofireDisplayParametersTable
+struct RetrofireDisplayParametersTableData
 {
 	//0 = good data, +1 = no data, -1 = bad data
 	int Indicator = 1;
@@ -560,6 +567,12 @@ struct RetrofireDisplayParametersTable
 	double H_Sep;
 	double H_apo_sep, H_peri_sep;
 	double P_G_Sep, Y_G_Sep;
+};
+
+struct RetrofireDisplayParametersTable
+{
+	//Primary, Contingency, Manual
+	RetrofireDisplayParametersTableData data[3];
 };
 
 struct TimeConstraintsTable
@@ -663,4 +676,6 @@ struct SLVTargetingParametersTable
 	double I_T = 0.0;
 	double DN_T = 0.0;
 	double BIAS = 0.0;
+	double LATLS = 0.0;
+	double LONGLS = 0.0;
 };

@@ -23,7 +23,7 @@
 
   **************************************************************************/
 
-// To force orbitersdk.h to use <fstream> in any compiler version
+// To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
 #include <stdio.h>
@@ -37,7 +37,7 @@
 
 #include "toggleswitch.h"
 #include "apolloguidance.h"
-#include "csmcomputer.h"
+#include "CSMcomputer.h"
 #include "ioChannels.h"
 
 #include "saturn.h"
@@ -1076,21 +1076,8 @@ void Saturn::SetCSMStage (VECTOR3 cg_ofs)
 	meshidx = AddMesh(hCMInt, &mesh_dir);
 	SetMeshVisibilityMode(meshidx, MESHVIS_EXTERNAL);
 
-	// Docking probe
-	if (HasProbe) {
-		dockringidx = AddMesh(hdockring, &mesh_dir);
-		probeidx = AddMesh(hprobe, &mesh_dir);
-		probeextidx = AddMesh(hprobeext, &mesh_dir);
-		SetDockingProbeMesh();
-	} else {
-		dockringidx = -1;
-		probeidx = -1;
-		probeextidx = -1;
-	}
-
-	// Optics Cover
-	opticscoveridx = AddMesh (hopticscover, &mesh_dir);
-	SetOpticsCoverMesh();
+	//Add CM meshes. More to be added here...
+	AddCMMeshes(mesh_dir);
 
 	// Docking port
 	VECTOR3 dockpos = {0,0,35.90-CGOffset};
@@ -1123,11 +1110,7 @@ void Saturn::SetCSMStage (VECTOR3 cg_ofs)
 
 		ph_o2_vent = CreatePropellantResource(tank_mass, tank_mass); //"Thruster" created by O2 venting
 
-		TankQuantities t;
-
-		GetTankQuantities(t);
-
-		SetPropellantMass(ph_o2_vent, t.O2Tank1QuantityKg);
+		SetPropellantMass(ph_o2_vent, O2Tanks[0]->mass / 1E3);
 
 	}
 	
@@ -1154,7 +1137,7 @@ void Saturn::CreateSIVBStage(char *config, VESSELSTATUS &vs1, bool SaturnVStage)
 	char VName[256]="";
 
 	GetApolloName(VName); strcat (VName, "-S4BSTG");
-	hs4bM = oapiCreateVessel(VName, config, vs1);
+	OBJHANDLE hs4bM = oapiCreateVessel(VName, config, vs1);
 
 	SIVBSettings S4Config;
 
@@ -1173,6 +1156,7 @@ void Saturn::CreateSIVBStage(char *config, VESSELSTATUS &vs1, bool SaturnVStage)
 	S4Config.VehicleNo = VehicleNo;
 	S4Config.EmptyMass = S4B_EmptyMass;
 	S4Config.MainFuelKg = GetPropellantMass(ph_3rd);
+	S4Config.MainFuelMaxKg = GetPropellantMaxMass(ph_3rd);
 	S4Config.ApsFuel1Kg = GetPropellantMass(ph_aps1);
 	S4Config.ApsFuel2Kg = GetPropellantMass(ph_aps2);
 	S4Config.PayloadMass = S4PL_Mass;
@@ -1202,12 +1186,14 @@ void Saturn::CreateSIVBStage(char *config, VESSELSTATUS &vs1, bool SaturnVStage)
 	sprintf(S4Config.LEMCheck, LEMCheck);
 
 	S4Config.iu_pointer = iu;
+	S4Config.sivb_pointer = sivb;
 	DontDeleteIU = true;
 
 	SIVB *SIVBVessel = static_cast<SIVB *> (oapiGetVesselInterface(hs4bM));
 	SIVBVessel->SetState(S4Config);
 
 	PayloadDataTransfer = true;
+
 }
 
 void Saturn::SetDockingProbeMesh() {
@@ -1335,19 +1321,6 @@ void Saturn::SetCMdocktgtMesh() {
 	}
 	else {
 		SetMeshVisibilityMode(cmdocktgtidx, MESHVIS_NEVER);
-	}
-}
-
-void Saturn::SetNosecapMesh() {
-
-	if (nosecapidx == -1)
-		return;
-
-	if (NosecapAttached) {
-		SetMeshVisibilityMode(nosecapidx, MESHVIS_EXTERNAL);
-	}
-	else {
-		SetMeshVisibilityMode(nosecapidx, MESHVIS_NEVER);
 	}
 }
 
@@ -1611,22 +1584,8 @@ void Saturn::SetReentryMeshes() {
 	coascdridx = AddMesh(hcmCOAScdr, &mesh_dir);
 	SetCOASMesh();
 
-	//
-	// Docking probe
-	//
-
-	if (HasProbe)
-	{
-		dockringidx = AddMesh(hdockring, &mesh_dir);
-		probeidx = AddMesh(hprobe, &mesh_dir);
-		probeextidx = AddMesh(hprobeext, &mesh_dir);
-		SetDockingProbeMesh();
-	} else
-	{
-		dockringidx = -1;
-		probeidx = -1;
-		probeextidx = -1;
-	}
+	//Add CM meshes. More to be added here...
+	AddCMMeshes(mesh_dir);
 }
 
 void Saturn::StageSeven(double simt)
@@ -1638,7 +1597,6 @@ void Saturn::StageSeven(double simt)
 		case 0:
 			if (GetAltitude() < 350000) {
 				SlowIfDesired();
-				ActivateCMRCS();
 				ActivateNavmode(NAVMODE_RETROGRADE);
 				StageState++;
 			}
@@ -1683,7 +1641,6 @@ void Saturn::StageEight(double simt)
 			if (GetAltitude() < 50000) {
 				SlowIfDesired();
 				DeactivateNavmode(NAVMODE_RETROGRADE);
-				DeactivateCMRCS();
 				StageState++;
 			}
 			break;
@@ -2141,25 +2098,6 @@ void Saturn::JettisonOpticsCover()
 	hOpticsCover = oapiCreateVessel(VName, "ProjectApollo/CMOpticsCover", vs4b);
 }
 
-void Saturn::JettisonNosecap()
-
-{
-	char VName[256];
-
-	// Use VC offset to calculate the optics cover offset
-	VECTOR3 ofs = _V(0, 0, CurrentViewOffset + 0.25);
-	VECTOR3 vel = { 0.0, 0.0, 2.5 };
-	VESSELSTATUS vs4b;
-	GetStatus(vs4b);
-	StageTransform(this, &vs4b, ofs, vel);
-	vs4b.vrot.x = 0.0;
-	vs4b.vrot.y = 0.0;
-	vs4b.vrot.z = 0.0;
-	GetApolloName(VName);
-	strcat(VName, "-NOSECAP");
-	hNosecapVessel = oapiCreateVessel(VName, "ProjectApollo/Sat1Aerocap", vs4b);
-}
-
 void Saturn::DeployCanard()
 {
 	if (!LESAttached) return;
@@ -2280,6 +2218,8 @@ void Saturn::ClearMeshes() {
 			DelMesh(i);
 		}
 	}
+
+	ResetDynamicMeshIndizes();
 }
 
 void Saturn::DefineCMAttachments()
@@ -2289,4 +2229,32 @@ void Saturn::DefineCMAttachments()
 	SetAttachmentParams(ah, _V(0, 0, 0), _V(0, 0, 1), _V(1, 0, 0)); //FloatBag
 	ah = GetAttachmentHandle(false, 1);
 	SetAttachmentParams(ah, _V(0, 0, 0), _V(0, 0, 1), _V(1, 0, 0)); //Chute
+}
+
+void Saturn::ResetDynamicMeshIndizes()
+{
+	CueCards.ResetMeshIndizes();
+}
+
+void Saturn::AddCMMeshes(const VECTOR3 &mesh_dir)
+{
+	// Docking probe
+	if (HasProbe) {
+		dockringidx = AddMesh(hdockring, &mesh_dir);
+		probeidx = AddMesh(hprobe, &mesh_dir);
+		probeextidx = AddMesh(hprobeext, &mesh_dir);
+		SetDockingProbeMesh();
+	}
+	else {
+		dockringidx = -1;
+		probeidx = -1;
+		probeextidx = -1;
+	}
+
+	// Optics Cover
+	opticscoveridx = AddMesh(hopticscover, &mesh_dir);
+	SetOpticsCoverMesh();
+
+	//Reload cue cards, if required
+	CueCards.ResetCueCards();
 }

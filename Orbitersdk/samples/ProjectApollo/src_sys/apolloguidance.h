@@ -37,7 +37,7 @@ class PanelSDK;
 #include <bitset>
 #include "powersource.h"
 
-#include "control.h"
+#include "Control.h"
 #include "yaAGC/agc_engine.h"
 #include "thread.h"
 #include <thread>
@@ -262,6 +262,9 @@ public:
 
 	virtual void ProcessIMUCDUReadCount(int channel, int val);
 
+	/// Resets the radar activity bit, reads radar data and causes the RADARUPT. Should be called after the radar timesteps
+	void RadarRead();
+
 	///
 	/// \brief Triggers Virtual AGC core dump
 	///
@@ -356,15 +359,17 @@ protected:
 	virtual void ProcessChannel163(ChannelValue val);
 	virtual void ProcessIMUCDUErrorCount(int channel, ChannelValue val);
 
+	/// Vehicle specific function
+	virtual void GetRadarData(int radarBits) = 0;
+
 public:
 
 	//
 	// Odds and ends.
 	//
 
-	bool SingleTimestepPrep(double simt, double simdt);
 	bool SingleTimestep();
-	bool GenericTimestep(double simt, double simdt);
+	virtual void agcTimestep(double simt, double simdt) = 0;
 	bool GenericReadMemory(unsigned int loc, int &val);
 	void GenericWriteMemory(unsigned int loc, int val);
 
@@ -394,9 +399,7 @@ public:
 	///
 	std::string ProgramName;
 
-	double LastTimestep;
 	double LastCycled;
-	double CurrentTimestep;
 
 	bool isFirstTimestep;
 

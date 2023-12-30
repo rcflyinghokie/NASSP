@@ -33,7 +33,7 @@
 #include "dinput.h"
 #include "vesim.h"
 #include "dsky.h"
-#include "imu.h"
+#include "IMU.h"
 #include "cdu.h"
 #include "lmscs.h"
 #include "lm_ags.h"
@@ -54,6 +54,7 @@
 #include "LEMcomputer.h"
 #include "lm_rr.h"
 #include "lm_aeaa.h"
+#include "inertial.h"
 
 // Cosmic background temperature in degrees F
 #define CMBG_TEMP -459.584392
@@ -119,6 +120,10 @@ public:
 	bool IsVelocityDataGood() { return velocityGood == 1; };
 	double GetAltitude() { return range*0.3048; };
 	double GetAltitudeRate() { return rate[0]*0.3048; };
+	void GetRangeLGC();
+	void GetVelocityXLGC();
+	void GetVelocityYLGC();
+	void GetVelocityZLGC();
 	double GetAltTransmitterPower();
 	double GetVelTransmitterPower();
 
@@ -132,7 +137,6 @@ public:
 	double range;				// Range in feet
 	double rate[3];				// Velocity X/Y/Z in feet/second
 	double antennaAngle;		// Antenna angle
-	int ruptSent;				// Rupt sent
 	int rangeGood;				// RDG flag
 	int velocityGood;			// VDG flag
 };
@@ -149,14 +153,19 @@ public:
 	void setRate(double rate) { reqRate = rate ; }; 
 	void RenderRange(SURFHANDLE surf);
 	void RenderRate(SURFHANDLE surf);
-	void RenderRangeVC(SURFHANDLE surf, SURFHANDLE surf1a, SURFHANDLE surf1b, SURFHANDLE surf2);
-	void RenderRateVC(SURFHANDLE surf, SURFHANDLE surf1a, SURFHANDLE surf1b);
+	void RenderRangeVC(SURFHANDLE surf, SURFHANDLE surf1a, SURFHANDLE surf1b, SURFHANDLE surf2, int xTexMul = 1);
+	void RenderRateVC(SURFHANDLE surf, SURFHANDLE surf1a, SURFHANDLE surf1b, int xTexMul = 1);
 	void SetLGCAltitude(int val);
 	void SetLGCAltitudeRate(int val);
+	void AGSAltitudeAltitudeRate(int Data);
 
 	double GetLGCAltitude() { return lgc_alt; };
 	double GetLGCAltitudeRate() { return lgc_altrate; };
 
+	bool PowerSignalMonOn();
+	bool PowerFailure();
+	bool SignalFailure();
+	bool TimingFailure();
 	bool IsPowered();
 private:
 	void TapeDrive(double &Angle, double AngleCmd, double RateLimit, double simdt);
@@ -166,10 +175,16 @@ private:
 	double reqRange;
 	double reqRate;
 	double dispRange;
-	double  dispRate;
+	double dispRate;
 	double lgc_alt, lgc_altrate;
+	double ags_alt, ags_altrate;
 	SURFHANDLE tape1, tape2;
 	double desRange, desRate;
+	double LGCaltUpdateTime, LGCaltRateUpdateTime;
+	double AGSaltUpdateTime, AGSaltRateUpdateTime;
+
+	const double ALTSCALEFACTOR = 0.3048 * 2.345 * pow(2.0, -3.0);
+	const double ALTRATESCALEFACTOR = 0.3048 * pow(2.0, -4.0);
 };
 
 class CrossPointer
@@ -455,7 +470,7 @@ public:
 		// used.
 		//
 
-		// VC Sutfaces
+		// VC Surfaces
 		SRF_VC_DSKYDISP,
 		SRF_VC_DSKY_LIGHTS,
 		SRF_VC_DIGITALDISP,
@@ -494,6 +509,8 @@ public:
 	void SetCrewMesh();
 	void DrogueVis();
 	void HideProbes();
+	void HideDeflectors();
+	void ShowXPointerShades();
 	void SetTrackLight();
 	void SetDockingLights();
 	void SetCOAS();
@@ -514,6 +531,7 @@ public:
 	bool clbkVCMouseEvent(int id, int event, VECTOR3 &p);
 	bool clbkVCRedrawEvent(int id, int event, SURFHANDLE surf);
 
+	int clbkConsumeDirectKey(char* keystate);
 	int  clbkConsumeBufferedKey(DWORD key, bool down, char *kstate);
 	void clbkPreStep (double simt, double simdt, double mjd);
 	void clbkPostStep(double simt, double simdt, double mjd);
@@ -612,7 +630,7 @@ public:
 	virtual bool SetupPayload(PayloadSettings &ls);
 	virtual void PadLoad(unsigned int address, unsigned int value);
 	virtual void AEAPadLoad(unsigned int address, unsigned int value);
-	virtual void StopEVA();
+	virtual void StopEVA(bool isCDR);
 	virtual bool IsForwardHatchOpen() { return ForwardHatch.IsOpen(); }
 
 	char *getOtherVesselName() { return agc.OtherVesselName;};
@@ -700,8 +718,7 @@ protected:
 	void InitPanelVC();
 	void SetSwitches(int panel);
 	void AddRCS_LMH(double TRANY);
-	void ToggleEVA();
-	void SetupEVA();
+	void ToggleEVA(bool isCDR);
 	void SetView();
 	void RedrawPanel_Horizon (SURFHANDLE surf);
 	void RedrawPanel_AOTReticle (SURFHANDLE surf);
@@ -718,6 +735,7 @@ protected:
 	void RCSSoundTimestep();
 	// void GetDockStatus();
 	void JostleViewpoint(double amount);
+	void VCFreeCam(VECTOR3 dir, bool slow);
 	void AddDust();
 	void SetCompLight(int m, bool state);
 	void SetContactLight(int m, bool state);
@@ -774,8 +792,6 @@ protected:
 
 	CrossPointer crossPointerLeft;
 
-	HBITMAP hBmpFDAIRollIndicator;
-
 	SwitchRow LeftXPointerSwitchRow;
 	ToggleSwitch LeftXPointerSwitch;
 
@@ -803,6 +819,9 @@ protected:
 	ToggleSwitch GuidContSwitch;
 	ModeSelectSwitch ModeSelSwitch;
 	ToggleSwitch AltRngMonSwitch;
+
+	SwitchRow LeftMasterAlarmSwitchRow;
+	LEMMasterAlarmSwitch LeftMasterAlarmSwitch;
 
 	SwitchRow LeftMonitorSwitchRow;
 	ToggleSwitch RateErrorMonSwitch;
@@ -866,6 +885,9 @@ protected:
 	LMGlycolPressMeter LMGlycolPressMeter;
 	LMOxygenQtyMeter LMOxygenQtyMeter;
 	LMWaterQtyMeter LMWaterQtyMeter;
+
+	SwitchRow RightMasterAlarmSwitchRow;
+	LEMMasterAlarmSwitch RightMasterAlarmSwitch;
 
 	SwitchRow RightMonitorSwitchRow;
 	ToggleSwitch RightRateErrorMonSwitch;
@@ -1550,13 +1572,14 @@ protected:
 
 	LEMPanelOrdeal PanelOrdeal;		// Dummy switch/display for checklist controller
 	PowerMerge AOTLampFeeder;
+	PowerMerge NumDockCompLTGFeeder;
 
 	int ordealEnabled;
 
 	bool FirstTimestep;
 
 	bool ToggleEva;
-	bool CDREVA_IP;
+	bool EVA_IP[2];
 
 	int CDRinPLSS;
 	int LMPinPLSS;
@@ -1583,7 +1606,7 @@ protected:
 	bool Crewed;
 	bool AutoSlow;
 
-	OBJHANDLE hLEVA;
+	OBJHANDLE hLEVA[2];
 	OBJHANDLE hdsc;
 
 	ATTACHMENTHANDLE hattDROGUE;
@@ -1666,8 +1689,10 @@ protected:
 	UINT ascidx;
 	UINT dscidx;
 	UINT vcidx;
+	UINT xpointershadesidx;
 
 	DEVMESHHANDLE probes;
+	DEVMESHHANDLE deflectors;
 	DEVMESHHANDLE drogue;
 	DEVMESHHANDLE cdrmesh;
 	DEVMESHHANDLE lmpmesh;
@@ -1729,6 +1754,16 @@ protected:
 	double ViewOffsetx;
 	double ViewOffsety;
 	double ViewOffsetz;
+
+	//
+	// VC Free Cam
+	//
+
+	double vcFreeCamx;
+	double vcFreeCamy;
+	double vcFreeCamz;
+	double vcFreeCamSpeed;
+	double vcFreeCamMaxOffset;
 
 	//
 	// Ground Systems
@@ -1872,6 +1907,7 @@ protected:
 	LEM_INV INV_2;
 
 	// GNC
+	InertialData inertialData;
 	ATCA atca;
 	DECA deca;
 	LEM_LR LR;
@@ -2072,12 +2108,9 @@ protected:
 extern MESHHANDLE hLMDescent;
 extern MESHHANDLE hLMDescentNoLeg;
 extern MESHHANDLE hLMAscent;
-extern MESHHANDLE hAstro1;
 extern MESHHANDLE hLMVC;
 
 extern void LEMLoadMeshes();
-extern void InitGParam(HINSTANCE hModule);
-extern void FreeGParam();
 
 //Offset from center of LM mesh (full LM) to center of descent stage mesh (for staging)
 const VECTOR3 OFS_LM_DSC = { 0, -1.25, 0.0 };

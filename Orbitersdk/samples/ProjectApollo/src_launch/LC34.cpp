@@ -24,9 +24,9 @@
 
 #define ORBITER_MODULE
 
-// To force orbitersdk.h to use <fstream> in any compiler version
+// To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
-#include "orbitersdk.h"
+#include "Orbitersdk.h"
 #include "stdio.h"
 #include "math.h"
 #include "nasspsound.h"
@@ -41,7 +41,7 @@
 #include "nasspdefs.h"
 #include "toggleswitch.h"
 #include "apolloguidance.h"
-#include "csmcomputer.h"
+#include "CSMcomputer.h"
 #include "saturn.h"
 #include "saturn1b.h"
 #include "s1b.h"
@@ -883,9 +883,9 @@ bool LC34::ESEGetQBallSimulateCmd()
 	return IuESE->GetQBallSimulateCmd();
 }
 
-bool LC34::ESEGetSIBThrustOKSimulate(int eng, int n)
+bool LC34::ESEGetSIThrustOKSimulate(int eng, int n)
 {
-	return SIBESE->GetSIBThrustOKSimulate(eng, n);
+	return SIBESE->GetSIThrustOKSimulate(eng, n);
 }
 
 void LC34::SLCCCheckDiscreteInput(RCA110A *c)

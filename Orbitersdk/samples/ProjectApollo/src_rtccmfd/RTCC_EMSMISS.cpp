@@ -100,6 +100,32 @@ void RTCC_EMSMISS::Call(EMSMISSInputTable *in)
 		i = mpt->ManeuverNum;
 	}
 
+	LastManeuver = 0;
+
+	//Determine if there is a TLI
+	bool tli = false;
+	unsigned tlinum;
+	for (unsigned i = 0;i < mpt->ManeuverNum;i++)
+	{
+		if (mpt->mantable[i].AttitudeCode == RTCC_ATTITUDE_SIVB_IGM)
+		{
+			tli = true;
+			tlinum = i;
+		}
+	}
+	//Do we have a TLI?
+	if (tli)
+	{
+		//Yes, end time for venting is TLI plus MCGVNT
+		T_NV[1] = mpt->TimeToEndManeuver[tlinum] + pRTCC->SystemParameters.MCGVNT*3600.0;
+	}
+	else
+	{
+		//Don't stop venting
+		T_NV[1] = 999999999.9;
+	}
+	T_NV[0] = pRTCC->GMTfromGET(mpt->SIVBVentingBeginGET);
+
 	//Ephemeris or cutoff mode
 	if (intab->EphemerisBuildIndicator)
 	{
@@ -258,7 +284,7 @@ void RTCC_EMSMISS::WriteNIAuxOutputTable()
 	intab->NIAuxOutputTable.CutoffWeight = state.WeightsTable.ConfigWeight;
 	intab->NIAuxOutputTable.ErrorCode = ErrorCode;
 	intab->NIAuxOutputTable.TerminationCode = TerminationCode;
-	intab->NIAuxOutputTable.ManeuverNumber = i + 1;
+	intab->NIAuxOutputTable.ManeuverNumber = LastManeuver;
 	intab->NIAuxOutputTable.LunarStayBeginGMT = LunarStayBeginGMT;
 	intab->NIAuxOutputTable.LunarStayEndGMT = LunarStayEndGMT;
 }
@@ -282,6 +308,11 @@ void RTCC_EMSMISS::UpdateWeightsTableAndSVAfterCoast()
 	plawdtin.T_IN = state.StateVector.GMT;
 
 	pRTCC->PLAWDT(plawdtin, CurrentWeightsTable);
+
+	if (CurrentWeightsTable.Err)
+	{
+		//TBD
+	}
 
 	//Update state
 	state.StateVector = svtemp;
@@ -449,6 +480,7 @@ void RTCC_EMSMISS::CallCoastIntegrator()
 	emmeniin.MoonRelStopParam = intab->MoonRelStopParam;
 	emmeniin.StopParamRefFrame = intab->StopParamRefFrame;
 	emmeniin.Weight = state.WeightsTable.ConfigWeight;
+	emmeniin.MinEphemDT = intab->MinEphemDT;
 
 	emmeniin.EphemerisBuildIndicator = EphemerisBuildOn;
 	emmeniin.ECIEphemerisIndicator = intab->ECIEphemerisIndicator;
@@ -459,6 +491,15 @@ void RTCC_EMSMISS::CallCoastIntegrator()
 	emmeniin.MCIEphemTableIndicator = &tempcoastephemtable[2];
 	emmeniin.MCTEphemerisIndicator = intab->MCTEphemerisIndicator;
 	emmeniin.MCTEphemTableIndicator = &tempcoastephemtable[3];
+
+	if (CurrentWeightsTable.CC[RTCC_CONFIG_S] && (state.StateVector.GMT > T_NV[0]) && (state.StateVector.GMT < T_NV[1]))
+	{
+		emmeniin.VentPerturbationFactor = 1.0;
+	}
+	else
+	{
+		emmeniin.VentPerturbationFactor = -1.0;
+	}
 
 	pRTCC->EMMENI(emmeniin);
 	svtemp = emmeniin.sv_cutoff;
@@ -628,6 +669,9 @@ void RTCC_EMSMISS::CallManeuverIntegrator()
 		CallAscentIntegrator();
 		state.isLanded = false;
 	}
+
+	LastManeuver = i + 1;
+
 	if (nierror)
 	{
 		pRTCC->RTCCONLINEMON.IntBuffer[0] = nierror;

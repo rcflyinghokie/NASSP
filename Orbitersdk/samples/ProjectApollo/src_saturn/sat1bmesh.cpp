@@ -23,7 +23,7 @@
 
   **************************************************************************/
 
-// To force orbitersdk.h to use <fstream> in any compiler version
+// To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
 #include "stdio.h"
@@ -37,7 +37,7 @@
 #include "toggleswitch.h"
 
 #include "apolloguidance.h"
-#include "csmcomputer.h"
+#include "CSMcomputer.h"
 
 #include "saturn.h"
 
@@ -66,11 +66,9 @@ static MESHHANDLE hSat1stg21;
 static MESHHANDLE hSat1stg22;
 static MESHHANDLE hSat1stg23;
 static MESHHANDLE hSat1stg24;
-static MESHHANDLE hNosecap;
 static MESHHANDLE hastp;
 static MESHHANDLE hastp2;
 static MESHHANDLE hCOAStarget;
-static MESHHANDLE hlm_1;
 
 static SURFHANDLE exhaust_tex;
 
@@ -151,21 +149,6 @@ static PARTICLESTREAMSPEC stagingvent_spec = {
 	PARTICLESTREAMSPEC::EMISSIVE,
 	PARTICLESTREAMSPEC::LVL_FLAT, 0.1, 0.1,
 	PARTICLESTREAMSPEC::ATM_FLAT, 0.1, 0.1
-};
-
-// "fuel venting" particle streams
-static PARTICLESTREAMSPEC fuel_venting_spec = {
-	0,		// flag
-	0.8,	// size
-	30,		// rate
-	2,	    // velocity
-	0.5,    // velocity distribution
-	20,		// lifetime
-	0.15,	// growthrate
-	0.5,    // atmslowdown 
-	PARTICLESTREAMSPEC::DIFFUSE,
-	PARTICLESTREAMSPEC::LVL_FLAT, 0.6, 0.6,
-	PARTICLESTREAMSPEC::ATM_FLAT, 1.0, 1.0
 };
 
 // "prelaunch tank venting" particle streams
@@ -432,8 +415,6 @@ void Saturn1b::SetSecondStageMeshes(double offset)
 	sidehatchidx = -1;
 	sidehatchopenidx = -1;
 	opticscoveridx = -1;
-	nosecapidx = -1;
-	meshLM_1 = -1;
 	seatsfoldedidx = -1;
 	seatsunfoldedidx = -1;
 
@@ -506,21 +487,8 @@ void Saturn1b::SetSecondStageMeshes(double offset)
 		fwdhatchidx = AddMesh(hFHF, &mesh_dir);
 		SetFwdHatchMesh();
 
-		// Optics Cover
-		opticscoveridx = AddMesh (hopticscover, &mesh_dir);
-		SetOpticsCoverMesh();
+		AddCMMeshes(mesh_dir);
 
-	} else if (NosecapAttached) {
-		//
-		// Add nosecap.
-		//
-		mesh_dir=_V(0,0,15.8 + offset);
-		nosecapidx = AddMesh (hNosecap, &mesh_dir);
-		SetNosecapMesh();
-
-		//TODO: Only Apollo 5 with nosecape, but this should still be optional
-		mesh_dir = _V(0, 0, 9.8 + offset);
-		meshLM_1 = AddMesh(hlm_1, &mesh_dir);
 	}
 
 	// Dummy docking port so the auto burn feature of IMFD 4.2 is working
@@ -609,14 +577,8 @@ void Saturn1b::SetSecondStageEngines (double offset)
 	// Set the actual stats.
 	//
 
+	sivb->CreateParticleEffects(1645.1*0.0254); //Approx. CG location in Saturn IB coordinates
 	sivb->RecalculateEngineParameters(THRUST_SECOND_VAC);
-
-	// Thrust "calibrated" for apoapsis after venting is about 167.5 nmi
-	// To match the predicted dV of about 25 ft/s (21.7 ft/s actual / 25.6 predicted), use about 320 N thrust, but apoapsis is too high then (> 170 nmi)
-	th_3rd_lox = CreateThruster(m_exhaust_pos1, _V(0, 0, 1), 220., ph_3rd, 300., 300.);
-
-	fuel_venting_spec.tex = oapiRegisterParticleTexture("ProjectApollo/Contrail_SaturnVenting");
-	AddExhaustStream(th_3rd_lox, &fuel_venting_spec);
 
 	//
 	//  Ullage rockets (3)
@@ -962,8 +924,6 @@ void Saturn1bLoadMeshes()
 	hastp = oapiLoadMeshGlobal ("ProjectApollo/nASTP3");
 	hastp2 = oapiLoadMeshGlobal ("ProjectApollo/nASTP2");
 	hCOAStarget = oapiLoadMeshGlobal ("ProjectApollo/sat_target");
-	hNosecap = oapiLoadMeshGlobal ("ProjectApollo/nsat1aerocap");
-	hlm_1 = oapiLoadMeshGlobal("ProjectApollo/LM_1");
 
 	exhaust_tex = oapiRegisterExhaustTexture ("ProjectApollo/Exhaust2");
 	solid_exhaust.tex = oapiRegisterParticleTexture("Contrail3");

@@ -40,13 +40,6 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 		return;
 	}
 
-	//DPS engine gimbal plane
-	static const double K1 = 154.0*0.0254;
-	//SPS engine gimbal plane
-	static const double K2 = 833.2*0.0254;
-	//Distance between SPS and DPS gimbal planes
-	static const double K3 = 435.55*0.0254;
-
 	int IND;
 	double R, W[3], K;
 	VECTOR3 XCG[2], XI;
@@ -82,7 +75,7 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 			goto RTCC_GIMGBL_LABEL_3_5;
 		}
 		IND = 2;
-		K = K1;
+		K = SystemParameters.MGVDGD;
 		//Use LM DSC CG Table
 		XI = GIMGB2(SystemParameters.MHVLCG.Weight, SystemParameters.MHVLCG.CG, SystemParameters.MHVLCG.N, W[1]);
 	}
@@ -100,7 +93,7 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 		{
 			IND = 1;
 		}
-		K = K2;
+		K = SystemParameters.MGVSGD;
 		//Use CSM CG Table
 		XI = GIMGB2(SystemParameters.MHVCCG.Weight, SystemParameters.MHVCCG.CG, SystemParameters.MHVCCG.N, W[0]);
 	}
@@ -119,7 +112,7 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 		//Use CSM CG Table
 		XI = GIMGB2(SystemParameters.MHVCCG.Weight, SystemParameters.MHVCCG.CG, SystemParameters.MHVCCG.N, W[0]);
 		IND = 1;
-		K = K2 + K3;
+		K = SystemParameters.MGVSGD + SystemParameters.MGVSTD;
 	}
 	else
 	{
@@ -134,7 +127,7 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 			XI = GIMGB2(SystemParameters.MHVLCG.Weight, SystemParameters.MHVLCG.CG, SystemParameters.MHVLCG.N, W[1]);
 		}
 		IND = 2;
-		K = K1 + K3;
+		K = SystemParameters.MGVDGD + SystemParameters.MGVSTD;
 	}
 
 	XI.x = XI.x - K;
@@ -252,12 +245,16 @@ VECTOR3 RTCC::PIAEDV(VECTOR3 DV, VECTOR3 R_CSM, VECTOR3 V_CSM, VECTOR3 R_LM, boo
 //Right Ascension of Greenwich at Time T
 double RTCC::PIAIES(double hour)
 {
-	return 0.0;
+	double HA;
+
+	HA = SystemParameters.MCLAMD + SystemParameters.MCERTS*hour;
+	OrbMech::normalizeAngle(HA);
+	return HA;
 }
 
 int RTCC::PIATSU(AEGDataBlock AEGIN, AEGDataBlock &AEGOUT, double &isg, double &gsg, double &hsg)
 {
-	PMMLAEG aeg;
+	PMMLAEG aeg(this);
 	AEGHeader header;
 	MATRIX3 Rot;
 	VECTOR3 P, W, P_apo, W_apo;
@@ -275,11 +272,11 @@ int RTCC::PIATSU(AEGDataBlock AEGIN, AEGDataBlock &AEGOUT, double &isg, double &
 	K = 1;
 RTCC_PIATSU_1A:
 	//Rotate from selenocentric to selenographic
-	PLEFEM(1, AEGOUT.TS / 3600.0, 0, Rot);
-	OrbMech::PIVECT(AEGOUT.coe_osc.i, AEGOUT.coe_osc.g, AEGOUT.coe_osc.h, P, W);
-	P_apo = tmul(Rot, P);
-	W_apo = tmul(Rot, W);
-	OrbMech::PIVECT(P_apo, W_apo, isg, gsg, hsg);
+	PLEFEM(5, AEGOUT.TS / 3600.0, 0, NULL, NULL, NULL, &Rot);
+	PIVECT(AEGOUT.coe_osc.i, AEGOUT.coe_osc.g, AEGOUT.coe_osc.h, P, W);
+	P_apo = mul(Rot, P);
+	W_apo = mul(Rot, W);
+	PIVECT(P_apo, W_apo, isg, gsg, hsg);
 	if (isg < eps_i || isg > PI - eps_i)
 	{
 		KE = 2;
@@ -699,7 +696,7 @@ void RTCC::PITFPC(double MU, int K, double AORP, double ECC, double rad, double 
 	}
 	else
 	{
-		eps = 31.390;
+		eps = 63.78165;
 	}
 
 	//Parabolic case
@@ -717,7 +714,7 @@ void RTCC::PITFPC(double MU, int K, double AORP, double ECC, double rad, double 
 			//Calculate time
 			TIME = abs(AORP) / 2.0*sqrt(abs(AORP) / MU)*(TEMP1 + 1.0 / 3.0*pow(TEMP1, 3.0));
 
-			if (K == false)
+			if (K != 0)
 			{
 				TIME = -TIME;
 			}
@@ -748,7 +745,7 @@ void RTCC::PITFPC(double MU, int K, double AORP, double ECC, double rad, double 
 		TIME = AORP * sqrt(abs(AORP) / MU)*(E - ECC * (exp(E) - exp(-E)) / 2.0);
 	}
 
-	if (K == false)
+	if (K != 0)
 	{
 		TIME = -TIME;
 	}
@@ -881,4 +878,28 @@ int RTCC::PITCIR(AEGHeader header, AEGDataBlock in, double R_CIR, AEGDataBlock &
 	}
 
 	return 0;
+}
+
+void RTCC::PIVECT(VECTOR3 P, VECTOR3 W, double &i, double &g, double &h)
+{
+	VECTOR3 n;
+
+	i = acos(W.z / length(W));
+	n = crossp(_V(0, 0, 1), W);
+	h = acos(n.x / length(n));
+	if (n.y < 0)
+	{
+		h = PI2 - h;
+	}
+	g = acos(dotp(unit(n), unit(P)));
+	if (P.z < 0)
+	{
+		g = PI2 - g;
+	}
+}
+
+void RTCC::PIVECT(double i, double g, double h, VECTOR3 &P, VECTOR3 &W)
+{
+	P = _V(-sin(h)*cos(i)*sin(g) + cos(h)*cos(g), cos(h)*cos(i)*sin(g) + sin(h)*cos(g), sin(i)*sin(g));
+	W = _V(sin(h)*sin(i), -cos(h)*sin(i), cos(i));
 }

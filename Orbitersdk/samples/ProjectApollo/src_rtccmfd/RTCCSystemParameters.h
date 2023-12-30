@@ -27,7 +27,7 @@ struct RTCCDensityTables
 {
 	RTCCDensityTables()
 	{
-		r0 = 6.373338e6; //Adjusted for Orbiter
+		r0 = 6356766.0; //45°32'33'' latitude
 		C2 = 401.8743008658905; //1.4*8.31432/(28.9644/1000)
 		CSMAX = 269.4412597;
 
@@ -127,33 +127,33 @@ struct RTCCDensityTables
 		T_M_b[11] = 210.65;
 		T_M_b[12] = 180.65;
 
-		A7[0] = 1.509968e+00;
-		A7[1] = 1.261296e+00;
-		A7[2] = 1.139848e+00;
-		A7[3] = 1.090665e+00;
-		A7[4] = 1.062369e+00;
-		A7[5] = 1.042924e+00;
-		A7[6] = 1.027149e+00;
-		A7[7] = 1.017294e+00;
-		A7[8] = 1.009915e+00;
-		A7[9] = 1.002785e+00;
-		A7[10] = 1.004037e+00;
-		A7[11] = 1.006551e+00;
-		A7[12] = 1.009404e+00;
+		A7[0] = 1.511805e+00;
+		A7[1] = 1.262093e+00;
+		A7[2] = 1.140239e+00;
+		A7[3] = 1.090911e+00;
+		A7[4] = 1.062535e+00;
+		A7[5] = 1.043037e+00;
+		A7[6] = 1.027220e+00;
+		A7[7] = 1.017338e+00;
+		A7[8] = 1.009940e+00;
+		A7[9] = 1.002792e+00;
+		A7[10] = 1.004047e+00;
+		A7[11] = 1.006568e+00;
+		A7[12] = 1.009429e+00;
 
-		B7[0] = 3.917293e+01;
-		B7[1] = 2.179340e+01;
-		B7[2] = 1.326051e+01;
-		B7[3] = 1.029873e+01;
-		B7[4] = 8.452409e+00;
-		B7[5] = 6.719323e+00;
-		B7[6] = 4.755860e+00;
-		B7[7] = 3.307261e+00;
-		B7[8] = 2.195564e+00;
-		B7[9] = 1.650191e+00;
-		B7[10] = 3.314703e+00;
-		B7[11] = 6.666556e+00;
-		B7[12] = 1.117693e+01;
+		B7[0] = 3.920299e+01;
+		B7[1] = 2.179890e+01;
+		B7[2] = 1.326098e+01;
+		B7[3] = 1.029864e+01;
+		B7[4] = 8.452201e+00;
+		B7[5] = 6.719039e+00;
+		B7[6] = 4.755544e+00;
+		B7[7] = 3.306984e+00;
+		B7[8] = 2.195356e+00;
+		B7[9] = 1.650043e+00;
+		B7[10] = 3.314444e+00;
+		B7[11] = 6.666131e+00;
+		B7[12] = 1.117639e+01;
 
 		ln_rho_b_T_M_b[0] = -20.539228;
 		ln_rho_b_T_M_b[1] = -19.383705;
@@ -220,18 +220,10 @@ struct TLISystemParameters
 	double KY2 = 0.0;
 	//Geodetic latitude of launch site
 	double PHIL = 0.0;
-	//Azimuth from time polynomial (radians)
-	double hx[3][5];
 	//Inclination from azimuth polynomial (radians)
 	double fx[7];
 	//Descending Node Angle from azimuth polynomial (radians)
 	double gx[7];
-	//Times of the opening and closing of launch windows
-	double t_D0, t_D1, t_D2, t_D3;
-	//Times to segment the azimuth calculation polynomial
-	double t_DS0, t_DS1, t_DS2, t_DS3;
-	//Times used to scale the azimuth polynomial
-	double t_SD1, t_SD2, t_SD3;
 };
 
 struct RTCCSystemParameters
@@ -242,13 +234,13 @@ struct RTCCSystemParameters
 
 		//Epoch of NBY 1969
 		AGCEpoch = 1969;
+		TEPHEM0 = 40038.0;
 		MAT_J2000_BRCS = _M(1, 0, 0, 0, 1, 0, 0, 0, 1);
 
-		//These are calculated with R_E = 6.373338e6
-		MCGMUM = 2.454405845045305e-01;
-		MCEMUU = 19.95468740240253;
-		MCSRMU = 4.954196044814240e-01;
-		MCERMU = 4.467066979842873;
+		MCGMUM = 0.244883757275606;
+		MCEMUU = 19.90941651408238;
+		MCSRMU = 0.494857310015327;
+		MCERMU = 4.461996919999204;
 
 		//Time from launch to EOI, seconds
 		MDLIEV[0] = 0.76673814e3;
@@ -279,9 +271,11 @@ struct RTCCSystemParameters
 
 		MCVLMC = 0.0;
 		MCVCMC = 0.5;
+		MCCMCU = 6378165.0;
 		MCCNMC = 3443.93359;
 		MCSMLR = 1738090.0;
 		MCCRPD = 0.01745329251; // PI/180
+		MCECAP = 6373368.0; //0.999247902 in er
 		MCEBAS = 1.0;
 		MCEASQ = 4.0619437e13;
 		MCEBSQ = 4.0619437e13;
@@ -296,7 +290,7 @@ struct RTCCSystemParameters
 		MDVACC[1] = 0.0;
 		MDVDCC[0] = 0.0;
 		MDVDCC[1] = 0.0;
-		MCGVNT = 2.0 / 3600.0;
+		MCGVNT = -2.0 / 3600.0; //Until something better has been implemented for EMMENI, disable post-TLI venting simulation
 		MCGVEN = 0.2*3600.0;
 		for (int i = 0;i < 2;i++)
 		{
@@ -326,7 +320,7 @@ struct RTCCSystemParameters
 		MDTVTV[1][6] = 20000.0;
 		MDTVTV[1][7] = 20001.0; //Switches off vent model at this time
 		MDTVTV[1][8] = 9999999999.9;
-		MCTVSP = 850.0; //Find better value
+		MCTVSP = 750.0; //Find better value
 		MCTVEN = 1.0;
 
 		MCLABN = MCLCBN = MCLSBN = 0.0;
@@ -364,8 +358,8 @@ struct RTCCSystemParameters
 		MCTJT3 = 110900.0 * 4.4482216152605;
 		MCTJT4 = 178147.0 * 4.4482216152605;
 		MCTJTL = 202097.0 * 4.4482216152605;
-		MCTJTH = 202256.0 * 4.4482216152605;
-		MCTJT5 = 202256.0 * 4.4482216152605;
+		MCTJTH = 906114.066;//202256.0 * 4.4482216152605;
+		MCTJT5 = 906114.066;//202256.0 * 4.4482216152605;
 		MCTJT6 = 27784.0 * 4.4482216152605;
 		MCTJT7 = 145.0*4.4482216152605;
 
@@ -374,8 +368,8 @@ struct RTCCSystemParameters
 		MCTJW3 = 157.6 * 0.45359237;
 		MCTJW4 = 412.167 * 0.45359237;
 		MCTJWL = 472.121 * 0.45359237;
-		MCTJWH = 472.18 * 0.45359237;
-		MCTJW5 = 472.18* 0.45359237;
+		MCTJWH = 216.3295874820028;//472.18*0.45359237;
+		MCTJW5 = 216.3295874820028;//472.18*0.45359237;
 		MCTJW6 = 61.7 * 0.45359237;
 		MCTJW7 = 75960.0*0.45359237 / 3600.0;
 
@@ -683,10 +677,39 @@ struct RTCCSystemParameters
 
 		MCVCMA = 129.4*0.3048*0.3048;
 		MCVCMW = 5541.0; //Default CM empty + full CM RCS
+
+		MDGTCD[0] = -60.0*RAD;
+		MDGTCD[1] = 0.0*RAD;
+		MDGTCD[2] = 60.0*RAD;
+		MDGTCD[3] = 120.0*RAD;
+		MDGTCD[4] = 180.0*RAD;
+		MDGTCD[5] = 240.0*RAD;
+		MDGETA[0] = 45.0*RAD;
+		MDGETA[1] = 45.0*RAD;
+		MDGETA[2] = 45.0*RAD;
+		MDGETA[3] = 45.0*RAD;
+		MDGETA[4] = 45.0*RAD;
+		MDGETA[5] = 45.0*RAD;
+
+		//Launchpads
+
+		//CSM: LC-39A as default
+		MCLLTP[0] = MCLLTP[1] = 28.608202*RAD;
+		MCLSDA = sin(MCLLTP[0]);
+		MCLCDA = cos(MCLLTP[0]);
+		MCLGRA = -80.604133*RAD;
+
+		//LM: LC-37B as default
+		MCLLLP[0] = MCLLLP[1] = 28.531445*RAD;
+		MCLSLL = sin(MCLLLP[0]);
+		MCLCLL = cos(MCLLLP[0]);
+		MCLLPL = -80.565077*RAD;
 	}
 
 	//DEFINITIONS
 
+	//Meters per Earth radii
+	double MCCMCU;
 	//Nautical miles per Earth radii
 	double MCCNMC;
 	//Year of epoch
@@ -695,6 +718,8 @@ struct RTCCSystemParameters
 	double MCSMLR;
 	//Radians per degree
 	double MCCRPD;
+	//Radius of earth at Cape
+	double MCECAP;
 	//Geodetic Earth constant B²/A²
 	double MCEBAS;
 	//Geodetic Earth constant A²
@@ -747,12 +772,22 @@ struct RTCCSystemParameters
 	double GMTBASE = 0.0;
 	//Number of hours from January 0 to midnight before launch
 	double MCCBES = 0.0;
-	//Sine of the geodetic latitude of the launch pad
-	double MCLSDA = sin(28.608202*RAD); //LC-39A
-	//Cosine of the geodetic latitude of the launch pad
-	double MCLCDA = cos(28.608202*RAD); //LC-39A
-	//Longitude of launch pad
-	double MCLGRA = -80.604133*RAD;	//LC-39A
+	//Geodetic and geocentric latitude CSM pad (radians)
+	double MCLLTP[2];
+	//Sine of the geodetic latitude of the CSM pad
+	double MCLSDA;
+	//Cosine of the geodetic latitude of the CSM pad
+	double MCLCDA;
+	//Longitude of CSM pad (radians)
+	double MCLGRA;
+	//Geodetic and geocentric latitude LM pad (radians)
+	double MCLLLP[2];
+	//Sine of the geodetic latitude of the LM pad
+	double MCLSLL;
+	//Cosine of the geodetic latitude of the LM pad
+	double MCLCLL;
+	//Longitude of LM pad (radians)
+	double MCLLPL;
 	//CMC address for external DV uplink
 	int MCCCEX = 3404;
 	//LGC address for external DV uplink
@@ -773,8 +808,12 @@ struct RTCCSystemParameters
 	int MCLRLS = 2022;
 	//LGC address for time of landing
 	int MCLTTD = 2400;
+	//LGC address for descent abort constants
+	int MCLABT = 2545;
 	//Suppress C-band station contacts generation (0 = suppressed, 1 = unsuppressed)
 	int MGRTAG = 1;
+	//Maximum station characteristic blocks
+	int MKRBKS;
 	//Gravitational constant of the Moon (Er^3/hr^2)
 	double MCGMUM;
 	//Gravitational constant of the Earth (Er^3/hr^2)
@@ -794,6 +833,7 @@ struct RTCCSystemParameters
 	//Phase indicator system parameter
 	// 0 = No Phase, 1 = Prelaunch
 	// 2, 3 = Condition for Launch and Condition for Launch Sim?
+	// 11 = Prelaunch 2 L.S.
 	// 13 = Orbit (likely, but what about lunar orbit)
 	// 17 = Lunar Descent (?)
 	// 18 = Translunar (likely)
@@ -1100,8 +1140,17 @@ struct RTCCSystemParameters
 		int N;
 	} MHVLCG, MHVACG, MHVCCG; //LM ascent+descent, LM ascent, CSM
 
+	//DPS engine gimbal plane
+	double MGVDGD = 154.0*0.0254;
+	//SPS engine gimbal plane
+	double MGVSGD = 833.2*0.0254;
+	//Distance between SPS and DPS gimbal planes
+	double MGVSTD = 435.55*0.0254;
+
 	//Matrix to convert from J2000 to NBY coordinates
 	MATRIX3 MAT_J2000_BRCS;
+	//MJD of midnight July 1st before launch
+	double TEPHEM0;
 
 	//Reentry
 
@@ -1112,4 +1161,11 @@ struct RTCCSystemParameters
 	double MCVCMA;
 	//CM weight
 	double MCVCMW;
+
+	//Guidance
+
+	//AOT azimuth table
+	double MDGTCD[6];
+	//AOT elevation table
+	double MDGETA[6];
 };

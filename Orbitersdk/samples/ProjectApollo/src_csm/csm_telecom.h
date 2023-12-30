@@ -23,6 +23,9 @@
 
   **************************************************************************/
 
+#include "RF_calc.h"
+#include "paCBGmessageID.h"
+
 /* PCM DOWN-TELEMETRY
 
 	HBR FRAME:
@@ -449,8 +452,7 @@ public:
 	bool DriveToReacqSetPoint;
 	double HGAWavelength;
 	double HGAFrequency;
-	double Gain85ft;
-	double Power85ft;
+	RFCALC_RFProperties GroundTransmitterRFProperties;
 
 	double GetResolvedPitch() { return PitchRes * DEG; }
 	double GetResolvedYaw() { return YawRes * DEG; }
@@ -495,15 +497,12 @@ public:
 	void TimeStep();			// TimeStep
 	double OMNIWavelength;
 	double OMNIFrequency;
-	double Gain30ft;
-	double Power30ft;
+	RFCALC_RFProperties GroundTransmitterRFProperties;
 	double OMNI_Gain;
 protected:
 	Saturn *sat;				// Ship we're installed in
 	VECTOR3 direction;
 	double hpbw_factor;			//Beamwidth factor
-	OBJHANDLE hMoon;
-	OBJHANDLE hEarth;
 };
 
 class VHFAntenna
@@ -585,7 +584,7 @@ protected:
 	VHFAntenna *rightAntenna;
 	VHFAntenna *activeAntenna;
 	Saturn *sat;
-	LEM *lem;
+	VESSEL *lem;
 };
 
 
@@ -602,6 +601,7 @@ public:
 
 	double GetRange() { return range / 185.20; }
 	void RangingReturnSignal(); // ################# DELETE ME #######################
+	void GetRangeCMC();
 protected:
 
 	bool RangingOffLogic();
