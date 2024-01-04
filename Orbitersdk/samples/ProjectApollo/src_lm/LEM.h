@@ -165,7 +165,7 @@ public:
 
 	void DrawSwitchVC(int id, int event, SURFHANDLE surf);
 	void SetDirection(const VECTOR3 &xvec, const VECTOR3 &yvec);
-	void DefineVCAnimations(UINT vc_idx);
+	void DefineVCAnimations(UINT vc_idx, bool left);
 	void DefineMeshGroup(UINT _grpX, UINT _grpY);
 
 	bool IsPowered();
@@ -182,7 +182,7 @@ protected:
 	UINT grpX, grpY;
 
 	VECTOR3 xvector, yvector;
-	MGROUP_TRANSLATE *xtrans, *ytrans;
+	MGROUP_ROTATE *xtrans, *ytrans;
 };
 
 #define CROSSPOINTER_LEFT_START_STRING "CROSSPOINTER_LEFT_START"
@@ -508,6 +508,7 @@ public:
 	void clbkVisualCreated(VISHANDLE vis, int refcount);
 	void clbkVisualDestroyed(VISHANDLE vis, int refcount);
 	void clbkDockEvent(int dock, OBJHANDLE connected);
+	void clbkFocusChanged(bool getfocus, OBJHANDLE hNewVessel, OBJHANDLE hOldVessel);
 
 	void GetScenarioState(FILEHANDLE scn, void *vs);
 	void SetGenericStageState(int stat);
@@ -538,6 +539,12 @@ public:
 	virtual void StartEVA();
 	void StartSeparationPyros();
 	void StopSeparationPyros();
+
+	//
+	// VISHANDLE
+	//
+
+	VISHANDLE vis;
 
 	h_Tank *DesO2Tank;
 	h_Tank *AscO2Tank1;
@@ -699,6 +706,13 @@ protected:
 	void SetContactLight(int m, bool state);
 	void SetPowerFailureLight(int m, bool state);
 	void SetStageSeqRelayLight(int m, bool state);
+
+#ifdef _OPENORBITER
+	void SetLMVCIntegralLight(UINT meshidx, DWORD *matList, MatProp EmissionMode, double state, int cnt);
+#else
+	void SetLMVCIntegralLight(UINT meshidx, DWORD *matList, int EmissionMode, double state, int cnt);
+#endif
+
 	void InitFDAI(UINT mesh);
 
 	// LM touchdown points
@@ -1702,6 +1716,8 @@ protected:
 	bool RefreshPanelIdInTimestep;
 	bool VcInfoActive;
 	bool VcInfoEnabled;
+
+	double visibilitySize;
 
 	//
 	// Random motion.
