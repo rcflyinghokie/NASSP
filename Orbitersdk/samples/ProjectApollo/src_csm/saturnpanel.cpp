@@ -2830,15 +2830,15 @@ void Saturn::SetSwitches(int panel) {
 	FuelCell1BusContCB.Init		 (  0, 182, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 10.);
 	FuelCell1PurgeCB.Init		 (  0, 121, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusA);
 	FuelCell1RadCB.Init			 (  0,  82, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 5.);
-	CryogenicH2HTR1CB.Init		 (  0,  43, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	CryogenicH2HTR2CB.Init		 (  0,   4, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
+	CryogenicH2HTR1CB.Init		 (  0,  43, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusA, 15);
+	CryogenicH2HTR2CB.Init		 (  0,   4, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusB, 15);
 	FuelCell2PumpsACCB.Init		 (102, 292, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &FuelCellPumps2Switch);
 	FuelCell2ReacsCB.Init		 (102, 222, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 10.);
 	FuelCell2BusContCB.Init		 (102, 182, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 10.);
 	FuelCell2PurgeCB.Init		 (102, 121, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusB);
 	FuelCell2RadCB.Init			 (102,  82, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 5.);
-	CryogenicO2HTR1CB.Init		 (102,  43, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	CryogenicO2HTR2CB.Init		 (102,   4, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
+	CryogenicO2HTR1CB.Init		 (102,  43, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusA, 15);
+	CryogenicO2HTR2CB.Init		 (102,   4, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusB, 15);
 	FuelCell3PumpsACCB.Init		 (205, 292, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &FuelCellPumps3Switch);
 	FuelCell3ReacsCB.Init		 (205, 222, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 10.);
 	FuelCell3BusContCB.Init		 (205, 182, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 10.);
@@ -3914,15 +3914,15 @@ void Saturn::PanelSwitchToggled(TwoPositionSwitch *s) {
 		//Fuel cell reaactant valve switches now control the reactant valves themselves and not fuel cell operation directly
 	} else if (s == &FuelCellReactants1Switch) {
 		FuelCellReactantsSwitchToggled(s, &FuelCell1ReacsCB, &FuelCell1BusContCB,
-			(int*) Panelsdk.GetPointerByString("HYDRAULIC:H2FUELCELL1MANIFOLD:IN:OPEN"), (int*) Panelsdk.GetPointerByString("HYDRAULIC:O2FUELCELL1MANIFOLD:IN:OPEN"));
+			(int*) Panelsdk.GetPointerByString("HYDRAULIC:H2FUELCELL1MANIFOLD:OUT:OPEN"), (int*) Panelsdk.GetPointerByString("HYDRAULIC:O2FUELCELL1MANIFOLD:OUT:OPEN"));
 
 	} else if (s == &FuelCellReactants2Switch) {
 		FuelCellReactantsSwitchToggled(s, &FuelCell2ReacsCB, &FuelCell2BusContCB,
-			(int*)Panelsdk.GetPointerByString("HYDRAULIC:H2FUELCELL2MANIFOLD:IN:OPEN"), (int*)Panelsdk.GetPointerByString("HYDRAULIC:O2FUELCELL2MANIFOLD:IN:OPEN"));
+			(int*)Panelsdk.GetPointerByString("HYDRAULIC:H2FUELCELL2MANIFOLD:OUT:OPEN"), (int*)Panelsdk.GetPointerByString("HYDRAULIC:O2FUELCELL2MANIFOLD:OUT:OPEN"));
 
 	} else if (s == &FuelCellReactants3Switch) {
 		FuelCellReactantsSwitchToggled(s, &FuelCell3ReacsCB, &FuelCell3BusContCB,
-			(int*)Panelsdk.GetPointerByString("HYDRAULIC:H2FUELCELL3MANIFOLD:IN:OPEN"), (int*)Panelsdk.GetPointerByString("HYDRAULIC:O2FUELCELL3MANIFOLD:IN:OPEN"));
+			(int*)Panelsdk.GetPointerByString("HYDRAULIC:H2FUELCELL3MANIFOLD:OUT:OPEN"), (int*)Panelsdk.GetPointerByString("HYDRAULIC:O2FUELCELL3MANIFOLD:OUT:OPEN"));
 
 
 	} else if (s == &MainBusTieBatAcSwitch) {
@@ -4056,22 +4056,22 @@ void Saturn::PanelIndicatorSwitchStateRequested(IndicatorSwitch *s) {
 	}
 	//Reaction valves for Apollo 13 and before were wired in series with the indicators so both valves had to close before the talkback would barberpole
 	else if (s == &FuelCellReactants1Indicator) {
-		if ((FuelCellH2Manifold[0]->IN_valve.open == 0) &&
-			(FuelCellO2Manifold[0]->IN_valve.open == 0) &&
+		if ((FuelCellH2Manifold[0]->OUT_valve.open == 0) &&
+			(FuelCellO2Manifold[0]->OUT_valve.open == 0) &&
 			FuelCell1BusContCB.IsPowered()) FuelCellReactants1Indicator.SetState(0);
 		else FuelCellReactants1Indicator.SetState(1);
 
 	}
 	else if (s == &FuelCellReactants2Indicator) {
-		if ((FuelCellH2Manifold[1]->IN_valve.open == 0) &&
-			(FuelCellO2Manifold[1]->IN_valve.open == 0) &&
+		if ((FuelCellH2Manifold[1]->OUT_valve.open == 0) &&
+			(FuelCellO2Manifold[1]->OUT_valve.open == 0) &&
 			FuelCell2BusContCB.IsPowered()) FuelCellReactants2Indicator.SetState(0);
 		else FuelCellReactants2Indicator.SetState(1);
 
 	}
 	else if (s == &FuelCellReactants3Indicator) {
-		if ((FuelCellH2Manifold[2]->IN_valve.open == 0) &&
-			(FuelCellO2Manifold[2]->IN_valve.open == 0) &&
+		if ((FuelCellH2Manifold[2]->OUT_valve.open == 0) &&
+			(FuelCellO2Manifold[2]->OUT_valve.open == 0) &&
 			FuelCell3BusContCB.IsPowered()) FuelCellReactants3Indicator.SetState(0);
 		else FuelCellReactants3Indicator.SetState(1);
 
@@ -4326,17 +4326,24 @@ void Saturn::StopMasterAlarm()
 	cws.SetMasterAlarm(false);
 }
 
-void Saturn::RenderS1bEngineLight(bool EngineOn, SURFHANDLE dest, SURFHANDLE src, int xoffs, int yoffs)
+void Saturn::RenderS1bEngineLight(bool EngineOn, SURFHANDLE dest, SURFHANDLE src, int xoffs, int yoffs, int TexMul)
 
 {
+	xoffs *= TexMul;
+	yoffs *= TexMul;
 	if (EngineOn)
 	{
-		oapiBlt(dest, src, xoffs, yoffs, xoffs, yoffs, 29, 29);
+		oapiBlt(dest, src, xoffs, yoffs, xoffs, yoffs, 29*TexMul, 29*TexMul);
 	}
 	else
 	{
-		oapiBlt(dest, src, xoffs, yoffs, xoffs + 101, yoffs, 29, 29);
+		oapiBlt(dest, src, xoffs, yoffs, xoffs + 101*TexMul, yoffs, 29*TexMul, 29*TexMul);
 	}
+}
+
+bool Saturn::AbortLightLogic()
+{
+	return ((secs.AbortLightPowerA() && udl.GetAbortLightA()) || ((secs.AbortLightPowerB() && udl.GetAbortLightB())) || (iuCommandConnector.GetAbortLight()));
 }
 
 bool Saturn::clbkPanelRedrawEvent(int id, int event, SURFHANDLE surf)
@@ -4664,7 +4671,7 @@ bool Saturn::clbkPanelRedrawEvent(int id, int event, SURFHANDLE surf)
 		return true;
 
 	case AID_ABORT_LIGHT:
-		if ((secs.AbortLightPowerA() && udl.GetAbortLightA()) || ((secs.AbortLightPowerB() && udl.GetAbortLightB())) || (iuCommandConnector.GetAbortLight())) {
+		if (AbortLightLogic()) {
 			oapiBlt(surf,srf[SRF_ABORT], 0, 0, 62, 0, 62, 31);
 		} else {
 			oapiBlt(surf,srf[SRF_ABORT], 0, 0, 0, 0, 62, 31);
@@ -5139,9 +5146,9 @@ void Saturn::InitSwitches() {
 	FuelCellRadiators2Switch.Register(PSH, "FuelCellRadiators2Switch", THREEPOSSWITCH_CENTER, SPRINGLOADEDSWITCH_CENTER);
 	FuelCellRadiators3Switch.Register(PSH, "FuelCellRadiators3Switch", THREEPOSSWITCH_CENTER, SPRINGLOADEDSWITCH_CENTER);
 
-	FuelCellIndicatorsSwitch.AddPosition(0, 330);
+	FuelCellIndicatorsSwitch.AddPosition(0, 329);
 	FuelCellIndicatorsSwitch.AddPosition(1,   0);
-	FuelCellIndicatorsSwitch.AddPosition(2,  30);
+	FuelCellIndicatorsSwitch.AddPosition(2,  29);
 	FuelCellIndicatorsSwitch.Register(PSH, "FuelCellIndicatorsSwitch", 0);
 
 	FuelCellHeater1Switch.Register(PSH, "FuelCellHeater1Switch", true);
@@ -5503,12 +5510,12 @@ void Saturn::InitSwitches() {
 
 	IMUGuardedCageSwitch.Register(PSH, "IMUGuardedCageSwitch", 0, 0);
 
-	RCSIndicatorsSwitch.AddPosition(0, 280);
-	RCSIndicatorsSwitch.AddPosition(1, 310);
-	RCSIndicatorsSwitch.AddPosition(2, 340);
-	RCSIndicatorsSwitch.AddPosition(3, 20);
-	RCSIndicatorsSwitch.AddPosition(4, 50);
-	RCSIndicatorsSwitch.AddPosition(5, 80);
+	RCSIndicatorsSwitch.AddPosition(0, 278);
+	RCSIndicatorsSwitch.AddPosition(1, 309);
+	RCSIndicatorsSwitch.AddPosition(2, 342);
+	RCSIndicatorsSwitch.AddPosition(3,  16);
+	RCSIndicatorsSwitch.AddPosition(4,  49);
+	RCSIndicatorsSwitch.AddPosition(5,  81);
 	RCSIndicatorsSwitch.Register(PSH, "RCSIndicatorsSwitch", 1);
 
 	LVGuidanceSwitch.Register(PSH, "LVGuidanceSwitch", TOGGLESWITCH_UP, false);
@@ -5519,8 +5526,8 @@ void Saturn::InitSwitches() {
 		TLIEnableSwitch.Register(PSH, "TLIEnableSwitch", true);
 	}
 
-	ECSIndicatorsSwitch.AddPosition(0, 340);
-	ECSIndicatorsSwitch.AddPosition(1, 20);
+	ECSIndicatorsSwitch.AddPosition(0, 342);
+	ECSIndicatorsSwitch.AddPosition(1,  16);
 	ECSIndicatorsSwitch.Register(PSH, "ECSIndicatorsSwitch", 0);
 
 	CGSwitch.Register(PSH, "CGSwitch", 1);
@@ -5678,37 +5685,37 @@ void Saturn::InitSwitches() {
 	
 	SPSTestSwitch.Register(PSH, "SPSTestSwitch", THREEPOSSWITCH_CENTER, SPRINGLOADEDSWITCH_CENTER);
 
-	EcsGlycolPumpsSwitch.AddPosition(0, 240);
-	EcsGlycolPumpsSwitch.AddPosition(1, 270);
-	EcsGlycolPumpsSwitch.AddPosition(2, 300);
-	EcsGlycolPumpsSwitch.AddPosition(3, 330);
-	EcsGlycolPumpsSwitch.AddPosition(4,   0);
+	EcsGlycolPumpsSwitch.AddPosition(0, 238);
+	EcsGlycolPumpsSwitch.AddPosition(1, 268);
+	EcsGlycolPumpsSwitch.AddPosition(2, 301);
+	EcsGlycolPumpsSwitch.AddPosition(3, 331);
+	EcsGlycolPumpsSwitch.AddPosition(4, 356);
 	EcsGlycolPumpsSwitch.Register(PSH, "EcsGlycolPumpsSwitch", 2);
 
-	RightIntegralRotarySwitch.AddPosition(0,  210);
-	RightIntegralRotarySwitch.AddPosition(1,  240);
-	RightIntegralRotarySwitch.AddPosition(2,  270);
-	RightIntegralRotarySwitch.AddPosition(3,  300);
-	RightIntegralRotarySwitch.AddPosition(4,  330);
+	RightIntegralRotarySwitch.AddPosition(0,  200);
+	RightIntegralRotarySwitch.AddPosition(1,  232);
+	RightIntegralRotarySwitch.AddPosition(2,  264);
+	RightIntegralRotarySwitch.AddPosition(3,  296);
+	RightIntegralRotarySwitch.AddPosition(4,  328);
 	RightIntegralRotarySwitch.AddPosition(5,    0);
-	RightIntegralRotarySwitch.AddPosition(6,   30);
-	RightIntegralRotarySwitch.AddPosition(7,   60);
-	RightIntegralRotarySwitch.AddPosition(8,   90);
-	RightIntegralRotarySwitch.AddPosition(9,  120);
-	RightIntegralRotarySwitch.AddPosition(10, 150);
+	RightIntegralRotarySwitch.AddPosition(6,   32);
+	RightIntegralRotarySwitch.AddPosition(7,   64);
+	RightIntegralRotarySwitch.AddPosition(8,   96);
+	RightIntegralRotarySwitch.AddPosition(9,  128);
+	RightIntegralRotarySwitch.AddPosition(10, 160);
 	RightIntegralRotarySwitch.Register(PSH, "RightIntegralRotarySwitch", 0);
 
-	RightFloodRotarySwitch.AddPosition(0,  210);
-	RightFloodRotarySwitch.AddPosition(1,  240);
-	RightFloodRotarySwitch.AddPosition(2,  270);
-	RightFloodRotarySwitch.AddPosition(3,  300);
-	RightFloodRotarySwitch.AddPosition(4,  330);
+	RightFloodRotarySwitch.AddPosition(0,  200);
+	RightFloodRotarySwitch.AddPosition(1,  232);
+	RightFloodRotarySwitch.AddPosition(2,  264);
+	RightFloodRotarySwitch.AddPosition(3,  296);
+	RightFloodRotarySwitch.AddPosition(4,  328);
 	RightFloodRotarySwitch.AddPosition(5,    0);
-	RightFloodRotarySwitch.AddPosition(6,   30);
-	RightFloodRotarySwitch.AddPosition(7,   60);
-	RightFloodRotarySwitch.AddPosition(8,   90);
-	RightFloodRotarySwitch.AddPosition(9,  120);
-	RightFloodRotarySwitch.AddPosition(10, 150);
+	RightFloodRotarySwitch.AddPosition(6,   32);
+	RightFloodRotarySwitch.AddPosition(7,   64);
+	RightFloodRotarySwitch.AddPosition(8,   96);
+	RightFloodRotarySwitch.AddPosition(9,  128);
+	RightFloodRotarySwitch.AddPosition(10, 160);
 	RightFloodRotarySwitch.Register(PSH, "RightFloodRotarySwitch", 0);
 
 	HighGainAntennaPitchPositionSwitch.AddPosition(0,   0);
@@ -5757,40 +5764,40 @@ void Saturn::InitSwitches() {
 	HighGainAntennaStrengthMeter.Register(PSH, "HighGainAntennaStrengthMeter", 0, 100, 5);
 	HighGainAntennaYawMeter.Register(PSH, "HighGainAntennaYawMeter", 0, 360, 5, 0);
 
-	EMSFunctionSwitch.AddPosition(0,  180);
-	EMSFunctionSwitch.AddPosition(1,  210);
+	EMSFunctionSwitch.AddPosition(0,  179);
+	EMSFunctionSwitch.AddPosition(1,  211);
 	EMSFunctionSwitch.AddPosition(2,  240);
 	EMSFunctionSwitch.AddPosition(3,  270);
 	EMSFunctionSwitch.AddPosition(4,  300);
-	EMSFunctionSwitch.AddPosition(5,  330);
+	EMSFunctionSwitch.AddPosition(5,  332);
 	EMSFunctionSwitch.AddPosition(6,    0);
-	EMSFunctionSwitch.AddPosition(7,   30);
+	EMSFunctionSwitch.AddPosition(7,   36);
 	EMSFunctionSwitch.AddPosition(8,   60);
-	EMSFunctionSwitch.AddPosition(9,   90);
-	EMSFunctionSwitch.AddPosition(10, 120);
-	EMSFunctionSwitch.AddPosition(11, 150);
+	EMSFunctionSwitch.AddPosition(9,   89);
+	EMSFunctionSwitch.AddPosition(10, 115);
+	EMSFunctionSwitch.AddPosition(11, 138);
 	EMSFunctionSwitch.Register(PSH, "EMSFunctionSwitch", 0);
 	EMSFunctionSwitch.SetWraparound(true);
 
 	EMSDvDisplay.Register(PSH, "EMSDvDisplay", -1000, 14000, 1, 0);
 	EMSScrollDisplay.Register(PSH, "EMSScrollDisplay",0, 0, 0, 0);	// dummy switch/display for checklist controller
 
-	VHFAntennaRotarySwitch.AddPosition(0, 300);
+	VHFAntennaRotarySwitch.AddPosition(0, 303);
 	VHFAntennaRotarySwitch.AddPosition(1,   0);
-	VHFAntennaRotarySwitch.AddPosition(2,  60);
+	VHFAntennaRotarySwitch.AddPosition(2,  57);
 	VHFAntennaRotarySwitch.Register(PSH, "VHFAntennaRotarySwitch", 1);
 
-	DCIndicatorsRotary.AddPosition(0, 210);
-	DCIndicatorsRotary.AddPosition(1, 240);
+	DCIndicatorsRotary.AddPosition(0, 211);
+	DCIndicatorsRotary.AddPosition(1, 241);
 	DCIndicatorsRotary.AddPosition(2, 270);
-	DCIndicatorsRotary.AddPosition(3, 300);
-	DCIndicatorsRotary.AddPosition(4, 330);
+	DCIndicatorsRotary.AddPosition(3, 301);
+	DCIndicatorsRotary.AddPosition(4, 329);
 	DCIndicatorsRotary.AddPosition(5,   0);
 	DCIndicatorsRotary.AddPosition(6,  30);
-	DCIndicatorsRotary.AddPosition(7,  60);
-	DCIndicatorsRotary.AddPosition(8,  90);
-	DCIndicatorsRotary.AddPosition(9, 120);
-	DCIndicatorsRotary.AddPosition(10,150);
+	DCIndicatorsRotary.AddPosition(7,  57);
+	DCIndicatorsRotary.AddPosition(8,  89);
+	DCIndicatorsRotary.AddPosition(9, 117);
+	DCIndicatorsRotary.AddPosition(10,147);
 	DCIndicatorsRotary.Register(PSH, "DCIndicatorsRotary", 3);
 
 	DCIndicatorsRotary.SetSource(0, FuelCells[0]);
@@ -5805,12 +5812,12 @@ void Saturn::InitSwitches() {
 	DCIndicatorsRotary.SetSource(9, &PyroBusAFeeder);
 	DCIndicatorsRotary.SetSource(10, &PyroBusBFeeder);
 
-	ACIndicatorRotary.AddPosition(0, 280);
-	ACIndicatorRotary.AddPosition(1, 310);
-	ACIndicatorRotary.AddPosition(2, 340);
-	ACIndicatorRotary.AddPosition(3, 20);
-	ACIndicatorRotary.AddPosition(4, 50);
-	ACIndicatorRotary.AddPosition(5, 80);
+	ACIndicatorRotary.AddPosition(0, 277);
+	ACIndicatorRotary.AddPosition(1, 308);
+	ACIndicatorRotary.AddPosition(2, 342);
+	ACIndicatorRotary.AddPosition(3,  16);
+	ACIndicatorRotary.AddPosition(4,  49);
+	ACIndicatorRotary.AddPosition(5,  82);
 	ACIndicatorRotary.Register(PSH, "ACIndicatorRotary", 5);
 
 	ACIndicatorRotary.SetSource(0, &ACBus1PhaseA);
@@ -5820,10 +5827,10 @@ void Saturn::InitSwitches() {
 	ACIndicatorRotary.SetSource(4, &ACBus2PhaseB);
 	ACIndicatorRotary.SetSource(5, &ACBus2PhaseC);
 
-	BatteryChargeRotary.AddPosition(0, 300);
-	BatteryChargeRotary.AddPosition(1, 330);
-	BatteryChargeRotary.AddPosition(2,   0);
-	BatteryChargeRotary.AddPosition(3,  30);
+	BatteryChargeRotary.AddPosition(0, 301);
+	BatteryChargeRotary.AddPosition(1, 329);
+	BatteryChargeRotary.AddPosition(2, 359);
+	BatteryChargeRotary.AddPosition(3,  29);
 	BatteryChargeRotary.Register(PSH, "BatteryChargeRotary", 0);
 	
 	DockingProbeExtdRelSwitch.Register(PSH, "DockingProbeExtdRelSwitch", THREEPOSSWITCH_CENTER, false, SPRINGLOADEDSWITCH_CENTER_SPRINGUP);
@@ -5873,24 +5880,24 @@ void Saturn::InitSwitches() {
 	IntegralRotarySwitch.AddPosition(10, 150);
 	IntegralRotarySwitch.Register(PSH, "IntegralRotarySwitch", 4);
 
-	FDAIPowerRotarySwitch.AddPosition(0,  0);
-	FDAIPowerRotarySwitch.AddPosition(1, 30);
-	FDAIPowerRotarySwitch.AddPosition(2, 60);
-	FDAIPowerRotarySwitch.AddPosition(3, 90);
+	FDAIPowerRotarySwitch.AddPosition(0, 355);
+	FDAIPowerRotarySwitch.AddPosition(1,  25);
+	FDAIPowerRotarySwitch.AddPosition(2,  60);
+	FDAIPowerRotarySwitch.AddPosition(3,  96);
 	FDAIPowerRotarySwitch.Register(PSH, "FDAIPowerRotarySwitch", 0);
 
-	SCSElectronicsPowerRotarySwitch.AddPosition(0, 30);
-	SCSElectronicsPowerRotarySwitch.AddPosition(1, 60);
+	SCSElectronicsPowerRotarySwitch.AddPosition(0, 28);
+	SCSElectronicsPowerRotarySwitch.AddPosition(1, 58);
 	SCSElectronicsPowerRotarySwitch.AddPosition(2, 90);
 	SCSElectronicsPowerRotarySwitch.Register(PSH, "SCSElectronicsPowerRotarySwitch", 0);
 
-	BMAGPowerRotary1Switch.AddPosition(0, 30);
-	BMAGPowerRotary1Switch.AddPosition(1, 60);
-	BMAGPowerRotary1Switch.AddPosition(2, 90);
+	BMAGPowerRotary1Switch.AddPosition(0, 27);
+	BMAGPowerRotary1Switch.AddPosition(1, 58);
+	BMAGPowerRotary1Switch.AddPosition(2, 89);
 	BMAGPowerRotary1Switch.Register(PSH, "BMAGPowerRotary1Switch", 1);
 
-	BMAGPowerRotary2Switch.AddPosition(0, 30);
-	BMAGPowerRotary2Switch.AddPosition(1, 60);
+	BMAGPowerRotary2Switch.AddPosition(0, 28);
+	BMAGPowerRotary2Switch.AddPosition(1, 58);
 	BMAGPowerRotary2Switch.AddPosition(2, 90);
 	BMAGPowerRotary2Switch.Register(PSH, "BMAGPowerRotary2Switch", 1);
 
@@ -5943,54 +5950,54 @@ void Saturn::InitSwitches() {
 	LeftSystemTestRotarySwitch.AddPosition(3,  330);
 	LeftSystemTestRotarySwitch.AddPosition(4,    0);
 	LeftSystemTestRotarySwitch.AddPosition(5,   30);
-	LeftSystemTestRotarySwitch.AddPosition(6,   60);
-	LeftSystemTestRotarySwitch.AddPosition(7,   90);
-	LeftSystemTestRotarySwitch.AddPosition(8,  120);
+	LeftSystemTestRotarySwitch.AddPosition(6,   59);
+	LeftSystemTestRotarySwitch.AddPosition(7,   89);
+	LeftSystemTestRotarySwitch.AddPosition(8,  118);
 	LeftSystemTestRotarySwitch.Register(PSH, "LeftSystemTestRotarySwitch", 4);
 	
-	RightSystemTestRotarySwitch.AddPosition(0,  315);
-	RightSystemTestRotarySwitch.AddPosition(1,  340);
-	RightSystemTestRotarySwitch.AddPosition(2,   20);
-	RightSystemTestRotarySwitch.AddPosition(3,   45);
+	RightSystemTestRotarySwitch.AddPosition(0,  310);
+	RightSystemTestRotarySwitch.AddPosition(1,  342);
+	RightSystemTestRotarySwitch.AddPosition(2,   17);
+	RightSystemTestRotarySwitch.AddPosition(3,   49);
 	RightSystemTestRotarySwitch.Register(PSH, "RightSystemTestRotarySwitch", 1);
 	
-	Panel100NumericRotarySwitch.AddPosition(0,  210);
-	Panel100NumericRotarySwitch.AddPosition(1,  240);
-	Panel100NumericRotarySwitch.AddPosition(2,  270);
-	Panel100NumericRotarySwitch.AddPosition(3,  300);
-	Panel100NumericRotarySwitch.AddPosition(4,  330);
+	Panel100NumericRotarySwitch.AddPosition(0,  200);
+	Panel100NumericRotarySwitch.AddPosition(1,  232);
+	Panel100NumericRotarySwitch.AddPosition(2,  264);
+	Panel100NumericRotarySwitch.AddPosition(3,  296);
+	Panel100NumericRotarySwitch.AddPosition(4,  328);
 	Panel100NumericRotarySwitch.AddPosition(5,    0);
-	Panel100NumericRotarySwitch.AddPosition(6,   30);
-	Panel100NumericRotarySwitch.AddPosition(7,   60);
-	Panel100NumericRotarySwitch.AddPosition(8,   90);
-	Panel100NumericRotarySwitch.AddPosition(9,  120);
-	Panel100NumericRotarySwitch.AddPosition(10, 150);
+	Panel100NumericRotarySwitch.AddPosition(6,   32);
+	Panel100NumericRotarySwitch.AddPosition(7,   64);
+	Panel100NumericRotarySwitch.AddPosition(8,   96);
+	Panel100NumericRotarySwitch.AddPosition(9,  128);
+	Panel100NumericRotarySwitch.AddPosition(10, 160);
 	Panel100NumericRotarySwitch.Register(PSH, "Panel100NumericRotarySwitch", 4);
 
-	Panel100FloodRotarySwitch.AddPosition(0,  210);
-	Panel100FloodRotarySwitch.AddPosition(1,  240);
-	Panel100FloodRotarySwitch.AddPosition(2,  270);
-	Panel100FloodRotarySwitch.AddPosition(3,  300);
-	Panel100FloodRotarySwitch.AddPosition(4,  330);
+	Panel100FloodRotarySwitch.AddPosition(0,  200);
+	Panel100FloodRotarySwitch.AddPosition(1,  232);
+	Panel100FloodRotarySwitch.AddPosition(2,  264);
+	Panel100FloodRotarySwitch.AddPosition(3,  296);
+	Panel100FloodRotarySwitch.AddPosition(4,  328);
 	Panel100FloodRotarySwitch.AddPosition(5,    0);
-	Panel100FloodRotarySwitch.AddPosition(6,   30);
-	Panel100FloodRotarySwitch.AddPosition(7,   60);
-	Panel100FloodRotarySwitch.AddPosition(8,   90);
-	Panel100FloodRotarySwitch.AddPosition(9,  120);
-	Panel100FloodRotarySwitch.AddPosition(10, 150);
+	Panel100FloodRotarySwitch.AddPosition(6,   32);
+	Panel100FloodRotarySwitch.AddPosition(7,   64);
+	Panel100FloodRotarySwitch.AddPosition(8,   96);
+	Panel100FloodRotarySwitch.AddPosition(9,  128);
+	Panel100FloodRotarySwitch.AddPosition(10, 160);
 	Panel100FloodRotarySwitch.Register(PSH, "Panel100FloodRotarySwitch", 0);
 
-	Panel100IntegralRotarySwitch.AddPosition(0,  210);
-	Panel100IntegralRotarySwitch.AddPosition(1,  240);
-	Panel100IntegralRotarySwitch.AddPosition(2,  270);
-	Panel100IntegralRotarySwitch.AddPosition(3,  300);
-	Panel100IntegralRotarySwitch.AddPosition(4,  330);
+	Panel100IntegralRotarySwitch.AddPosition(0,  200);
+	Panel100IntegralRotarySwitch.AddPosition(1,  232);
+	Panel100IntegralRotarySwitch.AddPosition(2,  264);
+	Panel100IntegralRotarySwitch.AddPosition(3,  296);
+	Panel100IntegralRotarySwitch.AddPosition(4,  328);
 	Panel100IntegralRotarySwitch.AddPosition(5,    0);
-	Panel100IntegralRotarySwitch.AddPosition(6,   30);
-	Panel100IntegralRotarySwitch.AddPosition(7,   60);
-	Panel100IntegralRotarySwitch.AddPosition(8,   90);
-	Panel100IntegralRotarySwitch.AddPosition(9,  120);
-	Panel100IntegralRotarySwitch.AddPosition(10, 150);
+	Panel100IntegralRotarySwitch.AddPosition(6,   32);
+	Panel100IntegralRotarySwitch.AddPosition(7,   64);
+	Panel100IntegralRotarySwitch.AddPosition(8,   96);
+	Panel100IntegralRotarySwitch.AddPosition(9,  128);
+	Panel100IntegralRotarySwitch.AddPosition(10, 160);
 	Panel100IntegralRotarySwitch.Register(PSH, "Panel100IntegralRotarySwitch", 4);
 
 	OxygenSurgeTankValveRotary.AddPosition(0,  330);

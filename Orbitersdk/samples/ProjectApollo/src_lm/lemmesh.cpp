@@ -50,6 +50,7 @@ MESHHANDLE hLMDescent;
 MESHHANDLE hLMDescentNoLeg;
 MESHHANDLE hLMAscent;
 MESHHANDLE hLMVC;
+MESHHANDLE hLMXpointerShades;
 
 static PARTICLESTREAMSPEC lunar_dust = {
 	0,		// flag
@@ -145,7 +146,8 @@ void LEM::SetLmVesselDockStage()
 {
 	ClearThrusterDefinitions();
 	SetEmptyMass(AscentFuelMassKg + AscentEmptyMassKg + DescentEmptyMassKg);
-	SetSize (6);
+	if (oapiGetFocusObject() == GetHandle()) { SetSize(6); }
+	else { SetSize(visibilitySize); }
 	SetVisibilityLimit(1e-3, 4.6401e-4);
 	SetPMI(_V(2.5428, 2.2871, 2.7566));
 	SetCrossSections (_V(24.53,21.92,24.40));
@@ -163,6 +165,7 @@ void LEM::SetLmVesselDockStage()
 	// Configure meshes if needed
 	if (!pMission->LMHasLegs()) InsertMesh(hLMDescentNoLeg, dscidx, &mesh_dsc);
 	SetLMMeshVis();
+	if (pMission->GetCrossPointerShades()) ShowXPointerShades();
 
 	if (!ph_Dsc)
 	{
@@ -208,11 +211,8 @@ void LEM::SetLmVesselDockStage()
 
 void LEM::SetLmVesselHoverStage()
 {
-	ClearThrusterDefinitions();
-
-	SetEmptyMass(AscentFuelMassKg + AscentEmptyMassKg + DescentEmptyMassKg);
-
-	SetSize (7);
+	if (oapiGetFocusObject() == GetHandle()) { SetSize(7); }
+	else { SetSize(visibilitySize); }
 	SetVisibilityLimit(1e-3, 5.4135e-4);
 	SetPMI(_V(2.5428, 2.2871, 2.7566));
 	SetCrossSections (_V(24.53,21.92,24.40));
@@ -221,54 +221,11 @@ void LEM::SetLmVesselHoverStage()
 	SetPitchMomentScale (0);
 	SetYawMomentScale (0);
 	SetLiftCoeffFunc (0);
-	ClearBeacons();
-	ClearExhaustRefs();
-	ClearAttExhaustRefs();
 
 	DefineTouchdownPoints(1);
 
-	if (!ph_Dsc){  
-		ph_Dsc  = CreatePropellantResource(DescentFuelMassKg); //2nd stage Propellant
-	}
-	else
-	{
-		SetPropellantMaxMass(ph_Dsc, DescentFuelMassKg);
-	}
-
-	SetDefaultPropellantResource (ph_Dsc); // display 2nd stage propellant level in generic HUD
-
-	if (!ph_RCSA){
-		ph_RCSA = CreatePropellantResource(LM_RCS_FUEL_PER_TANK);
-	}
-	if (!ph_RCSB){
-		ph_RCSB = CreatePropellantResource(LM_RCS_FUEL_PER_TANK);
-	}
-	
-	// orbiter main thrusters
-	//Ascent stage mesh has RCS plane as reference, but it's shifted by 0.99 m up for center of full LM mesh
-	//RCS plane is at 254 inches in LM coordinates. DPS gimbal plane is at 154 inches in LM coordinates
-	//Therefore: 3.9116 m - (6.4516 m - 0.99 m) = -1.55 m for the DPS reference position
-	th_hover[0] = CreateThruster(_V(0.0, -1.55, 0.0), _V(0, 1, 0), 46706.3, ph_Dsc, 3107);
-	thg_hover = CreateThrusterGroup(th_hover, 1, THGROUP_USER);
-
-	EXHAUSTSPEC es_hover[1] = {
-		{ th_hover[0], NULL, NULL, NULL, 10.0, 1.5, 1.16, 0.1, exhaustTex, EXHAUST_CONSTANTPOS }
-	};
-
-	AddExhaust(es_hover);
-
-	AddDust();
-
 	status = 1;
 	stage = 1;
-	SetView();
-	AddRCS_LMH(-5.4616); //254 inches minus the 0.99m offset from mesh_asc = 5.4616 m
-
-	InitNavRadios (4);
-
-	// Exterior lights
-	SetTrackLight();
-	SetDockingLights();
 }
 
 void LEM::SetLmAscentHoverStage()
@@ -279,7 +236,8 @@ void LEM::SetLmAscentHoverStage()
 	//We have shifted everything to the center of the mesh. If currentCoG gets used by the ascent stage it will be updated on the next timestep
 	currentCoG = _V(0, 0, 0);
 	LastFuelWeight = numeric_limits<double>::infinity(); // Ensure update at first opportunity
-	SetSize (5);
+	if (oapiGetFocusObject() == GetHandle()) { SetSize(5); }
+	else { SetSize(visibilitySize); }
 	SetVisibilityLimit(1e-3, 3.8668e-4);
 	SetEmptyMass (AscentEmptyMassKg);
 	SetPMI(_V(2.8, 2.29, 2.37));
@@ -595,6 +553,16 @@ void LEM::HideDeflectors()
 	}
 }
 
+void LEM::ShowXPointerShades()
+{
+	xpointershadesidx = AddMesh(hLMXpointerShades, &mesh_asc);
+
+	if (xpointershadesidx == -1)
+		return;
+
+	SetMeshVisibilityMode(xpointershadesidx, MESHVIS_VC);
+}
+
 void LEM::SetTrackLight() {
 	
 	static VECTOR3 beaconCol = _V(1, 1, 1);
@@ -854,6 +822,7 @@ void LEMLoadMeshes()
 	hLMDescentNoLeg = oapiLoadMeshGlobal("ProjectApollo/LM_DescentStageNoLeg");
 	hLMAscent = oapiLoadMeshGlobal ("ProjectApollo/LM_AscentStage");
 	hLMVC = oapiLoadMeshGlobal("ProjectApollo/LM_VC");
+	hLMXpointerShades = oapiLoadMeshGlobal("ProjectApollo/LM_Xpointer_Shades");
 	lunar_dust.tex = oapiRegisterParticleTexture("ProjectApollo/dust");
 }
 

@@ -822,7 +822,7 @@ struct DKICommon
 	double NPC;
 	//M-line of maneuver line number at which rendezvous is to take place
 	double MI;
-	//Delta time of lighting condition for TPI
+	//Delta time of lighting condition for TPI, in minutes!
 	double TLIT;
 	//Control flag for TPI time computation. 1 = Input TPI time, 2 = input TPF time, 3 = TPI at "TLIT" minutes into night, 
 	//4 = TPI at "TLIT" minutes into day, 5: TPF at "TLIT" minutes into night, 6 = TPF at "TLIT" minutes into day
@@ -2110,7 +2110,7 @@ struct SunriseSunsetTable
 {
 	int num = 0;
 	SunriseSunsetData data[8];
-	std::string errormessage;
+	std::string errormessage = "MED OUTDATED";
 };
 
 // Parameter block for Calculation(). Expand as needed.
@@ -2402,6 +2402,8 @@ struct ELVCTRInputTable
 struct ELVCTROutputTable2
 {
 	EphemerisData2 SV;
+	//2 = Order of interpolation performed less than order of interpolation requested, 16 = Time for requested interpolation exceeds ephemeris end time
+	//32 = Time for requested interpolation precedes first time in ephemeris, 64 = Invalid order of interpolation requested, 128 = Fewer than two vectors available
 	int ErrorCode;
 	//Order of interpolation performed
 	unsigned ORER;
@@ -2409,6 +2411,48 @@ struct ELVCTROutputTable2
 	int VPI;
 	//Update number
 	int TUP;
+};
+
+struct TLITargetingParametersTable
+{
+	int Day = 0;
+
+	//Launch day specific
+	double T_LO;
+	double theta_EO;
+	double omega_E;
+	double K_a1 = 0.0;
+	double K_a2 = 0.0;
+	double K_T3;
+
+	double hx[3][5]; //Azimuth from time polynomial (radians)
+	double t_D0, t_D1, t_D2, t_D3; //Times of the opening and closing of launch windows
+	double t_DS0, t_DS1, t_DS2, t_DS3; //Times to segment the azimuth calculation polynomial
+	double t_SD1, t_SD2, t_SD3;	//Times used to scale the azimuth polynomial
+
+	//TLI opportunity specific
+	double T_ST[2];
+	double beta[2];
+	double alpha_TS[2];
+	double f[2];
+	double R_N[2];
+	double T3_apo[2];
+	double tau3R[2];
+	double T2[2];
+	double Vex2[2];
+	double Mdot2[2];
+	double DV_BR[2];
+	double tau2N[2];
+	double KP0[2];
+	double KY0[2];
+
+	//TLI opportunity and launch time specific
+	double cos_sigma[2][15];
+	double C_3[2][15];
+	double e_N[2][15];
+	double RA[2][15];
+	double DEC[2][15];
+	double t_D[2][15];
 };
 
 class RTCC {
@@ -2425,11 +2469,19 @@ public:
 	void SetManeuverData(double TIG, VECTOR3 DV);
 	void GetTLIParameters(VECTOR3 &RIgn_global, VECTOR3 &VIgn_global, VECTOR3 &dV_LVLH, double &IgnMJD);
 	void LoadLaunchDaySpecificParameters(int year, int month, int day);
-	void LoadMissionConstantsFile(char *file);
+	bool LoadMissionFiles();
+	bool LoadMissionConstantsFile(std::string file);
+
+	//Offline Programs
+
+	//Build TLI targeting parameters table
+	int QMMBLD(std::string file);
+	//Search tape and build skeleton flight plan table
+	int QMSEARCH(std::string file);
 private:
 	void LoadMissionInitParameters(int year, int month, int day);
+	void InitializeCoordinateSystem();
 public:
-
 	void AP7TPIPAD(const AP7TPIPADOpt &opt, AP7TPI &pad);
 	void AP9LMTPIPAD(AP9LMTPIPADOpt *opt, AP9LMTPI &pad);
 	void AP9LMCDHPAD(AP9LMCDHPADOpt *opt, AP9LMCDH &pad);
@@ -2471,7 +2523,7 @@ public:
 	void LandmarkTrackingPAD(LMARKTRKPADOpt *opt, AP11LMARKTRKPAD &pad);
 	//S-IVB TLI IGM Pre-Thrust Targeting Module
 	int PMMSPT(PMMSPTInput &in);
-	int PCMSP2(int J, double t_D, double &cos_sigma, double &C3, double &e_N, double &RA, double &DEC);
+	int PCMSP2(TLITargetingParametersTable *tlitab, int J, double t_D, double &cos_sigma, double &C3, double &e_N, double &RA, double &DEC);
 	void LMThrottleProgram(double F, double v_e, double mass, double dV_LVLH, double &F_average, double &ManPADBurnTime, double &bt_var, int &step);
 	void FiniteBurntimeCompensation(SV sv, double attachedMass, VECTOR3 DV, int engine, VECTOR3 &DV_imp, double &t_slip, bool agc = true);
 	void FiniteBurntimeCompensation(SV sv, double attachedMass, VECTOR3 DV, int engine, VECTOR3 &DV_imp, double &t_slip, SV &sv_tig, SV &sv_cut, bool agc = true);
@@ -2517,15 +2569,15 @@ public:
 	bool DockingInitiationProcessor(DKIOpt opt);
 	int ConcentricRendezvousProcessor(const SPQOpt &opt, SPQResults &res);
 	double CalculateTPITimes(SV sv0, int tpimode, double t_TPI_guess, double dt_TPI_sunrise);
-	void AGOPCislunarNavigation(SV sv, MATRIX3 REFSMMAT, int star, double yaw, VECTOR3 &IMUAngles, double &TA, double &SA);
 	VECTOR3 LOICrewChartUpdateProcessor(EphemerisData sv0, MATRIX3 REFSMMAT, double p_EMP, double LOI_TIG, VECTOR3 dV_LVLH_LOI, double p_T, double y_T);
 	SV coast(SV sv0, double dt);
 	EphemerisData coast(EphemerisData sv1, double dt);
 	EphemerisData coast(EphemerisData sv1, double dt, int veh);
-	EphemerisData coast(EphemerisData sv1, double dt, double Weight, double Area, double KFactor = 1.0);
+	EphemerisData coast(EphemerisData sv1, double dt, double Weight, double Area, double KFactor, bool Venting);
 	VECTOR3 HatchOpenThermalControl(double GMT, MATRIX3 REFSMMAT);
 	VECTOR3 PointAOTWithCSM(MATRIX3 REFSMMAT, EphemerisData sv, int AOTdetent, int star, double dockingangle);
 	void DockingAlignmentProcessor(DockAlignOpt &opt);
+	VECTOR3 SkylabDockingAttitude(EphemerisData sv, MATRIX3 REFSMMAT, double DDA = 0.0);
 	AEGBlock SVToAEG(EphemerisData sv, double Area, double Weight, double KFactor);
 	//Apsides Determination Subroutine
 	int PMMAPD(AEGHeader Header, AEGDataBlock Z, int KAOP, int KE, double *INFO, AEGDataBlock *sv_A, AEGDataBlock *sv_P);
@@ -2610,6 +2662,8 @@ public:
 	void GMLRESRT(int type);
 	//Detailed Maneuver Table Math Module
 	void PMMDMT(int L, unsigned man, RTCCNIAuxOutputTable *aux);
+	//Skeleton flight plan interpolation program
+	void PMMSFPIN();
 	//Time Queue Control Load Module
 	void EMSTIME(int L, int ID);
 	void FDOLaunchAnalog1(EphemerisData sv);
@@ -2654,7 +2708,7 @@ public:
 	//Maneuver Execution Program
 	void PMSEXE(int L, double gmt);
 	//Earth Orbit Insertion Processor
-	void PMMIEV(double T_L);
+	void PMMIEV(int L, double T_L);
 	//SLV Targeting Load Module
 	void PMMPAR(VECTOR3 RT, VECTOR3 VT, double TT);
 	//Perigee Adjust
@@ -2687,6 +2741,8 @@ public:
 	//Anchor Vector Maintenance Module
 	void EMGVECSTInput(int L, StateVectorTableEntry sv);
 	int EMGVECSTOutput(int L, EphemerisData &sv);
+	//Fetch nearest free flight vector
+	int EMSFFV(double gmt, int L, EphemerisData &sv);
 	int ThrusterNameToCode(std::string thruster);
 	int AttitudeNameToCode(std::string attitude);
 
@@ -2768,6 +2824,10 @@ public:
 	void EMMGSTMP();
 	//Guidance Optics Display
 	void EMDGSUPP(int err);
+	//LEM Guidance Optics MSK Math
+	void EMMGLMST(int mode);
+	//LEM Optics Support Table Display
+	void EMDGLMST();
 	//FDO Orbit Digitals
 	void EMMDYNMC(int L, int queid, int ind = 0, double param = 0.0);
 	//FDO Space Digitals
@@ -2964,7 +3024,11 @@ public:
 
 	MCC *mcc;
 	struct calculationParameters calcParams;
-	char MissionFileName[64];
+
+	//RTCC file names, equivalent to tapes containing the data
+	std::string SystemParametersFile;
+	std::string	TLIFile;
+	std::string SFPFile;
 
 	//MEDs
 
@@ -3338,7 +3402,7 @@ public:
 
 	std::vector<std::string> MSK0050Buffer; //Perigee Adjust Display
 
-	std::vector<VECTOR3> EZJGSTAR;
+	VECTOR3 EZJGSTAR[400];
 
 	struct LunarSurfaceAlignmentTable
 	{
@@ -3388,16 +3452,58 @@ public:
 
 	struct LunarOpticsSupportTable
 	{
-		std::string MAT;
-		MATRIX3 REFSMMAT = _M(0, 0, 0, 0, 0, 0, 0, 0, 0);
+		int MODE = 0; //1 = ???, 2 = DOK, 3 = FLT, 4 = AGS, 5 = LUN, 6 = MAT, 7 = CHK
+		VECTOR3 LM_ATT = _V(0, 0, 0);
+		VECTOR3 CSM_ATT = _V(0, 0, 0);
+		double DKAN = 0.0;
+		double GETHORIZ = 0.0;
+		double OGA = 0.0;
+
+		//Star 1
+		int star1 = 0;
+		double RA1 = 0.0;
+		double DEC1 = 0.0;
+		VECTOR3 Att1 = _V(0, 0, 0);
+		int L1 = 0; //Reticle line (0 = +X, 1 = -X, 2 = +Y, 3 = -Y)
+		double A1_1 = 0.0; //AOT counter for cursor
+		double A2_1 = 0.0; //AOT counter for spirale
+		int D1 = 2;
+
+		//Star 2
+		int star2 = 0;
+		double RA2 = 0.0;
+		double DEC2 = 0.0;
+		VECTOR3 Att2 = _V(0, 0, 0);
+		int L2 = 0; //Reticle line (0 = +X, 1 = -X, 2 = +Y, 3 = -Y)
+		double A1_2 = 0.0; //AOT counter for cursor
+		double A2_2 = 0.0; //AOT counter for spirale
+		int D2 = 2;
+
+		//COAS
+		unsigned COAS_star1 = 0;
+		double COAS_EL1 = 0.0;
+		double COAS_SXP1 = 0.0;
+		unsigned COAS_star2 = 0;
+		double COAS_EL2 = 0.0;
+		double COAS_SXP2 = 0.0;
+		int COAS_AXIS = 1; //1 = PX, 2 = PZ
+
+		VECTOR3 StoredAttTLM = _V(0, 0, 0);
+		VECTOR3 StoredAttMED = _V(0, 0, 0);
+
+		bool showRealign = false;
+		VECTOR3 GIMB_ANG = _V(0, 0, 0);
+		VECTOR3 FDAI_ANG = _V(0, 0, 0);
+
+		int REF1 = 0;
+		int REF2 = 0;
+		int REFSUSED = 0;
+
+		bool REFSMMATValid = false;
+		MATRIX3 StoredREFSMMAT = _M(1, 0, 0, 0, 1, 0, 0, 0, 1);
 	} EZJGSTBL;
 
-	struct LOSTDisplay
-	{
-		std::string MAT;
-		MATRIX3 REFSMMAT = _M(0, 0, 0, 0, 0, 0, 0, 0, 0);
-		std::string err;
-	} LOSTDisplayBuffer;
+	std::vector<std::string> LOSTDisplayBuffer;
 
 	REFSMMATLocker EZJGMTX1, EZJGMTX3;
 	FIDOOrbitDigitals EZSAVCSM, EZSAVLEM;
@@ -3613,37 +3719,9 @@ public:
 		double mjd0 = 0.0;
 	} EZNPMATX;
 
-	struct TLITargetingParametersTable
+	struct TLITargetingParametersMasterTable
 	{
-		int Day;
-		double T_LO;
-		double theta_EO;
-		double omega_E;		
-		double K_a1 = 0.0;
-		double K_a2 = 0.0;
-		double K_T3;
-
-		double T_ST[2];
-		double beta[2];
-		double alpha_TS[2];
-		double f[2];
-		double R_N[2];
-		double T3_apo[2];
-		double tau3R[2];
-		double T2[2];
-		double Vex2[2];
-		double Mdot2[2];
-		double DV_BR[2];
-		double tau2N[2];
-		double KP0[2];
-		double KY0[2];
-
-		double cos_sigma[2][15];
-		double C_3[2][15];
-		double e_N[2][15];
-		double RA[2][15];
-		double DEC[2][15];
-		double t_D[2][15];
+		TLITargetingParametersTable data[10];
 	} PZSTARGP;
 
 	struct SIVBTLIMatrixTable
@@ -4374,6 +4452,30 @@ public:
 		LunarRendezvousPlanningDisplayData data[7];
 	} PZLRPT;
 
+	struct MasterFlightPlanTableAzimuth
+	{
+		int iAzimuth = -1; //ID
+		double dAzimuth = 0.0; //Actual value
+		TLMCCDataTable data;
+	};
+
+	struct MasterFlightPlanTableOpportunity
+	{
+		int Opportunity = -1;
+		std::vector<MasterFlightPlanTableAzimuth> data;
+	};
+
+	struct MasterFlightPlanTableDay
+	{
+		int day = -1;
+		std::vector<MasterFlightPlanTableOpportunity> data;
+	};
+
+	struct MasterFlightPlanTable
+	{
+		std::vector<MasterFlightPlanTableDay> data;
+	} PZMFPTAB;
+
 	struct SkeletonFlightPlanTable
 	{
 		//Blocks
@@ -4383,6 +4485,9 @@ public:
 		TLMCCDataTable blocks[2];
 		//Block 6
 		int DisplayBlockNum = 1;
+		int Day;
+		int Opportunity;
+		double Azimuth;
 	} PZSFPTAB;
 
 	struct UpdatedSkeletonFlightPlansTable
@@ -4484,6 +4589,12 @@ public:
 		int G14_RB = 0;
 		double G14_lat = 0.0, G14_lng = 0.0, G14_height = 0.0;
 		double G14_GMT = 0.0;
+
+		double G20_HORIZGET = 0.0;
+		int G20_COAS_Axis = 1;
+		int G20_AOT_Detent = 2;
+
+		int G23_Option = 1;
 	} EZGSTMED;
 
 	struct ExternalDVMakeupBuffer
@@ -4724,7 +4835,7 @@ public:
 	} VEHDATABUF;
 
 	double GetClockTimeFromAGC(agc_t *agc);
-	double GetTEPHEMFromAGC(agc_t *agc);
+	double GetTEPHEMFromAGC(agc_t *agc, int address = 01706);
 
 private:
 	void AP7ManeuverPAD(AP7ManPADOpt *opt, AP7MNV &pad);
@@ -4766,11 +4877,12 @@ private:
 	bool CalculationMTP_F(int fcn, LPVOID &pad, char * upString = NULL, char * upDesc = NULL, char * upMessage = NULL);
 	bool CalculationMTP_G(int fcn, LPVOID &pad, char * upString = NULL, char * upDesc = NULL, char * upMessage = NULL);
 	bool CalculationMTP_H1(int fcn, LPVOID &pad, char * upString = NULL, char * upDesc = NULL, char * upMessage = NULL);
+	bool CalculationMTP_SL(int fcn, LPVOID &pad, char * upString = NULL, char * upDesc = NULL, char * upMessage = NULL);
 
 	//Generalized Contact Generator
 	void EMGENGEN(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, const StationTable &stationlist, int body, OrbitStationContactsTable &res, LunarStayTimesTable *LUNSTAY = NULL);
 	//Horizon Crossing Subprogram
-	bool EMXING(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, const StationData & station, int body, std::vector<StationContact> &acquisitions, LunarStayTimesTable *LUNSTAY);
+	int EMXING(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, const StationData & station, int body, std::vector<StationContact> &acquisitions, LunarStayTimesTable *LUNSTAY);
 	bool EMXINGLunarOccultation(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, double gmt, VECTOR3 R_S_equ, double &g_func, LunarStayTimesTable *LUNSTAY);
 	int CapeCrossingRev(int L, double GMT);
 	double CapeCrossingGMT(int L, int rev);
@@ -4829,13 +4941,6 @@ protected:
 	int PMMMCDCallEMSMISS(EphemerisData sv0, double GMTI, EphemerisData &sv1);
 	int PMSVCTAuxVectorFetch(int L, double T_F, EphemerisData &sv);
 	bool MEDTimeInputHHMMSS(std::string vec, double &hours);
-
-	//Offline Programs
-
-	//Search tape and build skeleton flight plan table
-	void QMSEARCH(int year, int month, int day);
-	//Build TLI targeting parameters table
-	void QMMBLD(int year, int month, int day);
 
 	EphemerisData ConvertSVtoEphemData(SV sv);
 	SV ConvertEphemDatatoSV(EphemerisData sv, double mass = 0.0);

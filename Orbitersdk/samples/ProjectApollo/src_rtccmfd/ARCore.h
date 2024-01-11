@@ -31,17 +31,18 @@ public:
 	AR_GCore(VESSEL* v);
 	~AR_GCore();
 
-	void SetMissionSpecificParameters();
+	void SetMissionSpecificParameters(int mission);
 	void MPTMassUpdate();
 	int MPTTrajectoryUpdate(VESSEL *ves, bool csm);
 
 	bool MissionPlanningActive;
-	int mission;				//0=manual, 7 = Apollo 7, 8 = Apollo 8, 9 = Apollo 9, etc.
 
 	VESSEL *pMPTVessel;
 	int MPTVesselNumber;
 
 	int mptInitError;
+
+	double REFSMMAT_PTC_MJD;
 
 	RTCC* rtcc;
 };
@@ -142,12 +143,12 @@ public:
 	void GetStateVectorFromIU();
 	void GetStateVectorsFromAGS();
 	void VectorCompareDisplayCalc();
-	void UpdateTLITargetTable();
 	void GenerateSpaceDigitalsNoMPT();
 	void LUNTARCalc();
 	void TLIProcessorCalc();
 	void SaturnVTLITargetUplink();
 	int GetVesselParameters(int Thruster, int &Config, int &TVC, double &CSMMass, double &LMMass);
+	void menuCalculateIMUComparison();
 
 	int startSubthread(int fcn);
 	int subThread();
@@ -236,7 +237,6 @@ public:
 
 	//REFSMMAT PAGE
 	double REFSMMAT_LVLH_Time;
-	double REFSMMAT_PTC_MJD;
 	int REFSMMATopt; //Displayed REFSMMAT page: 0 = P30 Maneuver, 1 = P30 Retro, 2 = LVLH, 3 = Lunar Entry, 4 = Launch, 5 = Landing Site, 6 = PTC, 7 = Attitude, 8 = LS during TLC
 	int REFSMMATcur; //Currently saved REFSMMAT
 	bool REFSMMATHeadsUp;
@@ -298,7 +298,7 @@ public:
 	double LmkTime;
 
 	//VECPOINT PAGE
-	int VECoption;		//0 = Point SC at body, 1 = Open hatch thermal control, 2 = Point AOT with CSM
+	int VECoption;		//0 = Point SC at body, 1 = Open hatch thermal control
 	int VECdirection;	//0 = +X, 1 = -X, 2 = +Y,3 = -Y,4 = +Z, 5 = -Z
 	OBJHANDLE VECbody;	//handle for the desired body
 	VECTOR3 VECangles;	//IMU angles
@@ -312,6 +312,7 @@ public:
 	//LM Ascent PAD
 	AP11LMASCPAD lmascentpad;
 	double t_LunarLiftoff;
+	int AscentPADVersion; //0 = Apollo 11-13, 1 = Apollo 14-17
 
 	//Powered Descent Abort Program
 	int PDAPEngine;	//0 = DPS/APS, 1 = APS
@@ -372,6 +373,27 @@ public:
 	double LUNTAR_yaw_guess;
 	double LUNTAR_TIG;
 	LunarTargetingProgramOutput LUNTAR_Output;
+
+	//APOLLO GENERALIZED OPTICS PROGRAM
+	int AGOP_Page;
+	int AGOP_Option;
+	int AGOP_Mode;
+	double AGOP_StartTime;
+	double AGOP_StopTime;
+	double AGOP_TimeStep; //in minutes
+	int AGOP_CSM_REFSMMAT;
+	int AGOP_LM_REFSMMAT;
+	int AGOP_Star;
+	double AGOP_Lat, AGOP_Lng, AGOP_Alt;
+	VECTOR3 AGOP_Attitude;
+	bool AGOP_AttIsCSM;
+	bool AGOP_HeadsUp;
+	double AGOP_AntennaPitch, AGOP_AntennaYaw;
+	std::vector<std::string> AGOP_Output;
+	std::string AGOP_Error;
+
+	//DEBUG
+	VECTOR3 DebugIMUTorquingAngles;
 
 private:
 

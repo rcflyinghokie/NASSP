@@ -24,12 +24,17 @@
 #include "saturnv.h"
 #include "LEM.h"
 
+class ApolloRTCCMFD;
+
 struct RTCCMFDInputBoxData
 {
 	double *dVal;
-	int *iVal;
+	int *iVal, *iVal2;
+	int min1, max1, min2, max2;
 	VECTOR3 *vVal;
 	double factor;
+	ApolloRTCCMFD *ptr = NULL;
+	void (ApolloRTCCMFD::*func)(void) = NULL;
 };
 
 class ApolloRTCCMFD: public MFD2 {
@@ -65,6 +70,7 @@ public:
 	void SPQDHdialogue();
 	void set_SPQDH(double DH);
 	void set_target();
+	void menuSLVLaunchTargetingPad();
 	void menuSLVLaunchTargeting();
 	void menuSLVLaunchUplink();
 	void menuVoid();
@@ -100,8 +106,6 @@ public:
 	void menuCycleMarkerUp();
 	void menuCycleMarkerDown();
 	void menuSetGMPInput();
-	void menuMissionNumberInput();
-	void set_MissionNumber(int mission);
 	void SPQcalc();
 	void lambertcalc();
 	void Angle_Display(char *Buff, double angle, bool DispPlus = true);
@@ -287,6 +291,13 @@ public:
 	void menuSetRTEDigitalsPage();
 	void menuSetRTEConstraintsPage();
 	void menuSetEntryUpdatePage();
+	void menuSetRTCCFilesPage();
+	void menuLoadSystemParametersFile();
+	void LoadSystemParametersFile(char *file);
+	void menuLoadTLIFile();
+	void LoadTLIFile(char *file);
+	void menuLoadSFPFile();
+	void LoadSFPFile(char *file);
 	void menuSetRendezvousPage();
 	void menuSetDKIPage();
 	void menuSetDKIOptionsPage();
@@ -397,8 +408,10 @@ public:
 	void cycleVECPOINTOpt();
 	void menuSetLMAscentPADPage();
 	void menuAscentPADCalc();
+	void menuCycleAscentPADVersion();
 	void menuSetPDAPPage();
 	void menuPDAPCalc();
+	void menuCyclePDAPSegments();
 	void menuCyclePDAPEngine();
 	void menuAP11AbortCoefUplink();
 	void menuSetFIDOOrbitDigitalsCSMPage();
@@ -552,6 +565,8 @@ public:
 	void menuTransferPoweredAscentToMPT();
 	void menuTransferPoweredDescentToMPT();
 	void CheckoutMonitorCalc();
+	void menuCycleMPTTable();
+	void menuCycleMPTMED();
 	void menuSetMPTInitInput();
 	void set_MPTInitM55Config(char *cfg);
 	void menuMPTUpdate();
@@ -619,6 +634,7 @@ public:
 	void menuCycleSFPDisplay();
 	void menuAlterationSFPData();
 	void menuTransferMCCPlanToSFP();
+	void menuInterpolateSFP();
 	void menuDeleteMidcourseColumn();
 	void menuSetNodalTargetConversionPage();
 	void menuCycleNodeConvOption();
@@ -658,6 +674,29 @@ public:
 	void menuGOSTSXTCalc();
 	void menuGOSTShowStarVector();
 	void menuGOSTShowLandmarkVector();
+	void menuGOSTEnterStarInCatalog();
+	void menuSaveOSTREFSMMAT();
+	void menuSetLMOpticsSupportTablePage();
+	void menuLOSTMode();
+	void set_LOSTMode(int mode);
+	void menuLOSTAttitude1();
+	void menuLOSTAttitude2();
+	void menuLOST_REFSMMAT1();
+	bool set_LOST_REFSMMAT1(char *str);
+	void menuLOST_REFSMMAT2();
+	bool set_LOST_REFSMMAT2(char *str);
+	void menuLOST_CSM_REFSMMAT();
+	bool set_LOST_CSM_REFSMMAT(char *str);
+	void menuLOSTOptics1();
+	void menuLOSTOptics2();
+	bool set_LOST_AGS_Star2(int star, char *pos, double ang);
+	void menuLOSTRealign();
+	void menuCalcLOST();
+	void set_LOSTCheckMode(double get,int Detent, int COASAxis);
+	void UpdateLOSTDisplay();
+	void CalculateLOSTDOKOption();
+	void menuSetDebugPage();
+	void menuCalculateIMUComparison();
 	void menuSLVNavigationUpdateCalc();
 	void menuSLVNavigationUpdateUplink();
 	void menuVectorPanelSummaryPage();
@@ -767,10 +806,17 @@ public:
 	void menuPerigeeAdjustThresholdTime();
 	void menuPerigeeAdjustTimeIncrement();
 	void menuPerigeeAdjustHeight();
+	void menuSetAGOPPage();
+	void menuCycleAGOPPage();
+	void menuSetAGOPInput();
+	void menuAGOPCalc();
+	void menuSetRTACFPage();
 	void GenericGETInput(double *get, char *message);
 	void GenericDoubleInput(double *val, char* message, double factor = 1.0);
-	void GenericIntInput(int *val, char* message);
-	void GenericVectorInput(VECTOR3 *val, char* message, double factor = 1.0);
+	void GenericIntInput(int *val, char* message, void (ApolloRTCCMFD::*func)(void) = NULL, int min = 1, int max = 0);
+	void GenericInt2Input(int *val1, int *val2, char* message, int min1, int max1, int min2, int max2, void (ApolloRTCCMFD::*func)(void) = NULL);
+	void GenericVectorInput(VECTOR3 *val, char* message, double factor = 1.0, void (ApolloRTCCMFD::*func)(void) = NULL);
+	void Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax = 1024, int ymax = 1024);
 protected:
 	oapi::Font *font;
 	oapi::Font *font2;
@@ -778,6 +824,7 @@ protected:
 	oapi::Font *fonttest;
 	oapi::Font *font3;
 	oapi::Font *font4;
+	oapi::Font *font5;
 	oapi::Pen *pen;
 	oapi::Pen *pen2;
 	Saturn *saturn;
@@ -786,8 +833,11 @@ protected:
 	int marker;
 	int markermax;
 	int RTETradeoffScreen;
+	int status; //Page dependent status, reset to 0 when new page is entered
 	static struct ScreenData {
 		int screen;
+		int marker;
+		int markermax;
 		int RTETradeoffScreen;
 	} screenData;
 private:

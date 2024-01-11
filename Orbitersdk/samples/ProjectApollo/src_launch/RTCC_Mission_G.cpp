@@ -148,6 +148,10 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 		EMSGSUPP(1, 1);
 		//Make telemetry matrix current
 		GMGMED("G00,CSM,TLM,CSM,CUR;");
+
+		//F62: Interpolate SFP
+		sprintf_s(Buff, "F62,,1,%.3lf;", Azi);
+		GMGMED(Buff);
 	}
 	break;
 	case 11: //TLI SIMULATION
@@ -213,8 +217,8 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 		EntryOpt entopt;
 		EntryResults res;
 		AP11ManPADOpt opt;
-		double TLIBase, TIG;
-		EphemerisData sv;
+		double TLIBase, TIG, GMTSV;
+		EphemerisData sv, sv_uplink;
 		SV sv1;
 		char buffer1[1000];
 
@@ -263,7 +267,10 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 		sprintf(form->purpose, "TLI+90");
 		sprintf(form->remarks, "No ullage, undocked");
 
-		AGCStateVectorUpdate(buffer1, RTCC_MPT_CSM, RTCC_MPT_CSM, sv, true);
+		GMTSV = PZMPTCSM.TimeToBeginManeuver[0] - 10.0*60.0; //10 minutes before TB6
+		sv_uplink = coast(sv, GMTSV - sv.GMT, RTCC_MPT_CSM); //Coast with venting and drag taken into account
+
+		AGCStateVectorUpdate(buffer1, RTCC_MPT_CSM, RTCC_MPT_CSM, sv_uplink, true);
 
 		sprintf(uplinkdata, "%s", buffer1);
 		if (upString != NULL) {
@@ -639,7 +646,13 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 		PZREAP.RRBIAS = 1285.0;
 		entopt.t_zmin = 145.0*3600.0;
 
+		//Temporarily set the minimum pericynthion height constraint to 40 NM. This was apparently done on the actual mission as well to make the desired solution converge
+		PZREAP.HMINMC = 40.0;
+
 		RTEMoonTargeting(&entopt, &res);
+
+		//Set back HMINMC to original value
+		PZREAP.HMINMC = 50.0;
 
 		opt.R_LLS = BZLAND.rad[RTCC_LMPOS_BEST];
 		opt.dV_LVLH = res.dV_LVLH;
@@ -1169,11 +1182,18 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 		}
 	}
 	break;
-	case 33: //CSM DAP DATA
+	case 33: //CSM DAP DATA (Undocked)
 	{
 		AP10DAPDATA * form = (AP10DAPDATA *)pad;
 
 		CSMDAPUpdate(calcParams.src, *form, false);
+	}
+	break;
+	case 39: //CSM DAP DATA (Docked)
+	{
+		AP10DAPDATA * form = (AP10DAPDATA *)pad;
+
+		CSMDAPUpdate(calcParams.src, *form, true);
 	}
 	break;
 	case 34: //LM DAP DATA
@@ -1416,7 +1436,6 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 			sv2 = coast(sv1, 1.0*2.0*3600.0);
 		}
 
-		entopt.Inclination = -40.0*RAD;
 		entopt.returnspeed = 1;
 		entopt.RV_MCC = sv2;
 		entopt.vessel = calcParams.src;
@@ -2105,7 +2124,7 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 
 		R_LS = OrbMech::r_from_latlong(BZLAND.lat[RTCC_LMPOS_BEST], BZLAND.lng[RTCC_LMPOS_BEST], BZLAND.rad[RTCC_LMPOS_BEST]);
 
-		dt1 = OrbMech::findelev_gs(SystemParameters.MAT_J2000_BRCS, sv_Liftoff.R, sv_Liftoff.V, R_LS, MJD_TIG_nom, 180.0*RAD, sv_Liftoff.gravref, LmkRange);
+		dt1 = OrbMech::findelev_gs(SystemParameters.AGCEpoch, SystemParameters.MAT_J2000_BRCS, sv_Liftoff.R, sv_Liftoff.V, R_LS, MJD_TIG_nom, 180.0*RAD, sv_Liftoff.gravref, LmkRange);
 
 		if (abs(LmkRange) < 8.0*1852.0)
 		{

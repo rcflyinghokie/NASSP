@@ -432,10 +432,20 @@ void SaturnFuelCellMeter::Init(SURFHANDLE surf, SwitchRow &row, Saturn *s, Rotat
 
 double SaturnFuelCellH2FlowMeter::QueryValue()
 {
-	FuelCellStatus fc;
-	Sat->GetFuelCellStatus(FuelCellIndicatorsSwitch->GetState() + 1, fc);
+	//please redo this with FuelCellIndicatorsSwitch chosing which FlowSensor powers the gauge or something less horrible than my if structure
+	double value = 0.0;
+	int state = FuelCellIndicatorsSwitch->GetState();
+	if (state == 0) {
+		value = Sat->FCH2FlowSensor1.Voltage();
+	}
+	else if (state == 1) {
+		value = Sat->FCH2FlowSensor2.Voltage();
+	}
+	else {
+		value = Sat->FCH2FlowSensor3.Voltage();
+	}
 
-	return fc.H2FlowLBH; 
+	return value*0.04;
 }
 
 void SaturnFuelCellH2FlowMeter::DoDrawSwitch(double v, SURFHANDLE drawSurface)
@@ -451,10 +461,20 @@ void SaturnFuelCellH2FlowMeter::DoDrawSwitch(double v, SURFHANDLE drawSurface)
 
 double SaturnFuelCellO2FlowMeter::QueryValue()
 {
-	FuelCellStatus fc;
-	Sat->GetFuelCellStatus(FuelCellIndicatorsSwitch->GetState() + 1, fc);
+	//please redo this with FuelCellIndicatorsSwitch chosing which FlowSensor powers the gauge or something less horrible than my if structure
+	double value = 0.0;
+	int state = FuelCellIndicatorsSwitch->GetState();
+	if (state == 0) {
+		value = Sat->FCO2FlowSensor1.Voltage();
+	}
+	else if (state == 1) {
+		value = Sat->FCO2FlowSensor2.Voltage();
+	}
+	else {
+		value = Sat->FCO2FlowSensor3.Voltage();
+	}
 
-	return fc.O2FlowLBH; 
+	return value/3.125;
 }
 
 void SaturnFuelCellO2FlowMeter::DoDrawSwitch(double v, SURFHANDLE drawSurface)
@@ -1081,9 +1101,9 @@ void SaturnSPSPercentMeter::DrawSwitchVC(int id, int event, SURFHANDLE drawSurfa
 	int digit2 = percent / 10;
 	int digit3 = percent - (digit2 * 10);
 
-	oapiBlt(drawSurface, BlackFontSurfacevc, 0, 0, 10 * digit1, 0, 10, 12);
-	oapiBlt(drawSurface, BlackFontSurfacevc, 13, 0, 10 * digit2, 0, 10, 12);
-	oapiBlt(drawSurface, WhiteFontSurfacevc, 26, 0, 11 * digit3, 0, 11, 12);
+	oapiBlt(drawSurface, BlackFontSurfacevc, 0, 0, 10 * digit1*TexMul, 0, 10*TexMul, 12*TexMul);
+	oapiBlt(drawSurface, BlackFontSurfacevc, 13*TexMul, 0, 10 * digit2*TexMul, 0, 10*TexMul, 12*TexMul);
+	oapiBlt(drawSurface, WhiteFontSurfacevc, 26*TexMul, 0, 11 * digit3*TexMul, 0, 11*TexMul, 12*TexMul);
 }
 
 double SaturnSPSOxidPercentMeter::QueryValue()
@@ -1292,6 +1312,8 @@ double SaturnSystemTestMeter::QueryValue()
 	case 4:
 		switch (right)
 		{
+		case 0:	//PRESS BAT COMPARTMENT (MANIF)
+			return Sat->BatteryManifoldPressureSensor.Voltage();
 		case 1:	//BAT RLY BUS VOLT
 			return Sat->sce.GetVoltage(0, 4);
 		case 3:	//CSM TO LM CURRENT
@@ -1746,8 +1768,8 @@ void SaturnEMSDvDisplay::DoDrawSwitchVC(SURFHANDLE surf, double v, SURFHANDLE dr
 {
 	if (Voltage() < SP_MIN_DCVOLTAGE || Sat->ems.IsOff() || !Sat->ems.IsDisplayPowered()) return;
 
-	const int DigitWidth = 17;
-	const int DigitHeight = 19;
+	const int DigitWidth = 17*TexMul;
+	const int DigitHeight = 19*TexMul;
 
 	if (v < 0) {	// Draw minus sign
 		oapiBlt(surf, drawSurface, 0, 0, 10 * DigitWidth, 0, DigitWidth, DigitHeight);
@@ -1764,7 +1786,7 @@ void SaturnEMSDvDisplay::DoDrawSwitchVC(SURFHANDLE surf, double v, SURFHANDLE dr
 		else if (buffer[i] == '.') {
 			if (!Sat->ems.IsDecimalPointBlanked())
 			{
-				oapiBlt(surf, drawSurface, 8 + DigitWidth * i, 0, 12 * DigitWidth, 0, 4, DigitHeight);	// Draw decimal point
+				oapiBlt(surf, drawSurface, 8 + DigitWidth * i, 0, 12 * DigitWidth, 0, 4*TexMul, DigitHeight);	// Draw decimal point
 			}
 		}
 	}
@@ -2401,17 +2423,17 @@ void SaturnLiftoffNoAutoAbortSwitch::DoDrawSwitch(SURFHANDLE drawSurface)
 	GuardedPushSwitch::DoDrawSwitch(drawSurface);
 }
 
-void SaturnLiftoffNoAutoAbortSwitch::RepaintSwitchVC(SURFHANDLE drawSurface, SURFHANDLE switchsurfacevc)
+void SaturnLiftoffNoAutoAbortSwitch::RepaintSwitchVC(SURFHANDLE drawSurface, SURFHANDLE switchsurfacevc, int TexMul)
 {
 	int ofs = 4;
 	if (secs->LiftoffLightPower()) {
 		if (!secs->NoAutoAbortLightPower())
-			oapiBlt(drawSurface, switchsurfacevc, 0 + ofs - 1, 0 + ofs, 117 + ofs, 1 + ofs, width - ofs, height - ofs, SURF_PREDEF_CK);
+			oapiBlt(drawSurface, switchsurfacevc, 0 + ofs - 1, 0 + ofs, 117*TexMul + ofs, 1 + ofs, width*TexMul - ofs, height*TexMul - ofs, SURF_PREDEF_CK);
 		else
-			oapiBlt(drawSurface, switchsurfacevc, 0 + ofs - 1, 0 + ofs, 273 + ofs, 1 + ofs, width - ofs, height - ofs, SURF_PREDEF_CK);
+			oapiBlt(drawSurface, switchsurfacevc, 0 + ofs - 1, 0 + ofs, 273*TexMul + ofs, 1 + ofs, width*TexMul - ofs, height*TexMul - ofs, SURF_PREDEF_CK);
 	}
 	else {
-		oapiBlt(drawSurface, switchsurfacevc, 0 + ofs - 1, 0 + ofs, 39 + ofs, 1 + ofs, width - ofs, height - ofs, SURF_PREDEF_CK);
+		oapiBlt(drawSurface, switchsurfacevc, 0 + ofs - 1, 0 + ofs, 39*TexMul + ofs, 1 + ofs, width*TexMul - ofs, height*TexMul - ofs, SURF_PREDEF_CK);
 	}
 }
 

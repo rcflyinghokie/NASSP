@@ -40,13 +40,6 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 		return;
 	}
 
-	//DPS engine gimbal plane
-	static const double K1 = 154.0*0.0254;
-	//SPS engine gimbal plane
-	static const double K2 = 833.2*0.0254;
-	//Distance between SPS and DPS gimbal planes
-	static const double K3 = 435.55*0.0254;
-
 	int IND;
 	double R, W[3], K;
 	VECTOR3 XCG[2], XI;
@@ -82,7 +75,7 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 			goto RTCC_GIMGBL_LABEL_3_5;
 		}
 		IND = 2;
-		K = K1;
+		K = SystemParameters.MGVDGD;
 		//Use LM DSC CG Table
 		XI = GIMGB2(SystemParameters.MHVLCG.Weight, SystemParameters.MHVLCG.CG, SystemParameters.MHVLCG.N, W[1]);
 	}
@@ -100,7 +93,7 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 		{
 			IND = 1;
 		}
-		K = K2;
+		K = SystemParameters.MGVSGD;
 		//Use CSM CG Table
 		XI = GIMGB2(SystemParameters.MHVCCG.Weight, SystemParameters.MHVCCG.CG, SystemParameters.MHVCCG.N, W[0]);
 	}
@@ -119,7 +112,7 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 		//Use CSM CG Table
 		XI = GIMGB2(SystemParameters.MHVCCG.Weight, SystemParameters.MHVCCG.CG, SystemParameters.MHVCCG.N, W[0]);
 		IND = 1;
-		K = K2 + K3;
+		K = SystemParameters.MGVSGD + SystemParameters.MGVSTD;
 	}
 	else
 	{
@@ -134,7 +127,7 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 			XI = GIMGB2(SystemParameters.MHVLCG.Weight, SystemParameters.MHVLCG.CG, SystemParameters.MHVLCG.N, W[1]);
 		}
 		IND = 2;
-		K = K1 + K3;
+		K = SystemParameters.MGVDGD + SystemParameters.MGVSTD;
 	}
 
 	XI.x = XI.x - K;
@@ -703,7 +696,7 @@ void RTCC::PITFPC(double MU, int K, double AORP, double ECC, double rad, double 
 	}
 	else
 	{
-		eps = 31.390;
+		eps = 63.78165;
 	}
 
 	//Parabolic case
@@ -721,7 +714,7 @@ void RTCC::PITFPC(double MU, int K, double AORP, double ECC, double rad, double 
 			//Calculate time
 			TIME = abs(AORP) / 2.0*sqrt(abs(AORP) / MU)*(TEMP1 + 1.0 / 3.0*pow(TEMP1, 3.0));
 
-			if (K == false)
+			if (K != 0)
 			{
 				TIME = -TIME;
 			}
@@ -752,7 +745,7 @@ void RTCC::PITFPC(double MU, int K, double AORP, double ECC, double rad, double 
 		TIME = AORP * sqrt(abs(AORP) / MU)*(E - ECC * (exp(E) - exp(-E)) / 2.0);
 	}
 
-	if (K == false)
+	if (K != 0)
 	{
 		TIME = -TIME;
 	}

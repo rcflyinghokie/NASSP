@@ -176,7 +176,7 @@ public:
 	void Init(h_Tank *o2sm, h_Tank *o2mr, h_Tank *o2st, h_Tank *o2rp, h_Tank *o2rpo, h_Pipe *o2rpop,
 		      RotationalSwitch *smv, RotationalSwitch *stv, RotationalSwitch *rpv,
 			  CircuitBrakerSwitch *mra, CircuitBrakerSwitch *mrb, PanelSwitchItem *eo2v,
-			  PanelSwitchItem *ro2v);
+			  PanelSwitchItem *ro2v, RotationalSwitch *strv);
 	void SystemTimestep(double simdt);
 	
 protected:
@@ -193,6 +193,7 @@ protected:
 	CircuitBrakerSwitch *mainRegulatorBSwitch;
 	PanelSwitchItem *emergencyO2Valve;
 	PanelSwitchItem *repressO2Valve;
+	RotationalSwitch *surgeTankReliefValve;
 
 };
 
@@ -402,6 +403,18 @@ protected:
 	h_Valve* WasteStowageValve;
 };
 
+class SaturnBatteryVent
+{
+public:
+	SaturnBatteryVent();
+	void Init(Saturn* s, RotationalSwitch* bvs, h_Tank* bmt);
+	void SystemTimestep(double simdt);
+protected:
+	Saturn* saturn;
+	RotationalSwitch* BatteryVentSwitch;
+	h_Tank* BatteryManifold;
+};
+
 class SaturnSuitFlowValves
 {
 public:
@@ -411,6 +424,27 @@ public:
 protected:
 	h_Valve* SuitFlowValve;
 	ThreePosSwitch* SuitFlowSwitch;
+};
+
+class SaturnDumpHeater
+{
+public:
+	SaturnDumpHeater();
+	void Init(Saturn* s, h_Radiator* noz, Boiler* ha, Boiler* sha, Boiler* hb, Boiler* shb, CircuitBrakerSwitch* cba, CircuitBrakerSwitch* cbb, ThreePosSwitch* sw);
+	double GetTemperatureF();
+	bool IsFrozen();
+	void SystemTimestep(double simdt);
+protected:
+	Saturn *saturn;
+	h_Radiator *nozzle;
+	Boiler *heaterA;
+	Boiler *stripheaterA;
+	Boiler *heaterB;
+	Boiler *stripheaterB;
+	CircuitBrakerSwitch *circuitbreakerA;
+	CircuitBrakerSwitch *circuitbreakerB;
+	ThreePosSwitch *powerswitch;
+	double temp;
 };
 
 #endif // _PA_ECS_H

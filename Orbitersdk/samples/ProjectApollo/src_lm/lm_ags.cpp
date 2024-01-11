@@ -137,7 +137,7 @@ void LEM_ASA::Timestep(double simdt){
 		return;
 	}
 
-	//If AEA is unpowered the ASA doesn't get the clock signal necessary to generate pulses, so it makes to reset this in that case
+	//If AEA is unpowered the ASA doesn't get the clock signal necessary to generate pulses, so it makes sense to reset this in that case
 	if (!lem->aea.IsPowered())
 	{
 		EulerAngles = _V(0.0, 0.0, 0.0);
@@ -171,8 +171,8 @@ void LEM_ASA::SystemTimestep(double simdt)
 {
 	if (IsPowered())
 	{
-		lem->SCS_ASA_CB.DrawPower(41.1);
-		asaHeat->GenerateHeat(95.1); //Electric heat load from LM-8 Systems Handbook
+		lem->SCS_ASA_CB.DrawPower(42.0);
+		asaHeat->GenerateHeat(42.0); //Electric heat load from LM-3 Systems Handbook
 	}
 }
 
@@ -324,8 +324,6 @@ LEM_AEA::LEM_AEA(PanelSDK &p, LEM_DEDA &display) : DCPower(0, p), deda(display) 
 	cos_psi = 0.0;
 	AGSAttitudeError = _V(0.0, 0.0, 0.0);
 	AGSLateralVelocity = 0.0;
-	Altitude = 0.0;
-	AltitudeRate = 0.0;
 	powered = false;
 
 	//
@@ -345,7 +343,18 @@ void LEM_AEA::Timestep(double simt, double simdt) {
 
 	//Determine if the AEA has power
 	powered = DeterminePowerState();
-	if (!IsPowered()) return;
+	if (!IsPowered())
+	{
+		// Reset last cycling time
+		LastCycled = 0;
+		// Reset program counter to 6000 for power up
+		vags.ProgramCounter = 06000;
+		// Also reset overflow
+		vags.Overflow = 0;
+		// And inhibit engine on
+		OutputPorts[IO_ODISCRETES] |= 02000;
+		return;
+	}
 
 	int Delta, CycleCount = 0;
 
@@ -528,7 +537,7 @@ void LEM_AEA::SetOutputChannel(int Type, int Data)
 
 	case 033:
 		//Altitude, Altitude Rate
-		SetAltitudeAltitudeRate(Data);
+		lem->RadarTape.AGSAltitudeAltitudeRate(Data);
 		break;
 
 	case 034:
@@ -668,32 +677,6 @@ void LEM_AEA::SetLateralVelocity(int Data)
 	AGSLateralVelocity = (double)DataVal*LATVELSCALEFACTOR;
 }
 
-void LEM_AEA::SetAltitudeAltitudeRate(int Data)
-{
-	int DataVal;
-
-	AGSChannelValue40 val = GetOutputChannel(IO_ODISCRETES);
-
-	if (val[AGSAltitude] == 0)
-	{
-		DataVal = Data & 0777777;
-
-		Altitude = (double)DataVal*ALTSCALEFACTOR;
-	}
-	else if (val[AGSAltitudeRate] == 0)
-	{
-		if (Data & 0400000) { // Negative
-			DataVal = -((~Data) & 0777777);
-			DataVal = -0400000 - DataVal;
-		}
-		else {
-			DataVal = Data & 0777777;
-		}
-
-		AltitudeRate = -(double)DataVal*ALTRATESCALEFACTOR;
-	}
-}
-
 void LEM_AEA::SetPGNSIntegratorRegister(int channel, int val)
 {
 	int valx;
@@ -751,16 +734,6 @@ VECTOR3 LEM_AEA::GetAttitudeError()
 double LEM_AEA::GetLateralVelocity()
 {
 	return AGSLateralVelocity;
-}
-
-double LEM_AEA::GetAltitude()
-{
-	return Altitude;
-}
-
-double LEM_AEA::GetAltitudeRate()
-{
-	return AltitudeRate;
 }
 
 void LEM_AEA::WireToBuses(e_object *a, e_object *b, ThreePosSwitch *s)
@@ -927,8 +900,6 @@ void LEM_AEA::SaveState(FILEHANDLE scn,char *start_str,char *end_str)
 	papiWriteScenario_double(scn, "COS_PSI", cos_psi);
 	papiWriteScenario_vec(scn, "ATTITUDEERROR", AGSAttitudeError);
 	papiWriteScenario_double(scn, "LATERALVELOCITY", AGSLateralVelocity);
-	papiWriteScenario_double(scn, "ALTITUDE", Altitude);
-	papiWriteScenario_double(scn, "ALTITUDERATE", AltitudeRate);
 
 	oapiWriteLine(scn, end_str);
 }
@@ -994,8 +965,6 @@ void LEM_AEA::LoadState(FILEHANDLE scn,char *end_str)
 		papiReadScenario_double(line, "COS_PSI", cos_psi);
 		papiReadScenario_vec(line, "ATTITUDEERROR", AGSAttitudeError);
 		papiReadScenario_double(line, "LATERALVELOCITY", AGSLateralVelocity);
-		papiReadScenario_double(line, "ALTITUDE", Altitude);
-		papiReadScenario_double(line, "ALTITUDERATE", AltitudeRate);
 	}
 }
 
@@ -1233,11 +1202,11 @@ int LEM_DEDA::ThreeDigitDisplaySegmentsLit(char *Str)
 	return s;
 }
 
-void LEM_DEDA::RenderThreeDigitDisplay(SURFHANDLE surf, SURFHANDLE digits, int dstx, int dsty, char *Str)
+void LEM_DEDA::RenderThreeDigitDisplay(SURFHANDLE surf, SURFHANDLE digits, int dstx, int dsty, char *Str, int TexMul)
 
 {
-	const int DigitWidth = 19;
-	const int DigitHeight = 21;
+	const int DigitWidth = 19*TexMul;
+	const int DigitHeight = 21*TexMul;
 	int Curdigit;
 
 	if (Str[0] >= '0' && Str[0] <= '9') {
@@ -1247,12 +1216,12 @@ void LEM_DEDA::RenderThreeDigitDisplay(SURFHANDLE surf, SURFHANDLE digits, int d
 
 	if (Str[1] >= '0' && Str[1] <= '9') {
 		Curdigit = Str[1] - '0';
-		oapiBlt(surf, digits, dstx + 20, dsty, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
+		oapiBlt(surf, digits, dstx + 20*TexMul, dsty, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
 	}
 
 	if (Str[2] >= '0' && Str[2] <= '9') {
 		Curdigit = Str[2] - '0';
-		oapiBlt(surf, digits, dstx + 39, dsty, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
+		oapiBlt(surf, digits, dstx + 39*TexMul, dsty, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
 	}
 }
 
@@ -1275,19 +1244,19 @@ int LEM_DEDA::SixDigitDisplaySegmentsLit(char *Str)
 	return s;
 }
 
-void LEM_DEDA::RenderSixDigitDisplay(SURFHANDLE surf, SURFHANDLE digits, int dstx, int dsty, char *Str)
+void LEM_DEDA::RenderSixDigitDisplay(SURFHANDLE surf, SURFHANDLE digits, int dstx, int dsty, char *Str, int TexMul)
 
 {
-	const int DigitWidth = 19;
-	const int DigitHeight = 21;
+	const int DigitWidth = 19*TexMul;
+	const int DigitHeight = 21*TexMul;
 	int	Curdigit;
 	int i;
 
 	if (Str[0] == '-') {
-		oapiBlt(surf, digits, dstx + 4, dsty, 10 * DigitWidth, 0, DigitWidth, DigitHeight);
+		oapiBlt(surf, digits, dstx + 4*TexMul, dsty, 10 * DigitWidth, 0, DigitWidth, DigitHeight);
 	}
 	else if (Str[0] == '+') {
-		oapiBlt(surf, digits, dstx + 4, dsty, 11 * DigitWidth, 0, DigitWidth, DigitHeight);
+		oapiBlt(surf, digits, dstx + 4*TexMul, dsty, 11 * DigitWidth, 0, DigitWidth, DigitHeight);
 	}
 
 	for (i = 1; i < 6; i++) {
@@ -1302,16 +1271,16 @@ void LEM_DEDA::RenderSixDigitDisplay(SURFHANDLE surf, SURFHANDLE digits, int dst
 }
 
 
-void LEM_DEDA::RenderAdr(SURFHANDLE surf, SURFHANDLE digits, int xOffset, int yOffset)
+void LEM_DEDA::RenderAdr(SURFHANDLE surf, SURFHANDLE digits, int xOffset, int yOffset, int TexMul)
 
 {
 	if (!IsPowered() || !HasNumPower())
 		return;
 
-	RenderThreeDigitDisplay(surf, digits, xOffset, yOffset, Adr);
+	RenderThreeDigitDisplay(surf, digits, xOffset, yOffset, Adr, TexMul);
 }
 
-void LEM_DEDA::RenderData(SURFHANDLE surf, SURFHANDLE digits, int xOffset, int yOffset)
+void LEM_DEDA::RenderData(SURFHANDLE surf, SURFHANDLE digits, int xOffset, int yOffset, int TexMul)
 
 {
 	if (!IsPowered() || !HasNumPower())
@@ -1321,7 +1290,7 @@ void LEM_DEDA::RenderData(SURFHANDLE surf, SURFHANDLE digits, int xOffset, int y
 	// Register contents.
 	//
 
-	RenderSixDigitDisplay(surf, digits, xOffset, yOffset, Data);
+	RenderSixDigitDisplay(surf, digits, xOffset, yOffset, Data, TexMul);
 }
 
 void LEM_DEDA::RenderKeys(SURFHANDLE surf, SURFHANDLE keys, int xOffset, int yOffset)
@@ -1362,7 +1331,7 @@ void LEM_DEDA::DEDAKeyBlt(SURFHANDLE surf, SURFHANDLE keys, int dstx, int dsty, 
 }
 
 
-void LEM_DEDA::RenderOprErr(SURFHANDLE surf, SURFHANDLE lights)
+void LEM_DEDA::RenderOprErr(SURFHANDLE surf, SURFHANDLE lights, int TexMul)
 
 {
 	if (!HasAnnunPower())
@@ -1373,10 +1342,10 @@ void LEM_DEDA::RenderOprErr(SURFHANDLE surf, SURFHANDLE lights)
 	//
 
 	if (OprErrLit()) {
-		oapiBlt(surf, lights, 0, 0, 46, 0, 45, 25);
+		oapiBlt(surf, lights, 0, 0, 46*TexMul, 0, 45*TexMul, 25*TexMul);
 	}
 	else {
-		oapiBlt(surf, lights, 0, 0, 0, 0, 45, 25);
+		oapiBlt(surf, lights, 0, 0, 0, 0, 45*TexMul, 25*TexMul);
 	}
 
 }
