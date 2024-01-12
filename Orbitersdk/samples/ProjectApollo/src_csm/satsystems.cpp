@@ -364,7 +364,7 @@ void Saturn::SystemsInit() {
 								&CabinRepressValveRotary);
 
 	EmergencyCabinPressureRegulator.Init((h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSREG1"),
-										(h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSREG2")
+										(h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSREG2"),
 									 	(h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGPRESSREGTEST"),
 										&EmergencyCabinPressureRotary, &EmergencyCabinPressureTestSwitch);
 
@@ -385,11 +385,9 @@ void Saturn::SystemsInit() {
 	
 	SuitCircuitReturnValve.Init((h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:SUITCIRCUITRETURNINLET"), &SuitCircuitReturnValveLever);
 	
-	O2SMSupply.Init((h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2SMSUPPLY"), (h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2MAINREGULATORA"), 
-					(h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:O2MAINREGULATORB"), (h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2SURGETANK"),
-					(h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2REPRESSPACKAGE"), (h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:O2REPRESSPACKAGEOUTLET"),
-					&OxygenSMSupplyRotary, &OxygenSurgeTankRotary, &OxygenRepressPackageRotary, &O2MainRegulatorASwitch, &O2MainRegulatorBSwitch,
-					&HatchEmergencyO2ValveSwitch, &HatchRepressO2ValveSwitch, &OxygenSurgeTankValveRotary);
+	O2SMSupply.Init((h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2SMSUPPLY"), (h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2SURGETANK"), (h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2REPRESSPACKAGE"),
+				&OxygenSMSupplyRotary, &OxygenSurgeTankRotary, &OxygenRepressPackageRotary, &OxygenSurgeTankValveRotary,
+				&HatchEmergencyO2ValveSwitch, &HatchRepressO2ValveSwitch);
 
 	CMTunnel = (h_Pipe *)Panelsdk.GetPointerByString("HYDRAULIC:CSMTUNNELUNDOCKED");
 

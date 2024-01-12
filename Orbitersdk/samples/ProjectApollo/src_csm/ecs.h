@@ -173,28 +173,22 @@ public:
 	O2SMSupply();
 	virtual ~O2SMSupply();
 
-	void Init(h_Tank *o2sm, h_Tank *o2mr, h_Tank *o2st, h_Tank *o2rp, h_Tank *o2rpo, h_Pipe *o2rpop,
-		      RotationalSwitch *smv, RotationalSwitch *stv, RotationalSwitch *rpv,
-			  CircuitBrakerSwitch *mra, CircuitBrakerSwitch *mrb, PanelSwitchItem *eo2v,
-			  PanelSwitchItem *ro2v, RotationalSwitch *strv);
+	void Init(h_Tank *o2sm, h_Tank *o2st, h_Tank *o2rp,
+		      RotationalSwitch *smv, RotationalSwitch *stv, RotationalSwitch *rpv, RotationalSwitch* strv,
+			  PanelSwitchItem *eo2v, PanelSwitchItem *ro2v);
 	void SystemTimestep(double simdt);
 	
 protected:
 	h_Tank *o2SMSupply;
-	h_Tank *o2MainRegulatorA;
-	h_Tank* o2MainRegulatorB;
 	h_Tank *o2SurgeTank;
 	h_Tank *o2RepressPackage;
-	h_Pipe *o2RepressPackageOutletPipe;
 	RotationalSwitch *smSupplyValve;
 	RotationalSwitch *surgeTankValve;
 	RotationalSwitch *repressPackageValve;
-	CircuitBrakerSwitch *mainRegulatorASwitch;
-	CircuitBrakerSwitch *mainRegulatorBSwitch;
+	RotationalSwitch *surgeTankReliefValve;
+	//RotationalSwitch repressReliefValve;
 	PanelSwitchItem *emergencyO2Valve;
 	PanelSwitchItem *repressO2Valve;
-	RotationalSwitch *surgeTankReliefValve;
-
 };
 
 ///
