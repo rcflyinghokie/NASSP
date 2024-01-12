@@ -276,6 +276,7 @@ static const double PSI   = 0.000145038;			///< Pa to PSI
 static const double MMHG  = 0.00750064;				///< Pa to mmHg
 static const double INH2O = 0.00401474;				///< Pa to in H2O
 static const double LBH   = 7.93665;				///< g/s to lb/h
+static const double LBM   = 0.132277;				///< g/s to lb/min
 static const double FPS   = 3.2808399;				///< m/s to ft/s
 static const double LBS = 0.0022046226218;			///< g to lbs
 static const double LBF = 0.2248089431;				///< N to lbf
