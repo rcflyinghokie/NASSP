@@ -648,13 +648,11 @@ O2MainRegulator::~O2MainRegulator() {
 
 }
 
-void O2MainRegulator::Init(h_Tank* o2man, h_Tank* o2mra, h_Tank* o2mrb, h_Tank* o2out, h_Tank* o2flow, h_Tank* watGlyPress,
+void O2MainRegulator::Init(h_Tank* o2mra, h_Tank* o2mrb, h_Tank* o2flow, h_Tank* watGlyPress,
 						CircuitBrakerSwitch* mrav, CircuitBrakerSwitch* mrbv,
 						RotationalSwitch* selIn, RotationalSwitch* selOut) {
-	o2MainRegulatorManifold = o2man;
 	o2MainRegulatorA = o2mra;
 	o2MainRegulatorB = o2mrb;
-	o2MainRegulatorOutletManifold = o2out;
 	o2FlowManifold = o2flow;
 	waterGlycolPressManifold = watGlyPress;
 	mainRegAValve = mrav;
@@ -664,7 +662,23 @@ void O2MainRegulator::Init(h_Tank* o2man, h_Tank* o2mra, h_Tank* o2mrb, h_Tank* 
 }
 
 void O2MainRegulator::SystemTimestep(double simdt) {
+	// Main Regulator A
+	if (mainRegAValve->GetState() == 0) {		// Open
+		o2MainRegulatorA->IN_valve.Open();
+	}
+	else if (mainRegAValve->GetState() == 1) {	// Closed
+		o2MainRegulatorA->IN_valve.Close();
+	}
 
+	// Main Regulator B
+	if (mainRegBValve->GetState() == 0) {		// Open
+		o2MainRegulatorB->IN_valve.Open();
+	}
+	else if (mainRegBValve->GetState() == 1) {	// Closed
+		o2MainRegulatorB->IN_valve.Close();
+	}
+
+	// Water Glycol Pressure Manifold (TO BE IMPLEMENTED)
 }
 
 

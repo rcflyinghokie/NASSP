@@ -200,14 +200,12 @@ public:
 	O2MainRegulator();
 	virtual ~O2MainRegulator();
 
-	void Init(h_Tank* o2man, h_Tank* o2mra, h_Tank* o2mrb, h_Tank* o2out, h_Tank* o2flow, h_Tank* watGlyPress, CircuitBrakerSwitch* mrav, CircuitBrakerSwitch* mrbv, RotationalSwitch* selIn, RotationalSwitch* selOut);
+	void Init(h_Tank* o2mra, h_Tank* o2mrb, h_Tank* o2flow, h_Tank* watGlyPress, CircuitBrakerSwitch* mrav, CircuitBrakerSwitch* mrbv, RotationalSwitch* selIn, RotationalSwitch* selOut);
 	void SystemTimestep(double simdt);
 
 protected:
-	h_Tank* o2MainRegulatorManifold;
 	h_Tank* o2MainRegulatorA;
 	h_Tank* o2MainRegulatorB;
-	h_Tank* o2MainRegulatorOutletManifold;
 	h_Tank* o2FlowManifold;
 	h_Tank* waterGlycolPressManifold;
 	CircuitBrakerSwitch* mainRegAValve;
