@@ -55,15 +55,15 @@ protected:
 };
 
 class EmergencyCabinPressureRegulator {
-
 public:
 	EmergencyCabinPressureRegulator();
 	virtual ~EmergencyCabinPressureRegulator();
 
-	void Init(h_Pipe* ecpr1, h_Pipe* ecpr2, h_Pipe* ecprtv, RotationalSwitch* ecps, PushSwitch* ecpts);
+	void Init(h_Tank* ecpman, h_Pipe* ecpr1, h_Pipe* ecpr2, h_Pipe* ecprtv, RotationalSwitch* ecps, PushSwitch* ecpts);
 	void SystemTimestep(double simdt);
 
 protected:
+	h_Tank* emergencyCabinPressureManifold;
 	h_Pipe* emergencyCabinPressRegPipe1;
 	h_Pipe* emergencyCabinPressRegPipe2;
 	h_Pipe* emergencyCabinPressTestValve;

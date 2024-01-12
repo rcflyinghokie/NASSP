@@ -125,8 +125,8 @@ EmergencyCabinPressureRegulator::~EmergencyCabinPressureRegulator() {
 
 }
 
-void EmergencyCabinPressureRegulator::Init(h_Pipe* ecpr1, h_Pipe* ecpr2, h_Pipe* ecprtv, RotationalSwitch* ecps, PushSwitch* ecpts) {
-
+void EmergencyCabinPressureRegulator::Init(h_Tank* ecpman, h_Pipe* ecpr1, h_Pipe* ecpr2, h_Pipe* ecprtv, RotationalSwitch* ecps, PushSwitch* ecpts) {
+	emergencyCabinPressureManifold = ecpman;
 	emergencyCabinPressRegPipe1 = ecpr1;
 	emergencyCabinPressRegPipe2 = ecpr2,
 	emergencyCabinPressTestValve = ecprtv;
@@ -136,46 +136,6 @@ void EmergencyCabinPressureRegulator::Init(h_Pipe* ecpr1, h_Pipe* ecpr2, h_Pipe*
 
 void EmergencyCabinPressureRegulator::SystemTimestep(double simdt) {
 
-	if (!emergencyCabinPressRegPipe1 || !emergencyCabinPressRegPipe2 || !emergencyCabinPressTestValve) return;
-	// Valve in motion
-	if (emergencyCabinPressRegPipe1->in->pz || emergencyCabinPressRegPipe2->in->pz || emergencyCabinPressTestValve->in->pz) return;
-
-	double cabinpress = emergencyCabinPressTestValve->out->parent->space.Press;
-
-	// Emergency Cabin Pressure Regulator Valve
-	if (emergencyCabinPressureSwitch->GetState() == 0) {
-		emergencyCabinPressRegPipe1->in->Open();
-		emergencyCabinPressRegPipe2->in->Close();
-	}
-	else if (emergencyCabinPressureSwitch->GetState() == 1) {
-		emergencyCabinPressRegPipe1->in->Open();
-		emergencyCabinPressRegPipe2->in->Open();
-	}
-	else if (emergencyCabinPressureSwitch->GetState() == 2) {
-		emergencyCabinPressRegPipe1->in->Close();
-		emergencyCabinPressRegPipe2->in->Open();
-	}
-	else if (emergencyCabinPressureSwitch->GetState() == 3) {
-		emergencyCabinPressRegPipe1->in->Close();
-		emergencyCabinPressRegPipe2->in->Close ();
-	}
-
-	// Emergency Cabin Pressure Test Valve
-	if (emergencyCabinPressureTestSwitch->GetState() != 0) {
-		emergencyCabinPressRegPipe1->flowMax = 
-	}
-
-
-	if (emergencyCabinPressureSwitch->GetState() == 3 || (cabinpress > 4.6 / PSI && emergencyCabinPressureTestSwitch->GetState() == 0)) {
-		emergencyCabinPressureRegulator->P_max = 0;
-	}
-	else {
-		if (emergencyCabinPressureTestSwitch->GetState() != 0)
-			emergencyCabinPressureRegulator->P_max = 1000. / PSI; // i.e. disabled
-		else
-			emergencyCabinPressureRegulator->P_max = 4.6 / PSI;
-		emergencyCabinPressureRegulator->flowMax = 40.2 / LBH; // 0.67 lb/min max, see AOH
-	}
 }
 
 
