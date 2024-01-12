@@ -956,79 +956,86 @@ void AGOP::OpticalSupportTable(const AGOPInputs &in, AGOPOutputs &out)
 void AGOP::LMHorizonCheck(const AGOPInputs &in, AGOPOutputs &out)
 {
 	EphemerisData sv;
-	MATRIX3 M_BRCS_SM, M_SM_NB, M_BRCS_NB, M, M_NB;
-	VECTOR3 u_dir, u_zero, u0, u1, u2, U_Z, R_H, t[2], R_L[2], u_horiz[2], X_NB, Y_NB, Z_NB;
-	double a_H, b_H, x_H, y_H, A, alpha, beta;
-
-	U_Z = _V(0, 0, 1);
+	MATRIX3 M_BRCS_SM, M_SM_NB, M_BRCS_NB, M_NB;
+	VECTOR3 U_X, U_Y, U_Z, X_NB, Y_NB, Z_NB, R1, R2, R_horiz;
+	double LPD;
 
 	//Calculate burn direction (roll, pitch)
 	M_BRCS_SM = in.LM_REFSMMAT;
-	M_SM_NB = OrbMech::CALCSMSC(_V(0.0, in.IMUAttitude[0].y, in.IMUAttitude[0].z));
+	M_SM_NB = OrbMech::CALCSMSC(in.IMUAttitude[0]);
 	M_BRCS_NB = mul(M_SM_NB, M_BRCS_SM);
-	u_dir = tmul(M_BRCS_NB, _V(1, 0, 0));
-	u_zero = tmul(M_BRCS_NB, _V(0, 0, 1));
 
-	for (unsigned i = 0; i < in.sv_arr.size(); i++)
+	U_X = tmul(M_BRCS_NB, _V(1, 0, 0)); //Burn direction
+	U_Y = tmul(M_BRCS_NB, _V(0, 1, 0));
+	U_Z = tmul(M_BRCS_NB, _V(0, 0, 1)); //Forward window direction
+
+	//Only for the first SV
+	sv = in.sv_arr[0];
+
+	//Find horizon
+	R1 = VectorPointingToHorizon(sv, U_X, true);
+	R2 = VectorPointingToHorizon(sv, U_X, false);
+
+	//Which is closer to +Z axis?
+	if (dotp(U_Z, unit(R1)) > dotp(U_Z, unit(R2)))
 	{
-		sv = in.sv_arr[i];
-
-		u2 = u_dir;
-		u0 = unit(crossp(U_Z, u2));
-		u1 = crossp(u2, u0);
-
-		M = _M(u0.x, u0.y, u0.z, u1.x, u1.y, u1.z, u2.x, u2.y, u2.z);
-
-		if (sv.RBI == BODY_EARTH)
-		{
-			// Earth
-			double SINL, r_F, h;
-
-			SINL = dotp(u1, U_Z);
-
-			r_F = OrbMech::R_Earth; //TBD
-			h = 28000.0; //TBD
-			a_H = r_F + h; //TBD
-			b_H = r_F + h; //TBD
-		}
-		else
-		{
-			// Moon
-
-			a_H = OrbMech::R_Moon;
-			b_H = OrbMech::R_Moon;
-		}
-
-		R_H = mul(M, sv.R);
-
-		x_H = R_H.x;
-		y_H = R_H.y;
-
-		A = x_H * x_H / a_H / a_H + y_H * y_H / b_H / b_H;
-
-		alpha = a_H / b_H * y_H*sqrt(A - 1.0);
-		beta = b_H / a_H * x_H*sqrt(A - 1.0);
-
-		t[0] = _V(x_H + alpha, y_H - beta, 0.0) / A;
-		t[1] = _V(x_H - alpha, y_H + beta, 0.0) / A;
-
-		R_L[0] = tmul(M, t[0]);
-		R_L[1] = tmul(M, t[1]);
-
-		//Spacecraft +Z axis
-		u_horiz[0] = unit(R_L[0] - sv.R);
-		u_horiz[1] = unit(R_L[1] - sv.R);
-
-		//TBD: choose solution
-
-		X_NB = u_dir;
-		Z_NB = u_horiz[0];
-		Y_NB = crossp(Z_NB, X_NB);
-
-		M_NB = _M(X_NB.x, X_NB.y, X_NB.z, Y_NB.x, Y_NB.y, Y_NB.z, Z_NB.x, Z_NB.y, Z_NB.z);
-
-		out.IMUAttitude = OrbMech::CALCGAR(in.LM_REFSMMAT, M_NB);
+		R_horiz = R1;
 	}
+	else
+	{
+		R_horiz = R2;
+	}
+
+	//X-axis aligned with burn vector
+	X_NB = U_X;
+	//Z-axis aligned with horizon
+	Z_NB = unit(R_horiz);
+	//Y-axis to complete coordinate system
+	Y_NB = crossp(Z_NB, X_NB);
+
+	M_NB = _M(X_NB.x, X_NB.y, X_NB.z, Y_NB.x, Y_NB.y, Y_NB.z, Z_NB.x, Z_NB.y, Z_NB.z);
+
+	out.IMUAttitude = OrbMech::CALCGAR(in.LM_REFSMMAT, M_NB);
+
+	//LPD
+	R1 = VectorPointingToHorizon(sv, U_Y, true);
+	R2 = VectorPointingToHorizon(sv, U_Y, false);
+
+	//Which is closer to +Z axis?
+	if (dotp(U_Z, unit(R1)) > dotp(U_Z, unit(R2)))
+	{
+		R_horiz = R1;
+	}
+	else
+	{
+		R_horiz = R2;
+	}
+
+	LPD = asin(dotp(-R_horiz, U_X));
+
+	std::string line;
+	char Buffer[128];
+
+	sprintf(Buffer, "MODE %d  OPTICAL SIGHTING TABLE  VEH LM", in.Mode);
+	out.output_text.push_back(Buffer);
+	out.output_text.push_back("***BURN HORIZON CHECK***");
+
+	line = "GETHOR ";
+	OrbMech::format_time_HHMMSS(Buffer, pRTCC->GETfromGMT(sv.GMT));
+	line.append(Buffer);
+
+	sprintf(Buffer, " IMU %05.1lf LPD ", out.IMUAttitude.x*DEG);
+	line.append(Buffer);
+	if (LPD < 0.0 || LPD > 70.0*RAD)
+	{
+		line.append("N/A");
+	}
+	else
+	{
+		sprintf(Buffer, "%.1lf", LPD*DEG);
+		line.append(Buffer);
+	}
+	out.output_text.push_back(line);
 }
 
 void AGOP::OSTAlignmentManeuverCheck(const AGOPInputs &in, AGOPOutputs &out)
@@ -1587,4 +1594,31 @@ VECTOR3 AGOP::GetAOTNBVector(double EL, double AZ, double ReticleAngle, double S
 		u_YPN_aapo = -u_XPN * sin(YROT) + u_YPN * cos(YROT);
 		return u_OAN * cos(SEP) + crossp(u_YPN_aapo, u_OAN)*sin(SEP);
 	}
+}
+
+VECTOR3 AGOP::VectorPointingToHorizon(EphemerisData sv, VECTOR3 plane, bool sol) const
+{
+	//Vector pointíng to Earth
+	VECTOR3 e;
+	double R_E, alpha;
+
+	e = unit(-sv.R);
+
+	if (sv.RBI == BODY_EARTH)
+	{
+		R_E = OrbMech::R_Earth;
+	}
+	else
+	{
+		R_E = pRTCC->BZLAND.rad[0];
+	}
+
+	alpha = asin(R_E / length(sv.R));
+
+	if (sol == false)
+	{
+		alpha = -alpha;
+	}
+
+	return OrbMech::RotateVector(plane, alpha, e);
 }

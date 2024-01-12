@@ -174,4 +174,6 @@ protected:
 	VECTOR3 GetCSMCOASVector(double SPA, double SXP);
 	VECTOR3 GetLMCOASVector(double EL, double SXP, bool IsZAxis);
 	VECTOR3 GetAOTNBVector(double EL, double AZ, double YROT, double SROT, int axis);
+
+	VECTOR3 VectorPointingToHorizon(EphemerisData sv, VECTOR3 plane, bool sol) const;
 };

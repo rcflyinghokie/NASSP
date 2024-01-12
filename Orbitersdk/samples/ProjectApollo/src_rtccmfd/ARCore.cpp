@@ -4709,7 +4709,6 @@ int ARCore::subThread()
 	{
 		AGOPInputs in;
 		AGOPOutputs out;
-		EphemerisData sv;
 
 		in.Option = AGOP_Option;
 		in.Mode = AGOP_Mode;
@@ -4717,23 +4716,33 @@ int ARCore::subThread()
 		//Get ephemeris
 		if (AGOP_Option != 3)
 		{
+			EphemerisData sv;
+			bool TimesNotRequired;
+
+			sv = GC->rtcc->StateVectorCalcEphem(vessel);
+
+			TimesNotRequired = false;
+
+			if (AGOP_Option == 2 && AGOP_Mode == 1) TimesNotRequired = true;
+			if (AGOP_Option == 7 && AGOP_Mode == 1) TimesNotRequired = true;
+
 			double GMT, GMT_Stop;
 
 			GMT = GC->rtcc->GMTfromGET(AGOP_StartTime);
 			GMT_Stop = GC->rtcc->GMTfromGET(AGOP_StopTime);
-			sv = GC->rtcc->StateVectorCalcEphem(vessel);
-
-			in.sv_arr.clear();
 
 			do
 			{
 				in.sv_arr.push_back(GC->rtcc->coast(sv, GMT - sv.GMT));
+
+				if (TimesNotRequired) break;
 
 				GMT += AGOP_TimeStep * 60.0;
 				if (in.sv_arr.size() >= 10) break;
 
 				sv = in.sv_arr.back();
 			} while (GMT_Stop > GMT);
+
 		}
 
 		//Logic to get required REFSMMATs
@@ -4750,6 +4759,10 @@ int ARCore::subThread()
 		{
 			if (AGOP_Mode != 1 && AGOP_Mode != 4) GetLMREFSMMAT = true;
 			else if (!AGOP_AttIsCSM) GetLMREFSMMAT = true;
+		}
+		else if (AGOP_Option == 7)
+		{
+			if (AGOP_Mode == 1) GetLMREFSMMAT = true;
 		}
 
 		if (GetCSMREFSMMAT)

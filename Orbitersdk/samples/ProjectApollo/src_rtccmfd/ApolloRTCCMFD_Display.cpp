@@ -10655,6 +10655,12 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 				break;
 			case 7:
 				skp->Text(2 * W / 22, 3 * H / 22, "7: Optical Support Table", 24);
+				switch (G->AGOP_Mode)
+				{
+				case 1:
+					skp->Text(2 * W / 22, 4 * H / 22, "1: LM Horizon Check", 27);
+					break;
+				}
 				break;
 			}
 
@@ -10664,7 +10670,12 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 				GET_Display(Buffer, G->AGOP_StartTime);
 				skp->Text(5 * W / 22, 5 * H / 22, Buffer, strlen(Buffer));
 
-				if (G->AGOP_Option != 2 || G->AGOP_Mode != 1)
+				bool ShowTimes = true;
+
+				if (G->AGOP_Option == 2 && G->AGOP_Mode == 1) ShowTimes = false;
+				if (G->AGOP_Option == 7 && G->AGOP_Mode == 1) ShowTimes = false;
+
+				if (ShowTimes)
 				{
 					skp->Text(2 * W / 22, 6 * H / 22, "Stop:", 5);
 					GET_Display(Buffer, G->AGOP_StopTime);
@@ -10690,6 +10701,10 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			{
 				if (G->AGOP_Mode != 1 && G->AGOP_Mode != 4) GetLMREFSMMAT = true;
 				else if (!G->AGOP_AttIsCSM) GetLMREFSMMAT = true;
+			}
+			else if (G->AGOP_Option == 7)
+			{
+				if (G->AGOP_Mode == 1) GetLMREFSMMAT = true;
 			}
 
 			if (GetCSMREFSMMAT)
@@ -10764,6 +10779,19 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 					skp->Text(2 * W / 22, 18 * H / 22, Buffer, strlen(Buffer));
 					sprintf(Buffer, "YAW: %+.2lf", G->AGOP_AntennaYaw * DEG);
 					skp->Text(2 * W / 22, 19 * H / 22, Buffer, strlen(Buffer));
+				}
+			}
+			else if (G->AGOP_Option == 7)
+			{
+				if (G->AGOP_Mode == 1)
+				{
+					skp->Text(2 * W / 22, 14 * H / 22, "LM IMU:", 7);
+
+					for (unsigned i = 0; i < 3; i++)
+					{
+						sprintf(Buffer, "%+07.2lf", G->AGOP_Attitude.data[i] * DEG);
+						skp->Text(2 * W / 22, (15 + i) * H / 22, Buffer, strlen(Buffer));
+					}
 				}
 			}
 		}

@@ -1322,7 +1322,7 @@ void ApolloRTCCMFD::menuSetAGOPInput()
 	{
 	case 0: //Cycle option
 		G->AGOP_Mode = 1;
-		if (G->AGOP_Option < 6)
+		if (G->AGOP_Option < 7)
 		{
 			G->AGOP_Option++;
 		}
@@ -1357,6 +1357,16 @@ void ApolloRTCCMFD::menuSetAGOPInput()
 			break;
 		case 6:
 			if (G->AGOP_Mode < 2)
+			{
+				G->AGOP_Mode++;
+			}
+			else
+			{
+				G->AGOP_Mode = 1;
+			}
+			break;
+		case 7:
+			if (G->AGOP_Mode < 1)
 			{
 				G->AGOP_Mode++;
 			}
