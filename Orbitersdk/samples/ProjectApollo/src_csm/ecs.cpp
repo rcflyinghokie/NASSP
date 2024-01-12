@@ -595,16 +595,76 @@ void O2SMSupply::Init(h_Tank *o2sm, h_Tank *o2st, h_Tank *o2rp,
 
 void O2SMSupply::SystemTimestep(double simdt) {
 
-	// Is something moving?
-	if (o2SurgeTank->IN_valve.pz || o2RepressPackage->IN_valve.pz || o2RepressPackage->OUT_valve.pz || o2RepressPackage->OUT2_valve.pz
-		|| o2RepressPackage->LEAK_valve.pz) return;
+	// Is something moving? (TODO: See if we actually need this)
+	//if (o2SurgeTank->IN_valve.pz || o2RepressPackage->IN_valve.pz || o2RepressPackage->OUT_valve.pz || o2RepressPackage->OUT2_valve.pz || o2RepressPackage->LEAK_valve.pz) return;
 
 	// No O2 supply from SM after SM separation...need to add closing of O2 tanks to SM supply here
 
-	// If Surge Tank switch open
-	if (surgeTankValve->GetState() != 0) {
-		
+	// SM Supply valve
+	if (smSupplyValve->GetState() == 1) {
+		o2SMSupply->IN_valve.Open();
 	}
+	else if (smSupplyValve->GetState() == 0) {
+		o2SMSupply->IN_valve.Close();
+	}
+
+	// Surge Tank valve
+	if (surgeTankValve->GetState() == 1) {
+		o2SMSupply->OUT2_valve.Open();
+	}
+	else if (surgeTankValve->GetState() == 0) {
+		o2SMSupply->OUT2_valve.Close();
+	}
+
+	// Repress Package valve
+	if (repressPackageValve->GetState() == 0) {			// FILL
+		o2RepressPackage->IN_valve.Open();
+		o2RepressPackage->OUT2_valve.Close();
+	}
+	else if (repressPackageValve->GetState() == 1) {	// OFF
+		o2RepressPackage->IN_valve.Close();
+		o2RepressPackage->OUT2_valve.Close();
+	}
+	else if (repressPackageValve->GetState() == 2) {	// ON
+		o2RepressPackage->IN_valve.Close();
+		o2RepressPackage->OUT2_valve.Open();
+	}
+}
+
+O2MainRegulator::O2MainRegulator() {
+	o2MainRegulatorManifold = NULL;
+	o2MainRegulatorA = NULL;
+	o2MainRegulatorB = NULL;
+	o2MainRegulatorOutletManifold = NULL;
+	o2FlowManifold = NULL;
+	waterGlycolPressManifold = NULL;
+	mainRegAValve = NULL;
+	mainRegBValve = NULL;
+	regulatorSelectorInletValve = NULL;
+	regulatorSelectorOutletValve = NULL;
+}
+
+O2MainRegulator::~O2MainRegulator() {
+
+}
+
+void O2MainRegulator::Init(h_Tank* o2man, h_Tank* o2mra, h_Tank* o2mrb, h_Tank* o2out, h_Tank* o2flow, h_Tank* watGlyPress,
+						CircuitBrakerSwitch* mrav, CircuitBrakerSwitch* mrbv,
+						RotationalSwitch* selIn, RotationalSwitch* selOut) {
+	o2MainRegulatorManifold = o2man;
+	o2MainRegulatorA = o2mra;
+	o2MainRegulatorB = o2mrb;
+	o2MainRegulatorOutletManifold = o2out;
+	o2FlowManifold = o2flow;
+	waterGlycolPressManifold = watGlyPress;
+	mainRegAValve = mrav;
+	mainRegBValve = mrbv;
+	regulatorSelectorInletValve = selIn;
+	regulatorSelectorOutletValve = selOut;
+}
+
+void O2MainRegulator::SystemTimestep(double simdt) {
+
 }
 
 

@@ -168,7 +168,6 @@ protected:
 /// \brief O2 SM supply.
 ///
 class O2SMSupply {
-
 public:
 	O2SMSupply();
 	virtual ~O2SMSupply();
@@ -189,6 +188,32 @@ protected:
 	//RotationalSwitch repressReliefValve;
 	PanelSwitchItem *emergencyO2Valve;
 	PanelSwitchItem *repressO2Valve;
+};
+
+///
+/// This class simulates the O2 Main Regulator in the CSM.
+/// \ingroup InternalSystems
+/// \brief O2 Main Regulator.
+///
+class O2MainRegulator {
+public:
+	O2MainRegulator();
+	virtual ~O2MainRegulator();
+
+	void Init(h_Tank* o2man, h_Tank* o2mra, h_Tank* o2mrb, h_Tank* o2out, h_Tank* o2flow, h_Tank* watGlyPress, CircuitBrakerSwitch* mrav, CircuitBrakerSwitch* mrbv, RotationalSwitch* selIn, RotationalSwitch* selOut);
+	void SystemTimestep(double simdt);
+
+protected:
+	h_Tank* o2MainRegulatorManifold;
+	h_Tank* o2MainRegulatorA;
+	h_Tank* o2MainRegulatorB;
+	h_Tank* o2MainRegulatorOutletManifold;
+	h_Tank* o2FlowManifold;
+	h_Tank* waterGlycolPressManifold;
+	CircuitBrakerSwitch* mainRegAValve;
+	CircuitBrakerSwitch* mainRegBValve;
+	RotationalSwitch* regulatorSelectorInletValve;
+	RotationalSwitch* regulatorSelectorOutletValve;
 };
 
 ///
