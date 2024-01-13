@@ -42,14 +42,18 @@ public:
 	virtual ~O2SMSupply();
 
 	void Init(h_Tank* o2sm, h_Tank* o2st, h_Tank* o2rp,
-		RotationalSwitch* smv, RotationalSwitch* stv, RotationalSwitch* rpv, RotationalSwitch* strv,
-		PanelSwitchItem* eo2v, PanelSwitchItem* ro2v);
+			h_Pipe* o2in1, h_Pipe* o2in2,
+			RotationalSwitch* smv, RotationalSwitch* stv, RotationalSwitch* rpv, RotationalSwitch* strv,
+			PanelSwitchItem* eo2v, PanelSwitchItem* ro2v);
 	void SystemTimestep(double simdt);
+	void Close();
 
 protected:
 	h_Tank* o2SMSupply;
 	h_Tank* o2SurgeTank;
 	h_Tank* o2RepressPackage;
+	h_Pipe* o2SMSupplyInlet1;
+	h_Pipe* o2SMSupplyInlet2;
 	RotationalSwitch* smSupplyValve;
 	RotationalSwitch* surgeTankValve;
 	RotationalSwitch* repressPackageValve;

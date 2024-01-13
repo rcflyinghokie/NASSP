@@ -46,6 +46,8 @@ O2SMSupply::O2SMSupply() {
 	o2SMSupply = NULL;
 	o2SurgeTank = NULL;
 	o2RepressPackage = NULL;
+	o2SMSupplyInlet1 = NULL;
+	o2SMSupplyInlet2 = NULL;
 	smSupplyValve = NULL;
 	surgeTankValve = NULL;
 	repressPackageValve = NULL;
@@ -60,12 +62,15 @@ O2SMSupply::~O2SMSupply() {
 }
 
 void O2SMSupply::Init(h_Tank* o2sm, h_Tank* o2st, h_Tank* o2rp,
-	RotationalSwitch* smv, RotationalSwitch* stv, RotationalSwitch* rpv, RotationalSwitch* strv,
-	PanelSwitchItem* eo2v, PanelSwitchItem* ro2v) {
+					h_Pipe* o2in1, h_Pipe* o2in2,
+					RotationalSwitch* smv, RotationalSwitch* stv, RotationalSwitch* rpv, RotationalSwitch* strv,
+					PanelSwitchItem* eo2v, PanelSwitchItem* ro2v) {
 
 	o2SMSupply = o2sm;
 	o2SurgeTank = o2st;
 	o2RepressPackage = o2rp;
+	o2SMSupplyInlet1 = o2in1;
+	o2SMSupplyInlet2 = o2in2;
 	smSupplyValve = smv;
 	surgeTankValve = stv;
 	surgeTankReliefValve = strv;
@@ -79,8 +84,6 @@ void O2SMSupply::SystemTimestep(double simdt) {
 
 	// Is something moving? (TODO: See if we actually need this)
 	//if (o2SurgeTank->IN_valve.pz || o2RepressPackage->IN_valve.pz || o2RepressPackage->OUT_valve.pz || o2RepressPackage->OUT2_valve.pz || o2RepressPackage->LEAK_valve.pz) return;
-
-	// No O2 supply from SM after SM separation...need to add closing of O2 tanks to SM supply here
 
 	// SM Supply valve
 	if (smSupplyValve->GetState() == 1) {
@@ -112,6 +115,13 @@ void O2SMSupply::SystemTimestep(double simdt) {
 		o2RepressPackage->OUT2_valve.Open();
 	}
 }
+
+void O2SMSupply::Close() {
+	// No O2 supply from SM after SM separation
+	o2SMSupplyInlet1->in->Close();
+	o2SMSupplyInlet2->in->Close();
+}
+
 
 O2MainRegulator::O2MainRegulator() {
 	o2MainRegulatorA = NULL;
@@ -305,6 +315,7 @@ void O2DemandRegulator::SaveState(FILEHANDLE scn) {
 //TODO
 EmergencyCabinPressureRegulator::EmergencyCabinPressureRegulator() {
 
+	emergencyCabinPressureManifold = NULL;
 	emergencyCabinPressRegPipe1 = NULL;
 	emergencyCabinPressRegPipe2 = NULL;
 	emergencyCabinPressTestValve = NULL;
@@ -320,7 +331,7 @@ void EmergencyCabinPressureRegulator::Init(h_Tank* ecpman, h_Pipe* ecpr1, h_Pipe
 	emergencyCabinPressureManifold = ecpman;
 	emergencyCabinPressRegPipe1 = ecpr1;
 	emergencyCabinPressRegPipe2 = ecpr2,
-		emergencyCabinPressTestValve = ecprtv;
+	emergencyCabinPressTestValve = ecprtv;
 	emergencyCabinPressureSwitch = ecps;
 	emergencyCabinPressureTestSwitch = ecpts;
 }

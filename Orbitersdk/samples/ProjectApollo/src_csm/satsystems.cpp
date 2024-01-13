@@ -356,6 +356,7 @@ void Saturn::SystemsInit() {
 	eo->WireTo(&SecCoolantLoopPumpSwitch);
 
 	O2SMSupply.Init((h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:O2SMSUPPLY"), (h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:O2SURGETANK"), (h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:O2REPRESSPACKAGE"),
+		(h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:O2SMSUPPLYINLET1"), (h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:O2SMSUPPLYINLET2"),
 		&OxygenSMSupplyRotary, &OxygenSurgeTankRotary, &OxygenRepressPackageRotary, &OxygenSurgeTankValveRotary,
 		&HatchEmergencyO2ValveSwitch, &HatchRepressO2ValveSwitch);
 
@@ -365,10 +366,11 @@ void Saturn::SystemsInit() {
 								(h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:CABINREPRESSVALVE"), 
 								&CabinRepressValveRotary);
 
-	EmergencyCabinPressureRegulator.Init((h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSREG1"),
-										(h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSREG2"),
-									 	(h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGPRESSREGTEST"),
-										&EmergencyCabinPressureRotary, &EmergencyCabinPressureTestSwitch);
+	EmergencyCabinPressureRegulator.Init((h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSUREMANIFOLD"),
+									(h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSREG1"),
+									(h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSREG2"),
+									(h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGPRESSREGTEST"),
+									&EmergencyCabinPressureRotary, &EmergencyCabinPressureTestSwitch);
 
 	O2DemandRegulator.Init((h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:O2DEMANDREGULATOR"), 
 		                   (h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:SUITRELIEFVALVE"), 
@@ -392,7 +394,7 @@ void Saturn::SystemsInit() {
 	SetPipeMaxFlow("HYDRAULIC:CSMTUNNELUNDOCKED", 1000.0 / LBH);
 
 	SetPipeMaxFlow("HYDRAULIC:O2SMSUPPLYINLET1", 4.5/ LBH); //Flow regulator
-	SetPipeMaxFlow("HYDRAULIC:O2SMSUPPLYINLET2", 4.5/ LBH);	//Flow regulator
+	SetPipeMaxFlow("HYDRAULIC:O2SMSUPPLYINLET2", 4.5/ LBH); //Flow regulator
 
 
 	SetPipeMaxFlow("HYDRAULIC:O2SURGETANKINLET1", 100./ LBH);
@@ -2695,8 +2697,11 @@ void Saturn::CheckSMSystemsState()
 		SecEcsRadiatorExchanger1->SetLength(0);
 		SecEcsRadiatorExchanger2->SetLength(0);
 
-		// Close O2 SM supply
-		O2SMSupply.Close();  //FIXME
+		// Close O2 SM supply (FIXME: This may be the wrong valve)
+		O2Tanks[0]->OUT_valve.Close();
+		O2Tanks[1]->OUT_valve.Close();
+		// If J-Mission, close tank 3
+		//O2Tanks[2]->OUT_valve.Close();
 
 		// SM sensors
 		H2Tank1TempSensor.WireTo(NULL);
