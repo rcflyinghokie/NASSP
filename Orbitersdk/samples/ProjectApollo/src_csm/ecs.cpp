@@ -43,69 +43,79 @@
 
 //INPROGRESS
 CabinPressureRegulator::CabinPressureRegulator() {
-
-	cabinPressRegPipe = NULL;
+	saturn = NULL;
+	cabinPressureRegulator = NULL;
+	cabinPressRegPipe1 = NULL;
+	cabinPressRegPipe2 = NULL;
 	cabinRepressValve = NULL;
 	cabinRepressValveSwitch = NULL;
-
 }
 
 CabinPressureRegulator::~CabinPressureRegulator() {
 
 }
 
-void CabinPressureRegulator::Init(h_Pipe* pr, h_Pipe *crv, RotationalSwitch *crvs) {
-
-	cabinPressRegPipe = pr;
+void CabinPressureRegulator::Init(Saturn* s, h_Tank* cpr, h_Pipe* pr1, h_Pipe* pr2, h_Pipe *crv, RotationalSwitch *crvs) {
+	saturn = s;
+	cabinPressureRegulator = cpr;
+	cabinPressRegPipe1 = pr1;
+	cabinPressRegPipe2 = pr2;
 	cabinRepressValve = crv;
 	cabinRepressValveSwitch = crvs;
 }
 
 void CabinPressureRegulator::SystemTimestep(double simdt) {
+	AtmosStatus atm;
+	saturn->GetAtmosStatus(atm);
+	double cabinpress = atm.CabinPressurePSI;
 
-	if (!cabinPressRegPipe) return;
-	// Valve in motion
-	if (cabinPressRegPipe->in->pz) return;
-
-	// Close, if cabin pressure below 3.5 psi
-	double cabinpress = cabinPressRegPipe->out->parent->space.Press;
-	if (cabinpress < 3.5 / PSI || cabinpress > 5.0 / PSI) {
-		cabinPressRegPipe->in->Close();
+	if (cabinpress > 3.5 && cabinpress < 5.0) {
+		// If less than 4.7 psi, full flow
+		if (cabinpress < 4.7) {
+			// Each regulator can deliver approximately 0.6 lb/hr maximum, with the whole assembly up to 1.2 lb/hr
+			cabinPressRegPipe1->flowMax = 0.6 / LBH;
+			cabinPressRegPipe2->flowMax = 0.6 / LBH;
+		}
+		// Otherwise, linear decrease based on pressure diff
+		else {
+			cabinPressRegPipe1->flowMax = (-2.0 * cabinpress) + 10.0;
+			cabinPressRegPipe2->flowMax = (-2.0 * cabinpress) + 10.0;
+		}
 	}
-	else
-		cabinPressRegPipe->in->Open();
-	cabinPressRegPipe->flowMax = 0.6 / LBH; // Each regulator can deliver approximately 0.6 lb/hr with the whole assembly up to 1.4 lb/hr
+	// Close if outside of pressure min or max threshold
+	else {
+		cabinPressRegPipe1->flowMax = 0.0;
+		cabinPressRegPipe2->flowMax = 0.0;
+	}
 
-
-// Cabin repress valve
-
+	// Cabin repress valve
 	if (cabinRepressValveSwitch->GetState() == 0) {
 		cabinRepressValve->in->Close();
 		cabinRepressValve->flowMax = 0;
 	}
 	else if (cabinRepressValveSwitch->GetState() == 1) {
 		cabinRepressValve->in->Open();
-		cabinRepressValve->flowMax = 6.0 / LBH;  // 0.1 lb/min
+		cabinRepressValve->flowMax = 0.1 / LBM;
 	}
 	else if (cabinRepressValveSwitch->GetState() == 2) {
 		cabinRepressValve->in->Open();
-		cabinRepressValve->flowMax = 12.0 / LBH;  //
+		cabinRepressValve->flowMax = 0.2 / LBM;
 	}
 	else if (cabinRepressValveSwitch->GetState() == 3) {
 		cabinRepressValve->in->Open();
-		cabinRepressValve->flowMax = 18.0 / LBH;  //
+		cabinRepressValve->flowMax = 0.3 / LBM;
 	}
 	else if (cabinRepressValveSwitch->GetState() == 4) {
 		cabinRepressValve->in->Open();
-		cabinRepressValve->flowMax = 24.0 / LBH;		//
+		cabinRepressValve->flowMax = 0.4 / LBM;
 	}
 	else if (cabinRepressValveSwitch->GetState() == 5) {
 		cabinRepressValve->in->Open();
-		cabinRepressValve->flowMax = 30.0 / LBH;		//
+		cabinRepressValve->flowMax = 0.5 / LBM;
 	}
 	else if (cabinRepressValveSwitch->GetState() == 6) {
 		cabinRepressValve->in->Open();
-		cabinRepressValve->flowMax = 36.0 / LBH;		// Max Flow unknown, this is a guess
+		cabinRepressValve->flowMax = 0.6 / LBM;		// Max Flow unknown, this is a guess
 	}
 }
 
@@ -125,8 +135,8 @@ EmergencyCabinPressureRegulator::~EmergencyCabinPressureRegulator() {
 
 }
 
-void EmergencyCabinPressureRegulator::Init(h_Pipe* ecpr1, h_Pipe* ecpr2, h_Pipe* ecprtv, RotationalSwitch* ecps, PushSwitch* ecpts) {
-
+void EmergencyCabinPressureRegulator::Init(h_Tank* ecpman, h_Pipe* ecpr1, h_Pipe* ecpr2, h_Pipe* ecprtv, RotationalSwitch* ecps, PushSwitch* ecpts) {
+	emergencyCabinPressureManifold = ecpman;
 	emergencyCabinPressRegPipe1 = ecpr1;
 	emergencyCabinPressRegPipe2 = ecpr2,
 	emergencyCabinPressTestValve = ecprtv;
@@ -136,46 +146,6 @@ void EmergencyCabinPressureRegulator::Init(h_Pipe* ecpr1, h_Pipe* ecpr2, h_Pipe*
 
 void EmergencyCabinPressureRegulator::SystemTimestep(double simdt) {
 
-	if (!emergencyCabinPressRegPipe1 || !emergencyCabinPressRegPipe2 || !emergencyCabinPressTestValve) return;
-	// Valve in motion
-	if (emergencyCabinPressRegPipe1->in->pz || emergencyCabinPressRegPipe2->in->pz || emergencyCabinPressTestValve->in->pz) return;
-
-	double cabinpress = emergencyCabinPressTestValve->out->parent->space.Press;
-
-	// Emergency Cabin Pressure Regulator Valve
-	if (emergencyCabinPressureSwitch->GetState() == 0) {
-		emergencyCabinPressRegPipe1->in->Open();
-		emergencyCabinPressRegPipe2->in->Close();
-	}
-	else if (emergencyCabinPressureSwitch->GetState() == 1) {
-		emergencyCabinPressRegPipe1->in->Open();
-		emergencyCabinPressRegPipe2->in->Open();
-	}
-	else if (emergencyCabinPressureSwitch->GetState() == 2) {
-		emergencyCabinPressRegPipe1->in->Close();
-		emergencyCabinPressRegPipe2->in->Open();
-	}
-	else if (emergencyCabinPressureSwitch->GetState() == 3) {
-		emergencyCabinPressRegPipe1->in->Close();
-		emergencyCabinPressRegPipe2->in->Close ();
-	}
-
-	// Emergency Cabin Pressure Test Valve
-	if (emergencyCabinPressureTestSwitch->GetState() != 0) {
-		emergencyCabinPressRegPipe1->flowMax = 
-	}
-
-
-	if (emergencyCabinPressureSwitch->GetState() == 3 || (cabinpress > 4.6 / PSI && emergencyCabinPressureTestSwitch->GetState() == 0)) {
-		emergencyCabinPressureRegulator->P_max = 0;
-	}
-	else {
-		if (emergencyCabinPressureTestSwitch->GetState() != 0)
-			emergencyCabinPressureRegulator->P_max = 1000. / PSI; // i.e. disabled
-		else
-			emergencyCabinPressureRegulator->P_max = 4.6 / PSI;
-		emergencyCabinPressureRegulator->flowMax = 40.2 / LBH; // 0.67 lb/min max, see AOH
-	}
 }
 
 
@@ -561,125 +531,125 @@ void SuitCircuitReturnValve::SystemTimestep(double simdt) {
 
 
 O2SMSupply::O2SMSupply() {
-
 	o2SMSupply = NULL;
-	o2MainRegulatorA = NULL;
-	o2MainRegulatorB = NULL;
 	o2SurgeTank = NULL;
 	o2RepressPackage = NULL;
 	smSupplyValve = NULL;
 	surgeTankValve = NULL;
 	repressPackageValve = NULL;
+	surgeTankReliefValve = NULL;
+	//repressReliefValve = NULL;
+	emergencyO2Valve = NULL;
+	repressO2Valve = NULL;
 }
-//DONE
+
 O2SMSupply::~O2SMSupply() {
 
 }
 
-void O2SMSupply::Init(h_Tank *o2sm, h_Tank *o2mrA, h_Tank* o2mrB, h_Tank *o2st, h_Tank *o2rp, h_Pipe *o2rpop,
-					  RotationalSwitch *smv, RotationalSwitch *stv, RotationalSwitch *rpv,
-					  CircuitBrakerSwitch *mra, CircuitBrakerSwitch *mrb, PanelSwitchItem *eo2v,
-					  PanelSwitchItem *ro2v, RotationalSwitch *strv) {
+void O2SMSupply::Init(h_Tank *o2sm, h_Tank *o2st, h_Tank *o2rp,
+					RotationalSwitch *smv, RotationalSwitch *stv, RotationalSwitch *rpv, RotationalSwitch* strv,
+					PanelSwitchItem *eo2v, PanelSwitchItem *ro2v) {
 
-	o2SMSupply = o2sm;	
-	o2MainRegulatorA = o2mrA;
-	o2MainRegulatorB = o2mrB;
+	o2SMSupply = o2sm;
 	o2SurgeTank = o2st;
 	o2RepressPackage = o2rp;
-	o2RepressPackageOutletPipe = o2rpop;
-	smSupplyValve = smv;	
+	smSupplyValve = smv;
 	surgeTankValve = stv;
+	surgeTankReliefValve = strv;
 	repressPackageValve = rpv;
-	mainRegulatorASwitch = mra;
-	mainRegulatorBSwitch = mrb;
+	//repressReliefValve = rrv;
 	emergencyO2Valve = eo2v;
 	repressO2Valve = ro2v;
-	surgeTankReliefValve = strv;
 }
 
 void O2SMSupply::SystemTimestep(double simdt) {
 
-	// Is something moving?
-	if (o2SurgeTank->IN_valve.pz || o2RepressPackage->IN_valve.pz || o2RepressPackage->OUT_valve.pz || o2RepressPackage->OUT2_valve.pz
-		|| o2RepressPackage->LEAK_valve.pz || o2MainRegulatorA->IN_valve.pz || o2MainRegulatorB->IN_valve.pz) return;
+	// Is something moving? (TODO: See if we actually need this)
+	//if (o2SurgeTank->IN_valve.pz || o2RepressPackage->IN_valve.pz || o2RepressPackage->OUT_valve.pz || o2RepressPackage->OUT2_valve.pz || o2RepressPackage->LEAK_valve.pz) return;
 
 	// No O2 supply from SM after SM separation...need to add closing of O2 tanks to SM supply here
 
-	// Surge tank
-	o2SurgeTank->BoilAllAndSetTemp(285);	//Needs to be done later by a heat exchanger
-
-	if (surgeTankValve->GetState() == 0) {
-		o2SurgeTank->IN_valve.Close();
-	} else {
-			o2SurgeTank->IN_valve.Open();
-		}
-
-	//Surge tank relief
-	if (surgeTankReliefValve->GetState() == 0) {
-		o2SurgeTank->OUT_valve.Close();
+	// SM Supply valve
+	if (smSupplyValve->GetState() == 1) {
+		o2SMSupply->IN_valve.Open();
 	}
-	else {
-		o2SurgeTank->OUT_valve.Open();
+	else if (smSupplyValve->GetState() == 0) {
+		o2SMSupply->IN_valve.Close();
 	}
 
-	// Repress package
-	if (repressPackageValve->GetState() == 1) {			//Repress Package Off
+	// Surge Tank valve
+	if (surgeTankValve->GetState() == 1) {
+		o2SMSupply->OUT2_valve.Open();
+	}
+	else if (surgeTankValve->GetState() == 0) {
+		o2SMSupply->OUT2_valve.Close();
+	}
+
+	// Repress Package valve
+	if (repressPackageValve->GetState() == 0) {			// FILL
+		o2RepressPackage->IN_valve.Open();
+		o2RepressPackage->OUT2_valve.Close();
+	}
+	else if (repressPackageValve->GetState() == 1) {	// OFF
 		o2RepressPackage->IN_valve.Close();
 		o2RepressPackage->OUT2_valve.Close();
 	}
-	else if (repressPackageValve->GetState() == 2) {	//Repress Package On
+	else if (repressPackageValve->GetState() == 2) {	// ON
 		o2RepressPackage->IN_valve.Close();
 		o2RepressPackage->OUT2_valve.Open();
 	}
-	else {												//Repress Package Fill
-		o2RepressPackage->IN_valve.Open();
-		o2RepressPackage->OUT2_valve.Open();
+}
+
+O2MainRegulator::O2MainRegulator() {
+	o2MainRegulatorManifold = NULL;
+	o2MainRegulatorA = NULL;
+	o2MainRegulatorB = NULL;
+	o2MainRegulatorOutletManifold = NULL;
+	o2FlowManifold = NULL;
+	waterGlycolPressManifold = NULL;
+	mainRegAValve = NULL;
+	mainRegBValve = NULL;
+	regulatorSelectorInletValve = NULL;
+	regulatorSelectorOutletValve = NULL;
+}
+
+O2MainRegulator::~O2MainRegulator() {
+
+}
+
+void O2MainRegulator::Init(h_Tank* o2mra, h_Tank* o2mrb, h_Tank* o2flow, h_Tank* watGlyPress,
+						CircuitBrakerSwitch* mrav, CircuitBrakerSwitch* mrbv,
+						RotationalSwitch* selIn, RotationalSwitch* selOut) {
+	o2MainRegulatorA = o2mra;
+	o2MainRegulatorB = o2mrb;
+	o2FlowManifold = o2flow;
+	waterGlycolPressManifold = watGlyPress;
+	mainRegAValve = mrav;
+	mainRegBValve = mrbv;
+	regulatorSelectorInletValve = selIn;
+	regulatorSelectorOutletValve = selOut;
+}
+
+void O2MainRegulator::SystemTimestep(double simdt) {
+	// Main Regulator A
+	if (mainRegAValve->GetState() == 0) {		// Open
+		o2MainRegulatorA->IN_valve.Open();
+	}
+	else if (mainRegAValve->GetState() == 1) {	// Closed
+		o2MainRegulatorA->IN_valve.Close();
 	}
 
-	// Purge "pipe tanks" in case of no supply
-	bool mainregvoid = false;
-	if (allClosed) {
-		if (!o2SMSupplyVoid) {
-			o2SMSupplyO2 = o2SMSupply->space.composition[SUBSTANCE_O2];
-			o2SMSupply->space.Void();
-			o2SMSupplyVoid = true;
-		}
-		mainregvoid = true;
-
-	} else {
-		if (o2SMSupplyVoid) {
-			*o2SMSupply += o2SMSupplyO2;
-			o2SMSupplyVoid = false;
-		}
-		o2SMSupply->BoilAllAndSetTemp(285);	//Needs to be done later by a heat exchanger
-	
-	// O2 main regulator
-		if (mainRegulatorASwitch->GetState() && mainRegulatorBSwitch->GetState()) {
-			o2MainRegulator->IN_valve.Close();
-			mainregvoid = true;
-
+	// Main Regulator B
+	if (mainRegBValve->GetState() == 0) {		// Open
+		o2MainRegulatorB->IN_valve.Open();
 	}
-	else {
-		o2RepressPackage->LEAK_valve.Close();
+	else if (mainRegBValve->GetState() == 1) {	// Closed
+		o2MainRegulatorB->IN_valve.Close();
 	}
 
-	// O2 main regulator A
-		if (mainRegulatorASwitch->GetState() == 0) {
-			o2MainRegulatorA->IN_valve.Close();
-
-		} else {
-			o2MainRegulatorA->IN_valve.Open();
-		}
-
-	// O2 main regulator B
-		if (mainRegulatorASwitch->GetState() == 0) {
-			o2MainRegulatorB->IN_valve.Close();
-
-		}
-		else {
-			o2MainRegulatorB->IN_valve.Open();
-		}
-	}
+	// Water Glycol Pressure Manifold (TO BE IMPLEMENTED)
+}
 
 
 CrewStatus::CrewStatus(Sound &crewdeadsound) : crewDeadSound(crewdeadsound) {

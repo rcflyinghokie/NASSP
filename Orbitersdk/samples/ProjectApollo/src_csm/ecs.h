@@ -41,11 +41,14 @@ public:
 	CabinPressureRegulator();
 	virtual ~CabinPressureRegulator();
 
-	void Init(h_Pipe* pr, h_Pipe* crv, RotationalSwitch* crvs);
+	void Init(Saturn* s, h_Tank* cpr, h_Pipe* pr1, h_Pipe* pr2, h_Pipe* crv, RotationalSwitch* crvs);
 	void SystemTimestep(double simdt);
 
 protected:
-	h_Pipe* cabinPressRegPipe;
+	Saturn* saturn;
+	h_Tank* cabinPressureRegulator;
+	h_Pipe* cabinPressRegPipe1;
+	h_Pipe* cabinPressRegPipe2;
 	h_Pipe* cabinRepressValve;
 
 	RotationalSwitch *cabinRepressValveSwitch;
@@ -55,15 +58,15 @@ protected:
 };
 
 class EmergencyCabinPressureRegulator {
-
 public:
 	EmergencyCabinPressureRegulator();
 	virtual ~EmergencyCabinPressureRegulator();
 
-	void Init(h_Pipe* ecpr1, h_Pipe* ecpr2, h_Pipe* ecprtv, RotationalSwitch* ecps, PushSwitch* ecpts);
+	void Init(h_Tank* ecpman, h_Pipe* ecpr1, h_Pipe* ecpr2, h_Pipe* ecprtv, RotationalSwitch* ecps, PushSwitch* ecpts);
 	void SystemTimestep(double simdt);
 
 protected:
+	h_Tank* emergencyCabinPressureManifold;
 	h_Pipe* emergencyCabinPressRegPipe1;
 	h_Pipe* emergencyCabinPressRegPipe2;
 	h_Pipe* emergencyCabinPressTestValve;
@@ -168,33 +171,50 @@ protected:
 /// \brief O2 SM supply.
 ///
 class O2SMSupply {
-
 public:
 	O2SMSupply();
 	virtual ~O2SMSupply();
 
-	void Init(h_Tank *o2sm, h_Tank *o2mr, h_Tank *o2st, h_Tank *o2rp, h_Tank *o2rpo, h_Pipe *o2rpop,
-		      RotationalSwitch *smv, RotationalSwitch *stv, RotationalSwitch *rpv,
-			  CircuitBrakerSwitch *mra, CircuitBrakerSwitch *mrb, PanelSwitchItem *eo2v,
-			  PanelSwitchItem *ro2v, RotationalSwitch *strv);
+	void Init(h_Tank *o2sm, h_Tank *o2st, h_Tank *o2rp,
+		      RotationalSwitch *smv, RotationalSwitch *stv, RotationalSwitch *rpv, RotationalSwitch* strv,
+			  PanelSwitchItem *eo2v, PanelSwitchItem *ro2v);
 	void SystemTimestep(double simdt);
 	
 protected:
 	h_Tank *o2SMSupply;
-	h_Tank *o2MainRegulatorA;
-	h_Tank* o2MainRegulatorB;
 	h_Tank *o2SurgeTank;
 	h_Tank *o2RepressPackage;
-	h_Pipe *o2RepressPackageOutletPipe;
 	RotationalSwitch *smSupplyValve;
 	RotationalSwitch *surgeTankValve;
 	RotationalSwitch *repressPackageValve;
-	CircuitBrakerSwitch *mainRegulatorASwitch;
-	CircuitBrakerSwitch *mainRegulatorBSwitch;
+	RotationalSwitch *surgeTankReliefValve;
+	//RotationalSwitch repressReliefValve;
 	PanelSwitchItem *emergencyO2Valve;
 	PanelSwitchItem *repressO2Valve;
-	RotationalSwitch *surgeTankReliefValve;
+};
 
+///
+/// This class simulates the O2 Main Regulator in the CSM.
+/// \ingroup InternalSystems
+/// \brief O2 Main Regulator.
+///
+class O2MainRegulator {
+public:
+	O2MainRegulator();
+	virtual ~O2MainRegulator();
+
+	void Init(h_Tank* o2mra, h_Tank* o2mrb, h_Tank* o2flow, h_Tank* watGlyPress, CircuitBrakerSwitch* mrav, CircuitBrakerSwitch* mrbv, RotationalSwitch* selIn, RotationalSwitch* selOut);
+	void SystemTimestep(double simdt);
+
+protected:
+	h_Tank* o2MainRegulatorA;
+	h_Tank* o2MainRegulatorB;
+	h_Tank* o2FlowManifold;
+	h_Tank* waterGlycolPressManifold;
+	CircuitBrakerSwitch* mainRegAValve;
+	CircuitBrakerSwitch* mainRegBValve;
+	RotationalSwitch* regulatorSelectorInletValve;
+	RotationalSwitch* regulatorSelectorOutletValve;
 };
 
 ///
