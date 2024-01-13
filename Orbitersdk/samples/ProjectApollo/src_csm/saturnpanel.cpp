@@ -6604,6 +6604,7 @@ void Saturn::InitSwitches() {
 	HatchEmergencyO2ValveSwitch.Register(PSH, "HatchEmergencyO2ValveSwitch", 0);
 	HatchRepressO2ValveSwitch.Register(PSH, "HatchRepressO2ValveSwitch", THREEPOSSWITCH_DOWN);
 	HatchOxygenRepressPressMeter.Register(PSH, "HatchOxygenRepressPressMeter", 0, 1200, 1, 900);
+	//Add Oxygen Repress Pressure Relief Rotary
 	Panel600.Register(PSH, "Panel600",0, 0, 0, 0);	// dummy switch/display for checklist controller
 
 	DskySwitchVerb.Register(PSH, "DskySwitchVerb", false);
