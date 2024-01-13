@@ -43,69 +43,79 @@
 
 //INPROGRESS
 CabinPressureRegulator::CabinPressureRegulator() {
-
-	cabinPressRegPipe = NULL;
+	saturn = NULL;
+	cabinPressureRegulator = NULL;
+	cabinPressRegPipe1 = NULL;
+	cabinPressRegPipe2 = NULL;
 	cabinRepressValve = NULL;
 	cabinRepressValveSwitch = NULL;
-
 }
 
 CabinPressureRegulator::~CabinPressureRegulator() {
 
 }
 
-void CabinPressureRegulator::Init(h_Pipe* pr, h_Pipe *crv, RotationalSwitch *crvs) {
-
-	cabinPressRegPipe = pr;
+void CabinPressureRegulator::Init(Saturn* s, h_Tank* cpr, h_Pipe* pr1, h_Pipe* pr2, h_Pipe *crv, RotationalSwitch *crvs) {
+	saturn = s;
+	cabinPressureRegulator = cpr;
+	cabinPressRegPipe1 = pr1;
+	cabinPressRegPipe2 = pr2;
 	cabinRepressValve = crv;
 	cabinRepressValveSwitch = crvs;
 }
 
 void CabinPressureRegulator::SystemTimestep(double simdt) {
+	AtmosStatus atm;
+	saturn->GetAtmosStatus(atm);
+	double cabinpress = atm.CabinPressurePSI;
 
-	if (!cabinPressRegPipe) return;
-	// Valve in motion
-	if (cabinPressRegPipe->in->pz) return;
-
-	// Close, if cabin pressure below 3.5 psi
-	double cabinpress = cabinPressRegPipe->out->parent->space.Press;
-	if (cabinpress < 3.5 / PSI || cabinpress > 5.0 / PSI) {
-		cabinPressRegPipe->in->Close();
+	if (cabinpress > 3.5 && cabinpress < 5.0) {
+		// If less than 4.7 psi, full flow
+		if (cabinpress < 4.7) {
+			// Each regulator can deliver approximately 0.6 lb/hr maximum, with the whole assembly up to 1.2 lb/hr
+			cabinPressRegPipe1->flowMax = 0.6 / LBH;
+			cabinPressRegPipe2->flowMax = 0.6 / LBH;
+		}
+		// Otherwise, linear decrease based on pressure diff
+		else {
+			cabinPressRegPipe1->flowMax = (-2.0 * cabinpress) + 10.0;
+			cabinPressRegPipe2->flowMax = (-2.0 * cabinpress) + 10.0;
+		}
 	}
-	else
-		cabinPressRegPipe->in->Open();
-	cabinPressRegPipe->flowMax = 0.6 / LBH; // Each regulator can deliver approximately 0.6 lb/hr with the whole assembly up to 1.4 lb/hr
+	// Close if outside of pressure min or max threshold
+	else {
+		cabinPressRegPipe1->flowMax = 0.0;
+		cabinPressRegPipe2->flowMax = 0.0;
+	}
 
-
-// Cabin repress valve
-
+	// Cabin repress valve
 	if (cabinRepressValveSwitch->GetState() == 0) {
 		cabinRepressValve->in->Close();
 		cabinRepressValve->flowMax = 0;
 	}
 	else if (cabinRepressValveSwitch->GetState() == 1) {
 		cabinRepressValve->in->Open();
-		cabinRepressValve->flowMax = 6.0 / LBH;  // 0.1 lb/min
+		cabinRepressValve->flowMax = 0.1 / LBM;
 	}
 	else if (cabinRepressValveSwitch->GetState() == 2) {
 		cabinRepressValve->in->Open();
-		cabinRepressValve->flowMax = 12.0 / LBH;  //
+		cabinRepressValve->flowMax = 0.2 / LBM;
 	}
 	else if (cabinRepressValveSwitch->GetState() == 3) {
 		cabinRepressValve->in->Open();
-		cabinRepressValve->flowMax = 18.0 / LBH;  //
+		cabinRepressValve->flowMax = 0.3 / LBM;
 	}
 	else if (cabinRepressValveSwitch->GetState() == 4) {
 		cabinRepressValve->in->Open();
-		cabinRepressValve->flowMax = 24.0 / LBH;		//
+		cabinRepressValve->flowMax = 0.4 / LBM;
 	}
 	else if (cabinRepressValveSwitch->GetState() == 5) {
 		cabinRepressValve->in->Open();
-		cabinRepressValve->flowMax = 30.0 / LBH;		//
+		cabinRepressValve->flowMax = 0.5 / LBM;
 	}
 	else if (cabinRepressValveSwitch->GetState() == 6) {
 		cabinRepressValve->in->Open();
-		cabinRepressValve->flowMax = 36.0 / LBH;		// Max Flow unknown, this is a guess
+		cabinRepressValve->flowMax = 0.6 / LBM;		// Max Flow unknown, this is a guess
 	}
 }
 
