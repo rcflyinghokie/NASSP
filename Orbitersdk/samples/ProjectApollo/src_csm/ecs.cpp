@@ -44,7 +44,6 @@
 //INPROGRESS
 CabinPressureRegulator::CabinPressureRegulator() {
 	saturn = NULL;
-	cabinPressureRegulator = NULL;
 	cabinPressRegPipe1 = NULL;
 	cabinPressRegPipe2 = NULL;
 	cabinRepressValve = NULL;
@@ -55,9 +54,8 @@ CabinPressureRegulator::~CabinPressureRegulator() {
 
 }
 
-void CabinPressureRegulator::Init(Saturn* s, h_Tank* cpr, h_Pipe* pr1, h_Pipe* pr2, h_Pipe *crv, RotationalSwitch *crvs) {
+void CabinPressureRegulator::Init(Saturn* s, h_Pipe* pr1, h_Pipe* pr2, h_Pipe *crv, RotationalSwitch *crvs) {
 	saturn = s;
-	cabinPressureRegulator = cpr;
 	cabinPressRegPipe1 = pr1;
 	cabinPressRegPipe2 = pr2;
 	cabinRepressValve = crv;
@@ -602,10 +600,8 @@ void O2SMSupply::SystemTimestep(double simdt) {
 }
 
 O2MainRegulator::O2MainRegulator() {
-	o2MainRegulatorManifold = NULL;
 	o2MainRegulatorA = NULL;
 	o2MainRegulatorB = NULL;
-	o2MainRegulatorOutletManifold = NULL;
 	o2FlowManifold = NULL;
 	waterGlycolPressManifold = NULL;
 	mainRegAValve = NULL;

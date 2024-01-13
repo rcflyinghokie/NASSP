@@ -355,12 +355,8 @@ void Saturn::SystemsInit() {
 	eo = (e_object *) Panelsdk.GetPointerByString("ELECTRIC:SECGLYCOLPUMP");
 	eo->WireTo(&SecCoolantLoopPumpSwitch);
 
-	CabinPressureRegulator1.Init((h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:CABINPRESSREG1"),
+	CabinPressureRegulator.Init(this, (h_Pipe *)Panelsdk.GetPointerByString("HYDRAULIC:CABINPRESSREG1"), (h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:CABINPRESSREG2"),
 								(h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:CABINREPRESSVALVE"), 
-								&CabinRepressValveRotary);
-
-	CabinPressureRegulator2.Init((h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:CABINPRESSREG2"),
-								(h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:CABINREPRESSVALVE"),
 								&CabinRepressValveRotary);
 
 	EmergencyCabinPressureRegulator.Init((h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSREG1"),
@@ -1690,8 +1686,7 @@ void Saturn::SystemsInternalTimestep(double simdt)
 		ordeal.SystemTimestep(tFactor);
 		SPSPropellant.SystemTimestep(tFactor);
 		SPSEngine.SystemTimestep(tFactor);
-		CabinPressureRegulator1.SystemTimestep(tFactor);
-		CabinPressureRegulator2.SystemTimestep(tFactor);
+		CabinPressureRegulator.SystemTimestep(tFactor);
 		EmergencyCabinPressureRegulator.SystemTimestep(tFactor);
 		O2DemandRegulator.SystemTimestep(tFactor);
 		CabinPressureReliefValve1.SystemTimestep(tFactor);
@@ -2699,7 +2694,7 @@ void Saturn::CheckSMSystemsState()
 		SecEcsRadiatorExchanger2->SetLength(0);
 
 		// Close O2 SM supply
-		O2SMSupply.Close();
+		O2SMSupply.Close();  //FIXME
 
 		// SM sensors
 		H2Tank1TempSensor.WireTo(NULL);
@@ -3068,7 +3063,7 @@ void Saturn::GetAtmosStatus(AtmosStatus &atm)
 		pCabinRegulatorFlow = (double*) Panelsdk.GetPointerByString("HYDRAULIC:CABINPRESSUREREGULATOR:FLOW");//NEEDS FIXED
 	}
 	if (pCabinRegulatorFlow) {
-		atm.CabinRegulatorFlowLBH = (*pCabinRegulatorFlow) * LBH;
+		atm.CabinRegulatorFlowLBH = (*pCabinRegulatorFlow) * LBH;//NEEDS FIXED
 	}
 
 	if (!pO2DemandFlow) {

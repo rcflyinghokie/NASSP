@@ -41,12 +41,11 @@ public:
 	CabinPressureRegulator();
 	virtual ~CabinPressureRegulator();
 
-	void Init(Saturn* s, h_Tank* cpr, h_Pipe* pr1, h_Pipe* pr2, h_Pipe* crv, RotationalSwitch* crvs);
+	void Init(Saturn* s, h_Pipe* pr1, h_Pipe* pr2, h_Pipe* crv, RotationalSwitch* crvs);
 	void SystemTimestep(double simdt);
 
 protected:
 	Saturn* saturn;
-	h_Tank* cabinPressureRegulator;
 	h_Pipe* cabinPressRegPipe1;
 	h_Pipe* cabinPressRegPipe2;
 	h_Pipe* cabinRepressValve;

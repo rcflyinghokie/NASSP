@@ -3776,8 +3776,7 @@ protected:
 	AtmRegen *SuitCompressor1;
 	AtmRegen *SuitCompressor2;
 	h_crew *Crew;
-	CabinPressureRegulator CabinPressureRegulator1;
-	CabinPressureRegulator CabinPressureRegulator2;
+	CabinPressureRegulator CabinPressureRegulator;
 	EmergencyCabinPressureRegulator EmergencyCabinPressureRegulator;
 	O2DemandRegulator O2DemandRegulator;
 	CabinPressureReliefValve CabinPressureReliefValve1;
