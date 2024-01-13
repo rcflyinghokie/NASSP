@@ -88,6 +88,32 @@ protected:
 	RotationalSwitch* regulatorSelectorOutletValve;
 };
 
+///
+/// This class simulates the emergency cabin pressure regulator in the CSM.
+/// \ingroup InternalSystems
+/// \brief cabin pressure regulator.
+///
+class EmergencyCabinPressureRegulator {
+public:
+	EmergencyCabinPressureRegulator();
+	virtual ~EmergencyCabinPressureRegulator();
+
+	void Init(h_Tank *ecpman, h_Pipe *ecpr1, h_Pipe *ecpr2, h_Pipe *ecprtv, RotationalSwitch *ecps, PushSwitch *ecpts);
+	void SystemTimestep(double simdt);
+
+protected:
+	h_Tank *emergencyCabinPressureManifold;
+	h_Pipe *emergencyCabinPressRegPipe1;
+	h_Pipe *emergencyCabinPressRegPipe2;
+	h_Pipe *emergencyCabinPressTestValve;
+
+	RotationalSwitch *emergencyCabinPressureSwitch;
+	PushSwitch *emergencyCabinPressureTestSwitch;
+
+	bool closed;
+	double press;
+};
+
 
 ///
 /// This class simulates the cabin pressure regulator in the CSM.
@@ -114,28 +140,6 @@ protected:
 	bool closed;
 	double press;
 };
-
-class EmergencyCabinPressureRegulator {
-public:
-	EmergencyCabinPressureRegulator();
-	virtual ~EmergencyCabinPressureRegulator();
-
-	void Init(h_Tank* ecpman, h_Pipe* ecpr1, h_Pipe* ecpr2, h_Pipe* ecprtv, RotationalSwitch* ecps, PushSwitch* ecpts);
-	void SystemTimestep(double simdt);
-
-protected:
-	h_Tank* emergencyCabinPressureManifold;
-	h_Pipe* emergencyCabinPressRegPipe1;
-	h_Pipe* emergencyCabinPressRegPipe2;
-	h_Pipe* emergencyCabinPressTestValve;
-
-	RotationalSwitch* emergencyCabinPressureSwitch;
-	PushSwitch* emergencyCabinPressureTestSwitch;
-
-	bool closed;
-	double press;
-};
-
 
 ///
 /// This class simulates the oxygen demand regulator in the CSM.

@@ -171,6 +171,92 @@ void O2MainRegulator::SystemTimestep(double simdt) {
 	// Water Glycol Pressure Manifold (TO BE IMPLEMENTED)
 }
 
+//TODO
+EmergencyCabinPressureRegulator::EmergencyCabinPressureRegulator() {
+
+	emergencyCabinPressureManifold = NULL;
+	emergencyCabinPressRegPipe1 = NULL;
+	emergencyCabinPressRegPipe2 = NULL;
+	emergencyCabinPressTestValve = NULL;
+	emergencyCabinPressureSwitch = NULL;
+	emergencyCabinPressureTestSwitch = NULL;
+}
+
+EmergencyCabinPressureRegulator::~EmergencyCabinPressureRegulator() {
+
+}
+
+void EmergencyCabinPressureRegulator::Init(h_Tank *ecpman, h_Pipe *ecpr1, h_Pipe *ecpr2, h_Pipe *ecprtv, RotationalSwitch *ecps, PushSwitch *ecpts) {
+	emergencyCabinPressureManifold = ecpman;
+	emergencyCabinPressRegPipe1 = ecpr1;
+	emergencyCabinPressRegPipe2 = ecpr2,
+		emergencyCabinPressTestValve = ecprtv;
+	emergencyCabinPressureSwitch = ecps;
+	emergencyCabinPressureTestSwitch = ecpts;
+}
+
+void EmergencyCabinPressureRegulator::SystemTimestep(double simdt) {
+
+}
+
+
+// DONE - James, 2024/01/12
+CabinPressureRegulator::CabinPressureRegulator() {
+	saturn = NULL;
+	cabinPressRegPipe1 = NULL;
+	cabinPressRegPipe2 = NULL;
+	cabinRepressValve = NULL;
+	cabinRepressValveSwitch = NULL;
+}
+
+CabinPressureRegulator::~CabinPressureRegulator() {
+
+}
+
+void CabinPressureRegulator::Init(Saturn *s, h_Pipe *pr1, h_Pipe *pr2, h_Pipe *crv, RotationalSwitch *crvs) {
+	saturn = s;
+	cabinPressRegPipe1 = pr1;
+	cabinPressRegPipe2 = pr2;
+	cabinRepressValve = crv;
+	cabinRepressValveSwitch = crvs;
+}
+
+void CabinPressureRegulator::SystemTimestep(double simdt) {
+	AtmosStatus atm;
+	saturn->GetAtmosStatus(atm);
+	double cabinpress = atm.CabinPressurePSI;
+
+	if (cabinpress > 3.5 && cabinpress < 5.0) {
+		// If less than 4.7 psi, full flow
+		if (cabinpress < 4.7) {
+			// Each regulator can deliver approximately 0.6 lb/hr maximum, with the whole assembly up to 1.2 lb/hr
+			cabinPressRegPipe1->flowMax = 0.6 / LBH;
+			cabinPressRegPipe2->flowMax = 0.6 / LBH;
+		}
+		// Otherwise, linear decrease based on pressure diff
+		else {
+			cabinPressRegPipe1->flowMax = (-2.0 * cabinpress) + 10.0;
+			cabinPressRegPipe2->flowMax = (-2.0 * cabinpress) + 10.0;
+		}
+	}
+	// Close if outside of pressure min or max threshold
+	else {
+		cabinPressRegPipe1->flowMax = 0.0;
+		cabinPressRegPipe2->flowMax = 0.0;
+	}
+
+	// Cabin repress valve
+	if (cabinRepressValveSwitch->GetState() == 0) {
+		cabinRepressValve->in->Close();
+		cabinRepressValve->flowMax = 0;
+	}
+	else if (cabinRepressValveSwitch->GetState() >= 1 && cabinRepressValveSwitch->GetState() <= 6) {
+		cabinRepressValve->in->Open();
+		// Max Flow unknown, minimum flow is 0.1 lb/min, we are making a best guess
+		cabinRepressValve->flowMax = (0.1 / LBM) * (double)cabinRepressValveSwitch->GetState();
+	}
+}
+
 
 //TODO
 O2DemandRegulator::O2DemandRegulator() {
@@ -311,93 +397,6 @@ void O2DemandRegulator::SaveState(FILEHANDLE scn) {
 	sprintf(buffer, "%i %i", (closed ? 1 : 0), (suitReliefValveOpen ? 1 : 0)); 
 	oapiWriteScenario_string(scn, "O2DEMANDREGULATOR", buffer);
 }
-
-//TODO
-EmergencyCabinPressureRegulator::EmergencyCabinPressureRegulator() {
-
-	emergencyCabinPressureManifold = NULL;
-	emergencyCabinPressRegPipe1 = NULL;
-	emergencyCabinPressRegPipe2 = NULL;
-	emergencyCabinPressTestValve = NULL;
-	emergencyCabinPressureSwitch = NULL;
-	emergencyCabinPressureTestSwitch = NULL;
-}
-
-EmergencyCabinPressureRegulator::~EmergencyCabinPressureRegulator() {
-
-}
-
-void EmergencyCabinPressureRegulator::Init(h_Tank* ecpman, h_Pipe* ecpr1, h_Pipe* ecpr2, h_Pipe* ecprtv, RotationalSwitch* ecps, PushSwitch* ecpts) {
-	emergencyCabinPressureManifold = ecpman;
-	emergencyCabinPressRegPipe1 = ecpr1;
-	emergencyCabinPressRegPipe2 = ecpr2,
-	emergencyCabinPressTestValve = ecprtv;
-	emergencyCabinPressureSwitch = ecps;
-	emergencyCabinPressureTestSwitch = ecpts;
-}
-
-void EmergencyCabinPressureRegulator::SystemTimestep(double simdt) {
-
-}
-
-
-// DONE - James, 2024/01/12
-CabinPressureRegulator::CabinPressureRegulator() {
-	saturn = NULL;
-	cabinPressRegPipe1 = NULL;
-	cabinPressRegPipe2 = NULL;
-	cabinRepressValve = NULL;
-	cabinRepressValveSwitch = NULL;
-}
-
-CabinPressureRegulator::~CabinPressureRegulator() {
-
-}
-
-void CabinPressureRegulator::Init(Saturn* s, h_Pipe* pr1, h_Pipe* pr2, h_Pipe* crv, RotationalSwitch* crvs) {
-	saturn = s;
-	cabinPressRegPipe1 = pr1;
-	cabinPressRegPipe2 = pr2;
-	cabinRepressValve = crv;
-	cabinRepressValveSwitch = crvs;
-}
-
-void CabinPressureRegulator::SystemTimestep(double simdt) {
-	AtmosStatus atm;
-	saturn->GetAtmosStatus(atm);
-	double cabinpress = atm.CabinPressurePSI;
-
-	if (cabinpress > 3.5 && cabinpress < 5.0) {
-		// If less than 4.7 psi, full flow
-		if (cabinpress < 4.7) {
-			// Each regulator can deliver approximately 0.6 lb/hr maximum, with the whole assembly up to 1.2 lb/hr
-			cabinPressRegPipe1->flowMax = 0.6 / LBH;
-			cabinPressRegPipe2->flowMax = 0.6 / LBH;
-		}
-		// Otherwise, linear decrease based on pressure diff
-		else {
-			cabinPressRegPipe1->flowMax = (-2.0 * cabinpress) + 10.0;
-			cabinPressRegPipe2->flowMax = (-2.0 * cabinpress) + 10.0;
-		}
-	}
-	// Close if outside of pressure min or max threshold
-	else {
-		cabinPressRegPipe1->flowMax = 0.0;
-		cabinPressRegPipe2->flowMax = 0.0;
-	}
-
-	// Cabin repress valve
-	if (cabinRepressValveSwitch->GetState() == 0) {
-		cabinRepressValve->in->Close();
-		cabinRepressValve->flowMax = 0;
-	}
-	else if (cabinRepressValveSwitch->GetState() >= 1 && cabinRepressValveSwitch->GetState() <= 6) {
-		cabinRepressValve->in->Open();
-		// Max Flow unknown, minimum flow is 0.1 lb/min, we are making a best guess
-		cabinRepressValve->flowMax = 0.1 / LBM * (double)cabinRepressValveSwitch->GetState();
-	}
-}
-
 
 //TODO
 CabinPressureReliefValve::CabinPressureReliefValve(Sound &plventsound) : postLandingVentSound(plventsound) {
