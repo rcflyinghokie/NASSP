@@ -175,9 +175,10 @@ void O2MainRegulator::SystemTimestep(double simdt) {
 EmergencyCabinPressureRegulator::EmergencyCabinPressureRegulator() {
 
 	emergencyCabinPressureManifold = NULL;
+	emergencyCabinPressRegAneriod1 = NULL;
+	emergencyCabinPressRegAneriod2 = NULL;
 	emergencyCabinPressRegPipe1 = NULL;
 	emergencyCabinPressRegPipe2 = NULL;
-	emergencyCabinPressTestValve = NULL;
 	emergencyCabinPressureSwitch = NULL;
 	emergencyCabinPressureTestSwitch = NULL;
 }
@@ -186,23 +187,24 @@ EmergencyCabinPressureRegulator::~EmergencyCabinPressureRegulator() {
 
 }
 
-void EmergencyCabinPressureRegulator::Init(h_Tank *ecpman, h_Pipe *ecpr1, h_Pipe *ecpr2, h_Pipe *ecprtv, RotationalSwitch *ecps, PushSwitch *ecpts) {
+void EmergencyCabinPressureRegulator::Init(h_Tank *ecpman, h_Tank *ecpreg1, h_Tank *ecpreg2, h_Pipe *ecpr1, h_Pipe *ecpr2, RotationalSwitch *ecps, PushSwitch *ecpts) {
 	emergencyCabinPressureManifold = ecpman;
+	emergencyCabinPressRegAneriod1 = ecpreg1;
+	emergencyCabinPressRegAneriod2 = ecpreg2;
 	emergencyCabinPressRegPipe1 = ecpr1;
 	emergencyCabinPressRegPipe2 = ecpr2,
-		emergencyCabinPressTestValve = ecprtv;
 	emergencyCabinPressureSwitch = ecps;
 	emergencyCabinPressureTestSwitch = ecpts;
 }
 
 void EmergencyCabinPressureRegulator::SystemTimestep(double simdt) {
-
+	
+	double cabinpress = emergencyCabinPressRegPipe1->out->parent->space.Press;
 }
 
 
 // DONE - James, 2024/01/12
 CabinPressureRegulator::CabinPressureRegulator() {
-	saturn = NULL;
 	cabinPressRegPipe1 = NULL;
 	cabinPressRegPipe2 = NULL;
 	cabinRepressValve = NULL;
@@ -213,8 +215,7 @@ CabinPressureRegulator::~CabinPressureRegulator() {
 
 }
 
-void CabinPressureRegulator::Init(Saturn *s, h_Pipe *pr1, h_Pipe *pr2, h_Pipe *crv, RotationalSwitch *crvs) {
-	saturn = s;
+void CabinPressureRegulator::Init(h_Pipe *pr1, h_Pipe *pr2, h_Pipe *crv, RotationalSwitch *crvs) {
 	cabinPressRegPipe1 = pr1;
 	cabinPressRegPipe2 = pr2;
 	cabinRepressValve = crv;
@@ -222,9 +223,8 @@ void CabinPressureRegulator::Init(Saturn *s, h_Pipe *pr1, h_Pipe *pr2, h_Pipe *c
 }
 
 void CabinPressureRegulator::SystemTimestep(double simdt) {
-	AtmosStatus atm;
-	saturn->GetAtmosStatus(atm);
-	double cabinpress = atm.CabinPressurePSI;
+
+	double cabinpress = cabinRepressValve->out->parent->space.Press;
 
 	if (cabinpress > 3.5 && cabinpress < 5.0) {
 		// If less than 4.7 psi, full flow

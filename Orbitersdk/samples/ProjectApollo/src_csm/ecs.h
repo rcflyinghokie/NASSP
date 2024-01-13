@@ -98,20 +98,19 @@ public:
 	EmergencyCabinPressureRegulator();
 	virtual ~EmergencyCabinPressureRegulator();
 
-	void Init(h_Tank *ecpman, h_Pipe *ecpr1, h_Pipe *ecpr2, h_Pipe *ecprtv, RotationalSwitch *ecps, PushSwitch *ecpts);
+	void Init(h_Tank *ecpman, h_Tank *ecpreg1, h_Tank *ecpreg2, h_Pipe *ecpr1, h_Pipe *ecpr2, RotationalSwitch *ecps, PushSwitch *ecpts);
 	void SystemTimestep(double simdt);
 
 protected:
 	h_Tank *emergencyCabinPressureManifold;
+	h_Tank *emergencyCabinPressRegAneriod1;
+	h_Tank *emergencyCabinPressRegAneriod2;
 	h_Pipe *emergencyCabinPressRegPipe1;
 	h_Pipe *emergencyCabinPressRegPipe2;
 	h_Pipe *emergencyCabinPressTestValve;
 
 	RotationalSwitch *emergencyCabinPressureSwitch;
 	PushSwitch *emergencyCabinPressureTestSwitch;
-
-	bool closed;
-	double press;
 };
 
 
@@ -126,11 +125,10 @@ public:
 	CabinPressureRegulator();
 	virtual ~CabinPressureRegulator();
 
-	void Init(Saturn* s, h_Pipe* pr1, h_Pipe* pr2, h_Pipe* crv, RotationalSwitch* crvs);
+	void Init(h_Pipe* pr1, h_Pipe* pr2, h_Pipe* crv, RotationalSwitch* crvs);
 	void SystemTimestep(double simdt);
 
 protected:
-	Saturn* saturn;
 	h_Pipe* cabinPressRegPipe1;
 	h_Pipe* cabinPressRegPipe2;
 	h_Pipe* cabinRepressValve;

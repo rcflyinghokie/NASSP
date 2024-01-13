@@ -362,14 +362,15 @@ void Saturn::SystemsInit() {
 
 	O2MainRegulator.Init((h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:O2MAINREGULATORA"), (h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:O2MAINREGULATORB"), (h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:O2FLOWMANIFOLD"), (h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:WATERGLYCOLTANKPRESSMANIFOLD"), &O2MainRegulatorASwitch, &O2MainRegulatorBSwitch, &SelectorInletValveRotary, &SelectorOutletValveRotary);
 
-	CabinPressureRegulator.Init(this, (h_Pipe *)Panelsdk.GetPointerByString("HYDRAULIC:CABINPRESSREG1"), (h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:CABINPRESSREG2"),
+	CabinPressureRegulator.Init((h_Pipe *)Panelsdk.GetPointerByString("HYDRAULIC:CABINPRESSREG1"), (h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:CABINPRESSREG2"),
 								(h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:CABINREPRESSVALVE"), 
 								&CabinRepressValveRotary);
 
 	EmergencyCabinPressureRegulator.Init((h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSUREMANIFOLD"),
+									(h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSUREREG1"),
+									(h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSUREREG2"),
 									(h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSREG1"),
 									(h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSREG2"),
-									(h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGPRESSREGTEST"),
 									&EmergencyCabinPressureRotary, &EmergencyCabinPressureTestSwitch);
 
 	O2DemandRegulator.Init((h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:O2DEMANDREGULATOR"), 
