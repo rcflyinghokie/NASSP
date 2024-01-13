@@ -3776,13 +3776,14 @@ protected:
 	AtmRegen *SuitCompressor1;
 	AtmRegen *SuitCompressor2;
 	h_crew *Crew;
-	CabinPressureRegulator CabinPressureRegulator;
+	O2SMSupply O2SMSupply;
+	O2MainRegulator O2MainRegulator;
 	EmergencyCabinPressureRegulator EmergencyCabinPressureRegulator;
+	CabinPressureRegulator CabinPressureRegulator;
 	O2DemandRegulator O2DemandRegulator;
 	CabinPressureReliefValve CabinPressureReliefValve1;
 	CabinPressureReliefValve CabinPressureReliefValve2;
 	SuitCircuitReturnValve SuitCircuitReturnValve;
-	O2SMSupply O2SMSupply;
 	CrewStatus CrewStatus;
 	SaturnSideHatch SideHatch;
 	SaturnWaterController WaterController;

@@ -355,6 +355,12 @@ void Saturn::SystemsInit() {
 	eo = (e_object *) Panelsdk.GetPointerByString("ELECTRIC:SECGLYCOLPUMP");
 	eo->WireTo(&SecCoolantLoopPumpSwitch);
 
+	O2SMSupply.Init((h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:O2SMSUPPLY"), (h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:O2SURGETANK"), (h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:O2REPRESSPACKAGE"),
+		&OxygenSMSupplyRotary, &OxygenSurgeTankRotary, &OxygenRepressPackageRotary, &OxygenSurgeTankValveRotary,
+		&HatchEmergencyO2ValveSwitch, &HatchRepressO2ValveSwitch);
+
+	O2MainRegulator.Init((h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:O2MAINREGULATORA"), (h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:O2MAINREGULATORB"), (h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:O2FLOWMANIFOLD"), (h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:WATERGLYCOLTANKPRESSMANIFOLD"), &O2MainRegulatorASwitch, &O2MainRegulatorBSwitch, &SelectorInletValveRotary, &SelectorOutletValveRotary);
+
 	CabinPressureRegulator.Init(this, (h_Pipe *)Panelsdk.GetPointerByString("HYDRAULIC:CABINPRESSREG1"), (h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:CABINPRESSREG2"),
 								(h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:CABINREPRESSVALVE"), 
 								&CabinRepressValveRotary);
@@ -380,10 +386,6 @@ void Saturn::SystemsInit() {
 								   &FLTPLCircuitBraker, &SideHatch);
 	
 	SuitCircuitReturnValve.Init((h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:SUITCIRCUITRETURNINLET"), &SuitCircuitReturnValveLever);
-	
-	O2SMSupply.Init((h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2SMSUPPLY"), (h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2SURGETANK"), (h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2REPRESSPACKAGE"),
-				&OxygenSMSupplyRotary, &OxygenSurgeTankRotary, &OxygenRepressPackageRotary, &OxygenSurgeTankValveRotary,
-				&HatchEmergencyO2ValveSwitch, &HatchRepressO2ValveSwitch);
 
 	CMTunnel = (h_Pipe *)Panelsdk.GetPointerByString("HYDRAULIC:CSMTUNNELUNDOCKED");
 
