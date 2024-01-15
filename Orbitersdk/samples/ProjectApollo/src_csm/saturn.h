@@ -3778,7 +3778,8 @@ protected:
 	h_crew *Crew;
 	O2SMSupply O2SMSupply;
 	O2MainRegulator O2MainRegulator;
-	EmergencyCabinPressureRegulator EmergencyCabinPressureRegulator;
+	EmergencyCabinPressureRegulator EmergencyCabinPressureRegulator1;
+	EmergencyCabinPressureRegulator EmergencyCabinPressureRegulator2;
 	CabinPressureRegulator CabinPressureRegulator;
 	O2DemandRegulator O2DemandRegulator;
 	CabinPressureReliefValve CabinPressureReliefValve1;

@@ -366,11 +366,18 @@ void Saturn::SystemsInit() {
 								(h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:CABINREPRESSVALVE"), 
 								&CabinRepressValveRotary);
 
-	EmergencyCabinPressureRegulator.Init((h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSUREMANIFOLD"),
+	EmergencyCabinPressureRegulator1.Init((h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSUREMANIFOLD"),
 									(h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSUREREG1"),
 									(h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSUREREG2"),
 									(h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSREG1"),
 									(h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSREG2"),
+									&EmergencyCabinPressureRotary, &EmergencyCabinPressureTestSwitch);
+
+	EmergencyCabinPressureRegulator2.Init((h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSUREMANIFOLD"),
+									(h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSUREREG1"),
+									(h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSUREREG2"),
+									(h_Pipe *)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSREG1"),
+									(h_Pipe *)Panelsdk.GetPointerByString("HYDRAULIC:EMERGCABINPRESSREG2"),
 									&EmergencyCabinPressureRotary, &EmergencyCabinPressureTestSwitch);
 
 	O2DemandRegulator.Init((h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:O2DEMANDREGULATOR"), 
