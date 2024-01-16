@@ -902,12 +902,16 @@ void h_Pipe::refresh(double dt) {
 		if (type == 1) {	  //PREG
 			in_p = (in_p > P_max ? P_max : in_p);
 
-		} else if (type == 2) { //BURST
+		} 
+		
+		else if (type == 2) { //BURST
 			if (in_p - out_p > P_max) open = 1;
 			if (in_p - out_p < P_min) open = 0;
 			if (open == 0) return;
 
-		} else if (type == 3) {	//PVALVE
+		} 
+		
+		else if (type == 3) {	//PVALVE
 			if (in_p - P_max > out_p) { //one way flow;
 				double vol = (in_p - P_max - out_p) * dt * in->size / 1000.0;		//size= Liters/Pa/second
 				if (out->parent->space.Volume > vol) {
@@ -915,7 +919,8 @@ void h_Pipe::refresh(double dt) {
 					in->parent->space.Volume += vol;
 				}
 			}
-			if ((two_ways) && (out_p - P_max > in_p) &&
+
+		if ((two_ways) && (out_p - P_max > in_p) &&
 				(out->parent->space.Volume > out->parent->Original_volume)) {
 				double vol = (out_p - P_max - in_p) * dt * in->size / 1000.0;		//size= Liters/Pa/second
 				if (in->parent->space.Volume > vol) {
@@ -925,6 +930,13 @@ void h_Pipe::refresh(double dt) {
 			}
 			return;
 		}
+
+		else if (type == 4) { //RESEATING
+			double slope = flowmax / (P_min - P_max);
+			double intercept = (slope * -P_max);
+			flow = (slope * in_p) + intercept
+		}
+
 		if (in_p > out_p) {
 			h_volume v = in->GetFlow(dt * (in_p - out_p), flowMax * dt);
 			flow = v.GetMass() / dt; 
