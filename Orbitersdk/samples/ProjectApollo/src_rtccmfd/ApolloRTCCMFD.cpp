@@ -43,7 +43,7 @@ ApolloRTCCMFD::ApolloRTCCMFD (DWORD w, DWORD h, VESSEL *vessel, UINT im)
 : MFD2 (w, h, vessel)
 {
 	screen = 0;
-	RTETradeoffScreen = 0;
+	subscreen = 0;
 
 	if (!g_SC) {
 		g_SC = new AR_GCore(vessel);                     // First time only in this Orbiter session. Init the static core.
@@ -52,11 +52,13 @@ ApolloRTCCMFD::ApolloRTCCMFD (DWORD w, DWORD h, VESSEL *vessel, UINT im)
 
 	//font = oapiCreateFont(w / 20, true, "Arial", FONT_NORMAL, 0);
 	font = oapiCreateFont(w / 20, true, "Courier", FONT_NORMAL, 0);
-	font2 = oapiCreateFont(w / 24, true, "Courier", FONT_NORMAL, 0);
+	font2 = oapiCreateFont(w * 2 / 51, true, "Courier", FONT_NORMAL, 0);
 	font2vert = oapiCreateFont(w / 24, true, "Courier", FONT_NORMAL, 900);
 	fonttest = oapiCreateFont(w / 32, false, "Courier New", FONT_NORMAL, 0);
-	font3 = oapiCreateFont(w / 22, true, "Courier", FONT_NORMAL, 0);
-	font4 = oapiCreateFont(w / 27, true, "Courier", FONT_NORMAL, 0);
+	font3 = oapiCreateFont(w / 24, true, "Courier", FONT_NORMAL, 0);
+	font4 = oapiCreateFont(w / 31, true, "Courier", FONT_NORMAL, 0);
+	font5 = oapiCreateFont(w / 32, false, "Fixed", FONT_NORMAL, 0);
+
 	pen = oapiCreatePen(1, 1, 0x00FFFF);
 	pen2 = oapiCreatePen(1, 1, 0x00FFFFFF);
 	bool found = false;
@@ -93,6 +95,7 @@ ApolloRTCCMFD::~ApolloRTCCMFD ()
 	oapiReleaseFont(fonttest);
 	oapiReleaseFont(font3);
 	oapiReleaseFont(font4);
+	oapiReleaseFont(font5);
 	oapiReleasePen(pen);
 	oapiReleasePen(pen2);
 }
@@ -213,7 +216,7 @@ void ApolloRTCCMFD::ReadStatus(FILEHANDLE scn)
 		if (istarget)
 		{
 			OBJHANDLE obj;
-			obj = oapiGetObjectByName(Buffer2);
+			obj = oapiGetVesselByName(Buffer2);
 			if (obj)
 			{
 				G->target = oapiGetVesselInterface(obj);
@@ -361,16 +364,19 @@ void ApolloRTCCMFD::Angle_Display(char *Buff, double angle, bool DispPlus)
 
 void ApolloRTCCMFD::GET_Display(char* Buff, double time, bool DispGET) //Display a time in the format hhh:mm:ss
 {
-	double time2 = round(time);
+	int hours, minutes;
+	double seconds;
+
+	OrbMech::SStoHHMMSS(time, hours, minutes, seconds);
+
 	if (DispGET)
 	{
-		sprintf_s(Buff, 32, "%03.0f:%02.0f:%02.0f GET", floor(time2 / 3600.0), floor(fmod(time2, 3600.0) / 60.0), fmod(time2, 60.0));
+		sprintf_s(Buff, 32, "%03d:%02d:%02.0f GET", hours, minutes, seconds);
 	}
 	else
 	{
-		sprintf_s(Buff, 32, "%03.0f:%02.0f:%02.0f", floor(time2 / 3600.0), floor(fmod(time2, 3600.0) / 60.0), fmod(time2, 60.0));
+		sprintf_s(Buff, 32, "%03d:%02d:%02.0f", hours, minutes, seconds);
 	}
-	//sprintf(Buff, "%03d:%02d:%02d", hh, mm, ss);
 }
 
 void ApolloRTCCMFD::GET_Display2(char* Buff, double time) //Display a time in the format hhh:mm:ss.ss
@@ -381,38 +387,52 @@ void ApolloRTCCMFD::GET_Display2(char* Buff, double time) //Display a time in th
 		pos = false;
 		time = abs(time);
 	}
-	int cs = (int)(round(time*100.0));
-	int hr = cs / 360000;
-	int min = (cs - 360000*hr) / 6000;
-	double sec = (double)(cs - 360000 * hr - 6000 * min) / 100.0;
+
+	int hours, minutes;
+	double seconds;
+
+	OrbMech::SStoHHMMSS(time, hours, minutes, seconds, 0.01);
+
 	if (pos)
 	{
-		sprintf(Buff, "%03d:%02d:%05.2lf", hr, min, sec);
+		sprintf(Buff, "%03d:%02d:%05.2lf", hours, minutes, seconds);
 	}
 	else
 	{
-		sprintf(Buff, "-%03d:%02d:%05.2lf", hr, min, sec);
+		sprintf(Buff, "-%03d:%02d:%05.2lf", hours, minutes, seconds);
 	}
 }
 
 void ApolloRTCCMFD::GET_Display3(char* Buff, double time) //Display a time in the format hhh:mm:ss.s
 {
-	double time2 = round(time);
-	sprintf(Buff, "%03.0f:%02.0f:%04.1f", floor(time2 / 3600.0), floor(fmod(time2, 3600.0) / 60.0), fmod(time, 60.0));
+	int hours, minutes;
+	double seconds;
+
+	OrbMech::SStoHHMMSS(time, hours, minutes, seconds, 0.1);
+
+	sprintf(Buff, "%03d:%02d:%04.1f", hours, minutes, seconds);
 }
 
 //Format: HH:MM:SS
 void ApolloRTCCMFD::GET_Display4(char* Buff, double time) //Display a time in the format hh:mm:ss
 {
-	double time2 = round(time);
-	sprintf(Buff, "%02.0f:%02.0f:%02.0f", floor(time2 / 3600.0), floor(fmod(time2, 3600.0) / 60.0), fmod(time, 60.0));
+	int hours, minutes;
+	double seconds;
+
+	OrbMech::SStoHHMMSS(time, hours, minutes, seconds);
+
+	sprintf(Buff, "%02d:%02d:%02.0f", hours, minutes, seconds);
 }
 
 //Format: HH:MM
 void ApolloRTCCMFD::GET_Display_HHMM(char *Buff, double time)
 {
-	double time2 = round(time);
-	sprintf(Buff, "%03.0f:%02.0f", floor(time2 / 3600.0), floor(fmod(time2, 3600.0) / 60.0));
+	int hours, minutes;
+	double seconds;
+
+	OrbMech::SStoHHMMSS(time, hours, minutes, seconds, 60.0);
+
+	sprintf(Buff, "%03d:%02d", hours, minutes);
 }
 
 void ApolloRTCCMFD::AGC_Display(char* Buff, double vel)
@@ -668,6 +688,7 @@ void ApolloRTCCMFD::SelectPage(int page)
 {
 	screen = page;
 	coreButtons.SelectPage(this, screen);
+	status = 0;
 }
 
 void ApolloRTCCMFD::menuSetMenu()
@@ -792,11 +813,6 @@ void ApolloRTCCMFD::menuSetLunarLiftoffPage()
 	SelectPage(23);
 }
 
-void ApolloRTCCMFD::menuSetEMPPage()
-{
-	SelectPage(24);
-}
-
 void ApolloRTCCMFD::menuSetNavCheckPADPage()
 {
 	SelectPage(25);
@@ -825,6 +841,11 @@ void ApolloRTCCMFD::menuSetRTEConstraintsPage()
 void ApolloRTCCMFD::menuSetEntryUpdatePage()
 {
 	SelectPage(30);
+}
+
+void ApolloRTCCMFD::menuSetRTCCFilesPage()
+{
+	SelectPage(31);
 }
 
 void ApolloRTCCMFD::menuSetRendezvousPage()
@@ -1246,6 +1267,23 @@ void ApolloRTCCMFD::menuSetLMOpticsSupportTablePage()
 	SelectPage(126);
 }
 
+void ApolloRTCCMFD::menuSetDebugPage()
+{
+	SelectPage(127);
+}
+
+void ApolloRTCCMFD::menuSetAGOPPage()
+{
+	marker = 0;
+	markermax = 16;
+	SelectPage(128);
+}
+
+void ApolloRTCCMFD::menuSetRTACFPage()
+{
+	SelectPage(129);
+}
+
 void ApolloRTCCMFD::menuPerigeeAdjustCalc()
 {
 	G->PerigeeAdjustCalc();
@@ -1281,6 +1319,136 @@ void ApolloRTCCMFD::menuPerigeeAdjustTimeIncrement()
 void ApolloRTCCMFD::menuPerigeeAdjustHeight()
 {
 	GenericDoubleInput(&GC->rtcc->med_k28.H_P, "Perigee height in nautical miles:", 1.0);
+}
+
+void ApolloRTCCMFD::menuCycleAGOPPage()
+{
+	if (G->AGOP_Page == 1)
+	{
+		G->AGOP_Page = 2;
+	}
+	else
+	{
+		G->AGOP_Page = 1;
+	}
+}
+
+void ApolloRTCCMFD::menuSetAGOPInput()
+{
+	switch (marker)
+	{
+	case 0: //Cycle option
+		G->AGOP_Mode = 1;
+		if (G->AGOP_Option < 6)
+		{
+			G->AGOP_Option++;
+		}
+		else
+		{
+			G->AGOP_Option = 1;
+		}
+		break;
+	case 1: //Cycle mode
+		switch (G->AGOP_Option)
+		{
+		case 1:
+			if (G->AGOP_Mode < 4)
+			{
+				G->AGOP_Mode++;
+			}
+			else
+			{
+				G->AGOP_Mode = 1;
+			}
+			break;
+		case 2:
+		case 4:
+			if (G->AGOP_Mode < 6)
+			{
+				G->AGOP_Mode++;
+			}
+			else
+			{
+				G->AGOP_Mode = 1;
+			}
+			break;
+		case 6:
+			if (G->AGOP_Mode < 2)
+			{
+				G->AGOP_Mode++;
+			}
+			else
+			{
+				G->AGOP_Mode = 1;
+			}
+			break;
+		}
+		break;
+	case 2: //Input start time
+		GenericGETInput(&G->AGOP_StartTime, "Enter desired start GET (Format: HH:MM:SS)");
+		break;
+	case 3: //Input start time
+		GenericGETInput(&G->AGOP_StopTime, "Enter desired stop GET (Format: HH:MM:SS)");
+		break;
+	case 4: //Input start time
+		GenericDoubleInput(&G->AGOP_TimeStep, "Enter desired time step in minutes");
+		break;
+	case 5: //CSM REFSMMAT
+		break;
+	case 6: //LM REFSMMAT
+		break;
+	case 7: //Input star
+		if (G->AGOP_Option == 1 || G->AGOP_Option == 3)
+		{
+			GenericIntInput(&G->AGOP_Star, "Enter star ID in decimal format (1-400):", NULL, 1, 400);
+		}
+		else if (G->AGOP_Option == 6)
+		{
+			G->AGOP_HeadsUp = !G->AGOP_HeadsUp;
+		}
+		break;
+	case 8: //Landmark latitude
+		if ((G->AGOP_Option == 1 && (G->AGOP_Mode == 3 || G->AGOP_Mode == 4)) || G->AGOP_Option == 4)
+		{
+			GenericDoubleInput(&G->AGOP_Lat, "Enter landmark latitude in degrees:", RAD);
+		}
+		break;
+	case 9: //Landmark longitude
+		if ((G->AGOP_Option == 1 && (G->AGOP_Mode == 3 || G->AGOP_Mode == 4)) || G->AGOP_Option == 4)
+		{
+			GenericDoubleInput(&G->AGOP_Lng, "Enter landmark longitude in degrees:", RAD);
+		}
+		break;
+	case 10: //Landmark altitude
+		if ((G->AGOP_Option == 1 && (G->AGOP_Mode == 3 || G->AGOP_Mode == 4)) || G->AGOP_Option == 4)
+		{
+			GenericDoubleInput(&G->AGOP_Alt, "Enter landmark height in nautical miles:", 1852.0);
+		}
+		break;
+	case 11: //CSM vs LM IMU
+		if (G->AGOP_Option == 4)
+		{
+			G->AGOP_AttIsCSM = !G->AGOP_AttIsCSM;
+		}
+		break;
+	case 12: //IMU Angles
+	case 13:
+	case 14:
+		GenericDoubleInput(&G->AGOP_Attitude.data[marker - 12], "Input IMU angle in degrees:", RAD);
+		break;
+	case 15: //Antenna Pitch
+		GenericDoubleInput(&G->AGOP_AntennaPitch, "Input antenna pitch angle in degrees:", RAD);
+		break;
+	case 16: //Antenna Yaw
+		GenericDoubleInput(&G->AGOP_AntennaYaw, "Input antenna yaw angle in degrees:", RAD);
+		break;
+	}
+}
+
+void ApolloRTCCMFD::menuAGOPCalc()
+{
+	G->AGOP_Page = 2;
+	G->startSubthread(51);
 }
 
 void ApolloRTCCMFD::menuLWPLiftoffTimeOption()
@@ -1502,11 +1670,13 @@ bool GenericDoubleInputBox(void *id, char *str, void *data)
 	return false;
 }
 
-void ApolloRTCCMFD::GenericIntInput(int *val, char *message, void (ApolloRTCCMFD::*func)(void))
+void ApolloRTCCMFD::GenericIntInput(int *val, char *message, void (ApolloRTCCMFD::*func)(void), int min, int max)
 {
 	void *data2;
 
 	tempData.iVal = val;
+	tempData.min1 = min;
+	tempData.max1 = max;
 	tempData.ptr = this;
 	tempData.func = func;
 	data2 = &tempData;
@@ -1522,6 +1692,12 @@ bool GenericIntInputBox(void *id, char *str, void *data)
 
 	if (sscanf(str, "%d", &val) == 1)
 	{
+		if (arr->max1 > arr->min1) //By default this check is disabled
+		{
+			if (val < arr->min1) return false;
+			if (val > arr->max1) return false;
+		}
+
 		*arr->iVal = val;
 
 		if (arr->func)
@@ -1616,6 +1792,37 @@ bool GenericVectorInputBox(void *id, char *str, void *data)
 		return true;
 	}
 	return false;
+}
+
+void ApolloRTCCMFD::GenericStringInput(std::string *val, char* message, void(ApolloRTCCMFD::*func)(void))
+{
+	void *data2;
+
+	tempData.sVal = val;
+	tempData.ptr = this;
+	tempData.func = func;
+
+	data2 = &tempData;
+
+	bool GenericStringInputBox(void *id, char *str, void *data);
+	oapiOpenInputBox(message, GenericStringInputBox, 0, 25, data2);
+}
+
+bool GenericStringInputBox(void *id, char *str, void *data)
+{
+	RTCCMFDInputBoxData *arr = static_cast<RTCCMFDInputBoxData*>(data);
+
+	arr->sVal->assign(str);
+
+	if (arr->func)
+	{
+		ApolloRTCCMFD *ptr = arr->ptr;
+		void (ApolloRTCCMFD::*func)(void) = arr->func;
+
+		(ptr->*func)();
+	}
+
+	return true;
 }
 
 void ApolloRTCCMFD::menuCycleRecoveryTargetSelectionPages()
@@ -1769,13 +1976,13 @@ void ApolloRTCCMFD::menuVoid() {}
 
 void ApolloRTCCMFD::menuCycleRTETradeoffPage()
 {
-	if (RTETradeoffScreen < 5)
+	if (subscreen < 5)
 	{
-		RTETradeoffScreen++;
+		subscreen++;
 	}
 	else
 	{
-		RTETradeoffScreen = 0;
+		subscreen = 0;
 	}
 }
 
@@ -2287,24 +2494,90 @@ void ApolloRTCCMFD::menuTransferGPMToMPT()
 	G->TransferGPMToMPT();
 }
 
-void ApolloRTCCMFD::menuMissionFile()
+void ApolloRTCCMFD::menuLoadSystemParametersFile()
 {
-	bool MissionFile(void *id, char *str, void *data);
-	oapiOpenInputBox("Choose the mission constants file:", MissionFile, 0, 20, (void*)this);
+	bool LoadSystemParametersFileInput(void *id, char *str, void *data);
+	oapiOpenInputBox("Enter name of systems parameters file:", LoadSystemParametersFileInput, 0, 20, (void*)this);
 }
 
-bool MissionFile(void *id, char *str, void *data)
+bool LoadSystemParametersFileInput(void *id, char *str, void *data)
 {
-	((ApolloRTCCMFD*)data)->LoadMissionConstantsFile(str);
-
+	((ApolloRTCCMFD*)data)->LoadSystemParametersFile(str);
 	return true;
 }
 
-void ApolloRTCCMFD::LoadMissionConstantsFile(char *str)
+void ApolloRTCCMFD::LoadSystemParametersFile(char *file)
 {
-	if (GC->rtcc->LoadMissionConstantsFile(str))
+	if (GC->rtcc->LoadMissionConstantsFile(file))
 	{
-		strcpy(GC->rtcc->MissionFileName, str);
+		GC->rtcc->SystemParametersFile.assign(file);
+		status = 1;
+	}
+	else
+	{
+		status = 2;
+	}
+}
+
+void ApolloRTCCMFD::menuLoadTLIFile()
+{
+	bool LoadTLIFileInput(void *id, char *str, void *data);
+	oapiOpenInputBox("Enter name of TLI file:", LoadTLIFileInput, 0, 20, (void*)this);
+}
+
+bool LoadTLIFileInput(void *id, char *str, void *data)
+{
+	((ApolloRTCCMFD*)data)->LoadTLIFile(str);
+	return true;
+}
+
+void ApolloRTCCMFD::LoadTLIFile(char *file)
+{
+	int err = GC->rtcc->QMMBLD(file);
+
+	if (err == 0)
+	{
+		GC->rtcc->TLIFile.assign(file);
+		status = 1; //All good
+	}
+	else if (err == 1)
+	{
+		status = 2; //File not found
+	}
+	else
+	{
+		status = 3; //Other error
+	}
+}
+
+void ApolloRTCCMFD::menuLoadSFPFile()
+{
+	bool LoadSFPFileInput(void *id, char *str, void *data);
+	oapiOpenInputBox("Enter name of SFP file:", LoadSFPFileInput, 0, 20, (void*)this);
+}
+
+bool LoadSFPFileInput(void *id, char *str, void *data)
+{
+	((ApolloRTCCMFD*)data)->LoadSFPFile(str);
+	return true;
+}
+
+void ApolloRTCCMFD::LoadSFPFile(char *file)
+{
+	int err = GC->rtcc->QMSEARCH(file);
+
+	if (err == 0)
+	{
+		GC->rtcc->SFPFile.assign(file);
+		status = 1; //All good
+	}
+	else if (err == 1)
+	{
+		status = 2; //File not found
+	}
+	else
+	{
+		status = 3; //Other error
 	}
 }
 
@@ -4667,17 +4940,17 @@ void ApolloRTCCMFD::menuSetSVTime()
 
 bool SVGETInput(void *id, char *str, void *data)
 {
-	int hh, mm, ss;
-	double SVtime;
+	int hh, mm;
+	double ss, SVtime;
 
-	if (sscanf(str, "%d:%d:%d", &hh, &mm, &ss) == 3)
+	if (sscanf(str, "%d:%d:%lf", &hh, &mm, &ss) == 3)
 	{
 		SVtime = ss + 60 * (mm + 60 * hh);
 		((ApolloRTCCMFD*)data)->set_SVtime(SVtime);
 
 		return true;
 	}
-	else if (sscanf(str, "%d", &ss) == 1)
+	else if (sscanf(str, "%lf", &ss) == 1)
 	{
 		((ApolloRTCCMFD*)data)->set_SVtime(0);
 
@@ -5617,7 +5890,7 @@ void ApolloRTCCMFD::menuUpdateLiftoffTime()
 	}
 
 	//Get TEPHEM in centiseconds
-	double tephem = GC->rtcc->GetTEPHEMFromAGC(agc);
+	double tephem = GC->rtcc->GetTEPHEMFromAGC(agc, G->vesseltype == 0);
 
 	//Calculate MJD of TEPHEM
 	LaunchMJD = (tephem / 8640000.) + GC->rtcc->SystemParameters.TEPHEM0;
@@ -5629,7 +5902,7 @@ void ApolloRTCCMFD::menuUpdateLiftoffTime()
 
 	int hh, mm;
 	double ss;
-	OrbMech::SStoHHMMSS(LaunchMJD*3600.0, hh, mm, ss);
+	OrbMech::SStoHHMMSS(LaunchMJD*3600.0, hh, mm, ss, 0.01);
 	char Buff[128];
 	//Update actual liftoff time
 	sprintf_s(Buff, "P10,CSM,%d:%d:%.2lf;", hh, mm, ss);
@@ -5711,13 +5984,17 @@ void ApolloRTCCMFD::menuVECPOINTCalc()
 void ApolloRTCCMFD::StoreStatus(void) const
 {
 	screenData.screen = screen;
-	screenData.RTETradeoffScreen = RTETradeoffScreen;
+	screenData.marker = marker;
+	screenData.markermax = markermax;
+	screenData.subscreen = subscreen;
 }
 
 void ApolloRTCCMFD::RecallStatus(void)
 {
 	SelectPage(screenData.screen);
-	RTETradeoffScreen = screenData.RTETradeoffScreen;
+	subscreen = screenData.subscreen;
+	marker = screenData.marker;
+	markermax = screenData.markermax;
 }
 
 ApolloRTCCMFD::ScreenData ApolloRTCCMFD::screenData = { 0 };
@@ -5940,8 +6217,8 @@ void ApolloRTCCMFD::menuSetTLMCCTLCTimesConstraints()
 	int hh1, hh2, mm1, mm2;
 	double ss1, ss2;
 
-	SStoHHMMSS(GC->rtcc->PZMCCPLN.TLMIN*3600.0, hh1, mm1, ss1);
-	SStoHHMMSS(GC->rtcc->PZMCCPLN.TLMAX*3600.0, hh2, mm2, ss2);
+	OrbMech::SStoHHMMSS(GC->rtcc->PZMCCPLN.TLMIN*3600.0, hh1, mm1, ss1);
+	OrbMech::SStoHHMMSS(GC->rtcc->PZMCCPLN.TLMAX*3600.0, hh2, mm2, ss2);
 
 	sprintf_s(Buff, "%d:%d:%.0lf,%d:%d:%.0lf", hh1, mm1, ss1, hh2, mm2, ss2);
 
@@ -6584,33 +6861,159 @@ void ApolloRTCCMFD::menuLunarLiftoffSaveInsertionSV()
 	SelectUplinkScreen(9); //Go to CMC LM state vector page
 }
 
-void ApolloRTCCMFD::menuSetEMPUplinkP99()
+void ApolloRTCCMFD::menuSetEMPFileName()
 {
-	G->EMPUplinkNumber = 0;
-	G->EMPUplinkType = 0;
+	GenericStringInput(&G->EMPFile, "Enter EMP file name:", &ApolloRTCCMFD::ErasableMemoryFileRead);
 }
 
-void ApolloRTCCMFD::menuEMPUplink()
+void ApolloRTCCMFD::ErasableMemoryFileRead()
 {
-	if (G->EMPUplinkType == 0)
-	{
-		G->EMPP99Uplink(G->EMPUplinkNumber);
-	}
+	G->ErasableMemoryFileRead();
 }
 
 void ApolloRTCCMFD::menuSetEMPUplinkNumber()
 {
-	if (G->EMPUplinkType == 0)
+	if (G->EMPUplinkMaxNumber > 0)
 	{
-		if (G->EMPUplinkNumber < 3)
-		{
-			G->EMPUplinkNumber++;
-		}
-		else
-		{
-			G->EMPUplinkNumber = 0;
-		}
+		GenericIntInput(&G->EMPUplinkNumber, "Enter load number:", NULL, 1, G->EMPUplinkMaxNumber);
 	}
+}
+
+void ApolloRTCCMFD::menuInitializeEMP()
+{
+	bool InitializeEMPInputBox(void *id, char *str, void *data);
+	oapiOpenInputBox("Enter starting address (V71) or leave blank (V72):", InitializeEMPInputBox, 0, 25, (void*)this);
+}
+
+bool InitializeEMPInputBox(void *id, char *str, void *data)
+{
+	((ApolloRTCCMFD*)data)->set_EMPInit(str);
+	return true;
+}
+
+void ApolloRTCCMFD::set_EMPInit(char *str)
+{
+	char Buffer[128];
+	int load;
+
+	if (subscreen == 0)
+	{
+		load = 18;
+	}
+	else if (subscreen == 1)
+	{
+		load = 19;
+	}
+	else if (subscreen == 2)
+	{
+		load = 38;
+	}
+	else
+	{
+		load = 39;
+	}
+
+	sprintf(Buffer, "CEI,%d,HSK,HSK,%s;", load, str);
+	GeneralMEDRequest(Buffer);
+}
+
+void ApolloRTCCMFD::menuEditEMPOctal()
+{
+	bool EditEMPOctalInputBox(void *id, char *str, void *data);
+	oapiOpenInputBox("Enter line and octal value:", EditEMPOctalInputBox, 0, 25, (void*)this);
+}
+
+
+bool EditEMPOctalInputBox(void *id, char *str, void *data)
+{
+	int line, value;
+
+	if (sscanf(str, "%o %o", &line, &value) == 2)
+	{
+		((ApolloRTCCMFD*)data)->set_EMPOctal(line, value);
+		return true;
+	}
+	return false;
+}
+
+void ApolloRTCCMFD::set_EMPOctal(int line, int value)
+{
+	char Buffer[128];
+	int load;
+
+	if (subscreen == 0)
+	{
+		load = 18;
+	}
+	else if (subscreen == 1)
+	{
+		load = 19;
+	}
+	else if (subscreen == 2)
+	{
+		load = 38;
+	}
+	else
+	{
+		load = 39;
+	}
+
+	sprintf(Buffer, "CEO,%d,%o,%o;", load, line, value);
+	GeneralMEDRequest(Buffer);
+}
+
+void ApolloRTCCMFD::menuDeleteEMPLine()
+{
+	bool DeleteEMPOctalInputBox(void *id, char *str, void *data);
+	oapiOpenInputBox("Select line to delete from uplink:", DeleteEMPOctalInputBox, 0, 25, (void*)this);
+}
+
+bool DeleteEMPOctalInputBox(void *id, char *str, void *data)
+{
+	int line;
+
+	if (sscanf(str, "%o", &line) == 1)
+	{
+		((ApolloRTCCMFD*)data)->set_EMPDelete(line);
+		return true;
+	}
+	return false;
+}
+
+void ApolloRTCCMFD::set_EMPDelete(int line)
+{
+	char Buffer[128];
+	int load;
+
+	if (subscreen == 0)
+	{
+		load = 18;
+	}
+	else if (subscreen == 1)
+	{
+		load = 19;
+	}
+	else if (subscreen == 2)
+	{
+		load = 38;
+	}
+	else
+	{
+		load = 39;
+	}
+
+	sprintf(Buffer, "CEC,%d,HSK,HSK,,,%o;", load, line);
+	GeneralMEDRequest(Buffer);
+}
+
+void ApolloRTCCMFD::menuLoadEMP()
+{
+	G->ErasableMemoryFileLoad(subscreen);
+}
+
+void ApolloRTCCMFD::menuUplinkEMP()
+{
+	G->ErasableMemoryUpdateUplink(subscreen);
 }
 
 void ApolloRTCCMFD::menuNavCheckPADCalc()
@@ -7634,6 +8037,18 @@ bool TransferMCCPlanToSFPInput(void* id, char *str, void *data)
 	return true;
 }
 
+void ApolloRTCCMFD::menuInterpolateSFP()
+{
+	bool InterpolateSFPInput(void* id, char *str, void *data);
+	oapiOpenInputBox("Interplation for skeleton flight plan. Format: F62,Days (optional),Opportunity,Azimuth;", InterpolateSFPInput, "F62,,1,72.0;", 50, (void*)this);
+}
+
+bool InterpolateSFPInput(void* id, char *str, void *data)
+{
+	((ApolloRTCCMFD*)data)->GeneralMEDRequest(str);
+	return true;
+}
+
 void ApolloRTCCMFD::menuDeleteMidcourseColumn()
 {
 	bool DeleteMidcourseColumnInput(void* id, char *str, void *data);
@@ -8082,6 +8497,16 @@ bool GOSTShowLandmarkVectorInput(void* id, char *str, void *data)
 	return false;
 }
 
+void ApolloRTCCMFD::menuGOSTEnterStarInCatalog()
+{
+	menuGeneralMEDRequest("Enter target for star catalog. Input format: G13,Position (392 to 400),Right Ascension (hr:min:sec), Declination (deg:min:sec);");
+}
+
+void ApolloRTCCMFD::menuSaveOSTREFSMMAT()
+{
+	GeneralMEDRequest("G11,CSM,OST-M;");
+}
+
 void ApolloRTCCMFD::menuLOSTMode()
 {
 	bool LOSTModeInput(void* id, char *str, void *data);
@@ -8325,6 +8750,11 @@ void ApolloRTCCMFD::UpdateLOSTDisplay()
 	GC->rtcc->EMDGLMST();
 }
 
+void ApolloRTCCMFD::menuCalculateIMUComparison()
+{
+	G->menuCalculateIMUComparison();
+}
+
 void ApolloRTCCMFD::menuSLVNavigationUpdateCalc()
 {
 	G->SLVNavigationUpdateCalc();
@@ -8539,6 +8969,14 @@ void ApolloRTCCMFD::SelectUplinkScreen(int num)
 	case 14: //CMC Entry Update
 		screen = 119;
 		break;
+	case 18: //CMC Erasable Memory Update A
+		screen = 24;
+		subscreen = 0;
+		break;
+	case 19: //CMC Erasable Memory Update B
+		screen = 24;
+		subscreen = 1;
+		break;
 	case 20: //LGC LM State Vector
 		screen = 101;
 		break;
@@ -8562,6 +9000,14 @@ void ApolloRTCCMFD::SelectUplinkScreen(int num)
 		break;
 	case 28: //LGC Descent Update
 		screen = 61;
+		break;
+	case 38: //LGC Erasable Memory Update A
+		screen = 24;
+		subscreen = 2;
+		break;
+	case 39: //LGC Erasable Memory Update B
+		screen = 24;
+		subscreen = 3;
 		break;
 	case 49: //LVDC Navigation Update
 		screen = 96;
@@ -8949,15 +9395,6 @@ void ApolloRTCCMFD::GMPManeuverCodeName(char *buffer, int code)
 		sprintf(buffer, "No Valid Code");
 		break;
 	}
-}
-
-void ApolloRTCCMFD::SStoHHMMSS(double time, int &hours, int &minutes, double &seconds)
-{
-	double mins;
-	hours = (int)trunc(time / 3600.0);
-	mins = fmod(time / 60.0, 60.0);
-	minutes = (int)trunc(mins);
-	seconds = (mins - minutes) * 60.0;
 }
 
 void ApolloRTCCMFD::Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax, int ymax)
