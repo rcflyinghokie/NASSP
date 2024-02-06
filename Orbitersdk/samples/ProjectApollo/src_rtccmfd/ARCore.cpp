@@ -743,6 +743,7 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	NodeConvOpt = true;
 	NodeConvLat = 0.0;
 	NodeConvLng = 0.0;
+	NodeConvHeight = 0.0;
 	NodeConvGET = 0.0;
 	NodeConvResLat = 0.0;
 	NodeConvResLng = 0.0;
@@ -1216,7 +1217,7 @@ void ARCore::UpdateGRRTime(VESSEL *v)
 	int hh, mm;
 	double ss;
 	char Buff[128];
-	OrbMech::SStoHHMMSS(T_L, hh, mm, ss);
+	OrbMech::SStoHHMMSS(T_L, hh, mm, ss, 0.01);
 	sprintf_s(Buff, "P12,IU1,%d:%d:%.2lf,%.3lf;", hh, mm, ss, Azi*DEG);
 	GC->rtcc->GMGMED(Buff);
 }
