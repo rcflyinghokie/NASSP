@@ -23353,6 +23353,78 @@ void RTCC::EMGLMRAT(VECTOR3 X_P, VECTOR3 Y_P, VECTOR3 Z_P, VECTOR3 X_B, VECTOR3 
 	}
 }
 
+VECTOR3 RTCC::EMMGFDAI(VECTOR3 Att, bool IsIMU) const
+{
+	double OGA, IGA, MGA, R, P, Y;
+
+	if (IsIMU)
+	{
+		//Input is OGA, IGA, MGA. Output is R, P, Y
+		OGA = Att.x;
+		IGA = Att.y;
+		MGA = Att.z;
+
+		Y = asin(-cos(MGA)*sin(OGA));
+		if (Y < 0)
+		{
+			Y = Y + PI2;
+		}
+		P = atan2(sin(IGA)*cos(OGA) + cos(IGA)*sin(MGA)*sin(OGA), cos(IGA)*cos(OGA) - sin(IGA)*sin(MGA)*sin(OGA));
+		if (P < 0)
+		{
+			P = P + PI2;
+		}
+		R = atan2(sin(MGA), cos(MGA)*cos(OGA));
+		if (R < 0)
+		{
+			R = R + PI2;
+		}
+
+		return _V(R, P, Y);
+	}
+	else
+	{
+		//Input is R,P,Y. Output is OG, IG, MG
+		VECTOR3 X_P, Y_P, Z_P, X_B, Y_B, Z_B;
+		double a, b;
+
+		R = Att.x;
+		P = Att.y;
+		Y = Att.z;
+
+		X_P = _V(1, 0, 0);
+		Y_P = _V(0, 1, 0);
+		Z_P = _V(0, 0, 1);
+
+		a = sin(R)*sin(Y);
+		b = cos(R)*sin(Y);
+
+		X_B = X_P * (cos(R)*cos(P) - a * sin(P)) + Y_P * sin(R)*cos(Y) + Z_P * (-cos(R)*sin(P) - a * cos(P));
+		Y_B = X_P * (-sin(R)*cos(P) - b * sin(P)) + Y_P * cos(R)*cos(Y) + Z_P * (sin(R)*sin(P) - b * cos(P));
+		Z_B = X_P * cos(Y)*sin(P) + Y_P * sin(Y) + Z_P * cos(Y)*cos(P);
+
+		MGA = asin(dotp(X_B, Y_P));
+
+		OGA = atan2(dotp(-Z_B, Y_P), dotp(Y_B, Y_P));
+		IGA = atan2(dotp(-X_B, Z_P), dotp(X_B, X_P));
+
+		if (OGA < 0)
+		{
+			OGA = OGA + PI2;
+		}
+		if (IGA < 0)
+		{
+			IGA = IGA + PI2;
+		}
+		if (MGA < 0)
+		{
+			MGA = MGA + PI2;
+		}
+
+		return _V(OGA, IGA, MGA);
+	}
+}
+
 int RTCC::RMMEACC(int L, int ref_frame, int ephem_type, int rev0)
 {
 	int rev, rev_max = 24;

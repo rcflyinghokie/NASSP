@@ -30,13 +30,14 @@ See http://nassp.sourceforge.net/license/ for more details.
 struct AGOPInputs
 {
 	//GENERAL INPUTS
-	//	1 = Cislunar navigation, 2 = Reference body computation, 3 = Star catalog, 4 = Antenna pointing, 5 = PTC Attitude, 6 = Terminator/horizon angles, 7 = OST, 8 = SST
+	//	1 = Cislunar navigation, 2 = Reference body computation, 3 = Star catalog, 4 = Antenna pointing, 5 = PTC Attitude, 6 = Terminator/horizon angles, 7 = OST, 8 = SST, 9 = LSAD
 	int Option;
 	//	Option 1: 1 = Star/Earth horizon, 2 = Star/Moon horizon, 3 = Star/Earth landmark, 4 = Star/Moon landmark
 	//	Option 2: 1 = Calculate RA and declination of SC wrt the Earth, calculate RA and declination of Earth, Moon, Sun wrt the SC,
 	//			  2 = Compute RA, declination, unit vector from spaceraft to landmark or center of Earth, Moon, Sun
 	// Option 4: 1 = S-Band HGA (movable), 2 = S-Band Steerable (movable), 3 = RR (movable), 4 = HGA (fixed), 5 = Steerable (fixed), 6 = RR (fixed)
 	// Option 6: 1 = Fwd horizon, 2 = Aft horizon
+	// Option 9: 1 = 2 stars, 2 = 1 star and attitude, 3 = LVLH attitude, 4 = gimbal angles, 5 = landing site REFSMMAT
 	int Mode;
 	//Option 7, Mode 2: 0 = star search, 1 = stars input
 	int AdditionalOption = 0;
@@ -54,6 +55,8 @@ struct AGOPInputs
 	VECTOR3 IMUAttitude[2];
 	//Vehicle to which the IMU attitude belongs. True = CSM, false = LM
 	bool AttIsCSM;
+	//Input attitude is from the LM FDAI
+	bool AttIsFDAI;
 	//To convert between CSM and LM attitudes
 	double DockingAngle = 0.0;
 	//Number of stars. Card G2000
@@ -74,11 +77,14 @@ struct AGOPInputs
 	double AntennaPitch, AntennaYaw;
 	//Optical Instrument for option 7-9 (0 = sextant/telescope, 1 = LM COAS, 2 = AOT)
 	int Instrument;
+	//Landing site
+	double LSLat, LSLng;
 
 	//Star number to begin search
 	unsigned int StartingStar = 1;
 
 	//OPTICAL DATA
+	double TimeOfSighting[2];
 
 	//SEXTANT
 	//Shaft angles for two stars (Cards G411-412)
@@ -155,6 +161,8 @@ protected:
 	void PointAOTWithCSM(const AGOPInputs &in, AGOPOutputs &out);
 	//Option 8
 	void StarSightingTable(const AGOPInputs &in, AGOPOutputs &out);
+	//Option 9
+	void LunarSurfaceAlignmentDisplay(const AGOPInputs &in, AGOPOutputs &out);
 
 	void WriteError(AGOPOutputs &out, int err);
 	void RightAscension_Display(char *Buff, double angle);
@@ -174,6 +182,6 @@ protected:
 	VECTOR3 GetCSMCOASVector(double SPA, double SXP);
 	VECTOR3 GetLMCOASVector(double EL, double SXP, bool IsZAxis);
 	VECTOR3 GetAOTNBVector(double EL, double AZ, double YROT, double SROT, int axis);
-
 	VECTOR3 VectorPointingToHorizon(EphemerisData sv, VECTOR3 plane, bool sol) const;
+	MATRIX3 LS_REFSMMAT(VECTOR3 R_LS, VECTOR3 R_CSM, VECTOR3 V_CSM) const;
 };

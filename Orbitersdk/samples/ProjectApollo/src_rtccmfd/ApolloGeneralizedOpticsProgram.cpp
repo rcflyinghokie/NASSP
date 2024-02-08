@@ -1252,6 +1252,163 @@ void AGOP::StarSightingTable(const AGOPInputs &in, AGOPOutputs &out)
 	//TBD
 }
 
+//Option 9
+void AGOP::LunarSurfaceAlignmentDisplay(const AGOPInputs &in, AGOPOutputs &out)
+{
+	//Calculate matrix from navigation base (vessel) to MCT (Moon fixed)
+
+	MATRIX3 M_NB_MCT;
+
+	if (in.Mode == 1)
+	{
+		//2 stars
+		MATRIX3 M_MCI_MCT_1, M_MCI_MCT_2;
+		VECTOR3 U_NBA, U_NBB, s_CBA, s_CBB, U_CBA, U_CBB;
+
+		//2 vectors in NB coordinates
+		if (in.Instrument == 1)
+		{
+			//COAS
+			U_NBA = GetLMCOASVector(in.COASElevationAngle[0], in.COASPositionAngle[0], in.LMCOASAxis);
+			U_NBB = GetLMCOASVector(in.COASElevationAngle[1], in.COASPositionAngle[1], in.LMCOASAxis);
+		}
+		else
+		{
+			//AOT
+			double AZ, EL;
+
+			AZ = pRTCC->SystemParameters.MDGTCD[in.AOTDetent - 1];
+			EL = pRTCC->SystemParameters.MDGETA[in.AOTDetent - 1];
+
+			U_NBA = GetAOTNBVector(EL, AZ, in.AOTReticleAngle[0], in.AOTSpiraleAngle[0], in.AOTLineID[0]);
+			U_NBB = GetAOTNBVector(EL, AZ, in.AOTReticleAngle[1], in.AOTSpiraleAngle[1], in.AOTLineID[1]);
+		}
+
+		//2 vectors in REF coordinates
+		s_CBA = GetStarUnitVector(in, 0);
+		s_CBB = GetStarUnitVector(in, 1);
+
+		//Conversion from MCI to MCT
+		pRTCC->ELVCNV(in.TimeOfSighting[0], RTCC_COORDINATES_MCI, RTCC_COORDINATES_MCT, M_MCI_MCT_1);
+		pRTCC->ELVCNV(in.TimeOfSighting[1], RTCC_COORDINATES_MCI, RTCC_COORDINATES_MCT, M_MCI_MCT_2);
+
+		//Star vectors to MCT
+		U_CBA = mul(M_MCI_MCT_1, s_CBA);
+		U_CBB = mul(M_MCI_MCT_2, s_CBB);
+
+		M_NB_MCT = OrbMech::AXISGEN(U_CBA, U_CBB, U_NBA, U_NBB);
+	}
+	else if (in.Mode == 2)
+	{
+		//1 star and gravity
+
+		MATRIX3 SMNB, M_MCI_MCT;
+		VECTOR3 U_NBA, s_MCI, U_CBA, U_CBB, GA, G_NB, R_LS_MCT;
+		double T_AOT;
+
+		//Time at which input AOT angles are valid
+		T_AOT = in.sv_arr[0].GMT;
+
+		//Star vector in NB coordinates
+		if (in.Instrument == 1)
+		{
+			//COAS
+			U_NBA = GetLMCOASVector(in.COASElevationAngle[0], in.COASPositionAngle[0], in.LMCOASAxis);
+		}
+		else
+		{
+			//AOT
+			double AZ, EL, T_AOT;
+
+			AZ = pRTCC->SystemParameters.MDGTCD[in.AOTDetent - 1];
+			EL = pRTCC->SystemParameters.MDGETA[in.AOTDetent - 1];
+			U_NBA = GetAOTNBVector(EL, AZ, in.AOTReticleAngle[0], in.AOTSpiraleAngle[0], in.AOTLineID[0]);
+		}
+
+		//Star vector in inertial (MCI) coordinates
+		s_MCI = GetStarUnitVector(in, 0);
+
+		if (in.AttIsFDAI)
+		{
+			GA = pRTCC->EMMGFDAI(in.IMUAttitude[0], false);
+		}
+		else
+		{
+			GA = in.IMUAttitude[0];
+		}
+
+		//Stable member to navigation base
+		SMNB = OrbMech::CALCSMSC(GA);
+
+		//Assuming gravity vector in SM coordinates is unit x vector, calculate gravity vector in navigation base coordinates
+		G_NB = mul(SMNB, _V(1, 0, 0));
+
+		//Get selenographic landing site vector
+		R_LS_MCT = OrbMech::r_from_latlong(in.LSLat, in.LSLng);
+
+		//Get matrix converting from MCI to MCT at time T_AOT
+		pRTCC->ELVCNV(T_AOT, RTCC_COORDINATES_MCI, RTCC_COORDINATES_MCT, M_MCI_MCT);
+
+		//Star vector in MCT coordinates
+		U_CBA = mul(M_MCI_MCT, s_MCI);
+		//unit landing site vector in MCT
+		U_CBB = unit(R_LS_MCT);
+
+		M_NB_MCT = OrbMech::AXISGEN(U_CBA, U_CBB, U_NBA, G_NB);
+	}
+	else if (in.Mode == 3)
+	{
+		//LVLH
+		MATRIX3 M_LVLH_NB, M_MCT_LVLH;
+
+		M_LVLH_NB = mul(OrbMech::_MRz(in.IMUAttitude[0].z), mul(OrbMech::_MRy(in.IMUAttitude[0].y), OrbMech::_MRx(in.IMUAttitude[0].x)));
+		M_MCT_LVLH = _M(cos(in.LSLat)*cos(in.LSLng), cos(in.LSLat)*sin(in.LSLng), sin(in.LSLat), -sin(in.LSLng), cos(in.LSLng), 0.0, -sin(in.LSLat)*cos(in.LSLng), -sin(in.LSLat)*sin(in.LSLng), cos(in.LSLat));
+
+		M_NB_MCT = OrbMech::tmat(mul(M_MCT_LVLH, M_LVLH_NB));
+	}
+	else if (in.Mode == 4)
+	{
+		//Input gimbal angles
+
+		MATRIX3 SMNB, M_MCI_MCT, M_NB_MCI;
+		VECTOR3 GA;
+
+		if (in.AttIsFDAI)
+		{
+			GA = pRTCC->EMMGFDAI(in.IMUAttitude[0], false);
+		}
+		else
+		{
+			GA = in.IMUAttitude[0];
+		}
+
+		//Stable member to navigation base
+		SMNB = OrbMech::CALCSMSC(GA);
+
+		//Get matrix converting from MCI to MCT at time
+		pRTCC->ELVCNV(in.sv_arr[0].GMT, RTCC_COORDINATES_MCI, RTCC_COORDINATES_MCT, M_MCI_MCT);
+
+		//NB to MCI
+		M_NB_MCI = OrbMech::tmat(mul(SMNB, in.LM_REFSMMAT));
+		//NB to MCT
+		M_NB_MCT = mul(M_MCI_MCT, M_NB_MCI);
+	}
+
+	//Format output
+	std::string line;
+	char Buffer[128];
+
+	out.output_text.push_back("        LUNAR SURFACE ALIGN                         ");
+	out.output_text.push_back("CSM STA ID XXXXXXX  GETLO XXX:XX:XX                 ");
+	out.output_text.push_back("   GMTV  XXX:XX:XX    PLM  +XX.XXXX GETR XXX:XX:XX  ");
+	out.output_text.push_back("   GETV  XXX:XX:XX    LLM +XXX.XXXX L AZ XXX.X      ");
+	out.output_text.push_back("MODE XXXXXXXXXXXX                                   ");
+	out.output_text.push_back("PD XXX.X PA XXX.X PB XXX.X YH XXX.X  SINDL +X.XXXXXX");
+	out.output_text.push_back("YD XXX.X YA XXX.X YB XXX.X PH XXX.X   047  +XXXXX   ");
+	out.output_text.push_back("RD XXX.X RA XXX.X RB XXX.X RH XXX.X  SINDL +X.XXXXXX");
+	out.output_text.push_back("                                      053  +XXXXX   ");
+}
+
 void AGOP::WriteError(AGOPOutputs &out, int err)
 {
 	switch (err)
@@ -1621,4 +1778,15 @@ VECTOR3 AGOP::VectorPointingToHorizon(EphemerisData sv, VECTOR3 plane, bool sol)
 	}
 
 	return OrbMech::RotateVector(plane, alpha, e);
+}
+
+MATRIX3 AGOP::LS_REFSMMAT(VECTOR3 R_LS, VECTOR3 R_CSM, VECTOR3 V_CSM) const
+{
+	VECTOR3 X_SM, Y_SM, Z_SM;
+
+	X_SM = unit(R_LS);
+	Z_SM = unit(crossp(crossp(R_CSM, V_CSM), X_SM));
+	Y_SM = unit(crossp(Z_SM, X_SM));
+
+	return _M(X_SM.x, X_SM.y, X_SM.z, Y_SM.x, Y_SM.y, Y_SM.z, Z_SM.x, Z_SM.y, Z_SM.z);
 }
