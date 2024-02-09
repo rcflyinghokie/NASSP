@@ -57,6 +57,12 @@ void AGOP::Calc(const AGOPInputs &in, AGOPOutputs &out)
 	case 7:
 		OpticalSupportTable(in, out);
 		break;
+	case 8:
+		StarSightingTable(in, out);
+		break;
+	case 9:
+		LunarSurfaceAlignmentDisplay(in, out);
+		break;
 	}
 }
 
@@ -1395,9 +1401,6 @@ void AGOP::LunarSurfaceAlignmentDisplay(const AGOPInputs &in, AGOPOutputs &out)
 	}
 
 	//Format output
-	std::string line;
-	char Buffer[128];
-
 	out.output_text.push_back("        LUNAR SURFACE ALIGN                         ");
 	out.output_text.push_back("CSM STA ID XXXXXXX  GETLO XXX:XX:XX                 ");
 	out.output_text.push_back("   GMTV  XXX:XX:XX    PLM  +XX.XXXX GETR XXX:XX:XX  ");
@@ -1407,6 +1410,9 @@ void AGOP::LunarSurfaceAlignmentDisplay(const AGOPInputs &in, AGOPOutputs &out)
 	out.output_text.push_back("YD XXX.X YA XXX.X YB XXX.X PH XXX.X   047  +XXXXX   ");
 	out.output_text.push_back("RD XXX.X RA XXX.X RB XXX.X RH XXX.X  SINDL +X.XXXXXX");
 	out.output_text.push_back("                                      053  +XXXXX   ");
+
+	std::string line;
+	char Buffer[128];
 }
 
 void AGOP::WriteError(AGOPOutputs &out, int err)

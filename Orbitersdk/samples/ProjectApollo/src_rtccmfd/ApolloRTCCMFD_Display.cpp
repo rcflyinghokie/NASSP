@@ -10662,6 +10662,12 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 					break;
 				}
 				break;
+			case 8:
+				skp->Text(2 * W / 22, 3 * H / 22, "8: Star Sighting Table", 22);
+				break;
+			case 9:
+				skp->Text(2 * W / 22, 3 * H / 22, "9: Lunar Surface Alignment", 26);
+				break;
 			}
 
 			if (G->AGOP_Option != 3)

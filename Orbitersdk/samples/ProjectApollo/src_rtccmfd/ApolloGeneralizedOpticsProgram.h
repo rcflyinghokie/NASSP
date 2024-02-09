@@ -37,7 +37,7 @@ struct AGOPInputs
 	//			  2 = Compute RA, declination, unit vector from spaceraft to landmark or center of Earth, Moon, Sun
 	// Option 4: 1 = S-Band HGA (movable), 2 = S-Band Steerable (movable), 3 = RR (movable), 4 = HGA (fixed), 5 = Steerable (fixed), 6 = RR (fixed)
 	// Option 6: 1 = Fwd horizon, 2 = Aft horizon
-	// Option 9: 1 = 2 stars, 2 = 1 star and attitude, 3 = LVLH attitude, 4 = gimbal angles, 5 = landing site REFSMMAT
+	// Option 9: 1 = 2 stars, 2 = 1 star and attitude, 3 = LVLH attitude, 4 = gimbal angles
 	int Mode;
 	//Option 7, Mode 2: 0 = star search, 1 = stars input
 	int AdditionalOption = 0;
