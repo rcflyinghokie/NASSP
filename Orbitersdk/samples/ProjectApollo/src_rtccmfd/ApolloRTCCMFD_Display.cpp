@@ -10667,6 +10667,9 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 				case 1:
 					skp->Text(2 * W / 22, 4 * H / 22, "1: LM Horizon Check", 27);
 					break;
+				case 2:
+					skp->Text(2 * W / 22, 4 * H / 22, "2: Alignment and Maneuver Check", 31);
+					break;
 				}
 				break;
 			case 8:
@@ -10694,9 +10697,12 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 					GET_Display(Buffer, G->AGOP_StopTime);
 					skp->Text(5 * W / 22, 6 * H / 22, Buffer, strlen(Buffer));
 
-					skp->Text(2 * W / 22, 7 * H / 22, "DT:", 3);
-					sprintf(Buffer, "%.1lf min", G->AGOP_TimeStep);
-					skp->Text(5 * W / 22, 7 * H / 22, Buffer, strlen(Buffer));
+					if (!(G->AGOP_Option == 7 && G->AGOP_Mode == 2))
+					{
+						skp->Text(2 * W / 22, 7 * H / 22, "DT:", 3);
+						sprintf(Buffer, "%.1lf min", G->AGOP_TimeStep);
+						skp->Text(5 * W / 22, 7 * H / 22, Buffer, strlen(Buffer));
+					}
 				}
 			}
 
@@ -10709,6 +10715,10 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 				if (G->AGOP_Mode == 1 || G->AGOP_Mode == 4) GetCSMREFSMMAT = true;
 				else if (G->AGOP_AttIsCSM) GetCSMREFSMMAT = true;
 			}
+			else if (G->AGOP_Option == 7)
+			{
+				if (G->AGOP_Mode != 1 && G->AGOP_AttIsCSM) GetCSMREFSMMAT = true;
+			}
 
 			if (G->AGOP_Option == 4)
 			{
@@ -10717,7 +10727,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			}
 			else if (G->AGOP_Option == 7)
 			{
-				if (G->AGOP_Mode == 1) GetLMREFSMMAT = true;
+				if (G->AGOP_Mode == 1 || G->AGOP_AttIsCSM == false) GetLMREFSMMAT = true;
 			}
 
 			if (GetCSMREFSMMAT)
@@ -10767,26 +10777,32 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 				skp->Text(2 * W / 22, 13 * H / 22, Buffer, strlen(Buffer));
 			}
 
-			if (G->AGOP_Option == 4)
+			bool ShowAttitude = false;
+
+			if (G->AGOP_Option == 4 && G->AGOP_Mode <= 3) ShowAttitude = true;
+			else if (G->AGOP_Option == 7) ShowAttitude = true;
+
+			if (ShowAttitude)
 			{
-				if (G->AGOP_AttIsCSM)
-				{
-					skp->Text(2 * W / 22, 14 * H / 22, "CSM IMU:", 8);
-				}
-				else
+				if ((G->AGOP_Option == 7 && G->AGOP_Mode == 1) || G->AGOP_AttIsCSM == false)
 				{
 					skp->Text(2 * W / 22, 14 * H / 22, "LM IMU:", 7);
 				}
-
-				if (G->AGOP_Mode <= 3)
-				{
-					for (unsigned i = 0; i < 3; i++)
-					{
-						sprintf(Buffer, "%+07.2lf", G->AGOP_Attitude.data[i] * DEG);
-						skp->Text(2 * W / 22, (15 + i) * H / 22, Buffer, strlen(Buffer));
-					}
-				}
 				else
+				{
+					skp->Text(2 * W / 22, 14 * H / 22, "CSM IMU:", 8);
+				}
+
+				for (unsigned i = 0; i < 3; i++)
+				{
+					sprintf(Buffer, "%+07.2lf", G->AGOP_Attitude.data[i] * DEG);
+					skp->Text(2 * W / 22, (15 + i) * H / 22, Buffer, strlen(Buffer));
+				}
+			}
+
+			if (G->AGOP_Option == 4)
+			{
+				if (G->AGOP_Mode > 3)
 				{
 					sprintf(Buffer, "PCH: %+.2lf", G->AGOP_AntennaPitch * DEG);
 					skp->Text(2 * W / 22, 18 * H / 22, Buffer, strlen(Buffer));
@@ -10794,16 +10810,33 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 					skp->Text(2 * W / 22, 19 * H / 22, Buffer, strlen(Buffer));
 				}
 			}
-			else if (G->AGOP_Option == 7)
-			{
-				if (G->AGOP_Mode == 1)
-				{
-					skp->Text(2 * W / 22, 14 * H / 22, "LM IMU:", 7);
 
-					for (unsigned i = 0; i < 3; i++)
+			if (G->AGOP_Option == 7 && (G->AGOP_Mode == 2 || G->AGOP_Mode == 3))
+			{
+				skp->Text(2 * W / 22, 20 * H / 22, "Instrument:", 11);
+
+					switch (G->AGOP_Instrument)
 					{
-						sprintf(Buffer, "%+07.2lf", G->AGOP_Attitude.data[i] * DEG);
-						skp->Text(2 * W / 22, (15 + i) * H / 22, Buffer, strlen(Buffer));
+					case 0:
+						skp->Text(8 * W / 22, 20 * H / 22, "Sextant", 7);
+							break;
+					case 1:
+						skp->Text(8 * W / 22, 20 * H / 22, "COAS", 4);
+							break;
+					case 2:
+						skp->Text(8 * W / 22, 20 * H / 22, "AOT", 7);
+						break;
+					}
+
+				if (G->AGOP_Instrument == 1 && G->AGOP_AttIsCSM == false)
+				{
+					if (G->AGOP_LMCOASAxis)
+					{
+						skp->Text(2 * W / 22, 21 * H / 22, "Axis: +Z", 8);
+					}
+					else
+					{
+						skp->Text(2 * W / 22, 21 * H / 22, "Axis: +X", 8);
 					}
 				}
 			}

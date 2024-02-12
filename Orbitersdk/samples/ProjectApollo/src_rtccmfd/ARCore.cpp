@@ -784,6 +784,8 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	AGOP_HeadsUp = true;
 	AGOP_AntennaPitch = 0.0;
 	AGOP_AntennaYaw = 0.0;
+	AGOP_Instrument = 0;
+	AGOP_LMCOASAxis = false;
 
 	DebugIMUTorquingAngles = _V(0, 0, 0);
 }
@@ -4713,6 +4715,7 @@ int ARCore::subThread()
 
 		in.Option = AGOP_Option;
 		in.Mode = AGOP_Mode;
+		in.DeltaT = AGOP_TimeStep;
 
 		//Get ephemeris
 		if (AGOP_Option != 3)
@@ -4727,22 +4730,54 @@ int ARCore::subThread()
 			if (AGOP_Option == 2 && AGOP_Mode == 1) TimesNotRequired = true;
 			if (AGOP_Option == 7 && AGOP_Mode == 1) TimesNotRequired = true;
 
-			double GMT, GMT_Stop;
+			double GMT_Start, GMT_Stop;
 
-			GMT = GC->rtcc->GMTfromGET(AGOP_StartTime);
+			GMT_Start = GC->rtcc->GMTfromGET(AGOP_StartTime);
 			GMT_Stop = GC->rtcc->GMTfromGET(AGOP_StopTime);
 
-			do
+			//Get state vector to GMT_Start
+			sv = GC->rtcc->coast(sv, GMT_Start - sv.GMT);
+
+			if (TimesNotRequired)
 			{
-				in.sv_arr.push_back(GC->rtcc->coast(sv, GMT - sv.GMT));
+				//Only a single state vector required
+				EphemerisData2 sv2;
 
-				if (TimesNotRequired) break;
+				in.ephem.Header.CSI = sv.RBI == BODY_EARTH ? 0 : 2;
 
-				GMT += AGOP_TimeStep * 60.0;
-				if (in.sv_arr.size() >= 10) break;
+				sv2.R = sv.R;
+				sv2.V = sv.V;
+				sv2.GMT = sv.GMT;
 
-				sv = in.sv_arr.back();
-			} while (GMT_Stop > GMT);
+				in.ephem.table.push_back(sv2);
+			}
+			else
+			{
+				//Write ephemeris
+
+				EMSMISSInputTable intab;
+
+				intab.AnchorVector = sv;
+				intab.EphemerisBuildIndicator = true;
+
+				if (sv.RBI == BODY_EARTH)
+				{
+					intab.ECIEphemerisIndicator = true;
+					intab.ECIEphemTableIndicator = &in.ephem;
+				}
+				else
+				{
+					intab.MCIEphemerisIndicator = true;
+					intab.MCIEphemTableIndicator = &in.ephem;
+				}
+				intab.EphemerisLeftLimitGMT = GMT_Start;
+				intab.EphemerisRightLimitGMT = GMT_Stop;
+				intab.DensityMultOverrideIndicator = 0.0;
+				intab.ManeuverIndicator = false;
+				intab.VehicleCode = AGOP_AttIsCSM ? RTCC_MPT_CSM : RTCC_MPT_LM;
+
+				GC->rtcc->EMSMISS(&intab);
+			}
 
 		}
 
@@ -4755,6 +4790,10 @@ int ARCore::subThread()
 			if (AGOP_Mode == 1 || AGOP_Mode == 4) GetCSMREFSMMAT = true;
 			else if (AGOP_AttIsCSM) GetCSMREFSMMAT = true;
 		}
+		else if (AGOP_Option == 7)
+		{
+			if (AGOP_Mode != 1 && AGOP_AttIsCSM) GetCSMREFSMMAT = true;
+		}
 
 		if (AGOP_Option == 4)
 		{
@@ -4763,7 +4802,7 @@ int ARCore::subThread()
 		}
 		else if (AGOP_Option == 7)
 		{
-			if (AGOP_Mode == 1) GetLMREFSMMAT = true;
+			if (AGOP_Mode == 1 || AGOP_AttIsCSM == false) GetLMREFSMMAT = true;
 		}
 
 		if (GetCSMREFSMMAT)
@@ -4803,6 +4842,8 @@ int ARCore::subThread()
 		in.HeadsUp = AGOP_HeadsUp;
 		in.AntennaPitch = AGOP_AntennaPitch;
 		in.AntennaYaw = AGOP_AntennaYaw;
+		in.Instrument = AGOP_Instrument;
+		in.LMCOASAxis = AGOP_LMCOASAxis;
 
 		//For now, always input landmark
 		in.GroundStationID = "";

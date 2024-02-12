@@ -23679,6 +23679,277 @@ int RTCC::RMMASCND(EphemerisDataTable2 &EPHEM, ManeuverTimesTable &MANTIMES, dou
 	return 0;
 }
 
+int RTCC::NewEMMENV(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, LunarStayTimesTable *LUNRSTAY, double GMT_begin, int option, bool present, bool terminator, VECTOR3 u_star, NewEMMENVTable &out)
+{
+	//INPUT:
+	//option: 0 = Sun, 1 = Moon, 2 = star
+	//present: Is condition true? e.g. search for AOS if true, search for LOS if false
+
+	//OUTPUT:
+	//Table of environment change times
+	//Table determining if the changes are true changes or ephemeris limits
+	//Flag that says if initial condition is true or false
+
+	//This version is purely interval halfing
+	//Input ephemeris should be ECI or MCI
+
+	double GMT, TL, TR;
+	int err, i;
+	unsigned iter;
+	bool InitialCondition, ConditionPresent;
+
+	const double eps = 1.0; //Convergence limit
+	const int limit = 1000; //Nice and high while loop limit
+
+	iter = 0;
+
+	//Clear output data table
+	out.ChangeFound = false;
+	out.IsActualChange = false;
+	out.T_Change = 0.0;
+
+	//Return error if no ephemeris is available
+	if (ephemeris.table.size() == 0) return 1;
+
+	//Return error if moonrise/moonset data is requested and the spacecraft is in lunar orbit
+	if (option == 1 && ephemeris.Header.CSI != 0)
+	{
+		return 1;
+	}
+
+	//Is time to begin greater than ephemeris begin?
+	if (GMT_begin > ephemeris.Header.TL)
+	{
+		//Is time to begin greater than ephemeris end?
+		if (GMT_begin > ephemeris.Header.TR)
+		{
+			//Error return
+			return 2;
+		}
+	}
+	else
+	{
+		GMT_begin = ephemeris.Header.TL;
+	}
+
+	GMT = GMT_begin;
+
+	//Check initial condition
+	InitialCondition = EMMENVCondition(ephemeris, MANTIMES, LUNRSTAY, GMT, option, terminator, u_star, err);
+	if (present == false)
+	{
+		InitialCondition = !InitialCondition;
+	}
+
+	if (err)
+	{
+		//Interpolation error
+		return 4;
+	}
+
+	//Does condition already exist at initial state?
+	if (InitialCondition)
+	{
+		out.T_Change = GMT;
+		out.ChangeFound = true;
+		out.IsActualChange = false;
+		return 0;
+	}
+
+	//Find first vector after GMT
+	while (ephemeris.table[iter].GMT < GMT)
+	{
+		iter++;
+	}
+
+	//Set as left bracket
+	TL = GMT;
+
+	//Search for condition change to bracket it
+	while (iter < ephemeris.Header.NumVec)
+	{
+		GMT = ephemeris.table[iter].GMT;
+		ConditionPresent = EMMENVCondition(ephemeris, MANTIMES, LUNRSTAY, GMT, option, terminator, u_star, err);
+		if (present == false)
+		{
+			ConditionPresent = !ConditionPresent;
+		}
+		if (err)
+		{
+			//Interpolation error
+			return 4;
+		}
+
+		if (ConditionPresent != InitialCondition)
+		{
+			//Found a change
+			TR = GMT;
+			break;
+		}
+
+		TL = GMT;
+		iter++;
+
+		if (iter >= ephemeris.Header.NumVec)
+		{
+			//Ran out of ephemeris
+			return 3;
+		}
+	}
+
+	//TL and TR are now the left and right limits of the environment change
+	i = 0;
+	while (abs(TR - TL) > eps && i < limit)
+	{
+		//Try middle
+		GMT = (TR + TL) / 2.0;
+
+		ConditionPresent = EMMENVCondition(ephemeris, MANTIMES, LUNRSTAY, GMT, option, terminator, u_star, err);
+		if (present == false)
+		{
+			ConditionPresent = !ConditionPresent;
+		}
+		if (err)
+		{
+			//Interpolation error
+			return 4;
+		}
+
+		if (ConditionPresent == InitialCondition)
+		{
+			//Too early
+			TL = GMT;
+		}
+		else
+		{
+			//Too late
+			TR = GMT;
+		}
+
+		i++;
+	}
+
+	if (i >= limit)
+	{
+		//Ran out of iterations
+		return 5;
+	}
+
+	//We have found the environment change
+	GMT = (TR + TL) / 2.0;
+
+	out.T_Change = GMT;
+	out.ChangeFound = true;
+	out.IsActualChange = true;
+	return 0;
+}
+
+bool RTCC::EMMENVCondition(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, LunarStayTimesTable *LUNRSTAY, double GMT, int option, bool terminator, VECTOR3 u_vec, int &err)
+{
+	ELVCTRInputTable in;
+	ELVCTROutputTable2 out;
+
+	err = 0;
+
+	in.GMT = GMT;
+
+	ELVCTR(in, out, ephemeris, MANTIMES, LUNRSTAY);
+
+	if (out.ErrorCode > 4)
+	{
+		err = out.ErrorCode;
+		return false;
+	}
+
+	if (option == 0 || option == 1 || option == 2)
+	{
+		//Sun, Moon, star
+
+		VECTOR3 RS; //Vector pointing from main body to Sun/Moon/star
+		double R_E;
+
+		if (ephemeris.Header.CSI == 0)
+		{
+			R_E = OrbMech::R_Earth;
+		}
+		else
+		{
+			R_E = BZLAND.rad[0];
+		}
+
+		if (option == 0 || option == 1)
+		{
+			//Sun, Moon
+			VECTOR3 R_EM, V_EM, R_ES;
+
+			PLEFEM(1, GMT / 3600.0, 0, &R_EM, &V_EM, &R_ES, NULL);
+
+			if (option == 0)
+			{
+				//Sun
+				if (ephemeris.Header.CSI == 0)
+				{
+					RS = R_ES;
+				}
+				else
+				{
+					RS = R_ES - R_EM;
+				}
+			}
+			else
+			{
+				//Moon
+				RS = R_EM;
+			}
+		}
+		else
+		{
+			//Star
+			RS = u_vec;
+		}
+
+		double cos_theta;
+
+		cos_theta = dotp(unit(out.SV.R), unit(RS));
+
+		//Check condition
+		if (cos_theta > 0.0)
+		{
+			//In AOS
+			return true;
+		}
+		else
+		{
+			if (terminator)
+			{
+				//No additional checks required
+				return false;
+			}
+
+			double cos_beta;
+
+			cos_beta = sqrt(1.0 - pow(cos_theta, 2));
+			if (length(out.SV.R)*cos_beta >= R_E)
+			{
+				//In AOS
+				return true;
+			}
+			else
+			{
+				//Not AOS
+				return false;
+			}
+		}
+	}
+	else
+	{
+		//TBD: Crossing of a reference plane. Earth equator, lunar orbit etc.
+
+	}
+
+	return false;
+}
+
 int RTCC::EMMENV(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, double GMT_begin, int option, SunriseSunsetTable &table, VECTOR3 *u_inter)
 {
 	//option 0: Sun, 1: Moon, 2: Plane intersection Earth, 3: Plane intersection Moon

@@ -2616,6 +2616,16 @@ public:
 	//Ascending Node Computation
 	int RMMASCND(EphemerisDataTable2 &EPHEM, ManeuverTimesTable &MANTIMES, double GMT_min, double &lng_asc);
 	//Environment Change Calculations
+
+	struct NewEMMENVTable
+	{
+		double T_Change = 0.0; //Time of environment change
+		bool ChangeFound = false; //Desired condition not found
+		bool IsActualChange = false; //Condition already existed at input GMT
+	};
+
+	bool EMMENVCondition(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, LunarStayTimesTable *LUNRSTAY, double GMT, int option, bool terminator, VECTOR3 u_vec, int &err);
+	int NewEMMENV(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, LunarStayTimesTable *LUNRSTAY, double GMT_begin, int option, bool present, bool terminator, VECTOR3 u_star, NewEMMENVTable &out);
 	int EMMENV(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, double GMT_begin, int option, SunriseSunsetTable &table, VECTOR3 *u_inter = NULL);
 	//Sunrise/Sunset Display
 	void EMDSSEMD(int ind, double param);

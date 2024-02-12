@@ -40,13 +40,16 @@ struct AGOPInputs
 	// Option 9: 1 = 2 stars, 2 = 1 star and attitude, 3 = LVLH attitude, 4 = gimbal angles
 	int Mode;
 	//Option 7, Mode 2: 0 = star search, 1 = stars input
+	//Option 7, Mode 4: 0 = LM REFSMMAT, 1 = LM gimbal angles, 2 = CSM gimbal angles, 3 = CSM REFSMMAT
 	int AdditionalOption = 0;
 
 	//Pointer to star catalog
 	VECTOR3 *startable;
 
 	//Array of state vectors
-	std::vector<EphemerisData> sv_arr;
+	EphemerisDataTable2 ephem;
+	//Delta time
+	double DeltaT;
 	//CSM REFSMMAT (option 1, 4, 5 and 6)
 	MATRIX3 CSM_REFSMMAT;
 	//LM REFSMMAT (option 4)
@@ -84,6 +87,8 @@ struct AGOPInputs
 	unsigned int StartingStar = 1;
 
 	//OPTICAL DATA
+
+	//GET of sighting
 	double TimeOfSighting[2];
 
 	//SEXTANT
@@ -159,6 +164,8 @@ protected:
 	void DockingAlignment(const AGOPInputs &in, AGOPOutputs &out);
 	//Option 7, Mode 5
 	void PointAOTWithCSM(const AGOPInputs &in, AGOPOutputs &out);
+	//Option 7, Mode 6
+	void REFSMMAT2REFSMMAT(const AGOPInputs &in, AGOPOutputs &out);
 	//Option 8
 	void StarSightingTable(const AGOPInputs &in, AGOPOutputs &out);
 	//Option 9
@@ -178,10 +185,25 @@ protected:
 	VECTOR3 GetBodyFixedHGAVector(double pitch, double yaw) const;
 	VECTOR3 GetBodyFixedSteerableAntennaVector(double pitch, double yaw) const;
 	VECTOR3 GetBodyFixedRRVector(double trunnion, double shaft) const;
-	VECTOR3 GetStarUnitVector(const AGOPInputs &in, unsigned num);
+	VECTOR3 GetStarUnitVector(const AGOPInputs &in, unsigned star);
 	VECTOR3 GetCSMCOASVector(double SPA, double SXP);
 	VECTOR3 GetLMCOASVector(double EL, double SXP, bool IsZAxis);
 	VECTOR3 GetAOTNBVector(double EL, double AZ, double YROT, double SROT, int axis);
 	VECTOR3 VectorPointingToHorizon(EphemerisData sv, VECTOR3 plane, bool sol) const;
 	MATRIX3 LS_REFSMMAT(VECTOR3 R_LS, VECTOR3 R_CSM, VECTOR3 V_CSM) const;
+	bool InstrumentLimitCheck(const AGOPInputs &in, VECTOR3 u_NB) const;
+
+	//Instrument angles
+	void SextantAngles(VECTOR3 u_NB, double &TA, double &SA) const;
+	void AOTAngles(int Detent, VECTOR3 u_NB, double &YROT, double &SROT) const;
+	void CSMCOASAngles(VECTOR3 u_NB, double &SPA, double &SXP) const;
+	void LMCOASAngles(bool Axis, VECTOR3 u_NB, double &EL, double &SXP) const;
+
+	bool Interpolation(double GMT, EphemerisData &sv);
+	EphemerisData SingleStateVector();
+
+	//Copy of ephemeris
+	EphemerisDataTable2 ephemeris;
+	//Empty maneuver times table for interpolation
+	ManeuverTimesTable mantimes;
 };

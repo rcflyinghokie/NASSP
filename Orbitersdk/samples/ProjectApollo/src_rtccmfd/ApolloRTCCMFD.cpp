@@ -1383,7 +1383,7 @@ void ApolloRTCCMFD::menuSetAGOPInput()
 			}
 			break;
 		case 7:
-			if (G->AGOP_Mode < 1)
+			if (G->AGOP_Mode < 2)
 			{
 				G->AGOP_Mode++;
 			}
@@ -1451,6 +1451,12 @@ void ApolloRTCCMFD::menuSetAGOPInput()
 		break;
 	case 16: //Antenna Yaw
 		GenericDoubleInput(&G->AGOP_AntennaYaw, "Input antenna yaw angle in degrees:", RAD);
+		break;
+	case 17: //Instrument
+		GenericIntInput(&G->AGOP_Instrument, "Enter instrument ID. 0 = sextant, 1 = COAS, 2 = AOT:", NULL, 0, 2);
+		break;
+	case 18: //LM COAS Axis
+		G->AGOP_LMCOASAxis = !G->AGOP_LMCOASAxis;
 		break;
 	}
 }

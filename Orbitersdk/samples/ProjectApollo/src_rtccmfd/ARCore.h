@@ -393,6 +393,8 @@ public:
 	bool AGOP_AttIsCSM;
 	bool AGOP_HeadsUp;
 	double AGOP_AntennaPitch, AGOP_AntennaYaw;
+	int AGOP_Instrument;
+	bool AGOP_LMCOASAxis;
 	std::vector<std::string> AGOP_Output;
 	std::string AGOP_Error;
 
