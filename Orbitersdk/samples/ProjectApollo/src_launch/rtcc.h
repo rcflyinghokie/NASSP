@@ -2849,6 +2849,11 @@ public:
 	int EMDSPACENoMPT(SV sv0, int queid, double gmt, double incl = 0.0, double ascnode = 0.0);
 	//Orbit Station Contact Generation Control
 	void EMSTAGEN(int L);
+	//Generalized Contact Generator
+	void EMGENGEN(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, const StationTable &stationlist, int body, OrbitStationContactsTable &res, LunarStayTimesTable *LUNSTAY = NULL);
+	//Horizon Crossing Subprogram
+	int EMXING(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, const StationData & station, int body, std::vector<StationContact> &acquisitions, LunarStayTimesTable *LUNSTAY);
+	bool EMXINGLunarOccultation(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, double gmt, VECTOR3 R_S_equ, double &g_func, LunarStayTimesTable *LUNSTAY);
 	//Next Station Contact Display
 	void EMDSTAC();
 	//Predicted Site Acquisition Display
@@ -2857,6 +2862,8 @@ public:
 	void ECMEXP(EphemerisData sv, StationData *stat, int statbody, double &range, double &alt);
 	//Landmark Acquisition Display
 	void EMDLANDM(int L, double gmt, double dt, int ref);
+	//Ground Point Characteristics Block Routine
+	void EMGGPCHR(double lat, double lng, double alt, int body, double GHA, StationData *stat);
 	//Display Updates
 	void EMSNAP(int L, int ID);
 
@@ -4921,11 +4928,6 @@ private:
 	bool CalculationMTP_H1(int fcn, LPVOID &pad, char * upString = NULL, char * upDesc = NULL, char * upMessage = NULL);
 	bool CalculationMTP_SL(int fcn, LPVOID &pad, char * upString = NULL, char * upDesc = NULL, char * upMessage = NULL);
 
-	//Generalized Contact Generator
-	void EMGENGEN(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, const StationTable &stationlist, int body, OrbitStationContactsTable &res, LunarStayTimesTable *LUNSTAY = NULL);
-	//Horizon Crossing Subprogram
-	int EMXING(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, const StationData & station, int body, std::vector<StationContact> &acquisitions, LunarStayTimesTable *LUNSTAY);
-	bool EMXINGLunarOccultation(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, double gmt, VECTOR3 R_S_equ, double &g_func, LunarStayTimesTable *LUNSTAY);
 	int CapeCrossingRev(int L, double GMT);
 	double CapeCrossingGMT(int L, int rev);
 	double CapeCrossingFirst(int L);
@@ -4953,8 +4955,6 @@ private:
 	void EMMGLCVP(int L, double gmt, int body);
 	//Relative Motion Digital Display
 	void EMMRMD(int Veh1, int Veh2, double get, double dt, int refs, int axis, int ref_body, int mode, VECTOR3 Att = _V(0, 0, 0), double PYRGET = 0.0);
-	//Ground Point Characteristics Block Routine
-	void EMGGPCHR(double lat, double lng, double alt, int body, double GHA, StationData *stat);
 
 	//MPT utility functions
 	bool MPTConfigSubset(const std::bitset<4> &CfgOld, const std::bitset<4> &CfgNew);

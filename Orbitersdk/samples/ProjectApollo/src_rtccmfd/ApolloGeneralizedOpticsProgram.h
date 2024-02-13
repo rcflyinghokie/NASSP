@@ -37,6 +37,7 @@ struct AGOPInputs
 	//			  2 = Compute RA, declination, unit vector from spaceraft to landmark or center of Earth, Moon, Sun
 	// Option 4: 1 = S-Band HGA (movable), 2 = S-Band Steerable (movable), 3 = RR (movable), 4 = HGA (fixed), 5 = Steerable (fixed), 6 = RR (fixed)
 	// Option 6: 1 = Fwd horizon, 2 = Aft horizon
+	// Option 8: 1 = Landmark (fixed instrument), 2 = star (fixed instrument), 3 = landmark (fixed attitude), 4 = star (fixed attitude), 5 = imaginary star
 	// Option 9: 1 = 2 stars, 2 = 1 star and attitude, 3 = LVLH attitude, 4 = gimbal angles
 	int Mode;
 	//Option 7, Mode 2: 0 = star search, 1 = stars input
@@ -72,6 +73,8 @@ struct AGOPInputs
 	double StarDeclination = 0.0;
 	//Landmark coordinates (option 1 and 4)
 	double lmk_lat, lmk_lng, lmk_alt;
+	//Landmark elevation angle for AOS (option 8)
+	double ElevationAngle;
 	//ID of ground station. If no ID is input, the manual coordinates above are used (option 4)
 	std::string GroundStationID;
 	//Heads up/down for fixed antenna angles (option 4)
@@ -95,7 +98,7 @@ struct AGOPInputs
 	//Shaft angles for two stars (Cards G411-412)
 	double SextantShaftAngles[2];
 	//Trunnion angles for two stars (Cards G413-414)
-	double TrunnionShaftAngles[2];
+	double SextantTrunnionAngles[2];
 
 	//COAS
 	//false = x-axis, true = z-axis
@@ -172,38 +175,48 @@ protected:
 	void LunarSurfaceAlignmentDisplay(const AGOPInputs &in, AGOPOutputs &out);
 
 	void WriteError(AGOPOutputs &out, int err);
-	void RightAscension_Display(char *Buff, double angle);
-	void Declination_Display(char *Buff, double angle);
 	bool GetInertialLandmarkVector(double lat, double lng, double alt, double GMT, bool isEarth, VECTOR3 &R_LMK);
 	void CSMHGAngles(VECTOR3 R, MATRIX3 SMNB, MATRIX3 REFSMMAT, double &pitch, double &yaw);
 	void LMSteerableAngles(VECTOR3 R, MATRIX3 SMNB, MATRIX3 REFSMMAT, double &pitch, double &yaw);
 	void RRAngles(VECTOR3 R, MATRIX3 SMNB, MATRIX3 REFSMMAT, double &trunnion, double &shaft);
+	VECTOR3 GetBodyFixedHGAVector(double pitch, double yaw) const;
+	VECTOR3 GetBodyFixedSteerableAntennaVector(double pitch, double yaw) const;
+	VECTOR3 GetBodyFixedRRVector(double trunnion, double shaft) const;
 	VECTOR3 CSMIMUtoLMIMUAngles(MATRIX3 CSM_REFSMMAT, MATRIX3 LM_REFSMMAT, VECTOR3 CSMIMUAngles, double DockingAngle);
 	VECTOR3 LMIMUtoCMIMUAngles(MATRIX3 CSM_REFSMMAT, MATRIX3 LM_REFSMMAT, VECTOR3 LMIMUAngles, double DockingAngle);
 	MATRIX3 LVLHAttitude(VECTOR3 LVLHAtt, VECTOR3 R, VECTOR3 V);
 	MATRIX3 ThreeAxisPointing(VECTOR3 SCAXIS, VECTOR3 U_LOS, VECTOR3 R, VECTOR3 V, double OMICRON);
-	VECTOR3 GetBodyFixedHGAVector(double pitch, double yaw) const;
-	VECTOR3 GetBodyFixedSteerableAntennaVector(double pitch, double yaw) const;
-	VECTOR3 GetBodyFixedRRVector(double trunnion, double shaft) const;
 	VECTOR3 GetStarUnitVector(const AGOPInputs &in, unsigned star);
-	VECTOR3 GetCSMCOASVector(double SPA, double SXP);
-	VECTOR3 GetLMCOASVector(double EL, double SXP, bool IsZAxis);
-	VECTOR3 GetAOTNBVector(double EL, double AZ, double YROT, double SROT, int axis);
 	VECTOR3 VectorPointingToHorizon(EphemerisData sv, VECTOR3 plane, bool sol) const;
 	MATRIX3 LS_REFSMMAT(VECTOR3 R_LS, VECTOR3 R_CSM, VECTOR3 V_CSM) const;
 	bool InstrumentLimitCheck(const AGOPInputs &in, VECTOR3 u_NB) const;
 
-	//Instrument angles
+	// NB unit vector from instrument
+	VECTOR3 GetNBUnitVectorFromInstrument(const AGOPInputs &in, int set) const;
+	VECTOR3 GetSextantVector(double TRN, double SFT) const;
+	VECTOR3 GetCSMCOASVector(double SPA, double SXP) const;
+	VECTOR3 GetLMCOASVector(double EL, double SXP, bool IsZAxis) const;
+	VECTOR3 GetAOTNBVector(double EL, double AZ, double YROT, double SROT, int axis) const;
+
+	// Instrument angles from NB unit vector
 	void SextantAngles(VECTOR3 u_NB, double &TA, double &SA) const;
 	void AOTAngles(int Detent, VECTOR3 u_NB, double &YROT, double &SROT) const;
 	void CSMCOASAngles(VECTOR3 u_NB, double &SPA, double &SXP) const;
 	void LMCOASAngles(bool Axis, VECTOR3 u_NB, double &EL, double &SXP) const;
 
+	// Get attitude matrix
+	void GetAttitudeMatrix(const AGOPInputs &in, int set, VECTOR3 &GA, MATRIX3 &MAT) const;
+
+	// State vector
 	bool Interpolation(double GMT, EphemerisData &sv);
 	EphemerisData SingleStateVector();
 
-	//Copy of ephemeris
+	// Display formatting
+	void RightAscension_Display(char *Buff, double angle);
+	void Declination_Display(char *Buff, double angle);
+
+	// Copy of ephemeris
 	EphemerisDataTable2 ephemeris;
-	//Empty maneuver times table for interpolation
+	// Empty maneuver times table for interpolation
 	ManeuverTimesTable mantimes;
 };

@@ -23870,7 +23870,7 @@ bool RTCC::EMMENVCondition(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &M
 
 		if (ephemeris.Header.CSI == 0)
 		{
-			R_E = OrbMech::R_Earth;
+			R_E = OrbMech::R_Earth + 400000.0*0.3048;
 		}
 		else
 		{

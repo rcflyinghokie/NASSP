@@ -1426,38 +1426,8 @@ void AGOP::OSTComputeREFSMMAT(const AGOPInputs &in, AGOPOutputs &out)
 	U_CBA = GetStarUnitVector(in, in.StarIDs[0]);
 	U_CBB = GetStarUnitVector(in, in.StarIDs[1]);
 
-	if (in.Instrument == 0)
-	{
-		// Sextant
-		U_NBA_apo = OrbMech::SXTNB(in.TrunnionShaftAngles[0], in.SextantShaftAngles[0]);
-		U_NBB_apo = OrbMech::SXTNB(in.TrunnionShaftAngles[1], in.SextantShaftAngles[1]);
-	}
-	else if (in.Instrument == 1)
-	{
-		if (in.AttIsCSM)
-		{
-			// CSM COAS
-			U_NBA_apo = GetCSMCOASVector(in.COASElevationAngle[0], in.COASPositionAngle[0]);
-			U_NBB_apo = GetCSMCOASVector(in.COASElevationAngle[1], in.COASPositionAngle[1]);
-		}
-		else
-		{
-			// LM COAS
-			U_NBA_apo = GetLMCOASVector(in.COASElevationAngle[0], in.COASPositionAngle[0], in.LMCOASAxis);
-			U_NBB_apo = GetLMCOASVector(in.COASElevationAngle[1], in.COASPositionAngle[1], in.LMCOASAxis);
-		}
-	}
-	else if (in.Instrument == 2)
-	{
-		// AOT
-
-		double AZ, EL;
-
-		AZ = pRTCC->SystemParameters.MDGTCD[in.AOTDetent - 1];
-		EL = pRTCC->SystemParameters.MDGETA[in.AOTDetent - 1];
-		U_NBA_apo = GetAOTNBVector(EL, AZ, in.AOTReticleAngle[0], in.AOTSpiraleAngle[0], in.AOTLineID[0]);
-		U_NBB_apo = GetAOTNBVector(EL, AZ, in.AOTReticleAngle[1], in.AOTSpiraleAngle[1], in.AOTLineID[1]);
-	}
+	U_NBA_apo = GetNBUnitVectorFromInstrument(in, 0);
+	U_NBB_apo = GetNBUnitVectorFromInstrument(in, 1);
 
 	U_CBA_apo = tmul(M_SM_NB_A, U_NBA_apo);
 	U_CBB_apo = tmul(M_SM_NB_B, U_NBB_apo);
@@ -1615,14 +1585,276 @@ void AGOP::REFSMMAT2REFSMMAT(const AGOPInputs &in, AGOPOutputs &out)
 //Option 8
 void AGOP::StarSightingTable(const AGOPInputs &in, AGOPOutputs &out)
 {
-	if (in.Mode == 1 || in.Mode == 2)
+	VECTOR3 GA, u_star;
+	double TGT_RT_ASC, TGT_DEC, LOS_RT_ASC, LOS_DEC, OPT_ANG1, OPT_ANG2;
+
+	OPT_ANG1 = OPT_ANG2 = 0.0;
+
+	if (in.Mode == 1 || in.Mode == 3)
 	{
 		// Landmark
+		EphemerisDataTable2 ephemeris_true;
+		std::vector<StationContact> acquisitions;
+		StationContact acquisition;
+		StationData Station;
+		int body, csi_out, err;
 
-		//Search for AOS
+		// Assume the landmark is in the same SOI as the ephemeris, i.e. initial state vector
+		body = in.ephem.Header.CSI == 0 ? BODY_EARTH : BODY_MOON;
+		csi_out = in.ephem.Header.CSI + 1;
+
+		// Create station characteristics table
+		pRTCC->EMGGPCHR(in.lmk_lat, in.lmk_lng, in.lmk_alt, body, 0.0, &Station);
+		// Convert ephemeris to ECT or MCT
+		ephemeris_true = ephemeris;
+		pRTCC->ELVCNV(ephemeris.table, in.ephem.Header.CSI, csi_out, ephemeris_true.table);
+		ephemeris_true.Header.CSI = csi_out;
+		// Calculate acquisitions
+		err = pRTCC->EMXING(ephemeris_true, mantimes, Station, body, acquisitions, NULL);
+
+		if (err || acquisitions.size() == 0)
+		{
+			// Didn't find any acquisitions
+			WriteError(out, 5);
+			return;
+		}
+
+		//Only use first acquisition
+		acquisition = acquisitions[0];
+
+		if (in.ElevationAngle > acquisition.MAXELEV)
+		{
+			//Didn't rise high enough
+			WriteError(out, 5);
+			return;
+		}
+
+		//Search elevation angle time from GMT of AOS (0° elev)
+
+	}
+	else if (in.Mode == 2 || in.Mode == 4)
+	{
+		// Star
+		RTCC::NewEMMENVTable outtab;
+
+		u_star = GetStarUnitVector(in, in.StarIDs[0]);
+
+		// Calculate AOS
+		pRTCC->NewEMMENV(ephemeris, mantimes, NULL, ephemeris.Header.TL, 2, true, false, u_star, outtab);
+
+		if (outtab.ChangeFound == false)
+		{
+			// No AOS in timespan
+			WriteError(out, 6);
+			return;
+		}
+
+
+	}
+	else
+	{
+		// Imaginary star
+		MATRIX3 M_BRCS_SM, M_SM_NB;
+		VECTOR3 u_NB, u_SM;
+
+		u_NB = GetNBUnitVectorFromInstrument(in, 0);
+
+		if (in.AttIsCSM)
+		{
+			M_BRCS_SM = in.CSM_REFSMMAT;
+		}
+		else
+		{
+			M_BRCS_SM = in.LM_REFSMMAT;
+		}
+		GetAttitudeMatrix(in, 0, GA, M_SM_NB);
+
+		u_SM = tmul(M_SM_NB, u_NB);
+		u_star = tmul(M_BRCS_SM, u_SM);
 	}
 
-	//TBD
+	if (in.Mode == 2 || in.Mode == 4)
+	{
+		OrbMech::latlong_from_r(u_star, TGT_DEC, TGT_RT_ASC);
+	}
+	else
+	{
+		TGT_DEC = TGT_RT_ASC = 0.0;
+	}
+
+	if (in.Mode == 2 || in.Mode == 4 || in.Mode == 5)
+	{
+		OrbMech::latlong_from_r(u_star, LOS_DEC, LOS_RT_ASC);
+	}
+	else
+	{
+		LOS_DEC = LOS_RT_ASC = 0.0;
+	}
+
+	std::string line;
+	char Buffer[128];
+
+	//                   STAR SIGHTING TABLE
+	//
+	//               VEHICLE XXX MODE X
+	//  TGTID XXX
+	//                       OG   XXX.XX
+	// TGT DEC   +XX:XX:XX   IG   XXX.XX     LOS DEC    +XX:XX:XX
+	//TGT RT ASC XXX:XX:XX   MG   XXX.XX     LOS RT ASC XXX:XX:XX
+	//
+	//
+	//  GND PT DATA          OPTICS XXXX/XX  GETT XXX:XX:XX
+	//                       XXX XXX.XXX     REV  XXX
+	// LAT +XX.XXX           XXX XXX.XXX     LON  XXX.XXX
+	// LONG XXX.XXX                          LON GET XXX:XX:XX
+	// ALT  XXXXX 
+	// ELV  XX                               CA   XXX.XX
+	//                                       GETCA XXX:XX:XX
+	//
+	//
+	//                    REFSMMAT
+
+	out.output_text.push_back("                   STAR SIGHTING TABLE");
+	out.output_text.push_back("");
+	line = "               VEHICLE ";
+	if (in.AttIsCSM)
+	{
+		line += "CSM";
+	}
+	else
+	{
+		line += "LEM";
+	}
+	line += " MODE ";
+	sprintf(Buffer, "%d", in.Mode);
+	line.append(Buffer);
+	out.output_text.push_back(line);
+
+	line = "  TGTID ";
+	if (in.Mode == 1 || in.Mode == 3)
+	{
+		line += "LMK";
+	}
+	else if (in.Mode == 5)
+	{
+		line += "STAR";
+	}
+	else
+	{
+		sprintf(Buffer, "%03d", in.StarIDs[0]);
+		line.append(Buffer);
+	}
+	out.output_text.push_back(line);
+
+	line = "                       OG   ";
+	sprintf(Buffer, "%06.2lf", GA.x*DEG);
+	line.append(Buffer);
+	out.output_text.push_back(line);
+
+	line = " TGT DEC   ";
+	if (in.Mode == 2 || in.Mode == 4)
+	{
+		Declination_Display(Buffer, TGT_DEC*DEG);
+		line.append(Buffer);
+	}
+	else
+	{
+		line += "         ";
+	}
+	line += "   IG   ";
+	sprintf(Buffer, "%06.2lf", GA.y*DEG);
+	line.append(Buffer);
+	line += "     LOS DEC    ";
+	if (in.Mode == 2 || in.Mode == 4 || in.Mode == 5)
+	{
+		Declination_Display(Buffer, LOS_DEC*DEG);
+		line.append(Buffer);
+	}
+	out.output_text.push_back(line);
+
+	line = "TGT RT ASC ";
+	if (in.Mode == 2 || in.Mode == 4)
+	{
+		RightAscension_Display(Buffer, TGT_RT_ASC*DEG);
+		line.append(Buffer);
+	}
+	else
+	{
+		line += "         ";
+	}
+	line += "   MG   ";
+	sprintf(Buffer, "%06.2lf", GA.z*DEG);
+	line.append(Buffer);
+	line += "     LOS RT ASC ";
+	if (in.Mode == 2 || in.Mode == 4 || in.Mode == 5)
+	{
+		RightAscension_Display(Buffer, LOS_RT_ASC*DEG);
+		line.append(Buffer);
+	}
+	out.output_text.push_back(line);
+	out.output_text.push_back("");
+	out.output_text.push_back("");
+	out.output_text.push_back("");
+
+	line = "  GND PT DATA          OPTICS ";
+	if (in.Instrument == 0)
+	{
+		line += "SXT    ";
+	}
+	else if (in.Instrument == 1)
+	{
+		if (in.AttIsCSM)
+		{
+			line += "COAS   ";
+		}
+		else
+		{
+			if (in.LMCOASAxis)
+			{
+				line += "COAS +Z";
+			}
+			else
+			{
+				line += "COAS +X";
+			}
+		}
+	}
+	else
+	{
+		line += "AOT/";
+		sprintf(Buffer, "%d", in.AOTDetent);
+		line.append(Buffer);
+	}
+	line += "  GETT ";
+
+	OrbMech::format_time_HHMMSS(Buffer, pRTCC->GETfromGMT(ephemeris.Header.TL));
+	line.append(Buffer);
+	out.output_text.push_back(line);
+
+	line = "                       ";
+	if (in.Instrument == 0)
+	{
+		line += "SFT";
+	}
+	else if (in.Instrument == 1)
+	{
+		if (in.AttIsCSM)
+		{
+			line += "SPA";
+		}
+		else
+		{
+			line += "AZ ";
+		}
+	}
+	else
+	{
+		line += "A1 ";
+	}
+
+	line += " ";
+
+
 }
 
 //Option 9
@@ -1794,6 +2026,12 @@ void AGOP::WriteError(AGOPOutputs &out, int err)
 		break;
 	case 4:
 		out.errormessage = "INTERPOLATION FAILURE";
+		break;
+	case 5:
+		out.errormessage = "LANDMARK NOT IN SIGHT";
+		break;
+	case 6:
+		out.errormessage = "NO AOS IN TIMESPAN";
 		break;
 	}
 }
@@ -2053,13 +2291,51 @@ VECTOR3 AGOP::GetStarUnitVector(const AGOPInputs &in, unsigned star)
 	return OrbMech::r_from_latlong(in.StarDeclination, in.StarRightAscension);
 }
 
-VECTOR3 AGOP::GetCSMCOASVector(double SPA, double SXP)
+VECTOR3 AGOP::GetNBUnitVectorFromInstrument(const AGOPInputs &in, int set) const
+{
+	if (in.Instrument == 0)
+	{
+		// Sextant
+		return OrbMech::SXTNB(in.SextantTrunnionAngles[set], in.SextantShaftAngles[set]);
+	}
+	else if (in.Instrument == 1)
+	{
+		if (in.AttIsCSM)
+		{
+			// CSM COAS
+			return GetCSMCOASVector(in.COASElevationAngle[0], in.COASPositionAngle[0]);
+		}
+		else
+		{
+			// LM COAS
+			return GetLMCOASVector(in.COASElevationAngle[0], in.COASPositionAngle[0], in.LMCOASAxis);
+		}
+	}
+	else
+	{
+		// AOT
+
+		double AZ, EL;
+
+		AZ = pRTCC->SystemParameters.MDGTCD[in.AOTDetent - 1];
+		EL = pRTCC->SystemParameters.MDGETA[in.AOTDetent - 1];
+		return GetAOTNBVector(EL, AZ, in.AOTReticleAngle[0], in.AOTSpiraleAngle[0], in.AOTLineID[0]);
+	}
+}
+
+VECTOR3 AGOP::GetSextantVector(double TRN, double SFT) const
+{
+	//In navigation base coordinates
+	return OrbMech::SXTNB(TRN, SFT);
+}
+
+VECTOR3 AGOP::GetCSMCOASVector(double SPA, double SXP) const
 {
 	//In navigation base coordinates
 	return unit(_V(cos(SPA)*cos(SXP), sin(SXP), sin(SPA)*cos(SXP)));
 }
 
-VECTOR3 AGOP::GetLMCOASVector(double EL, double SXP, bool IsZAxis)
+VECTOR3 AGOP::GetLMCOASVector(double EL, double SXP, bool IsZAxis) const
 {
 	//In navigation base coordinates
 	if (IsZAxis)
@@ -2071,7 +2347,7 @@ VECTOR3 AGOP::GetLMCOASVector(double EL, double SXP, bool IsZAxis)
 	return unit(_V(cos(EL)*cos(SXP), sin(SXP), sin(EL)*cos(SXP)));
 }
 
-VECTOR3 AGOP::GetAOTNBVector(double EL, double AZ, double ReticleAngle, double SpiraleAngle, int axis)
+VECTOR3 AGOP::GetAOTNBVector(double EL, double AZ, double ReticleAngle, double SpiraleAngle, int axis) const
 {
 	VECTOR3 u_OAN, u_XPN_apo, u_YPN_apo, u_XPN, u_YPN;
 	double RN;
@@ -2365,4 +2641,27 @@ EphemerisData AGOP::SingleStateVector()
 	sv.RBI = ephemeris.Header.CSI == 0 ? BODY_EARTH : BODY_MOON;
 
 	return sv;
+}
+
+void AGOP::GetAttitudeMatrix(const AGOPInputs &in, int set, VECTOR3 &GA, MATRIX3 &MAT) const
+{
+	// Stable member to navigation base
+
+	if (in.AttIsCSM)
+	{
+		GA = in.IMUAttitude[set];
+	}
+	else
+	{
+		if (in.AttIsFDAI)
+		{
+			GA = pRTCC->EMMGFDAI(in.IMUAttitude[set], false);
+		}
+		else
+		{
+			GA = in.IMUAttitude[set];
+		}
+	}
+
+	MAT = OrbMech::CALCSMSC(GA);
 }
