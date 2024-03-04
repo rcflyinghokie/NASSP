@@ -1643,20 +1643,6 @@ void LEM::clbkPostCreation()
 	soundlib.InitSoundLib(this, SOUND_DIRECTORY);
 	LoadDefaultSounds();
 	this->CWEA.LoadSounds();
-
-	//
-	// Initial sound setup
-	//
-
-	soundlib.SoundOptionOnOff(PLAYCOUNTDOWNWHENTAKEOFF, FALSE);
-	soundlib.SoundOptionOnOff(PLAYCABINAIRCONDITIONING, FALSE);
-	soundlib.SoundOptionOnOff(DISPLAYTIMER, FALSE);
-	/// \todo Disabled for now because of the LEVA and the descent stage vessel
-	///		  Enable before CSM docking
-	soundlib.SoundOptionOnOff(PLAYRADARBIP, FALSE);
-
-	// Disable Rolling, landing, speedbrake, crash sound. This causes issues in Orbiter 2016.
-	soundlib.SoundOptionOnOff(PLAYLANDINGANDGROUNDSOUND, FALSE);
 }
 
 void LEM::clbkVisualCreated(VISHANDLE vis, int refcount)
@@ -2150,7 +2136,7 @@ void LEM::EngineSoundTimestep() {
 		double lvl;
 		if (lvl = GetThrusterLevel(th_hover[0]))
 		{
-			EngineS.play(LOOP, static_cast<int>(lvl * 255));
+			EngineS.play(LOOP, lvl);
 		}
 		else
 		{
