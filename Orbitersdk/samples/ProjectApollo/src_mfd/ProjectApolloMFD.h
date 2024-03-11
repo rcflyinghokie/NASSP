@@ -30,6 +30,7 @@
 class Saturn;
 class LEM;
 class Crawler;
+class MCC;
 
 ///
 /// \ingroup MFD
@@ -45,7 +46,6 @@ public:
 	bool Update (oapi::Sketchpad* skp);
 	void GetStateVector (void);
 	bool SetSource(char *rstr);
-	bool SetIUSource(char *rstr);
 	bool SetReferencePlanet(char *rstr);
 	bool SetCrewNumber (char *rstr);
 	bool SetPrimECSTestHeaterPower (char *rstr);
@@ -54,6 +54,7 @@ public:
 	bool SetTimebaseUpdate(char *rstr);
 	void CalculateV42Angles(void);
 	void menuPressEnterOnCMCLGC(void);
+	void menuPressPROOnCMCLGC(void);
 	void menuPressEnterOnDSKYDEDA(void);
 	void menuCycleLMAlignType();
 	bool SetImpactTIG(char *rstr);
@@ -133,6 +134,7 @@ protected:
 	Saturn *saturn;
 	Crawler *crawler;
 	LEM *lem;
+	MCC *mcc;
 	int screen;
 	bool debug_frozen;
 	bool isSaturnV;

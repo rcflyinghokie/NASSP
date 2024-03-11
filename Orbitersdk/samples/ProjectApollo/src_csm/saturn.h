@@ -3576,6 +3576,15 @@ public:
 	TemperatureTransducer CMRCSEngine21TempSensor;
 	TemperatureTransducer CMRCSEngine24TempSensor;
 	TemperatureTransducer CMRCSEngine25TempSensor;
+	CSMTankPressTransducer FCN2PressureSensor1;
+	CSMTankPressTransducer FCN2PressureSensor2;
+	CSMTankPressTransducer FCN2PressureSensor3;
+	CSMPipeFlowTransducer FCO2FlowSensor1;
+	CSMPipeFlowTransducer FCO2FlowSensor2;
+	CSMPipeFlowTransducer FCO2FlowSensor3;
+	CSMPipeFlowTransducer FCH2FlowSensor1;
+	CSMPipeFlowTransducer FCH2FlowSensor2;
+	CSMPipeFlowTransducer FCH2FlowSensor3;
 	CSMTankPressTransducer BatteryManifoldPressureSensor;
 	TemperatureTransducer WasteH2ODumpTempSensor;
 	TemperatureTransducer UrineDumpTempSensor;
@@ -3590,6 +3599,8 @@ protected:
 	Cooling *FuelCellCooling[3];
 	h_Tank *FuelCellO2Manifold[3];
 	h_Tank *FuelCellH2Manifold[3];
+	h_Tank *FuelCellN2Blanket[3];
+
 	
 	// Electric Lights
 	ElectricLight* SpotLight;
@@ -4164,7 +4175,7 @@ protected:
 	void DestroyStages(double simt);
 	void FireSeperationThrusters(THRUSTER_HANDLE *pth);
 	void LoadDefaultSounds();
-	void RCSSoundTimestep();
+	void EnginesSoundTimestep();
 	void LoadVC();
 	void UpdateVC(VECTOR3 meshdir);
 	void DefineCMAttachments();
@@ -4217,6 +4228,7 @@ protected:
 	Sound RCSSustainSound;
 	Sound HatchOpenSound;
 	Sound HatchCloseSound;
+	Sound EngineS;
 
 	///
 	/// Drogue deployment message.

@@ -123,8 +123,6 @@ LC34::LC34(OBJHANDLE hObj, int fmodel) : VESSEL2 (hObj, fmodel) {
 	}
 	liftoffStreamLevel = 0;
 
-	soundlib.InitSoundLib(hObj, SOUND_DIRECTORY);
-
 	//meshoffsetMSS = _V(0,0,0);
 
 	IuUmb = new IUUmbilical(this);
@@ -201,6 +199,8 @@ void LC34::clbkPostCreation()
 	SetAnimation(mssAnim, mssProc);
 	SetAnimation(cmarmAnim, cmarmProc);
 	SetAnimation(swingarmAnim, swingarmState.pos);
+
+	soundlib.InitSoundLib(this, SOUND_DIRECTORY);
 }
 
 void LC34::clbkPreStep(double simt, double simdt, double mjd)
@@ -282,8 +282,14 @@ void LC34::clbkPreStep(double simt, double simdt, double mjd)
 
 		if (sat) sat->ActivatePrelaunchVenting();
 
-		///GRR should happen at a fairly precise time and usually happens on the next timestep, so adding oapiGetSimStep is a decent solution
-		if (MissionTime >= -(17.0 + oapiGetSimStep()))
+		//Enforce 1.0x time acceleration for GRR
+		if (MissionTime >= -30.0 && oapiGetTimeAcceleration() > 1.0)
+		{
+			oapiSetTimeAcceleration(1.0);
+		}
+
+		//Send Prepare to Launch signal and then at T-17 seconds the GRR signal
+		if (MissionTime >= -17.0)
 		{
 			IuESE->SetGuidanceReferenceRelease(true);
 		}
@@ -416,7 +422,7 @@ void LC34::clbkPreStep(double simt, double simdt, double mjd)
 				}
 			}
 
-			if (bCommit == false && MissionTime >= (-0.05 - simdt))
+			if (bCommit == false && MissionTime >= -0.05)
 			{
 				if (Commit())
 				{
@@ -527,11 +533,6 @@ void LC34::clbkPostStep (double simt, double simdt, double mjd) {
 
 void LC34::DoFirstTimestep()
 {
-	soundlib.SoundOptionOnOff(PLAYCOUNTDOWNWHENTAKEOFF, FALSE);
-	soundlib.SoundOptionOnOff(PLAYCABINAIRCONDITIONING, FALSE);
-	soundlib.SoundOptionOnOff(PLAYCABINRANDOMAMBIANCE, FALSE);
-	soundlib.SoundOptionOnOff(PLAYRADARBIP, FALSE);
-	soundlib.SoundOptionOnOff(DISPLAYTIMER, FALSE);
 
 	firstTimestepDone = true;
 }

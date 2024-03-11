@@ -40,6 +40,8 @@
 #include "saturn.h"
 #include "LEM.h"
 #include "Crawler.h"
+#include "MCCVessel.h"
+#include "MCC.h"
 #include "sivb.h"
 #include "iu.h"
 #include "papi.h"
@@ -84,7 +86,8 @@ static struct ProjectApolloMFDData {  // global data storage
 	double uplinkBufferSimt;
 	OBJHANDLE planet;
 	VESSEL *vessel;
-	VESSEL *iuVessel;
+	VESSEL *uplinkVessel;
+	int targetnumber;
 	int iuUplinkType;
 	int iuUplinkSwitSelStage;
 	int iuUplinkSwitSelChannel;
@@ -146,7 +149,8 @@ void ProjectApolloMFDopcDLLInit (HINSTANCE hDLL)
 	g_Data.uplinkBufferSimt = 0;
 	g_Data.V42angles = _V(0, 0, 0);
 	g_Data.killrot = 0;
-	g_Data.iuVessel = NULL;
+	g_Data.uplinkVessel = NULL;
+	g_Data.targetnumber = -1;
 	g_Data.iuUplinkType = 0;
 	g_Data.iuUplinkSwitSelStage = 0;
 	g_Data.iuUplinkSwitSelChannel = 1;
@@ -637,6 +641,7 @@ ProjectApolloMFD::ProjectApolloMFD (DWORD w, DWORD h, VESSEL *vessel) : MFD2 (w,
 	FailureSubpage = 0;
 	crawler = NULL;
 	lem = NULL;
+	mcc = NULL;
 	width = w;
 	height = h;
 	HBITMAP hBmpLogo = LoadBitmap(g_hDLL, MAKEINTRESOURCE (IDB_LOGO));
@@ -679,6 +684,22 @@ ProjectApolloMFD::ProjectApolloMFD (DWORD w, DWORD h, VESSEL *vessel) : MFD2 (w,
 				g_Data.planet = lem->GetGravityRef();
 			else
 				g_Data.planet = oapiGetGbodyByName("Earth");
+	}
+
+	mcc = NULL;
+	OBJHANDLE hMCC = oapiGetVesselByName("MCC");
+	if (hMCC != NULL) {
+		VESSEL* pVessel = oapiGetVesselInterface(hMCC);
+		if (pVessel) {
+			if (utils::IsVessel(pVessel, utils::MCC))
+			{
+				MCCVessel *pMCCVessel = static_cast<MCCVessel*>(pVessel);
+				if (pMCCVessel->mcc)
+				{
+					mcc = pMCCVessel->mcc;
+				}
+			}
+		}
 	}
 }
 
@@ -757,9 +778,17 @@ bool ProjectApolloMFD::Update (oapi::Sketchpad* skp)
 	skp->Text(width / 2, (int) (height * 0.1), "Ground Elapsed Time", 19);
 
 	double mt = 0;
-	if (saturn){ mt = saturn->GetMissionTime(); }
-	if (crawler){ mt = crawler->GetMissionTime(); }
-	if (lem){ mt = lem->GetMissionTime(); }
+	if (mcc)
+	{
+		mt = mcc->GetMissionTime();
+	}
+	
+	if (mt <= 0.0) //Mission time from MCC might be nonsense before liftoff
+	{
+		if (saturn) { mt = saturn->GetMissionTime(); }
+		if (crawler) { mt = crawler->GetMissionTime(); }
+		if (lem) { mt = lem->GetMissionTime(); }
+	}
 
 	int secs = abs((int) mt);
 	int hours = (secs / 3600);
@@ -1121,9 +1150,9 @@ bool ProjectApolloMFD::Update (oapi::Sketchpad* skp)
 
 		skp->SetTextAlign(oapi::Sketchpad::LEFT);
 		skp->SetTextColor(RGB(128, 128, 128));
-		if (g_Data.iuVessel)
+		if (g_Data.uplinkVessel)
 		{
-			oapiGetObjectName(g_Data.iuVessel->GetHandle(), buffer, 100);
+			oapiGetObjectName(g_Data.uplinkVessel->GetHandle(), buffer, 100);
 		}
 		else
 		{
@@ -1616,17 +1645,6 @@ bool ProjectApolloMFD::SetSource (char *rstr)
 	return false;
 }
 
-bool ProjectApolloMFD::SetIUSource(char *rstr)
-{
-	OBJHANDLE vessel_obj = oapiGetVesselByName(rstr);
-	if (vessel_obj != NULL)
-	{
-		g_Data.iuVessel = oapiGetVesselInterface(vessel_obj);
-		return true;
-	}
-	return false;
-}
-
 bool ProjectApolloMFD::SetReferencePlanet (char *rstr)
 {
 	if(stricmp(rstr, "Earth") == 0 || stricmp(rstr, "Moon") == 0)
@@ -1857,6 +1875,22 @@ void ProjectApolloMFD::menuPressEnterOnCMCLGC()
 	{
 		lem->DskySwitchEnter.SetState(true);
 		saturn->DskySwitchEnter.SetState(true);
+	}
+
+	saturn = NULL;
+}
+
+void ProjectApolloMFD::menuPressPROOnCMCLGC()
+{
+	//Only do this in the LM
+	if (lem == NULL) return;
+
+	GetCSM();
+
+	if (lem && saturn)
+	{
+		lem->DskySwitchProg.SetState(true);
+		saturn->DskySwitchProg.SetState(true);
 	}
 
 	saturn = NULL;
@@ -2122,8 +2156,20 @@ void ProjectApolloMFD::menuFreezeDebugLine()
 
 void ProjectApolloMFD::menuSetIUSource()
 {
-	bool IUSourceInput(void *id, char *str, void *data);
-	oapiOpenInputBox("Set S-IVB source", IUSourceInput, 0, 20, (void*)this);
+	int vesselcount;
+
+	vesselcount = oapiGetVesselCount();
+
+	if (g_Data.targetnumber < vesselcount - 1)
+	{
+		g_Data.targetnumber++;
+	}
+	else
+	{
+		g_Data.targetnumber = 0;
+	}
+
+	g_Data.uplinkVessel = oapiGetVesselInterface(oapiGetVesselByIndex(g_Data.targetnumber));
 }
 
 void ProjectApolloMFD::menuCycleIUUplinkType()
@@ -2273,7 +2319,7 @@ bool ProjectApolloMFD::SetImpactYaw(char *rstr)
 
 void ProjectApolloMFD::menuIUUplink()
 {
-	if (g_Data.iuVessel == NULL)
+	if (g_Data.uplinkVessel == NULL)
 	{
 		g_Data.iuUplinkResult = 2;
 		return;
@@ -2283,14 +2329,14 @@ void ProjectApolloMFD::menuIUUplink()
 
 	bool uplinkaccepted = false;
 
-	if (utils::IsVessel(g_Data.iuVessel, utils::Saturn)) {
-		Saturn *iuv = (Saturn *)g_Data.iuVessel;
+	if (utils::IsVessel(g_Data.uplinkVessel, utils::Saturn)) {
+		Saturn *iuv = (Saturn *)g_Data.uplinkVessel;
 
 		iu = iuv->GetIU();
 	}
-	else if (utils::IsVessel(g_Data.iuVessel, utils::SIVB))
+	else if (utils::IsVessel(g_Data.uplinkVessel, utils::SIVB))
 	{
-		SIVB *iuv = (SIVB *)g_Data.iuVessel;
+		SIVB *iuv = (SIVB *)g_Data.uplinkVessel;
 
 		iu = iuv->GetIU();
 	}
@@ -2435,11 +2481,6 @@ int ProjectApolloMFD::MsgProc (UINT msg, UINT mfd, WPARAM wparam, LPARAM lparam)
 bool SourceInput (void *id, char *str, void *data)
 {
 	return ((ProjectApolloMFD*)data)->SetSource(str);
-}
-
-bool IUSourceInput(void *id, char *str, void *data)
-{
-	return ((ProjectApolloMFD*)data)->SetIUSource(str);
 }
 
 bool ReferencePlanetInput (void *id, char *str, void *data)

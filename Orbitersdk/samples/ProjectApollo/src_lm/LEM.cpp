@@ -467,9 +467,6 @@ LEM::LEM(OBJHANDLE hObj, int fmodel) : Payload (hObj, fmodel),
 	InitMissionManagementMemory();
 	pMission = paGetDefaultMission();
 
-	// VESSELSOUND initialisation
-	soundlib.InitSoundLib(hObj, SOUND_DIRECTORY);
-
 	// Switch to compatible dock mode
 	SetDockMode(0);
 
@@ -549,6 +546,8 @@ void LEM::Init()
 	VcInfoActive = false;
 	VcInfoEnabled = false;
 
+	visibilitySize = 31.1; //Tuned so the LM disappears in the CSM optics at 400nm range
+
 	Crewed = true;
 	AutoSlow = false;
 
@@ -607,6 +606,7 @@ void LEM::Init()
 	ascidx = -1;
 	dscidx = -1;
 	vcidx = -1;
+	windowshadesidx = -1;
 	xpointershadesidx = -1;
 
 	drogue = NULL;
@@ -658,23 +658,7 @@ void LEM::Init()
 	NextFlashUpdate = MINUS_INFINITY;
 	PanelFlashOn = false;
 
-	//
-	// Initial sound setup
-	//
-
-	soundlib.SoundOptionOnOff(PLAYCOUNTDOWNWHENTAKEOFF, FALSE);
-	soundlib.SoundOptionOnOff(PLAYCABINAIRCONDITIONING, FALSE);
-	soundlib.SoundOptionOnOff(DISPLAYTIMER, FALSE);
-	/// \todo Disabled for now because of the LEVA and the descent stage vessel
-	///		  Enable before CSM docking
-	soundlib.SoundOptionOnOff(PLAYRADARBIP, FALSE);
-
-	// Disable Rolling, landing, speedbrake, crash sound. This causes issues in Orbiter 2016.
-	soundlib.SoundOptionOnOff(PLAYLANDINGANDGROUNDSOUND, FALSE);
-
 	strncpy(AudioLanguage, "English", 64);
-	soundlib.SetLanguage(AudioLanguage);
-	SoundsLoaded = false;
 
 	exhaustTex = oapiRegisterExhaustTexture("ProjectApollo/Exhaust_atrcs");
 
@@ -717,10 +701,6 @@ void LEM::Init()
 void LEM::DoFirstTimestep()
 {
 	checkControl.linktoVessel(this);
-	// Load sounds in case of dynamic creation, otherwise during clbkLoadStageEx
-	if (!SoundsLoaded) {
-		LoadDefaultSounds();
-	}
 
 #ifdef DIRECTSOUNDENABLED
 	NextEventTime = 0.0;
@@ -773,6 +753,7 @@ void LEM::LoadDefaultSounds()
 	soundlib.LoadSound(GlycolPumpSound, "GlycolPump.wav", INTERNAL_ONLY);
 	soundlib.LoadSound(SuitFanSound, "LMSuitFan.wav", INTERNAL_ONLY);
 	soundlib.LoadSound(CrewDeadSound, CREWDEAD_SOUND);
+	soundlib.LoadSound(EngineS, MAIN_ENGINES_SOUND, INTERNAL_ONLY);
 
 	// Configure sound options where needed
 	SuitFanSound.setFadeTime(5);
@@ -784,9 +765,8 @@ void LEM::LoadDefaultSounds()
 // MODIF X15 manage landing sound
 #ifdef DIRECTSOUNDENABLED
     sevent.LoadMissionLandingSoundArray(soundlib,"sound.csv");
-    sevent.InitDirectSound(soundlib);
+    sevent.InitDirectSound();
 #endif
-	SoundsLoaded = true;
 }
 
 int LEM::clbkConsumeDirectKey(char* kstate)
@@ -1406,10 +1386,10 @@ void LEM::clbkPostStep(double simt, double simdt, double mjd)
 	UpdateMassAndCoG();
 
 	//
-	// Play RCS sound in case of Orbiter's attitude control is disabled
+	// Play engine sound in case of Orbiter's attitude control is disabled
 	//
 
-	RCSSoundTimestep();
+	EngineSoundTimestep();
 
 	if (stage == 0 || pMission->LMHasLegs() == false)	{
 
@@ -1549,12 +1529,6 @@ void LEM::PostLoadSetup(bool define_anims)
 		checkControl.autoExecuteAllItemsAutomatic(false);
 
 	}
-
-	//
-	// Load sounds, this is mandatory if loading in cockpit view, 
-	// because OrbiterSound crashes when loading sounds during clbkLoadPanel
-	//
-	LoadDefaultSounds();
 
 	// Also cause the AC busses to wire up
 	switch (EPSInverterSwitch.GetState()) {
@@ -1705,6 +1679,9 @@ void LEM::GetScenarioState(FILEHANDLE scn, void *vs)
 		}
 		else if (!strnicmp(line, "COASRETICLEVISIBLE", 18)) {
 			sscanf(line + 18, "%i", &COASreticlevisible);
+		}
+		else if (!strnicmp(line, "WINDOWSHADESENABLED", 19)) {
+			sscanf(line + 19, "%i", &LEMWindowShades);
 		}
 		else if (!strnicmp(line, INERTIAL_DATA_START_STRING, sizeof(INERTIAL_DATA_START_STRING))) {
 			inertialData.LoadState(scn);
@@ -1961,6 +1938,11 @@ void LEM::clbkPostCreation()
 	}
 
 	CreateAirfoils();
+
+	// VESSELSOUND initialisation
+	soundlib.InitSoundLib(this, SOUND_DIRECTORY);
+	LoadDefaultSounds();
+	this->CWEA.LoadSounds();
 }
 
 void LEM::clbkVisualCreated(VISHANDLE vis, int refcount)
@@ -2010,6 +1992,56 @@ void LEM::clbkDockEvent(int dock, OBJHANDLE connected)
 			CreateAirfoils();
 		}
 	}
+}
+
+void LEM::clbkFocusChanged(bool getfocus, OBJHANDLE hNewVessel, OBJHANDLE hOldVessel)
+{
+	OBJHANDLE hLM = GetHandle();
+	if (hNewVessel == hLM) { //LM gains focus
+
+		bool fixCamera = false;
+		if (oapiCameraInternal() == false) {
+			fixCamera = true;
+			oapiCameraAttach(hLM, 0);
+		}
+		
+		if (status == 0) { //Dock Stage
+			SetSize(6);
+		}
+		else if (status == 1) { //Hover Stage
+			SetSize(7);
+		}
+		else if (status == 2) { //Ascent Hover Stage
+			SetSize(5);
+		}
+
+		if (fixCamera == true) {
+			oapiCameraAttach(hLM, 1);
+		}
+	}
+	else if (hOldVessel == hLM) { //LM loses focus
+		SetSize(visibilitySize);
+	}
+}
+
+void LEM::clbkGetRadiationForce(const VECTOR3& mflux, VECTOR3& F, VECTOR3& pos)
+{
+	double size = 0;
+	if (status == 0) { //Dock Stage
+		size = 6;
+	}
+	else if (status == 1) { //Hover Stage
+		size = 7;
+	}
+	else if (status == 2) { //Ascent Hover Stage
+		size = 5;
+	}
+
+	double cs = size * size;  // simplified cross section
+	double albedo = 1.5;    // simplistic albedo (mixture of absorption, reflection)
+
+	F = mflux * (cs * albedo);
+	pos = _V(0, 0, 0);        // don't induce torque
 }
 
 void LEM::DefineAnimations()
@@ -2167,6 +2199,8 @@ void LEM::clbkSaveState (FILEHANDLE scn)
 	oapiWriteScenario_int(scn, "COAS1ENABLED", LEMCoas1Enabled);
 	oapiWriteScenario_int(scn, "COAS2ENABLED", LEMCoas2Enabled);
 	oapiWriteScenario_int(scn, "COASRETICLEVISIBLE", COASreticlevisible);
+
+	oapiWriteScenario_int(scn, "WINDOWSHADESENABLED", LEMWindowShades);
 
 	oapiWriteScenario_float (scn, "DSCFUEL", DescentFuelMassKg);
 	oapiWriteScenario_float (scn, "ASCFUEL", AscentFuelMassKg);
@@ -2370,7 +2404,7 @@ void LEM::SetRCSJetLevelPrimary(int jet, double level) {
 	SetThrusterLevel(th_rcs[jet], level);
 }
 
-void LEM::RCSSoundTimestep() {
+void LEM::EngineSoundTimestep() {
 
 	// In case of disabled Orbiter attitude thruster groups OrbiterSound plays no
 	// engine sound, so this needs to be done manually
@@ -2394,6 +2428,20 @@ void LEM::RCSSoundTimestep() {
 	}
 	else {
 		RCSSustainSound.stop();
+	}
+
+	//APS/DPS sound
+	if (th_hover[0])
+	{
+		double lvl;
+		if (lvl = GetThrusterLevel(th_hover[0]))
+		{
+			EngineS.play(LOOP, lvl);
+		}
+		else
+		{
+			EngineS.stop();
+		}
 	}
 }
 
