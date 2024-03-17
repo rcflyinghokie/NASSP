@@ -842,13 +842,13 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 				case OAPI_KEY_DECIMAL:
 					dsky.ClearPressed();
 					break;
-				case OAPI_KEY_PRIOR:
+				case OAPI_KEY_R:
 					dsky.ResetPressed();
 					break;
 				case OAPI_KEY_HOME:
 					dsky.KeyRel();
 					break;
-				case OAPI_KEY_NEXT:
+				case OAPI_KEY_T:
 					dsky.EnterPressed();
 					break;
 				case OAPI_KEY_V:
