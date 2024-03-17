@@ -574,7 +574,7 @@ struct TLIPADOpt
 
 struct P27Opt
 {
-	VESSEL* vessel; //vessel
+	EphemerisData sv0; //vessel state vector
 	double SVGET; //GET of the state vector
 	double navcheckGET; //GET of the Nav Check
 };
@@ -2481,6 +2481,9 @@ public:
 private:
 	void LoadMissionInitParameters(int year, int month, int day);
 	void InitializeCoordinateSystem();
+
+	//Updates RTCC clocks
+	void TimeUpdate();
 public:
 	void AP7TPIPAD(const AP7TPIPADOpt &opt, AP7TPI &pad);
 	void AP9LMTPIPAD(AP9LMTPIPADOpt *opt, AP9LMTPI &pad);
@@ -2714,7 +2717,8 @@ public:
 	//Vehicle Orientation Change Processor
 	void PMMUDT(int L, unsigned man, int headsup, int trim);
 	//Vector Routing Load Module
-	void PMSVCT(int QUEID, int L, StateVectorTableEntry* sv0 = NULL);
+	void PMSVCT(int QUEID, int L);
+	void PMSVCT(int QUEID, int L, StateVectorTableEntry sv0);
 	//Vector Fetch Load Module
 	int PMSVEC(int L, double GMT, CELEMENTS &elem, double &KFactor, double &Area, double &Weight, std::string &StaID, int &RBI);
 	//Maneuver Execution Program
@@ -2739,7 +2743,7 @@ public:
 	//Trajectory Update Control Module
 	void EMSTRAJ(StateVectorTableEntry sv, int L);
 	//Ephemeris Storage and Control Module
-	StateVectorTableEntry EMSEPH(int QUEID, StateVectorTableEntry sv0, int L, double PresentGMT);
+	void EMSEPH(int QUEID, StateVectorTableEntry &sv0, int &L, double PresentGMT);
 	//Miscellaneous Numerical Integration Control Module
 	void EMSMISS(EMSMISSInputTable *in);
 	//Lunar Surface Ephemeris Generator
@@ -2764,6 +2768,7 @@ public:
 	double GetOnboardComputerThrust(int thruster);
 	void GetSystemGimbalAngles(int thruster, double &P_G, double &Y_G) const;
 	double RTCCPresentTimeGMT();
+	double RTCCMissionTime(int veh);
 	OBJHANDLE GetGravref(int body);
 	bool RTEManeuverCodeLogic(char *code, double lmascmass, double lmdscmass, int UllageNum, int &thruster, int &AttMode, int &ConfigCode, int &ManVeh, double &lmmass);
 
@@ -4907,7 +4912,7 @@ private:
 	void SunburstAttitudeManeuver(char *list, VECTOR3 imuangles);
 	void SunburstLMPCommand(char *list, int code);
 	void SunburstMassUpdate(char *list, double masskg);
-	void P27PADCalc(P27Opt *opt, P27PAD &pad);
+	void P27PADCalc(const P27Opt &opt, P27PAD &pad);
 	int SPSRCSDecision(double a, VECTOR3 dV_LVLH);	//0 = SPS, 1 = RCS
 	bool REFSMMATDecision(VECTOR3 Att); //true = everything ok, false = Preferred REFSMMAT necessary
 	double FindOrbitalMidnight(SV sv, double t_TPI_guess);
@@ -5013,6 +5018,11 @@ protected:
 	void RTACFGuidanceOpticsSupportTable(RTACFGOSTInput in, RTACFGOSTOutput &out);
 
 protected:
+	//RTCC CLOCK TIMES
+	double RTCC_GreenwichMeanTime;		//Time since midnight
+	double RTCC_CSM_GroundElapsedTime;	//Time since MCGMTL (CSM liftoff time)
+	double RTCC_LM_GroundElapsedTime;	//Time since MCGMTS (CSM liftoff time)
+
 	double TimeofIgnition;
 	double SplashLatitude, SplashLongitude;
 	VECTOR3 DeltaV_LVLH;
