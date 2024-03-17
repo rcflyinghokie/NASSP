@@ -839,16 +839,16 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 		// Do DSKY stuff
 		if(down){
 			switch(key){
-				case OAPI_KEY_C:
+				case OAPI_KEY_DECIMAL:
 					dsky.ClearPressed();
 					break;
-				case OAPI_KEY_R:
+				case OAPI_KEY_PRIOR:
 					dsky.ResetPressed();
 					break;
-				case OAPI_KEY_DECIMAL:
+				case OAPI_KEY_HOME:
 					dsky.KeyRel();
 					break;
-				case OAPI_KEY_END:
+				case OAPI_KEY_NEXT:
 					dsky.EnterPressed();
 					break;
 				case OAPI_KEY_V:
@@ -863,7 +863,7 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 				case OAPI_KEY_SUBTRACT:
 					dsky.MinusPressed();
 					break;
-				case OAPI_KEY_P:
+				case OAPI_KEY_END:
 					dsky.ProgPressed();
 					break;
 				case OAPI_KEY_NUMPAD1:
