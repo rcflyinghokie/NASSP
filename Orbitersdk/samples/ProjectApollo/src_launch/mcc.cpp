@@ -2967,6 +2967,13 @@ void MCC::drawPad(bool writetofile){
 			OrbMech::SStoHHMMSS(form->SSGET2, hh, mm, ss);
 			sprintf(buffer, "%sSS: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
 		}
+		else if (form->type == 4)
+		{
+			OrbMech::SStoHHMMSS(form->PMGET, hh, mm, ss);
+			sprintf(buffer, "%s180°: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
+			OrbMech::SStoHHMMSS(form->AOSGET, hh, mm, ss);
+			sprintf(buffer, "%sAOS: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
+		}
 
 		oapiAnnotationSetText(NHpad, buffer);
 	}

@@ -324,7 +324,7 @@ struct AP10MAPUPDATE
 	double SSGET2;
 	double PMGET2;
 	double AOSGET2;
-	int type;		//0 = Only LOS/AOS and PM, 1 = Display all parameters, 2 = LOS, AOS with and AOS without LOI
+	int type;		//0 = Only LOS/AOS and PM, 1 = Display all parameters, 2 = LOS, AOS with and AOS without LOI, 3 = Like 1 but for two revs, 4 = Like 0 but shows 180° instead of PM
 };
 
 // APOLLO 11 LANDMARK TRACKING PAD
