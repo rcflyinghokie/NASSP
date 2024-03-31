@@ -523,25 +523,35 @@ void MCC::MissionSequence_H1()
 		UpdateMacro(UTP_NONE, PT_NONE, true, 130, MST_H1_LUNAR_ORBIT_PC2_DAY_3);
 		break;
 	case MST_H1_LUNAR_ORBIT_PC2_DAY_3: //Rev 39 map update to TEI-41 PAD
-		UpdateMacro(UTP_NONE, PT_AP10MAPUPDATE, SubStateTime > 3.0*60.0, 600, MST_H1_LUNAR_ORBIT_PC2_DAY_4);
+		UpdateMacro(UTP_PADONLY, PT_AP10MAPUPDATE, SubStateTime > 3.0*60.0, 600, MST_H1_LUNAR_ORBIT_PC2_DAY_4);
 		break;
 	case MST_H1_LUNAR_ORBIT_PC2_DAY_4: //TEI-41 PAD to Photography REFSMMAT Uplink
 		UpdateMacro(UTP_PADONLY, PT_AP11MNV, rtcc->GETEval2(rtcc->TimeofIgnition + 5.0*60.0), 46, MST_H1_LUNAR_ORBIT_PC2_DAY_5);
 		break;
 	case MST_H1_LUNAR_ORBIT_PC2_DAY_5: //Photography REFSMMAT Uplink to Lalande Photography
-		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, MoonRev >= 39 && MoonRevTime > 90.0*60.0, 131, MST_H1_LUNAR_ORBIT_PC2_DAY_8);
+		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, true, 131, MST_H1_LUNAR_ORBIT_PC2_DAY_6);
 		break;
-		//TBD: Insert Lalande photography and stereo photo time
+	case MST_H1_LUNAR_ORBIT_PC2_DAY_6: //Lalande Photography to stereo photo times
+		UpdateMacro(UTP_PADONLY, PT_GENERIC, MoonRev >= 39 && MoonRevTime > 83.0*60.0, 605, MST_H1_LUNAR_ORBIT_PC2_DAY_7);
+		break;
+	case MST_H1_LUNAR_ORBIT_PC2_DAY_7: //Stereo photo times to rev 40 map update
+		UpdateMacro(UTP_PADONLY, PT_GENERIC, SubStateTime > 3.0*60.0, 606, MST_H1_LUNAR_ORBIT_PC2_DAY_8);
+		break;
 	case MST_H1_LUNAR_ORBIT_PC2_DAY_8: //Rev 40 map update to rev 41 map update
 		UpdateMacro(UTP_PADONLY, PT_AP10MAPUPDATE, MoonRev >= 40 && MoonRevTime > 50.0*60.0, 600, MST_H1_LUNAR_ORBIT_PC2_DAY_9);
 		break;
 	case MST_H1_LUNAR_ORBIT_PC2_DAY_9: //Rev 41 map update to TEI-43 PAD
 		UpdateMacro(UTP_PADONLY, PT_AP10MAPUPDATE, SubStateTime > 3.0*60.0, 600, MST_H1_LUNAR_ORBIT_PC2_DAY_10);
 		break;
-	case MST_H1_LUNAR_ORBIT_PC2_DAY_10: //TEI-43 PAD to rev 42 map update
-		UpdateMacro(UTP_PADONLY, PT_AP11MNV, MoonRev >= 41 && MoonRevTime > 35.0*60.0, 47, MST_H1_LUNAR_ORBIT_PC2_DAY_13);
+	case MST_H1_LUNAR_ORBIT_PC2_DAY_10: //TEI-43 PAD to Descartes photography
+		UpdateMacro(UTP_PADONLY, PT_AP11MNV, MoonRev >= 40 && MoonRevTime > 83.0*60.0, 47, MST_H1_LUNAR_ORBIT_PC2_DAY_11);
 		break;
-		//TBD: Insert two photo PADs
+	case MST_H1_LUNAR_ORBIT_PC2_DAY_11: //Descartes photography to Fra Mauro photography
+		UpdateMacro(UTP_PADONLY, PT_GENERIC, SubStateTime > 3.0*60.0, 607, MST_H1_LUNAR_ORBIT_PC2_DAY_12);
+		break;
+	case MST_H1_LUNAR_ORBIT_PC2_DAY_12: //Fra Mauro photography to rev 42 map update
+		UpdateMacro(UTP_PADONLY, PT_GENERIC, MoonRev >= 41 && MoonRevTime > 35.0*60.0, 608, MST_H1_LUNAR_ORBIT_PC2_DAY_13);
+		break;
 	case MST_H1_LUNAR_ORBIT_PC2_DAY_13: //Rev 42 map update to Landmark tracking PAD
 		UpdateMacro(UTP_PADONLY, PT_AP10MAPUPDATE, MoonRev >= 41 && MoonRevTime > 70.0*60.0, 600, MST_H1_LUNAR_ORBIT_PC2_DAY_14);
 		break;
@@ -563,10 +573,12 @@ void MCC::MissionSequence_H1()
 	case MST_H1_LUNAR_ORBIT_PC2_DAY_19: //CSM SV update to rev 44 map update
 		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, MoonRev >= 43 && MoonRevTime > 30.0*60.0, 5, MST_H1_LUNAR_ORBIT_PC2_DAY_20);
 		break;
-	case MST_H1_LUNAR_ORBIT_PC2_DAY_20: //Rev 44 map update to rev 45 map update
-		UpdateMacro(UTP_PADONLY, PT_AP10MAPUPDATE, MoonRev >= 44 && MoonRevTime > 40.0*60.0, 600, MST_H1_LUNAR_ORBIT_PC2_DAY_22);
+	case MST_H1_LUNAR_ORBIT_PC2_DAY_20: //Rev 44 map update to stereo photo times
+		UpdateMacro(UTP_PADONLY, PT_AP10MAPUPDATE, MoonRev >= 43 && MoonRevTime > 90.0*60.0, 600, MST_H1_LUNAR_ORBIT_PC2_DAY_21);
 		break;
-		//TBD: Insert stereo photo time
+	case MST_H1_LUNAR_ORBIT_PC2_DAY_21: //Stereo photo times to rev 45 map update
+		UpdateMacro(UTP_PADONLY, PT_GENERIC, MoonRev >= 44 && MoonRevTime > 35.0*60.0, 609, MST_H1_LUNAR_ORBIT_PC2_DAY_22);
+		break;
 	case MST_H1_LUNAR_ORBIT_PC2_DAY_22: //Rev 45 map update to TEI-45 PAD (preliminary)
 		UpdateMacro(UTP_PADONLY, PT_AP10MAPUPDATE, SubStateTime > 3.0*60.0, 600, MST_H1_LUNAR_ORBIT_PC2_DAY_23);
 		break;
@@ -579,7 +591,7 @@ void MCC::MissionSequence_H1()
 	case MST_H1_LUNAR_ORBIT_PC2_DAY_25: //TEI-45 PAD (final) to TEI-46 PAD
 		UpdateMacro(UTP_PADWITHCMCUPLINK, PT_AP11MNV, SubStateTime > 5.0*60.0, 50, MST_H1_LUNAR_ORBIT_PC2_DAY_26);
 		break;
-	case MST_H1_LUNAR_ORBIT_PC2_DAY_26: //TEI-46 PAD to TEI Evaluation
+	case MST_H1_LUNAR_ORBIT_PC2_DAY_26: //TEI-46 PAD to rev 46 map update
 		UpdateMacro(UTP_PADONLY, PT_AP11MNV, SubStateTime > 5.0*60.0, 51, MST_H1_LUNAR_ORBIT_PC2_DAY_27);
 		break;
 	case MST_H1_LUNAR_ORBIT_PC2_DAY_27: //Rev 46 map update to TEI Evaluation

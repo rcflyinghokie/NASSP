@@ -1796,11 +1796,12 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		AP10MAPUPDATE upd_ellip, upd_hyper;
 		SV2 sv0, sv1;
 
-		sv0.sv = StateVectorCalcEphem(calcParams.src);
+		sv0 = StateVectorCalc2(calcParams.src);
+
 		LunarOrbitMapUpdate(sv0.sv, upd_ellip, 180.0*RAD);
 
 		sv1 = ExecuteManeuver(sv0, TimeofIgnition, DeltaV_LVLH, RTCC_ENGINETYPE_CSMSPS);
-		LunarOrbitMapUpdate(sv0.sv, upd_hyper, 180.0*RAD);
+		LunarOrbitMapUpdate(sv1.sv, upd_hyper, 180.0*RAD);
 
 		form->LOSGET = upd_ellip.LOSGET;
 		form->PMGET = upd_ellip.PMGET;
@@ -1894,6 +1895,85 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 			sprintf(form->paddata, "S-158 Rev %d  T1 %s  T2 %s  Selected Targets  North Wall of Theopilius  R 90 P 228 Y 334  T1 %s  Descartes  R 90 P 217 Y 329  T1 %s  Fra Mauro  R 86 P 181 Y 307  T1 %s",
 				rev, buffer1, buffer2, buffer3, buffer4, buffer5);
 		}
+	}
+	break;
+	case 605: //LALANDE HI RESOLUTION PHOTOGRAPHY
+	case 607: //DESCARTES HI RESOLUTION PHOTOGRAPHY
+	case 608: //FRA MAURO HI RESOLUTION PHOTOGRAPHY
+	{
+		SV sv;
+		char buffer1[128], buffer2[128], buffer3[128];
+		VECTOR3 Att;
+		double lng, GET_T1, GET_T2, MJD_TCA, GET_TCA;
+
+		GENERICPAD * form = (GENERICPAD *)pad;
+
+		sv = StateVectorCalc(calcParams.src);
+
+		if (fcn == 605)
+		{
+			sprintf(buffer3, "Lalande");
+			lng = -8.667*RAD;
+			Att = _V(0.0, 257.0, 0.0);
+		}
+		else if (fcn == 607)
+		{
+			sprintf(buffer3, "Descartes");
+			lng = 15.517*RAD;
+			Att = _V(0.0, 283.0, 0.0);
+		}
+		else
+		{
+			sprintf(buffer3, "Fra Mauro");
+			lng = -17.55*RAD;
+			Att = _V(0.0, 250.0, 0.0);
+		}
+
+		//Crossing of longitude
+		MJD_TCA = OrbMech::P29TimeOfLongitude(SystemParameters.MAT_J2000_BRCS, sv.R, sv.V, sv.MJD, hMoon, lng);
+		GET_TCA = OrbMech::GETfromMJD(MJD_TCA, CalcGETBase());
+
+		GET_T1 = GET_TCA - 3.0*60.0;
+		GET_T2 = GET_TCA + 1.0*60.0;
+
+		OrbMech::format_time_HHMMSS(buffer1, GET_T1);
+		OrbMech::format_time_HHMMSS(buffer2, GET_T2);
+
+		sprintf(form->paddata, "HI RESOLUTION PHOTO  %s  T1 %s  T2 %s  R %.0lf P %.0lf Y %.0lf", buffer3, buffer1, buffer2, Att.x, Att.y, Att.z);
+	}
+	break;
+	case 606: //STEREO PHOTO TIMES REV 40
+	case 609: //STEREO PHOTO TIMES REV 44
+	{
+		SV sv, sv2;
+		char buffer1[128], buffer2[128];
+		double GET_T1, GET_T2, dt, GET_terminator;
+
+		GENERICPAD * form = (GENERICPAD *)pad;
+
+		sv = StateVectorCalc(calcParams.src);
+
+		//Find time of terminator rise. This is a bad solution! Estimate terminator as 6 minutes after (orbital) sunrise
+		dt = OrbMech::sunrise(SystemParameters.MAT_J2000_BRCS, sv.R, sv.V, sv.MJD, sv.gravref, oapiGetObjectByName("Sun"), true, false, true);
+		GET_terminator = OrbMech::GETfromMJD(sv.MJD, CalcGETBase()) + dt + 6.0*60.0;
+
+		//T1 is 1 minute after terminator
+		GET_T1 = GET_terminator + 60.0;
+
+		//Look 1 hour in the future
+		sv2 = coast(sv, 3600.0);
+
+		//Sunset
+		dt = OrbMech::sunrise(SystemParameters.MAT_J2000_BRCS, sv2.R, sv2.V, sv2.MJD, sv2.gravref, oapiGetObjectByName("Sun"), false, false, true);
+		GET_terminator = OrbMech::GETfromMJD(sv2.MJD, CalcGETBase()) + dt - 6.0*60.0;
+
+		//T2 is 1 minute before terminator terminator
+		GET_T2 = GET_terminator - 60.0;
+
+		OrbMech::format_time_HHMMSS(buffer1, GET_T1);
+		OrbMech::format_time_HHMMSS(buffer2, GET_T2);
+
+		sprintf(form->paddata, "STEREO PHOTO  T1 %s  T2 %s", buffer1, buffer2);
 	}
 	break;
 	case 61: //REV 4 LANDMARK TRACKING PAD H-1
