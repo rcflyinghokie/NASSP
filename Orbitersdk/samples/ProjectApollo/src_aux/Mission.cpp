@@ -114,6 +114,7 @@ namespace mission {
 		iLMCWEAVersion = 0;
 		bCrossPointerReversePolarity = false;
 		bCrossPointerShades = false;
+		iLMSystemsVersion = 5; //LM-5
 		strCDRName = "CDR";
 		strCMPName = "CMP";
 		strLMPName = "LMP";
@@ -278,6 +279,9 @@ namespace mission {
 			else if (!_strnicmp(line, "TEPHEM0=", 8)) {
 				sscanf(line + 8, "%lf", &dTEPHEM0);
 			}
+			else if (!_strnicmp(line, "LMSystemsConfig=", 16)) {
+				sscanf(line + 16, "%d", &iLMSystemsVersion);
+			}
 			else if (!_strnicmp(line, "CDRVesselName=", 14)) {
 				strncpy(buffer, line + 14, 255);
 				strCDRName.assign(buffer);
@@ -312,6 +316,11 @@ namespace mission {
 		hFile.close();
 
 		return true;
+	}
+
+	const std::string& Mission::GetMissionName(void) const
+	{
+		return strFileName;
 	}
 
 	int Mission::GetSMJCVersion() const
@@ -437,6 +446,11 @@ namespace mission {
 	double Mission::GetTEPHEM0() const
 	{
 		return dTEPHEM0;
+	}
+
+	int Mission::GetLMSystemsVersion() const
+	{
+		return iLMSystemsVersion;
 	}
 
 	void Mission::ReadCueCardLine(char *line, int vehicle)
