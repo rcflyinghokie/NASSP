@@ -1473,8 +1473,8 @@ struct MPTManeuver
 struct MPTManDisplay
 {
 	MPTManDisplay();
-	std::string GETBI;
-	std::string DT;
+	double GETBI;
+	double DT;
 	double DELTAV;
 	double DVREM;
 	double HA;
