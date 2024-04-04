@@ -620,7 +620,7 @@ void MCC::MissionSequence_H1()
 		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, rtcc->GETEval2(rtcc->calcParams.TEI + 12.0*3600.0), 18, MST_H1_TRANSEARTH_3);
 		break;
 	case MST_H1_TRANSEARTH_3: //MCC-5 update to CSM SV update
-		UpdateMacro(UTP_PADWITHCMCUPLINK, PT_AP11MNV, rtcc->GETEval2(rtcc->calcParams.EI - 26.0 * 3600.0), 210, MST_H1_TRANSEARTH_4);
+		UpdateMacro(UTP_PADWITHCMCUPLINK, PT_AP11MNV, rtcc->GETEval2(rtcc->calcParams.EI - 36.0 * 3600.0), 210, MST_H1_TRANSEARTH_4);
 		break;
 	case MST_H1_TRANSEARTH_4: //CSM SV update to MCC-6 update
 		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, rtcc->GETEval2(rtcc->calcParams.EI - 23.0 * 3600.0 - 20.0 * 60.0), 5, MST_H1_TRANSEARTH_6);
