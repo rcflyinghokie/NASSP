@@ -562,7 +562,6 @@ public:
 	bool set_ChooseMPTDirectInputThruster(std::string th);
 	void menuMPTDirectInputTransfer();
 	void menuMPTDirectInputTIG();
-	void set_MPTDirectInputTIG(double tig);
 	void menuMPTDirectInputDock();
 	void menuMPTDirectInputFinalConfig();
 	void set_MPTDirectInputFinalConfig(char *cfg);

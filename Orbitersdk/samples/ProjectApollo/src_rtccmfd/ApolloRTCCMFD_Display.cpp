@@ -4001,8 +4001,10 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 	}
 	else if (screen == 44)
 	{
+		skp->SetPen(pen2);
+
 		skp->SetTextAlign(oapi::Sketchpad::CENTER);
-		skp->Text(4 * W / 8, 1 * H / 14, "MISSION PLAN TABLE (MSK 0047)", 29);
+		skp->Text(4 * W / 8, 1 * H / 14, "FDO MISSION PLAN TABLE (0047)",29);
 		skp->SetTextAlign(oapi::Sketchpad::LEFT);
 		if (GC->MissionPlanningActive)
 		{
@@ -4015,56 +4017,77 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		skp->SetFont(font2);
 		skp->SetTextAlign(oapi::Sketchpad::CENTER);
-		skp->Text(3 * W / 32, 8 * H / 28, "GETBI", 5);
-		skp->Text(8 * W / 32, 8 * H / 28, "DT", 2);
-		skp->Text(12 * W / 32, 8 * H / 28, "DELTAV", 6);
-		skp->Text(16 * W / 32, 8 * H / 28, "DVREM", 5);
-		skp->Text(20 * W / 32, 8 * H / 28, "HA", 2);
-		skp->Text(47 * W / 64, 8 * H / 28, "HP", 2);
-		skp->Text(29 * W / 32, 8 * H / 28, "CODE", 4);
+		skp->Text(3 * W / 32, 7 * H / 28, "GETI", 4);
+		skp->Text(8 * W / 32, 7 * H / 28, "DT", 2);
+		skp->Text(12 * W / 32, 7 * H / 28, "DV", 2);
+		skp->Text(16 * W / 32, 7 * H / 28, "DVREM", 5);
+		skp->Text(20 * W / 32, 7 * H / 28, "HA", 2);
+		skp->Text(47 * W / 64, 7 * H / 28, "HP", 2);
+		skp->Text(29 * W / 32, 7 * H / 28, "CODE", 4);
+
+		skp->Line(0, 13 * H / 56, W, 13 * H / 56);
+		skp->Line(6 * W / 32, 13 * H / 56, 6 * W / 32, H);
+		skp->Line(10 * W / 32, 13 * H / 56, 10 * W / 32, H);
+		skp->Line(14 * W / 32, 13 * H / 56, 14 * W / 32, H);
+		skp->Line(18 * W / 32, 13 * H / 56, 18 * W / 32, H);
+		skp->Line(51 * W / 64, 13 * H / 56, 51 * W / 64, H);
 
 		skp->SetTextAlign(oapi::Sketchpad::LEFT);
 
-		skp->Text(6 * W / 32, 5 * H / 28, "CSM STA ID", 10);
+		skp->Text(6 * W / 32, 4 * H / 28, "CSM STA ID", 10);
 		sprintf_s(Buffer, GC->rtcc->MPTDISPLAY.CSMSTAID.c_str());
-		skp->Text(12 * W / 32, 5 * H / 28, Buffer, strlen(Buffer));
-		skp->Text(6 * W / 32, 6 * H / 28, "GETAV", 5);
+		skp->Text(12 * W / 32, 4 * H / 28, Buffer, strlen(Buffer));
+		skp->Text(6 * W / 32, 5 * H / 28, "GETAV", 5);
 		sprintf_s(Buffer, GC->rtcc->MPTDISPLAY.CSMGETAV.c_str());
-		skp->Text(10 * W / 32, 6 * H / 28, Buffer, strlen(Buffer));
-		skp->Text(18 * W / 32, 5 * H / 28, "LEM STA ID", 10);
+		skp->Text(10 * W / 32, 5 * H / 28, Buffer, strlen(Buffer));
+		skp->Text(18 * W / 32, 4 * H / 28, "LEM STA ID", 10);
 		sprintf_s(Buffer, GC->rtcc->MPTDISPLAY.LEMSTAID.c_str());
-		skp->Text(24 * W / 32, 5 * H / 28, Buffer, strlen(Buffer));
-		skp->Text(18 * W / 32, 6 * H / 28, "GETAV", 5);
+		skp->Text(24 * W / 32, 4 * H / 28, Buffer, strlen(Buffer));
+		skp->Text(18 * W / 32, 5 * H / 28, "GETAV", 5);
 		sprintf_s(Buffer, GC->rtcc->MPTDISPLAY.LEMGETAV.c_str());
-		skp->Text(22 * W / 32, 6 * H / 28, Buffer, strlen(Buffer));
+		skp->Text(22 * W / 32, 5 * H / 28, Buffer, strlen(Buffer));
 
 		skp->SetTextAlign(oapi::Sketchpad::RIGHT);
 
 		for (unsigned i = 0;i < GC->rtcc->MPTDISPLAY.man.size();i++)
 		{
-			sprintf(Buffer, GC->rtcc->MPTDISPLAY.man[i].GETBI.c_str());
-			skp->Text(5 * W / 32, (i * 2 + 9) * H / 28, Buffer, strlen(Buffer));
+			GET_Display3(Buffer, GC->rtcc->MPTDISPLAY.man[i].GETBI);
+			skp->Text(11 * W / 64, (i + 9) * H / 28, Buffer, strlen(Buffer));
 
-			sprintf(Buffer, "%07.1f", GC->rtcc->MPTDISPLAY.man[i].DELTAV);
-			skp->Text(14 * W / 32, (i * 2 + 9) * H / 28, Buffer, strlen(Buffer));
+			sprintf(Buffer, "%.1f", GC->rtcc->MPTDISPLAY.man[i].DELTAV);
+			skp->Text(27 * W / 64, (i + 9) * H / 28, Buffer, strlen(Buffer));
 
-			sprintf(Buffer, "%.1f", GC->rtcc->MPTDISPLAY.man[i].DVREM);
-			skp->Text(18 * W / 32, (i * 2 + 9) * H / 28, Buffer, strlen(Buffer));
+			sprintf(Buffer, "%.0f", GC->rtcc->MPTDISPLAY.man[i].DVREM);
+			skp->Text(17 * W / 32, (i + 9) * H / 28, Buffer, strlen(Buffer));
 
-			sprintf(Buffer, "%06.1f", GC->rtcc->MPTDISPLAY.man[i].HA);
-			skp->Text(43 * W / 64, (i * 2 + 9) * H / 28, Buffer, strlen(Buffer));
+			if (GC->rtcc->MPTDISPLAY.man[i].HA != 0.0)
+			{
+				sprintf(Buffer, "%.1f", GC->rtcc->MPTDISPLAY.man[i].HA);
+			}
+			else
+			{
+				sprintf(Buffer, "ZZZZZ");
+			}
+			skp->Text(43 * W / 64, (i + 9) * H / 28, Buffer, strlen(Buffer));
 
-			sprintf(Buffer, "%06.1f", GC->rtcc->MPTDISPLAY.man[i].HP);
-			skp->Text(50 * W / 64, (i * 2 + 9) * H / 28, Buffer, strlen(Buffer));
+			if (GC->rtcc->MPTDISPLAY.man[i].HP != 0.0)
+			{
+				sprintf(Buffer, "%.1f", GC->rtcc->MPTDISPLAY.man[i].HP);
+			}
+			else
+			{
+				sprintf(Buffer, "ZZZZZ");
+			}
+			skp->Text(50 * W / 64, (i + 9) * H / 28, Buffer, strlen(Buffer));
 
 			sprintf(Buffer, GC->rtcc->MPTDISPLAY.man[i].code.c_str());
-			skp->Text(63 * W / 64, (i * 2 + 9) * H / 28, Buffer, strlen(Buffer));
+			skp->Text(63 * W / 64, (i + 9) * H / 28, Buffer, strlen(Buffer));
 		}
 
 		for (unsigned i = 1;i < GC->rtcc->MPTDISPLAY.man.size();i++)
 		{
-			sprintf(Buffer, GC->rtcc->MPTDISPLAY.man[i].DT.c_str());
-			skp->Text(10 * W / 32, (i * 2 + 8) * H / 28, Buffer, strlen(Buffer));
+			GET_Display_HHMM(Buffer, GC->rtcc->MPTDISPLAY.man[i].DT);
+			skp->Text(19 * W / 64, (i * 2 + 17) * H / 56, Buffer, strlen(Buffer));
 		}
 
 	}
@@ -4919,7 +4942,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			skp->Text(1 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
 		}
 
-		GET_Display(Buffer, GC->rtcc->med_m66.GETBI);
+		GET_Display3(Buffer, GC->rtcc->med_m66.GETBI);
 		skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
 
 		ThrusterName(Buffer, GC->rtcc->med_m66.Thruster);
@@ -5657,7 +5680,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 			sprintf(Buffer, "DDA:");
 			skp->Text(2 * W / 16, 8 * H / 16, Buffer, strlen(Buffer));
-			if (GC->rtcc->med_m55.DeltaDockingAngle >= 0)
+			if (GC->rtcc->med_m55.DeltaDockingAngle >= -360.0)
 			{
 				sprintf(Buffer, "%.2f°", GC->rtcc->med_m55.DeltaDockingAngle*DEG);
 			}

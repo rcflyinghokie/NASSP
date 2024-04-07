@@ -1410,7 +1410,8 @@ void h_WaterSeparator::refresh(double dt) {
 		h_volume fanned = in->GetFlow(dt * delta_p, flowMax * dt);
 		flow = fanned.GetMass() / dt;
 
-		rpmcmd = flow * 4235.29;  //Gives max flow through water separator = 3600rpm
+		// At 5.7 g/s flow, RPM should be approximately 2050 per Hamilton Standard LM ECS subsystem book
+		rpmcmd = flow * 1062.18; // This value gives approsximately 2050 RPM at 1.93 g/s flow which is what our current simulation tops off at.
 
 		if (flow != 0) {
 			h2oremovalratio = (RPM / rpmcmd);
@@ -1442,7 +1443,7 @@ void h_WaterSeparator::refresh(double dt) {
 				fanned.composition[SUBSTANCE_H2O].Q = fanned.composition[SUBSTANCE_H2O].Q*factor;
 
 				//if (!strcmp(name, "WATERSEP1"))
-				//	sprintf(oapiDebugString(), "Rate %f Removed %f Remaining %f", h2oremovalratio, removedmass / dt, fanned.composition[SUBSTANCE_H2O].mass / dt);
+					//sprintf(oapiDebugString(), "RPM %f Rate %f Removed %f Remaining %f", RPM, h2oremovalratio, removedmass / dt, fanned.composition[SUBSTANCE_H2O].mass / dt);
 			}
 		}
 
@@ -1458,11 +1459,11 @@ void h_WaterSeparator::refresh(double dt) {
 	drpmcmd = rpmcmd - RPM;
 	if (drpmcmd >= 0.0)
 	{
-		delay = 7.0;	// Gives delay for WS spool up RPM/sec, approximately 2 minutes
+		delay = 7.0;	// Gives delay for WS spool up RPM/sec, approximately 2 minutes to clear sep light
 	}
 	else
 	{
-		delay = 30.0;	// Gives delay for WS spin down RPM/sec, approximately 1 minute
+		delay = 21.0;	// Gives delay for WS spin down RPM/sec, approximately 1 minute to light sep light
 	}
 	if (abs(drpmcmd) > delay*dt)
 	{
@@ -1569,7 +1570,7 @@ h_ExteriorVentPipe::h_ExteriorVentPipe(char* i_name, h_Valve* i_IN, h_Valve* i_O
 {
 	v = NULL;
 	Num_Vents = 0;
-};
+}
 
 h_ExteriorVentPipe::~h_ExteriorVentPipe()
 {
