@@ -6626,6 +6626,13 @@ void ApolloRTCCMFD::menuSetLmkLng()
 	GenericDoubleInput(&G->LmkLng, "Choose the landmark longitude:", RAD);
 }
 
+void ApolloRTCCMFD::menuLmkUseLandingSite()
+{
+	//Load RTCC stored landing site coordinates into input for P22 PAD
+	G->LmkLat = GC->rtcc->BZLAND.lat[0];
+	G->LmkLng = GC->rtcc->BZLAND.lng[0];
+}
+
 void ApolloRTCCMFD::menuSetLDPPVectorTime()
 {
 	if (GC->MissionPlanningActive)
