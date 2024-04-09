@@ -1473,8 +1473,8 @@ struct MPTManeuver
 struct MPTManDisplay
 {
 	MPTManDisplay();
-	std::string GETBI;
-	std::string DT;
+	double GETBI;
+	double DT;
 	double DELTAV;
 	double DVREM;
 	double HA;
@@ -2703,7 +2703,7 @@ public:
 	//Maneuver direct input and confirmation math module
 	int PMMMCD(PMMMCDInput in, MPTManeuver &man);
 	//Impulsive Maneuver Transfer Math Module
-	int PMMMPT(PMMMPTInput in, MPTManeuver &man);
+	int PMMMPT(PMMMPTInput &in, MPTManeuver &man);
 	//Lunar Ascent Integrator
 	int PMMLAI(PMMLAIInput in, RTCCNIAuxOutputTable &aux, EphemerisDataTable2 *E = NULL);
 	//LM Lunar Descent Numerical Integration Module
@@ -3341,7 +3341,7 @@ public:
 		unsigned ManeuverNumber = 1; //Maneuver number in LOI or MCC table
 		int Thruster = RTCC_ENGINETYPE_CSMSPS; //Thruster for maneuver
 		int Attitude = RTCC_ATTITUDE_PGNS_EXDV; //Attitude option
-		double UllageDT = -1;	//Delta T of Ullage
+		double UllageDT = 0.0;	//Delta T of Ullage
 		bool UllageQuads = true;//false = 2 thrusters, true = 4 thrusters
 		bool Iteration = false; //false = do not iterate, true = iterate
 		double TenPercentDT = 26.0;	//Delta T of 10% thrust for the DPS

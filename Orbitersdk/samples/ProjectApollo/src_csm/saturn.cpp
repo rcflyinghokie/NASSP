@@ -509,7 +509,7 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	SuitTempSensor("Suit-Temp-Sensor", 20.0, 95.0),
 	ECSWastePotTransducerFeeder("ECS-Waste-Pot-Transducer-Feeder", Panelsdk),
 	WasteH2OQtySensor("Waste-H2O-Qty-Sensor", 0.0, 1.0, 25400.0),
-	PotH2OQtySensor("Pot-H2O-Qty-Sensor", 0.0, 1.0, 16300.0),
+	PotH2OQtySensor("Pot-H2O-Qty-Sensor", 0.0, 1.0, 16330.0),
 	SuitPressSensor("SuitPressSensor", 0.0, 17.0),
 	SuitCompressorDeltaPSensor("Suit-Compressor-DeltaP-Sensor", 0.0, 1.0),
 	GlycolPumpOutPressSensor("Glycol-Pump-Out-Press-Sensor", 0.0, 60.0),
@@ -675,7 +675,6 @@ void Saturn::initSaturn()
 	S1bPanel = false;
 
 	LEM_DISPLAY=false;
-	ASTPMission = false;
 
 	AutoSlow = false;
 	Crewed = true;
@@ -1632,7 +1631,19 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	oapiWriteScenario_int (scn, "NASSPVER", nasspver);
 	oapiWriteScenario_int (scn, "STAGE", stage);
 	oapiWriteScenario_int(scn, "VECHNO", VehicleNo);
-	oapiWriteScenario_int (scn, "APOLLONO", ApolloNo);
+
+	if (ApolloNo == 0)
+	{
+		//New system, save mission name
+		strcpy(str, pMission->GetMissionName().c_str());
+		oapiWriteScenario_string(scn, "MISSION", str);
+	}
+	else
+	{
+		//Old system, remove at some point
+		oapiWriteScenario_int(scn, "APOLLONO", ApolloNo);
+	}
+
 	oapiWriteScenario_int (scn, "SATTYPE", SaturnType);
 	oapiWriteScenario_int (scn, "PANEL_ID", PanelId);
 	oapiWriteScenario_int(scn, "VIEWPOS", viewpos);
@@ -2080,6 +2091,7 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	int status = 0;
 	int DummyLoad, i;
 	bool found;
+	char tempBuffer[256];
 
 	found = true;
 
@@ -2210,21 +2222,23 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	}
 	else if (!strnicmp (line, "APOLLONO", 8)) {
 		
-		if (sscanf(line + 8, "%d", &ApolloNo) == 1)
-		{
-			pMission->LoadMission(ApolloNo);
-		}
-		else
-		{
-			char tempBuffer[64];
-			strncpy(tempBuffer, line + 9, 63);
-			pMission->LoadMission(tempBuffer);
-		}
+		//APOLLONO is going to be removed!
+
+		sscanf(line + 8, "%d", &ApolloNo);
+
+		pMission->LoadMission(ApolloNo);
 		
 		//Create mission specific systems
 		CreateMissionSpecificSystems();
-		//
-		secs.Realize();
+	}
+	else if (papiReadScenario_string(line,"MISSION", tempBuffer)) {
+
+		//New missions should load a mission name!
+		pMission->LoadMission(tempBuffer);
+
+		//Create mission specific systems
+		CreateMissionSpecificSystems();
+		
 	}
 	else if (!strnicmp (line, "SATTYPE", 7)) {
 		sscanf (line+7, "%d", &SaturnType);

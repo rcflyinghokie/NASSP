@@ -4141,28 +4141,7 @@ void ApolloRTCCMFD::menuTransferTIToMPT()
 
 void ApolloRTCCMFD::menuMPTDirectInputTIG()
 {
-	bool MPTDirectInputTIGInput(void *id, char *str, void *data);
-	oapiOpenInputBox("Choose the GET (Format: hhh:mm:ss)", MPTDirectInputTIGInput, 0, 20, (void*)this);
-}
-
-bool MPTDirectInputTIGInput(void *id, char *str, void *data)
-{
-	int hh, mm, ss;
-	double tig;
-	
-	if (sscanf(str, "%d:%d:%d", &hh, &mm, &ss) == 3)
-	{
-		tig = ss + 60 * (mm + 60 * hh);
-		((ApolloRTCCMFD*)data)->set_MPTDirectInputTIG(tig);
-
-		return true;
-	}
-	return false;
-}
-
-void ApolloRTCCMFD::set_MPTDirectInputTIG(double tig)
-{
-	GC->rtcc->med_m66.GETBI = tig;
+	GenericGETInput(&GC->rtcc->med_m66.GETBI, "Choose the GET (Format: hhh:mm:ss)");
 }
 
 void ApolloRTCCMFD::menuMPTDirectInputDock()
@@ -4282,7 +4261,7 @@ void ApolloRTCCMFD::menuSetMPTInitInput()
 			GenericDoubleInput(&GC->rtcc->med_m51.LMAscentArea, "Input LM ascent stage area in square feet (negative number for no update):", 0.3048*0.3048);
 			break;
 		case 3: //M55: Delta Docking Angle
-			GenericDoubleInput(&GC->rtcc->med_m55.DeltaDockingAngle, "Delta docking angle (negative number for no update):", RAD);
+			GenericDoubleInput(&GC->rtcc->med_m55.DeltaDockingAngle, "Delta docking angle (smaller than -360° for no update):", RAD);
 			break;
 		}
 		break;
@@ -6661,6 +6640,13 @@ void ApolloRTCCMFD::menuSetLmkLat()
 void ApolloRTCCMFD::menuSetLmkLng()
 {
 	GenericDoubleInput(&G->LmkLng, "Choose the landmark longitude:", RAD);
+}
+
+void ApolloRTCCMFD::menuLmkUseLandingSite()
+{
+	//Load RTCC stored landing site coordinates into input for P22 PAD
+	G->LmkLat = GC->rtcc->BZLAND.lat[0];
+	G->LmkLng = GC->rtcc->BZLAND.lng[0];
 }
 
 void ApolloRTCCMFD::menuSetLDPPVectorTime()
