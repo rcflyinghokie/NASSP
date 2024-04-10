@@ -279,6 +279,7 @@ public:
 	void menuSetLmkTime();
 	void menuSetLmkLat();
 	void menuSetLmkLng();
+	void menuLmkUseLandingSite();
 	void menuLmkPADCalc();
 	void menuSetTargetingMenu();
 	void menuSetPADMenu();
