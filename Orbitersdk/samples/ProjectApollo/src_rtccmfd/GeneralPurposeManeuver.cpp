@@ -98,7 +98,7 @@ int RTCCGeneralPurposeManeuverProcessor::PCMGPM(const GMPOpt &IOPT)
 		INFO[5] = INFO_HAS[5]; INFO[7] = INFO_HAS[7]; INFO[8] = INFO_HAS[8];
 	}
 
-	pRTCC->PZGPMELM.code = "GPM";
+	pRTCC->PZGPMELM.code = "GP";
 	pRTCC->PZGPMELM.SV_before.R = R_B;
 	pRTCC->PZGPMELM.SV_before.V = V_B;
 	pRTCC->PZGPMELM.SV_before.GMT = sv_b_apo.TS;

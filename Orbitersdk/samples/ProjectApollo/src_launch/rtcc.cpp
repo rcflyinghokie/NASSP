@@ -957,6 +957,8 @@ void MPTManeuver::LoadState(FILEHANDLE scn, char *end_str)
 
 MPTManDisplay::MPTManDisplay()
 {
+	GETBI = 0.0;
+	DT = 0.0;
 	DELTAV = 0.0;
 	DVREM = 0.0;
 	HA = 0.0;
@@ -2236,9 +2238,18 @@ bool RTCC::LoadMissionConstantsFile(std::string file)
 
 			papiReadScenario_int(Buff, "AGCEpoch", SystemParameters.AGCEpoch);
 			papiReadScenario_double(Buff, "TEPHEM0", SystemParameters.TEPHEM0); //Only load for Skylark
-			papiReadScenario_double(Buff, "MGVDGD", SystemParameters.MGVDGD);
-			papiReadScenario_double(Buff, "MGVSGD", SystemParameters.MGVSGD);
-			papiReadScenario_double(Buff, "MGVSTD", SystemParameters.MGVSTD);
+			if (papiReadScenario_double(Buff, "MGVDGD", dtemp))
+			{
+				SystemParameters.MGVDGD = dtemp * 0.0254;
+			}
+			if (papiReadScenario_double(Buff, "MGVSGD", dtemp))
+			{
+				SystemParameters.MGVSGD = dtemp * 0.0254;
+			}
+			if (papiReadScenario_double(Buff, "MGVSTD", dtemp))
+			{
+				SystemParameters.MGVSTD = dtemp * 0.0254;
+			}
 			papiReadScenario_int(Buff, "MCCLEX", SystemParameters.MCCLEX);
 			papiReadScenario_int(Buff, "MCCCXS", SystemParameters.MCCCXS);
 			papiReadScenario_int(Buff, "MCCLXS", SystemParameters.MCCLXS);
@@ -3553,8 +3564,8 @@ RTCC_PMSTICN_12_2:
 	PZMYSAVE.V_after[0] = sv_A1_apo.V;
 	PZMYSAVE.SV_before[1] = sv_A2;
 	PZMYSAVE.V_after[1] = sv_A2_apo.V;
-	PZMYSAVE.code[0] = "NC1";
-	PZMYSAVE.code[1] = "NC2";
+	PZMYSAVE.code[0] = "C1";
+	PZMYSAVE.code[1] = "C2";
 	if (opt.SingSolTable == 1)
 	{
 		PZMYSAVE.plan[0] = PZTIPREG.MAN_VEH;
@@ -3893,15 +3904,15 @@ void RTCC::LambertTargeting(LambertMan *lambert, TwoImpulseResuls &res)
 	PZMYSAVE.plan[0] = lambert->ChaserVehicle;
 	if (lambert->mode == 0)
 	{
-		PZMYSAVE.code[0] = "LAM";
+		PZMYSAVE.code[0] = "L1";
 	}
 	else if (lambert->mode == 1)
 	{
-		PZMYSAVE.code[0] = "NCC";
+		PZMYSAVE.code[0] = "CC";
 	}
 	else
 	{
-		PZMYSAVE.code[0] = "TPI";
+		PZMYSAVE.code[0] = "TI";
 	}
 
 	PZMYSAVE.SV_before[1] = ConvertSVtoEphemData(sv_A2);
@@ -3909,15 +3920,15 @@ void RTCC::LambertTargeting(LambertMan *lambert, TwoImpulseResuls &res)
 	PZMYSAVE.plan[1] = lambert->ChaserVehicle;
 	if (lambert->mode == 0)
 	{
-		PZMYSAVE.code[1] = "TAR";
+		PZMYSAVE.code[1] = "L2";
 	}
 	else if (lambert->mode == 1)
 	{
-		PZMYSAVE.code[1] = "NSR";
+		PZMYSAVE.code[1] = "SR";
 	}
 	else
 	{
-		PZMYSAVE.code[1] = "TPF";
+		PZMYSAVE.code[1] = "TF";
 	}
 }
 
@@ -4786,7 +4797,7 @@ void RTCC::CSMDAPUpdate(VESSEL *v, AP10DAPDATA &pad, bool docked)
 	{
 		IC = 1; //CSM
 	}
-	GIMGBL(CSMmass, LMmass, p_T, y_T, T, WDOT, RTCC_ENGINETYPE_CSMSPS, IC, 1, 0, 0.0);
+	GIMGBL(CSMmass, LMmass, p_T, y_T, T, WDOT, RTCC_ENGINETYPE_CSMSPS, IC, 1, 0, PZMPTCSM.DeltaDockingAngle);
 
 	pad.ThisVehicleWeight = CSMmass / 0.45359237;
 	pad.OtherVehicleWeight = LMmass / 0.45359237;
@@ -11950,11 +11961,47 @@ int RTCC::PMMAPD(AEGHeader Header, AEGDataBlock Z, int KAOP, int KE, double *INF
 	//KE: < 0 for ECT, >= 0 for ECI (only needed for Earth)
 	//OUTPUTS:
 	//INFO: Array of size 10. Contains Time, radius, latitude, longitude, height of apogee and perigee
+
 	AEGDataBlock Z_A, Z_P;
+	double e_limit;
 
 	for (int i = 0;i < 10;i++)
 	{
 		INFO[i] = 0.0;
+	}
+
+	//Same limit as the AEGs have internally
+	if (Header.AEGInd == BODY_EARTH)
+	{
+		e_limit = 0.85;
+	}
+	else
+	{
+		e_limit = 0.3;
+	}
+
+	//Check on eccentricity
+	if (Z.coe_osc.e > e_limit)
+	{
+		//Beyond the limit don't use the AEG but Keplerian calculations instead
+		//TBD: Calculate other parameters?
+
+		if (KAOP >= 0)
+		{
+			//Apoapsis
+			if (Z.coe_osc.a > 0.0)
+			{
+				//Elliptical only
+				INFO[1] = Z.coe_osc.a*(1.0 + Z.coe_osc.e);
+			}
+		}
+		if (KAOP <= 0)
+		{
+			//Periapsis
+			INFO[6] = Z.coe_osc.a*(1.0 - Z.coe_osc.e);
+		}
+
+		return 0;
 	}
 
 	//Decision logic for high vs. low e route
@@ -12327,23 +12374,31 @@ void RTCC::MPTMassUpdate(VESSEL *vessel, MED_M50 &med1, MED_M55 &med2, MED_M49 &
 				hLM = vessel->GetDockStatus(dock);
 				lm = oapiGetVesselInterface(hLM);
 
-				LEM *lem = (LEM *)lm;
-				lm_ascent_mass = lem->GetAscentStageMass();
-
-				//TBD: Make this better
-				if (lem->GetStage() < 2)
+				//Is docked vessel a LM?
+				if (utils::IsVessel(lm, utils::LEM))
 				{
-					cfg = "CL";
-					lmapsmass = lem->AscentFuelMassKg;
-					lmdpsmass = lm->GetPropellantMass(lm->GetPropellantHandleByIndex(0));
+					LEM *lem = (LEM *)lm;
+					lm_ascent_mass = lem->GetAscentStageMass();
+
+					if (lem->GetStage() < 2)
+					{
+						cfg = "CL";
+						lmapsmass = lem->AscentFuelMassKg;
+						lmdpsmass = lm->GetPropellantMass(lm->GetPropellantHandleByIndex(0));
+						lmrcsmass = lm->GetPropellantMass(lm->GetPropellantHandleByIndex(1)) + lm->GetPropellantMass(lm->GetPropellantHandleByIndex(2));
+					}
+					else
+					{
+						cfg = "CA";
+						lmapsmass = lm->GetPropellantMass(lm->GetPropellantHandleByIndex(2));
+						lmrcsmass = lm->GetPropellantMass(lm->GetPropellantHandleByIndex(0)) + lm->GetPropellantMass(lm->GetPropellantHandleByIndex(1));
+					}
 				}
 				else
 				{
-					cfg = "CA";
-					lmapsmass = lm->GetPropellantMass(lm->GetPropellantHandleByIndex(0));
+					//No. Could be an ASTP docking module or something else
+					cfg = "CL";
 				}
-
-				lmrcsmass = lm->GetPropellantMass(lm->GetPropellantHandleByIndex(1)) + lm->GetPropellantMass(lm->GetPropellantHandleByIndex(2));
 			}
 			else
 			{
@@ -12377,6 +12432,7 @@ void RTCC::MPTMassUpdate(VESSEL *vessel, MED_M50 &med1, MED_M55 &med2, MED_M49 &
 			}
 			lmapsmass = lem->AscentFuelMassKg;
 			lmdpsmass = lem->GetPropellantMass(lem->GetPropellantHandleByIndex(0));
+			lmrcsmass = vessel->GetPropellantMass(vessel->GetPropellantHandleByIndex(1)) + vessel->GetPropellantMass(vessel->GetPropellantHandleByIndex(2));
 		}
 		else
 		{
@@ -12388,10 +12444,9 @@ void RTCC::MPTMassUpdate(VESSEL *vessel, MED_M50 &med1, MED_M55 &med2, MED_M49 &
 			{
 				cfg = "A";
 			}
-			lmapsmass = lem->GetPropellantMass(lem->GetPropellantHandleByIndex(0));
+			lmapsmass = lem->GetPropellantMass(lem->GetPropellantHandleByIndex(2));
+			lmrcsmass = vessel->GetPropellantMass(vessel->GetPropellantHandleByIndex(0)) + vessel->GetPropellantMass(vessel->GetPropellantHandleByIndex(1));
 		}
-
-		lmrcsmass = vessel->GetPropellantMass(vessel->GetPropellantHandleByIndex(1)) + vessel->GetPropellantMass(vessel->GetPropellantHandleByIndex(2));
 
 		if (cfg[0] == 'C')
 		{
@@ -21733,7 +21788,7 @@ int RTCC::PMMXFR(int id, void *data)
 					temptab = &RZRFTT.Manual;
 				}
 
-				purpose = "TTF";
+				purpose = "TF";
 				inp->GMTI = temptab->GMTI;
 				inp->ThrusterCode = temptab->Thruster;
 				inp->dt_ullage = temptab->dt_ullage;
@@ -21760,7 +21815,7 @@ int RTCC::PMMXFR(int id, void *data)
 
 				if (rtetab->ASTSolutionCode == "") return 1;
 
-				purpose = "RTE";
+				purpose = "RE";
 				inp->GMTI = rtetab->GMTI;
 				inp->ThrusterCode = rtetab->ThrusterCode;
 				inp->dt_ullage = rtetab->dt_ullage;
@@ -21786,7 +21841,19 @@ int RTCC::PMMXFR(int id, void *data)
 		//Direct Input
 		else if (id == 33)
 		{
-			purpose = "MAN";
+			if (inp->ConfigurationChangeIndicator == RTCC_CONFIGCHANGE_NONE)
+			{
+				purpose = "FC";
+			}
+			else if (inp->ConfigurationChangeIndicator == RTCC_CONFIGCHANGE_UNDOCKING)
+			{
+				purpose = "UD";
+			}
+			else
+			{
+				purpose = "DO";
+			}
+
 			//Move in burn parameters from M40 MED
 			if (inp->BurnParameterNumber == 1)
 			{
@@ -21805,7 +21872,7 @@ int RTCC::PMMXFR(int id, void *data)
 		//TLI
 		else if (id == 37)
 		{
-			purpose = "TLI";
+			purpose = "TL";
 
 			PMMSPTInput tliin;
 
@@ -22054,13 +22121,13 @@ int RTCC::PMMXFR(int id, void *data)
 			if (inp->Type == 0)
 			{
 				GMTI = PZMCCXFR.sv_man_bef[inp->Plan - 1].GMT;
-				purpose = "MCC";
+				purpose = "MC";
 				plan = inp->Table;
 			}
 			else
 			{
 				GMTI = PZLRBELM.sv_man_bef[inp->Plan - 1].GMT;
-				purpose = "LOI";
+				purpose = "LO";
 				plan = inp->Table;
 			}
 		}
@@ -22272,7 +22339,7 @@ int RTCC::PMMXFR(int id, void *data)
 			replace = false;
 		}
 		//Store purpose code
-		std::string purpose = "DSC";
+		std::string purpose = "PD";
 		//MPT header
 		mpt = GetMPTPointer(med_m86.Veh);
 
@@ -22349,7 +22416,7 @@ int RTCC::PMMXFR(int id, void *data)
 			replace = false;
 		}
 		//Store purpose code
-		std::string purpose = "ASC";
+		std::string purpose = "PA";
 		//MPT header
 		mpt = GetMPTPointer(med_m85.VEH);
 
@@ -22589,11 +22656,15 @@ int RTCC::PMMXFRFormatManeuverCode(int Table, int Thruster, int Attitude, unsign
 	{
 		Guid = 'L';
 	}
-	else if (Attitude == RTCC_ATTITUDE_PGNS_EXDV || Attitude == RTCC_ATTITUDE_PGNS_DESCENT || Attitude == RTCC_ATTITUDE_PGNS_ASCENT)
+	else if (Attitude == RTCC_ATTITUDE_PGNS_EXDV || Attitude == RTCC_ATTITUDE_AGS_EXDV)
 	{
-		Guid = 'X';
+		Guid = 'E';
 	}
-	else if (Attitude == RTCC_ATTITUDE_AGS_EXDV || Attitude == RTCC_ATTITUDE_AGS_ASCENT)
+	else if (Attitude == RTCC_ATTITUDE_PGNS_DESCENT)
+	{
+		Guid = 'D';
+	}
+	else if (Attitude == RTCC_ATTITUDE_PGNS_ASCENT || Attitude == RTCC_ATTITUDE_AGS_ASCENT)
 	{
 		Guid = 'A';
 	}
@@ -23386,68 +23457,68 @@ void RTCC::PMDLDPP(const LDPPOptions &opt, const LDPPResults &res, LunarDescentP
 		if (opt.IDO == -1)
 		{
 			table.MVR[0] = "PC";
-			table.MVR[1] = "DOI";
+			table.MVR[1] = "DI";
 		}
 		else if (opt.IDO == 1)
 		{
-			table.MVR[0] = "ASP";
-			table.MVR[1] = "CIA";
-			table.MVR[2] = "DOI";
+			table.MVR[0] = "AS";
+			table.MVR[1] = "CI";
+			table.MVR[2] = "DI";
 		}
 		else
 		{
-			table.MVR[0] = "PCC";
-			table.MVR[1] = "DOI";
+			table.MVR[0] = "PC";
+			table.MVR[1] = "DI";
 		}
 	}
 	if (opt.MODE == 2)
 	{
 		if (opt.IDO == 0)
 		{
-			table.MVR[0] = "ASH";
-			table.MVR[1] = "DOI";
+			table.MVR[0] = "AS";
+			table.MVR[1] = "DI";
 		}
 		else
 		{
-			table.MVR[0] = "CIR";
-			table.MVR[1] = "DOI";
+			table.MVR[0] = "CI";
+			table.MVR[1] = "DI";
 		}
 	}
 	else if (opt.MODE == 3)
 	{
-		table.MVR[0] = "ASH";
-		table.MVR[1] = "CIA";
-		table.MVR[2] = "DOI";
+		table.MVR[0] = "AS";
+		table.MVR[1] = "CI";
+		table.MVR[2] = "DI";
 	}
 	else if (opt.MODE == 4)
 	{
-		table.MVR[0] = "DOI";
+		table.MVR[0] = "DI";
 	}
 	else if (opt.MODE == 5)
 	{
 		if (opt.IDO == -1)
 		{
 			table.MVR[0] = "PC";
-			table.MVR[1] = "HO1";
-			table.MVR[2] = "HO2";
+			table.MVR[1] = "H1";
+			table.MVR[2] = "H2";
 		}
 		else if (opt.IDO == 0)
 		{
-			table.MVR[0] = "HO1";
+			table.MVR[0] = "H1";
 			table.MVR[1] = "PC";
-			table.MVR[2] = "HO2";
+			table.MVR[2] = "H2";
 		}
 		else
 		{
-			table.MVR[0] = "HO1";
-			table.MVR[1] = "HO2";
+			table.MVR[0] = "H1";
+			table.MVR[1] = "H2";
 			table.MVR[2] = "PC";
 		}
-		table.MVR[3] = "DOI";
+		table.MVR[3] = "DI";
 	}
 	else if (opt.MODE == 7)
 	{
-		table.MVR[0] = "PPC";
+		table.MVR[0] = "PC";
 	}
 
 	SV sv_ig;
@@ -33704,7 +33775,7 @@ void RTCC::PMDMPT()
 
 	MPTManDisplay man;
 	MPTManeuver *mptman;
-	double mu, r, dt;
+	double mu, r;
 	bool isManeuverExecuted;
 
 	while (i < csmnum || j < lemnum)
@@ -33736,29 +33807,26 @@ void RTCC::PMDMPT()
 		}
 
 		man.HA = mptman->h_a / 1852.0;
-		if (man.HA > 9999.9)
+		if (man.HA > 99999.9)
 		{
-			man.HA = 9999.9;
+			man.HA = 99999.9;
 		}
 		man.HP = mptman->h_p / 1852.0;
-		if (man.HP > 9999.9)
+		if (man.HP > 99999.9)
 		{
-			man.HP = 9999.9;
+			man.HP = 99999.9;
 		}
 
 		if (MPTDISPLAY.man.size() > 0)
 		{
-			dt = mptman->GMT_BI - temp;
-			OrbMech::format_time_HHMMSS(Buffer, round(dt));
-			std::string strtemp3(Buffer);
-			man.DT = strtemp3;
+			man.DT = mptman->GMT_BI - temp;
 		}
 
-		temp = mptman->GMT_BO;
+		//Save ignition time for DT calculation
+		temp = mptman->GMT_BI;
 
-		OrbMech::format_time_HHMMSS(Buffer, round(GETfromGMT(mptman->GMT_BI)));
-		std::string strtemp4(Buffer);
-		man.GETBI = strtemp4;
+		man.GETBI = GETfromGMT(mptman->GMT_BI);
+
 		//Maneuver executed?
 		if (isManeuverExecuted)
 		{
@@ -34589,6 +34657,7 @@ void RTCC::PMMDMT(int L, unsigned man, RTCCNIAuxOutputTable *aux)
 		AEGDataBlock sv_A, sv_P;
 		double INFO[10];
 
+		//Call Apsides Determination Subroutine
 		if (PMMAPD(aeg.Header, aeg.Data, 0, -1, INFO, &sv_A, &sv_P))
 		{
 			PMXSPT("PMMDMT", 108);
