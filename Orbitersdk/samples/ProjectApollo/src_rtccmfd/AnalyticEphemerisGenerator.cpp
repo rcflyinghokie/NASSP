@@ -309,7 +309,7 @@ void PMMLAEG::CALL(AEGHeader &header, AEGDataBlock &in, AEGDataBlock &out)
 
 	header.ErrorInd = 0;
 
-	if (in.coe_osc.a<0.27*OrbMech::R_Earth || in.coe_osc.a > 5.0*OrbMech::R_Earth)
+	if (in.coe_osc.a < 0.2*OrbMech::R_Earth || in.coe_osc.a > 5.0*OrbMech::R_Earth)
 	{
 		goto NewPMMLAEG_V846;
 	}
