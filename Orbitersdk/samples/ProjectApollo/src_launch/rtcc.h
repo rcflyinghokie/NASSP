@@ -1473,8 +1473,8 @@ struct MPTManeuver
 struct MPTManDisplay
 {
 	MPTManDisplay();
-	std::string GETBI;
-	std::string DT;
+	double GETBI;
+	double DT;
 	double DELTAV;
 	double DVREM;
 	double HA;
@@ -2481,6 +2481,9 @@ public:
 private:
 	void LoadMissionInitParameters(int year, int month, int day);
 	void InitializeCoordinateSystem();
+
+	//Updates RTCC clocks
+	void TimeUpdate();
 public:
 	void AP7TPIPAD(const AP7TPIPADOpt &opt, AP7TPI &pad);
 	void AP9LMTPIPAD(AP9LMTPIPADOpt *opt, AP9LMTPI &pad);
@@ -2688,7 +2691,7 @@ public:
 	//Maneuver direct input and confirmation math module
 	int PMMMCD(PMMMCDInput in, MPTManeuver &man);
 	//Impulsive Maneuver Transfer Math Module
-	int PMMMPT(PMMMPTInput in, MPTManeuver &man);
+	int PMMMPT(PMMMPTInput &in, MPTManeuver &man);
 	//Lunar Ascent Integrator
 	int PMMLAI(PMMLAIInput in, RTCCNIAuxOutputTable &aux, EphemerisDataTable2 *E = NULL);
 	//LM Lunar Descent Numerical Integration Module
@@ -2702,7 +2705,8 @@ public:
 	//Vehicle Orientation Change Processor
 	void PMMUDT(int L, unsigned man, int headsup, int trim);
 	//Vector Routing Load Module
-	void PMSVCT(int QUEID, int L, StateVectorTableEntry* sv0 = NULL);
+	void PMSVCT(int QUEID, int L);
+	void PMSVCT(int QUEID, int L, StateVectorTableEntry sv0);
 	//Vector Fetch Load Module
 	int PMSVEC(int L, double GMT, CELEMENTS &elem, double &KFactor, double &Area, double &Weight, std::string &StaID, int &RBI);
 	//Maneuver Execution Program
@@ -2727,7 +2731,7 @@ public:
 	//Trajectory Update Control Module
 	void EMSTRAJ(StateVectorTableEntry sv, int L);
 	//Ephemeris Storage and Control Module
-	StateVectorTableEntry EMSEPH(int QUEID, StateVectorTableEntry sv0, int L, double PresentGMT);
+	void EMSEPH(int QUEID, StateVectorTableEntry &sv0, int &L, double PresentGMT);
 	//Miscellaneous Numerical Integration Control Module
 	void EMSMISS(EMSMISSInputTable *in);
 	//Lunar Surface Ephemeris Generator
@@ -3318,7 +3322,7 @@ public:
 		unsigned ManeuverNumber = 1; //Maneuver number in LOI or MCC table
 		int Thruster = RTCC_ENGINETYPE_CSMSPS; //Thruster for maneuver
 		int Attitude = RTCC_ATTITUDE_PGNS_EXDV; //Attitude option
-		double UllageDT = -1;	//Delta T of Ullage
+		double UllageDT = 0.0;	//Delta T of Ullage
 		bool UllageQuads = true;//false = 2 thrusters, true = 4 thrusters
 		bool Iteration = false; //false = do not iterate, true = iterate
 		double TenPercentDT = 26.0;	//Delta T of 10% thrust for the DPS
