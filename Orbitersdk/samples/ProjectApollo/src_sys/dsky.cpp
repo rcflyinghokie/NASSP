@@ -196,14 +196,17 @@ void DSKY::Reset()
 	VerbFlashing = false;
 	NounFlashing = false;
 	ELOff = false;
+
+	DSKYOutEnabled = false;
+	strcpy(DSKYOutIp, "127.0.0.1");
+	DSKYOutPort = 3001;
 }
 
 DSKY::~DSKY()
 
 {
-	//
-	// Nothing for now.
-	//
+	closesocket(clientSock);
+	WSACleanup();
 }
 
 void DSKY::Init(e_object *statuslightpower, e_object *segmentlightpower, RotationalSwitch *dimmer)
@@ -245,6 +248,20 @@ void DSKY::Timestep(double simt)
 	{
 		FirstTimeStep = false;
 	    soundlib.LoadSound(Sclick, BUTTON_SOUND);
+		FILEHANDLE DSKYOutConfig = oapiOpenFile("ProjectApollo\\DSKYOut.cfg", FILE_IN_ZEROONFAIL, CONFIG);
+		if (DSKYOutConfig) {
+			oapiReadItem_bool(DSKYOutConfig, "ENABLED", DSKYOutEnabled);
+			oapiReadItem_string(DSKYOutConfig, "IP", DSKYOutIp);
+			oapiReadItem_int(DSKYOutConfig, "DSKYPORT", DSKYOutPort);
+
+			//Set up network stuff
+			WSAStartup(0x0202, &wsaData);
+			serverAddr.sin_family = AF_INET;
+			serverAddr.sin_addr.s_addr = inet_addr(DSKYOutIp);
+			serverAddr.sin_port = htons((u_short)DSKYOutPort);
+			clientSock = socket(PF_INET, SOCK_DGRAM, 0);
+		}
+		oapiCloseFile(DSKYOutConfig, FILE_IN_ZEROONFAIL);
 	}
 }
 
@@ -934,21 +951,27 @@ void DSKY::LoadState(FILEHANDLE scn, char *end_str)
 			return;
 		if (!strnicmp (line, "PROG", 4)) {
 			strncpy (Prog, line+5, 2);
+			if (strcmp(Prog, "") == 0) { strcpy(Prog, TwoSpace); }
 		}
 		else if (!strnicmp (line, "VERB", 4)) {
 			strncpy (Verb, line+5, 2);
+			if (strcmp(Verb, "") == 0) { strcpy(Verb, TwoSpace); }
 		}
 		else if (!strnicmp (line, "NOUN", 4)) {
 			strncpy (Noun, line+5, 2);
+			if (strcmp(Noun, "") == 0) { strcpy(Noun, TwoSpace); }
 		}
 		else if (!strnicmp (line, "R1", 2)) {
 			strncpy (R1, line+3, 6);
+			if (strcmp(R1, "") == 0) { strcpy(R1, SixSpace); }
 		}
 		else if (!strnicmp (line, "R2", 2)) {
 			strncpy (R2, line+3, 6);
+			if (strcmp(R2, "") == 0) { strcpy(R2, SixSpace); }
 		}
 		else if (!strnicmp (line, "R3", 2)) {
 			strncpy (R3, line+3, 6);
+			if (strcmp(R3, "") == 0) { strcpy(R3, SixSpace); }
 		}
 		else if (!strnicmp (line, "STATE", 5)) {
 			DSKYState state;
@@ -1429,5 +1452,34 @@ void DSKY::nineCallback(PanelSwitchItem* s)
 	else
 	{
 		ResetKeyDown();
+	}
+}
+
+void DSKY::SendNetworkPacketDSKY()
+{
+	if (DSKYOutEnabled == true) {
+		std::string compLight = "\"compLight\": ";
+		std::string prog = "\"prog\": ";
+		std::string verb = "\"verb\": ";
+		std::string noun = "\"noun\": ";
+		std::string flashing = "\"flashing\": ";
+		std::string r1 = "\"r1\": ";
+		std::string r2 = "\"r2\": ";
+		std::string r3 = "\"r3\": ";
+		std::string alarms = "\"alarms\": ";
+
+		compLight = compLight + "\"" + B2S(CompActy) + "\",";
+		prog = prog + "\"" + Prog + "\",";
+		verb = verb + "\"" + Verb + "\",";
+		noun = noun + "\"" + Noun + "\",";
+		flashing = flashing + "\"" + B2S(VerbFlashing) + "\",";
+		r1 = r1 + "\"" + R1 + "\",";
+		r2 = r2 + "\"" + R2 + "\",";
+		r3 = r3 + "\"" + R3 + "\",";
+
+		std::string message = "{" + compLight + prog + verb + noun + flashing + r1 + r2 + r3;
+
+		sendto(clientSock, message.c_str(), message.length(), 0, (LPSOCKADDR)&serverAddr, sizeof(struct sockaddr));
+		strcpy(oapiDebugString(), message.c_str()); //Leaving this debug string for now
 	}
 }
