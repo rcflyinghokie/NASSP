@@ -34,6 +34,34 @@ AR_GCore::AR_GCore(VESSEL* v)
 	pMPTVessel = NULL;
 	mptInitError = 0;
 
+	AGOP_Page = 1;
+	AGOP_Option = 1;
+	AGOP_Mode = 1;
+	AGOP_AdditionalOption = 0;
+	AGOP_StartTime = 0.0;
+	AGOP_StopTime = 0.0;
+	AGOP_TimeStep = 0.0;
+	AGOP_CSM_REFSMMAT = RTCC_REFSMMAT_TYPE_CUR;
+	AGOP_LM_REFSMMAT = RTCC_REFSMMAT_TYPE_CUR;
+	AGOP_Stars[0] = 1;
+	AGOP_Stars[1] = 2;
+	AGOP_Lat = 0.0;
+	AGOP_Lng = 0.0;
+	AGOP_Alt = 0.0;
+	AGOP_Attitudes[0] = _V(0, 0, 0);
+	AGOP_Attitudes[1] = _V(0, 0, 0);
+	AGOP_AttIsCSM = true;
+	AGOP_HeadsUp = true;
+	AGOP_AntennaPitch = 0.0;
+	AGOP_AntennaYaw = 0.0;
+	AGOP_Instrument = 0;
+	AGOP_LMCOASAxis = false;
+	AGOP_LMAOTDetent = 2;
+	AGOP_InstrumentAngles1[0] = 0.0;
+	AGOP_InstrumentAngles1[1] = 0.0;
+	AGOP_InstrumentAngles2[0] = 0.0;
+	AGOP_InstrumentAngles2[1] = 0.0;
+
 	int mission = 0;
 
 	if (strcmp(v->GetName(), "AS-205") == 0)
@@ -387,6 +415,62 @@ void AR_GCore::MPTMassUpdate()
 	if (pMPTVessel == NULL) return;
 
 	rtcc->MPTMassUpdate(pMPTVessel, rtcc->med_m50, rtcc->med_m55, rtcc->med_m49);
+}
+
+bool AR_GCore::AGOP_CSM_REFSMMAT_Required()
+{
+	bool GetCSMREFSMMAT = false;
+
+	if (AGOP_Option == 1 || AGOP_Option == 5 || AGOP_Option == 6) GetCSMREFSMMAT = true;
+	else if (AGOP_Option == 4)
+	{
+		if (AGOP_Mode == 1 || AGOP_Mode == 4) GetCSMREFSMMAT = true;
+		else if (AGOP_AttIsCSM) GetCSMREFSMMAT = true;
+	}
+	else if (AGOP_Option == 7)
+	{
+		if (AGOP_Mode == 2)
+		{
+			if (AGOP_AttIsCSM) GetCSMREFSMMAT = true;
+		}
+		else if (AGOP_Mode == 4 && AGOP_AdditionalOption < 3)
+		{
+			GetCSMREFSMMAT = true;
+		}
+		else if (AGOP_Mode == 5) GetCSMREFSMMAT = true;
+		else if (AGOP_Mode == 6) GetCSMREFSMMAT = true;
+	}
+
+	return GetCSMREFSMMAT;
+}
+
+bool AR_GCore::AGOP_LM_REFSMMAT_Required()
+{
+	bool GetLMREFSMMAT = false;
+
+	if (AGOP_Option == 4)
+	{
+		if (AGOP_Mode != 1 && AGOP_Mode != 4)
+		{
+			GetLMREFSMMAT = true;
+		}
+		else if (!AGOP_AttIsCSM)
+		{
+			GetLMREFSMMAT = true;
+		}
+	}
+	else if (AGOP_Option == 7)
+	{
+		if (AGOP_Mode == 1) GetLMREFSMMAT = true;
+		else if (AGOP_Mode == 2 && AGOP_AttIsCSM == false) GetLMREFSMMAT = true;
+		else if (AGOP_Mode == 4)
+		{
+			if (AGOP_AdditionalOption > 0) GetLMREFSMMAT = true;
+		}
+		else if (AGOP_Mode == 6) GetLMREFSMMAT = true; //But is actually a CSM REFSMMAT
+	}
+
+	return GetLMREFSMMAT;
 }
 
 ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
@@ -762,26 +846,6 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	LUNTAR_pitch_guess = 0.0;
 	LUNTAR_yaw_guess = 0.0;
 	LUNTAR_TIG = 0.0;
-
-	AGOP_Page = 1;
-	AGOP_Option = 1;
-	AGOP_Mode = 1;
-	AGOP_StartTime = 0.0;
-	AGOP_StopTime = 0.0;
-	AGOP_TimeStep = 0.0;
-	AGOP_CSM_REFSMMAT = RTCC_REFSMMAT_TYPE_CUR;
-	AGOP_LM_REFSMMAT = RTCC_REFSMMAT_TYPE_CUR;
-	AGOP_Star = 1;
-	AGOP_Lat = 0.0;
-	AGOP_Lng = 0.0;
-	AGOP_Alt = 0.0;
-	AGOP_Attitude = _V(0, 0, 0);
-	AGOP_AttIsCSM = true;
-	AGOP_HeadsUp = true;
-	AGOP_AntennaPitch = 0.0;
-	AGOP_AntennaYaw = 0.0;
-	AGOP_Instrument = 0;
-	AGOP_LMCOASAxis = false;
 
 	DebugIMUTorquingAngles = _V(0, 0, 0);
 }
@@ -4725,12 +4789,23 @@ int ARCore::subThread()
 		AGOPInputs in;
 		AGOPOutputs out;
 
-		in.Option = AGOP_Option;
-		in.Mode = AGOP_Mode;
-		in.DeltaT = AGOP_TimeStep;
+		in.Option = GC->AGOP_Option;
+		in.Mode = GC->AGOP_Mode;
+		in.AdditionalOption = GC->AGOP_AdditionalOption;
+		in.DeltaT = GC->AGOP_TimeStep;
+
+		bool statevectorrequired = true;
+
+		if (GC->AGOP_Option == 3) statevectorrequired = false;
+		else if (GC->AGOP_Option == 7)
+		{
+			if (GC->AGOP_Mode == 3) statevectorrequired = false;
+			else if (GC->AGOP_Mode == 4) statevectorrequired = false;
+			else if (GC->AGOP_Mode == 6) statevectorrequired = false;
+		}
 
 		//Get ephemeris
-		if (AGOP_Option != 3)
+		if (statevectorrequired)
 		{
 			EphemerisData sv;
 			bool TimesNotRequired;
@@ -4739,13 +4814,17 @@ int ARCore::subThread()
 
 			TimesNotRequired = false;
 
-			if (AGOP_Option == 2 && AGOP_Mode == 1) TimesNotRequired = true;
-			if (AGOP_Option == 7 && AGOP_Mode == 1) TimesNotRequired = true;
+			if (GC->AGOP_Option == 2 && GC->AGOP_Mode == 1) TimesNotRequired = true;
+			if (GC->AGOP_Option == 7)
+			{
+				if (GC->AGOP_Mode == 1) TimesNotRequired = true;
+				else if (GC->AGOP_Mode == 5) TimesNotRequired = true;
+			}
 
 			double GMT_Start, GMT_Stop;
 
-			GMT_Start = GC->rtcc->GMTfromGET(AGOP_StartTime);
-			GMT_Stop = GC->rtcc->GMTfromGET(AGOP_StopTime);
+			GMT_Start = GC->rtcc->GMTfromGET(GC->AGOP_StartTime);
+			GMT_Stop = GC->rtcc->GMTfromGET(GC->AGOP_StopTime);
 
 			//Get state vector to GMT_Start
 			sv = GC->rtcc->coast(sv, GMT_Start - sv.GMT);
@@ -4786,7 +4865,7 @@ int ARCore::subThread()
 				intab.EphemerisRightLimitGMT = GMT_Stop;
 				intab.DensityMultOverrideIndicator = 0.0;
 				intab.ManeuverIndicator = false;
-				intab.VehicleCode = AGOP_AttIsCSM ? RTCC_MPT_CSM : RTCC_MPT_LM;
+				intab.VehicleCode = GC->AGOP_AttIsCSM ? RTCC_MPT_CSM : RTCC_MPT_LM;
 
 				GC->rtcc->EMSMISS(&intab);
 			}
@@ -4794,37 +4873,36 @@ int ARCore::subThread()
 		}
 
 		//Logic to get required REFSMMATs
-		bool GetCSMREFSMMAT = false, GetLMREFSMMAT = false;
+		bool GetCSMREFSMMAT, GetLMREFSMMAT;
 
-		if (AGOP_Option == 1 || AGOP_Option == 5 || AGOP_Option == 6) GetCSMREFSMMAT = true;
-		else if (AGOP_Option == 4)
-		{
-			if (AGOP_Mode == 1 || AGOP_Mode == 4) GetCSMREFSMMAT = true;
-			else if (AGOP_AttIsCSM) GetCSMREFSMMAT = true;
-		}
-		else if (AGOP_Option == 7)
-		{
-			if (AGOP_Mode != 1 && AGOP_AttIsCSM) GetCSMREFSMMAT = true;
-		}
-
-		if (AGOP_Option == 4)
-		{
-			if (AGOP_Mode != 1 && AGOP_Mode != 4) GetLMREFSMMAT = true;
-			else if (!AGOP_AttIsCSM) GetLMREFSMMAT = true;
-		}
-		else if (AGOP_Option == 7)
-		{
-			if (AGOP_Mode == 1 || AGOP_AttIsCSM == false) GetLMREFSMMAT = true;
-		}
+		GetCSMREFSMMAT = GC->AGOP_CSM_REFSMMAT_Required();
+		GetLMREFSMMAT = GC->AGOP_LM_REFSMMAT_Required();
 
 		if (GetCSMREFSMMAT)
 		{
-			REFSMMATData refs = GC->rtcc->EZJGMTX1.data[AGOP_CSM_REFSMMAT - 1];
+			REFSMMATData refs;
+			
+			if (GC->AGOP_Option == 7 && GC->AGOP_Mode == 6)
+			{
+				//Special case REFSMMAT to REFSMMAT calculation
+				if (GC->AGOP_AttIsCSM)
+				{
+					refs = GC->rtcc->EZJGMTX1.data[GC->AGOP_CSM_REFSMMAT - 1];
+				}
+				else
+				{
+					refs = GC->rtcc->EZJGMTX3.data[GC->AGOP_CSM_REFSMMAT - 1];
+				}
+			}
+			else
+			{
+				refs = GC->rtcc->EZJGMTX1.data[GC->AGOP_CSM_REFSMMAT - 1];
+			}
 
 			if (refs.ID == 0)
 			{
-				AGOP_Output.clear();
-				AGOP_Error = "REFSMMAT NOT AVAILABLE";
+				GC->AGOP_Output.clear();
+				GC->AGOP_Error = "REFSMMAT NOT AVAILABLE";
 				Result = DONE;
 				break;
 			}
@@ -4833,12 +4911,30 @@ int ARCore::subThread()
 
 		if (GetLMREFSMMAT)
 		{
-			REFSMMATData refs = GC->rtcc->EZJGMTX3.data[AGOP_LM_REFSMMAT - 1];
+			REFSMMATData refs;
+			
+			if (GC->AGOP_Option == 7 && GC->AGOP_Mode == 6)
+			{
+				//Special case REFSMMAT to REFSMMAT calculation
+				if (GC->AGOP_AttIsCSM)
+				{
+					refs = GC->rtcc->EZJGMTX1.data[GC->AGOP_LM_REFSMMAT - 1];
+				}
+				else
+				{
+					refs = GC->rtcc->EZJGMTX3.data[GC->AGOP_LM_REFSMMAT - 1];
+				}
+			}
+			else
+			{
+				refs = GC->rtcc->EZJGMTX3.data[GC->AGOP_LM_REFSMMAT - 1];
+			}
+			
 
 			if (refs.ID == 0)
 			{
-				AGOP_Output.clear();
-				AGOP_Error = "REFSMMAT NOT AVAILABLE";
+				GC->AGOP_Output.clear();
+				GC->AGOP_Error = "REFSMMAT NOT AVAILABLE";
 				Result = DONE;
 				break;
 			}
@@ -4847,28 +4943,54 @@ int ARCore::subThread()
 
 		in.startable = GC->rtcc->EZJGSTAR;
 		in.NumStars = 1;
-		in.StarIDs[0] = AGOP_Star;
+		in.StarIDs[0] = GC->AGOP_Stars[0];
+		in.StarIDs[1] = GC->AGOP_Stars[1];
 
-		in.AttIsCSM = AGOP_AttIsCSM;
-		in.IMUAttitude[0] = AGOP_Attitude;
-		in.HeadsUp = AGOP_HeadsUp;
-		in.AntennaPitch = AGOP_AntennaPitch;
-		in.AntennaYaw = AGOP_AntennaYaw;
-		in.Instrument = AGOP_Instrument;
-		in.LMCOASAxis = AGOP_LMCOASAxis;
+		in.AttIsCSM = GC->AGOP_AttIsCSM;
+		in.IMUAttitude[0] = GC->AGOP_Attitudes[0];
+		in.IMUAttitude[1] = GC->AGOP_Attitudes[1];
+		in.HeadsUp = GC->AGOP_HeadsUp;
+		in.Instrument = GC->AGOP_Instrument;
+		in.LMCOASAxis = GC->AGOP_LMCOASAxis;
+		in.AOTDetent = GC->AGOP_LMAOTDetent - 1;
+
+		if (in.Instrument == 0)
+		{
+			in.SextantShaftAngles[0] = GC->AGOP_InstrumentAngles1[0];
+			in.SextantTrunnionAngles[0] = GC->AGOP_InstrumentAngles1[1];
+			in.SextantShaftAngles[1] = GC->AGOP_InstrumentAngles2[0];
+			in.SextantTrunnionAngles[1] = GC->AGOP_InstrumentAngles2[1];
+		}
+		else if (in.Instrument == 1 || in.Instrument == 3)
+		{
+			in.COASElevationAngle[0] = GC->AGOP_InstrumentAngles1[0];
+			in.COASPositionAngle[0] = GC->AGOP_InstrumentAngles1[1];
+			in.COASElevationAngle[1] = GC->AGOP_InstrumentAngles2[0];
+			in.COASPositionAngle[1] = GC->AGOP_InstrumentAngles2[1];
+		}
+		else
+		{
+			in.AOTReticleAngle[0] = GC->AGOP_InstrumentAngles1[0];
+			in.AOTSpiraleAngle[0] = GC->AGOP_InstrumentAngles1[1];
+			in.AOTReticleAngle[1] = GC->AGOP_InstrumentAngles2[0];
+			in.AOTSpiraleAngle[1] = GC->AGOP_InstrumentAngles2[1];
+		}
+
+		in.AntennaPitch = GC->AGOP_AntennaPitch;
+		in.AntennaYaw = GC->AGOP_AntennaYaw;
 
 		//For now, always input landmark
 		in.GroundStationID = "";
-		in.lmk_lat = AGOP_Lat;
-		in.lmk_lng = AGOP_Lng;
-		in.lmk_alt = AGOP_Alt;
+		in.lmk_lat = GC->AGOP_Lat;
+		in.lmk_lng = GC->AGOP_Lng;
+		in.lmk_alt = GC->AGOP_Alt;
 
 		AGOP agop(GC->rtcc);
 
 		agop.Calc(in, out);
 
-		AGOP_Output = out.output_text;
-		AGOP_Error = out.errormessage;
+		GC->AGOP_Output = out.output_text;
+		GC->AGOP_Error = out.errormessage;
 
 		Result = DONE;
 	}

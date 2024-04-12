@@ -37,6 +37,7 @@ struct AGOPInputs
 	//			  2 = Compute RA, declination, unit vector from spaceraft to landmark or center of Earth, Moon, Sun
 	// Option 4: 1 = S-Band HGA (movable), 2 = S-Band Steerable (movable), 3 = RR (movable), 4 = HGA (fixed), 5 = Steerable (fixed), 6 = RR (fixed)
 	// Option 6: 1 = Fwd horizon, 2 = Aft horizon
+	// Option 7: 1 = LM Horizon Check, 2 = Maneuver Alignment Check, 3 = Compute REFSMMAT from sightings, 4 = Docked Alignment, 5 = Point AOT, 6 = REFSMMAT to REFSMMAT
 	// Option 8: 1 = Landmark (fixed instrument), 2 = star (fixed instrument), 3 = landmark (fixed attitude), 4 = star (fixed attitude), 5 = imaginary star
 	// Option 9: 1 = 2 stars, 2 = 1 star and attitude, 3 = LVLH attitude, 4 = gimbal angles
 	int Mode;
@@ -60,7 +61,7 @@ struct AGOPInputs
 	//Vehicle to which the IMU attitude belongs. True = CSM, false = LM
 	bool AttIsCSM;
 	//Input attitude is from the LM FDAI
-	bool AttIsFDAI;
+	bool AttIsFDAI = false;
 	//To convert between CSM and LM attitudes
 	double DockingAngle = 0.0;
 	//Number of stars. Card G2000
@@ -81,7 +82,7 @@ struct AGOPInputs
 	bool HeadsUp;
 	//Fixed antenna angles (option 4, mode 4-6)
 	double AntennaPitch, AntennaYaw;
-	//Optical Instrument for option 7-9 (0 = sextant/telescope, 1 = LM COAS, 2 = AOT)
+	//Optical Instrument for option 7-9 (0 = sextant/telescope, 1 = LM COAS, 2 = AOT, 3 = CSM COAS)
 	int Instrument;
 	//Landing site
 	double LSLat, LSLng;
@@ -111,7 +112,7 @@ struct AGOPInputs
 	//AOT
 	//1 = +Y-axis, 2 = +X-axis, 3 = -Y-axis, 4 = -X-axis
 	int AOTLineID[2];
-	//
+	//0 = L, 1 = F, 2 = R, 3 = RR, 4 = CL, 5 = LR
 	int AOTDetent;
 	//A1 (angle to place star ion line ID) for two stars
 	double AOTReticleAngle[2];
@@ -190,6 +191,7 @@ protected:
 	VECTOR3 VectorPointingToHorizon(EphemerisData sv, VECTOR3 plane, bool sol) const;
 	MATRIX3 LS_REFSMMAT(VECTOR3 R_LS, VECTOR3 R_CSM, VECTOR3 V_CSM) const;
 	bool InstrumentLimitCheck(const AGOPInputs &in, VECTOR3 u_NB) const;
+	int FindLandmarkAOS(AGOPOutputs &out, StationData station, double GMT, double ElevationAngle, double &GMT_elev);
 
 	// NB unit vector from instrument
 	VECTOR3 GetNBUnitVectorFromInstrument(const AGOPInputs &in, int set) const;
@@ -199,13 +201,22 @@ protected:
 	VECTOR3 GetAOTNBVector(double EL, double AZ, double YROT, double SROT, int axis) const;
 
 	// Instrument angles from NB unit vector
+	void InstrumentAngles(VECTOR3 u_NB, int Instrument, int AOTDetent, bool LMCOASAxis, double &pitch, double &yaw) const;
 	void SextantAngles(VECTOR3 u_NB, double &TA, double &SA) const;
 	void AOTAngles(int Detent, VECTOR3 u_NB, double &YROT, double &SROT) const;
 	void CSMCOASAngles(VECTOR3 u_NB, double &SPA, double &SXP) const;
 	void LMCOASAngles(bool Axis, VECTOR3 u_NB, double &EL, double &SXP) const;
 
+	// BRCS to NB matrix from REFSMMAT, attitude and instrument ID
+	MATRIX3 BRCStoNBMatrix(const AGOPInputs &in, int set) const;
+
 	// Get attitude matrix
 	void GetAttitudeMatrix(const AGOPInputs &in, int set, VECTOR3 &GA, MATRIX3 &MAT) const;
+
+	//Point CSM instrument with LM or vice versa
+	bool PointInstrumentOfOtherVehicle(const AGOPInputs &in) const;
+
+	void GetAOTNBAngle(int Detent, double &AZ, double &EL) const;
 
 	// State vector
 	bool Interpolation(double GMT, EphemerisData &sv);

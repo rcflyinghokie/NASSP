@@ -1134,9 +1134,10 @@ void AGOP::OSTAlignmentManeuverCheck(const AGOPInputs &in, AGOPOutputs &out)
 	//Starting star for star search
 
 	//Initial calculations
-	RTCC::NewEMMENVTable outtab;
-	MATRIX3 M_SM_NB, M_BRCS_NB, M_BRCS_SM;
-	VECTOR3 u_BRCS, S_SM, S_NB;
+	RTCC::EMMENVInputTable intab;
+	RTCC::EMMENVOutputTable outtab;
+	MATRIX3 M_BRCS_NB;
+	VECTOR3 u_BRCS, S_NB;
 	double pitch, yaw, GMTAOS, GMTLOS;
 	unsigned int star, num, search;
 	bool inLimit, AOSFlag, LOSFlag;
@@ -1190,25 +1191,22 @@ void AGOP::OSTAlignmentManeuverCheck(const AGOPInputs &in, AGOPOutputs &out)
 	}
 	else if (in.Instrument == 1)
 	{
-		if (in.AttIsCSM)
+		if (in.LMCOASAxis)
 		{
-			line += "CSM COAS";
+			line += "LM COAS +Z";
 		}
 		else
 		{
-			if (in.LMCOASAxis)
-			{
-				line += "LM COAS +Z";
-			}
-			else
-			{
-				line += "LM COAS +X";
-			}
+			line += "LM COAS +X";
 		}
+	}
+	else if (in.Instrument == 2)
+	{
+		line += "AOT";
 	}
 	else
 	{
-		line += "AOT";
+		line += "CSM COAS";
 	}
 	out.output_text.push_back(line);
 
@@ -1219,33 +1217,22 @@ void AGOP::OSTAlignmentManeuverCheck(const AGOPInputs &in, AGOPOutputs &out)
 	}
 	else if (in.Instrument == 1)
 	{
-		if (in.AttIsCSM)
-		{
-			line += "SPA    SXP";
-		}
-		else
-		{
-			line += " AZ     EL";
-		}
+		line += " AZ     EL";
 	}
-	else
+	else if (in.Instrument == 2)
 	{
 		line += " A1     A2";
 	}
+	else
+	{
+		line += "SPA    SXP";
+	}
+
 	line += "       AOS       LOS";
 	out.output_text.push_back(line);
 
-	if (in.AttIsCSM)
-	{
-		M_BRCS_SM = in.CSM_REFSMMAT;
-	}
-	else
-	{
-		M_BRCS_SM = in.LM_REFSMMAT;
-	}
-
-	M_SM_NB = OrbMech::CALCSMSC(in.IMUAttitude[0]);
-	M_BRCS_NB = mul(M_SM_NB, M_BRCS_SM);
+	//Calculate BRCS to NB matrix, NB of the vehicle with the instrument
+	M_BRCS_NB = BRCStoNBMatrix(in, 0);
 
 	//Select first star
 	if (in.AdditionalOption == 0)
@@ -1268,10 +1255,8 @@ void AGOP::OSTAlignmentManeuverCheck(const AGOPInputs &in, AGOPOutputs &out)
 		//Get star vector in BRCS
 		u_BRCS = GetStarUnitVector(in, star);
 
-		//Convert to stable member
-		S_SM = mul(M_BRCS_SM, u_BRCS);
 		//Convert to navigation base
-		S_NB = mul(M_SM_NB, S_SM);
+		S_NB = mul(M_BRCS_NB, u_BRCS);
 
 		inLimit = InstrumentLimitCheck(in, S_NB);
 
@@ -1279,19 +1264,27 @@ void AGOP::OSTAlignmentManeuverCheck(const AGOPInputs &in, AGOPOutputs &out)
 		if (inLimit)
 		{
 			//Calculate AOS time
-			pRTCC->NewEMMENV(ephemeris, mantimes, NULL, in.ephem.Header.TL, 2, true, false, u_BRCS, outtab);
+			intab.GMT = in.ephem.Header.TL;
+			intab.option = 2;
+			intab.terminator = false;
+			intab.present = true;
+			intab.u_vec = u_BRCS;
+			pRTCC->EMMENV(ephemeris, mantimes, NULL, intab, outtab);
 
-			//AOS found?
-			if (outtab.ChangeFound)
+			//Found time or non-fatal error?
+			if (outtab.err <= 1)
 			{
 				//Remember if this was an actual AOS or if line-of-sight was free at input time
 				AOSFlag = !outtab.IsActualChange;
 				GMTAOS = outtab.T_Change;
 
 				//LOS time
-				pRTCC->NewEMMENV(ephemeris, mantimes, NULL, outtab.T_Change + 1.0, 2, false, false, u_BRCS, outtab);
+				intab.GMT = outtab.T_Change + 1.0;
+				intab.present = false;
+				pRTCC->EMMENV(ephemeris, mantimes, NULL, intab, outtab);
+
 				//Remember if this was an actual LOS
-				if (outtab.ChangeFound)
+				if (outtab.err <= 1)
 				{
 					LOSFlag = false;
 					GMTLOS = outtab.T_Change;
@@ -1303,28 +1296,7 @@ void AGOP::OSTAlignmentManeuverCheck(const AGOPInputs &in, AGOPOutputs &out)
 				}
 				
 				//Calculate instrument angles
-				if (in.Instrument == 0)
-				{
-					//Sextant
-					SextantAngles(S_NB, pitch, yaw);
-				}
-				else if (in.Instrument == 1)
-				{
-					//COAS
-					if (in.AttIsCSM)
-					{
-						CSMCOASAngles(S_NB, pitch, yaw);
-					}
-					else
-					{
-						LMCOASAngles(in.LMCOASAxis, S_NB, pitch, yaw);
-					}
-				}
-				else
-				{
-					//AOT
-					AOTAngles(in.AOTDetent, S_NB, pitch, yaw);
-				}
+				InstrumentAngles(S_NB, in.Instrument, in.AOTDetent, in.LMCOASAxis, pitch, yaw);
 
 				//Write line
 				//  X/XXX   XXX   XXXXX  XXXXX  *XXX:XX:XX *XXX:XX:XX
@@ -1358,21 +1330,20 @@ void AGOP::OSTAlignmentManeuverCheck(const AGOPInputs &in, AGOPOutputs &out)
 				}
 				else if (in.Instrument == 1)
 				{
-					//COAS
-					if (in.AttIsCSM)
-					{
-						sprintf(Buffer, " %+05.1lf   %+04.1lf", pitch*DEG, yaw*DEG);
-					}
-					else
-					{
-						sprintf(Buffer, " %+05.1lf  %+05.1lf", yaw*DEG, pitch*DEG);
-					}
+					//LM COAS
+					sprintf(Buffer, " %+05.1lf  %+05.1lf", yaw*DEG, pitch*DEG);
 				}
-				else
+				else if (in.Instrument == 2)
 				{
 					//AOT
 					sprintf(Buffer, "%06.2lf %06.2lf", pitch*DEG, yaw*DEG);
 				}
+				else
+				{
+					//CSM COAS
+					sprintf(Buffer, " %+05.1lf   %+04.1lf", pitch*DEG, yaw*DEG);
+				}
+
 				line.append(Buffer);
 				if (AOSFlag)
 				{
@@ -1419,6 +1390,7 @@ void AGOP::OSTComputeREFSMMAT(const AGOPInputs &in, AGOPOutputs &out)
 {
 	MATRIX3 M_SM_NB_A, M_SM_NB_B;
 	VECTOR3 U_CBA, U_CBB, U_CBA_apo, U_CBB_apo, U_NBA_apo, U_NBB_apo;
+	bool conv;
 
 	M_SM_NB_A = OrbMech::CALCSMSC(in.IMUAttitude[0]);
 	M_SM_NB_B = OrbMech::CALCSMSC(in.IMUAttitude[1]);
@@ -1428,6 +1400,28 @@ void AGOP::OSTComputeREFSMMAT(const AGOPInputs &in, AGOPOutputs &out)
 
 	U_NBA_apo = GetNBUnitVectorFromInstrument(in, 0);
 	U_NBB_apo = GetNBUnitVectorFromInstrument(in, 1);
+
+	//Convert to other vehicle?
+	conv = PointInstrumentOfOtherVehicle(in);
+
+	if (conv)
+	{
+		MATRIX3 M_NBCSM_NBLM;
+		M_NBCSM_NBLM = OrbMech::CSMBodyToLMBody(in.DockingAngle);
+
+		if (in.AttIsCSM)
+		{
+			//Convert NB vectors from LM to CSM
+			U_NBA_apo = tmul(M_NBCSM_NBLM, U_NBA_apo);
+			U_NBB_apo = tmul(M_NBCSM_NBLM, U_NBB_apo);
+		}
+		else
+		{
+			//Convert NB vectors from CSM to LM
+			U_NBA_apo = mul(M_NBCSM_NBLM, U_NBA_apo);
+			U_NBB_apo = mul(M_NBCSM_NBLM, U_NBB_apo);
+		}
+	}
 
 	U_CBA_apo = tmul(M_SM_NB_A, U_NBA_apo);
 	U_CBB_apo = tmul(M_SM_NB_B, U_NBB_apo);
@@ -1449,6 +1443,8 @@ void AGOP::DockingAlignment(const AGOPInputs &in, AGOPOutputs &out)
 
 	MATRIX3 M_NBCSM_NBLM;
 	VECTOR3 GA_CSM, GA_LM;
+
+	GA_CSM = in.IMUAttitude[0];
 
 	if (in.AttIsFDAI)
 	{
@@ -1562,33 +1558,97 @@ void AGOP::DockingAlignment(const AGOPInputs &in, AGOPOutputs &out)
 void AGOP::PointAOTWithCSM(const AGOPInputs &in, AGOPOutputs &out)
 {
 	MATRIX3 M_NBCSM_NBLM;
-	VECTOR3 SCAXIS, u_LOS;
-	double AZ, EL;
+	EphemerisData sv;
+	MATRIX3 SMNB;
+	VECTOR3 SCAXIS, u_LOS, u_ANB, CSM_Att;
+	double AZ, EL, OMICRON;
 
-	AZ = pRTCC->SystemParameters.MDGTCD[in.AOTDetent - 1];
-	EL = pRTCC->SystemParameters.MDGETA[in.AOTDetent - 1];
+	//Get state vector
+	sv = SingleStateVector();
 
+	//LM NB vector pointing at the star
+	GetAOTNBAngle(in.AOTDetent, AZ, EL);
 	SCAXIS = OrbMech::AOTNavigationBase(AZ, EL);
 
+	//BRCS vector pointing at the star
 	u_LOS = GetStarUnitVector(in, in.StarIDs[0]);
 
+	//CSM NB vector pointing at the star
 	M_NBCSM_NBLM = OrbMech::CSMBodyToLMBody(in.DockingAngle);
+	u_ANB = tmul(M_NBCSM_NBLM, SCAXIS);
 
-	//TBD
+	//CSM attitude
+	for (int i = 0; i < 2; i++)
+	{
+		OMICRON = 0.0;
+		SMNB = ThreeAxisPointing(u_ANB, u_LOS, sv.R, sv.V, OMICRON);
+		CSM_Att = OrbMech::CALCGAR(in.CSM_REFSMMAT, SMNB);
+
+		//Gimbal lock check
+		if (cos(CSM_Att.z) > 0.2) break;
+		OMICRON += 90.0*RAD;
+	}
+
+	char Buffer[256];
+	std::string line;
+
+	out.output_text.push_back("POINT AOT WITH CSM");
+	out.output_text.push_back("");
+	line = "CSM Gimbal Angles: ";
+
+	sprintf(Buffer, "%06.2lf %06.2lf %06.2lf", CSM_Att.x*DEG, CSM_Att.y*DEG, CSM_Att.z*DEG);
+	line.append(Buffer);
+	out.output_text.push_back(line);
 }
 
 void AGOP::REFSMMAT2REFSMMAT(const AGOPInputs &in, AGOPOutputs &out)
 {
+	//CSM REFSMMAT is current REFSMMAT, LM REFSMMAT is preferred REFSMMAT, IMUAttitude[0] is attitude with preferred REFSMMAT. Calculate attitude with current REFSMMAT.
 
+	MATRIX3 M_BRCS_SM, M_SM_NB, M_BRCS_NB;
+	VECTOR3 Att, FDAI_Att;
+
+	M_BRCS_SM = in.LM_REFSMMAT;
+	M_SM_NB = OrbMech::CALCSMSC(in.IMUAttitude[0]);
+	M_BRCS_NB = mul(M_SM_NB, M_BRCS_SM);
+
+	Att = OrbMech::CALCGAR(in.CSM_REFSMMAT, M_BRCS_NB);
+
+	if (in.AttIsCSM)
+	{
+		FDAI_Att = Att;
+	}
+	else
+	{
+		FDAI_Att = pRTCC->EMMGFDAI(Att, true);
+	}
+
+	char Buffer[256];
+	std::string line;
+
+	out.output_text.push_back("REFSMMAT TO REFSMMAT");
+	out.output_text.push_back("");
+
+	line = "Gimbal Angles: ";
+	sprintf(Buffer, "%06.2lf %06.2lf %06.2lf", Att.x*DEG, Att.y*DEG, Att.z*DEG);
+	line.append(Buffer);
+	out.output_text.push_back(line);
+
+	line = "FDAI Angles: ";
+	sprintf(Buffer, "%06.2lf %06.2lf %06.2lf", FDAI_Att.x*DEG, FDAI_Att.y*DEG, FDAI_Att.z*DEG);
+	line.append(Buffer);
+	out.output_text.push_back(line);
 }
 
 //Option 8
 void AGOP::StarSightingTable(const AGOPInputs &in, AGOPOutputs &out)
 {
 	VECTOR3 GA, u_star;
-	double TGT_RT_ASC, TGT_DEC, LOS_RT_ASC, LOS_DEC, OPT_ANG1, OPT_ANG2;
+	double TGT_RT_ASC, TGT_DEC, LOS_RT_ASC, LOS_DEC, OPT_ANG1, OPT_ANG2, CA, GETCA;
 
 	OPT_ANG1 = OPT_ANG2 = 0.0;
+	CA = 0.0;
+	GETCA = 0.0;
 
 	if (in.Mode == 1 || in.Mode == 3)
 	{
@@ -1597,7 +1657,10 @@ void AGOP::StarSightingTable(const AGOPInputs &in, AGOPOutputs &out)
 		std::vector<StationContact> acquisitions;
 		StationContact acquisition;
 		StationData Station;
+		EphemerisData sv;
+		double GMT, GMTCA;
 		int body, csi_out, err;
+		bool err2;
 
 		// Assume the landmark is in the same SOI as the ephemeris, i.e. initial state vector
 		body = in.ephem.Header.CSI == 0 ? BODY_EARTH : BODY_MOON;
@@ -1630,26 +1693,51 @@ void AGOP::StarSightingTable(const AGOPInputs &in, AGOPOutputs &out)
 		}
 
 		//Search elevation angle time from GMT of AOS (0° elev)
+		err = FindLandmarkAOS(out, Station, acquisition.GMTAOS, in.ElevationAngle, GMT);
 
+		if (err)
+		{
+			// Didn't find any acquisitions
+			WriteError(out, 5);
+			return;
+		}
+
+		GMTCA = acquisition.GMTEMAX;
+		GETCA = pRTCC->GETfromGMT(GMTCA);
+
+		err2 = Interpolation(GMTCA, sv);
+
+		if (in.Mode == 1)
+		{
+			//Fixed instrument, calculate IMU attitude (heads-up)
+		}
+		else
+		{
+			//Fixed attitude, calculate instrument
+		}
 	}
 	else if (in.Mode == 2 || in.Mode == 4)
 	{
 		// Star
-		RTCC::NewEMMENVTable outtab;
+		RTCC::EMMENVInputTable intab;
+		RTCC::EMMENVOutputTable outtab;
 
 		u_star = GetStarUnitVector(in, in.StarIDs[0]);
 
 		// Calculate AOS
-		pRTCC->NewEMMENV(ephemeris, mantimes, NULL, ephemeris.Header.TL, 2, true, false, u_star, outtab);
+		intab.GMT = ephemeris.Header.TL;
+		intab.option = 2;
+		intab.terminator = false;
+		intab.present = true;
 
-		if (outtab.ChangeFound == false)
+		pRTCC->EMMENV(ephemeris, mantimes, NULL, intab, outtab);
+
+		if (outtab.err > 1)
 		{
 			// No AOS in timespan
 			WriteError(out, 6);
 			return;
 		}
-
-
 	}
 	else
 	{
@@ -1838,18 +1926,15 @@ void AGOP::StarSightingTable(const AGOPInputs &in, AGOPOutputs &out)
 	}
 	else if (in.Instrument == 1)
 	{
-		if (in.AttIsCSM)
-		{
-			line += "SPA";
-		}
-		else
-		{
-			line += "AZ ";
-		}
+		line += "AZ ";
+	}
+	else if (in.Instrument == 2)
+	{
+		line += "A1 ";
 	}
 	else
 	{
-		line += "A1 ";
+		line += "SPA";
 	}
 
 	line += " ";
@@ -1882,8 +1967,7 @@ void AGOP::LunarSurfaceAlignmentDisplay(const AGOPInputs &in, AGOPOutputs &out)
 			//AOT
 			double AZ, EL;
 
-			AZ = pRTCC->SystemParameters.MDGTCD[in.AOTDetent - 1];
-			EL = pRTCC->SystemParameters.MDGETA[in.AOTDetent - 1];
+			GetAOTNBAngle(in.AOTDetent, AZ, EL);
 
 			U_NBA = GetAOTNBVector(EL, AZ, in.AOTReticleAngle[0], in.AOTSpiraleAngle[0], in.AOTLineID[0]);
 			U_NBB = GetAOTNBVector(EL, AZ, in.AOTReticleAngle[1], in.AOTSpiraleAngle[1], in.AOTLineID[1]);
@@ -1925,8 +2009,7 @@ void AGOP::LunarSurfaceAlignmentDisplay(const AGOPInputs &in, AGOPOutputs &out)
 			//AOT
 			double AZ, EL;
 
-			AZ = pRTCC->SystemParameters.MDGTCD[in.AOTDetent - 1];
-			EL = pRTCC->SystemParameters.MDGETA[in.AOTDetent - 1];
+			GetAOTNBAngle(in.AOTDetent, AZ, EL);
 			U_NBA = GetAOTNBVector(EL, AZ, in.AOTReticleAngle[0], in.AOTSpiraleAngle[0], in.AOTLineID[0]);
 		}
 
@@ -2300,26 +2383,22 @@ VECTOR3 AGOP::GetNBUnitVectorFromInstrument(const AGOPInputs &in, int set) const
 	}
 	else if (in.Instrument == 1)
 	{
-		if (in.AttIsCSM)
-		{
-			// CSM COAS
-			return GetCSMCOASVector(in.COASElevationAngle[0], in.COASPositionAngle[0]);
-		}
-		else
-		{
-			// LM COAS
-			return GetLMCOASVector(in.COASElevationAngle[0], in.COASPositionAngle[0], in.LMCOASAxis);
-		}
+		// LM COAS
+		return GetLMCOASVector(in.COASElevationAngle[0], in.COASPositionAngle[0], in.LMCOASAxis);
 	}
-	else
+	else if (in.Instrument == 2)
 	{
 		// AOT
 
 		double AZ, EL;
 
-		AZ = pRTCC->SystemParameters.MDGTCD[in.AOTDetent - 1];
-		EL = pRTCC->SystemParameters.MDGETA[in.AOTDetent - 1];
+		GetAOTNBAngle(in.AOTDetent, AZ, EL);
 		return GetAOTNBVector(EL, AZ, in.AOTReticleAngle[0], in.AOTSpiraleAngle[0], in.AOTLineID[0]);
+	}
+	else
+	{
+		// CSM COAS
+		return GetCSMCOASVector(in.COASElevationAngle[0], in.COASPositionAngle[0]);
 	}
 }
 
@@ -2445,44 +2524,98 @@ bool AGOP::InstrumentLimitCheck(const AGOPInputs &in, VECTOR3 u_NB) const
 		//Sextant
 		u_LOS = mul(OrbMech::SBNBMatrix(), _V(0, 0, 1));
 
-		if (acos(dotp(u_NB, u_LOS)) < 50.0*RAD) return true;
+		if (acos(dotp(u_NB, u_LOS)) < 38.0*RAD) return true;
 	}
 	else if (in.Instrument == 1)
 	{
-		//COAS
-		if (in.AttIsCSM)
+		//LM COAS
+
+		if (in.LMCOASAxis)
 		{
-			u_LOS = _V(1, 0, 0);
+			//Z-axis
+			//Within 5 degrees of Y-Z plane?
+			if (abs(u_NB.x) < cos(85.0*RAD))
+			{
+				//In BSS pitch limits (-10° to +70.0°)?
+				if (u_NB.y < 0.0)
+				{
+					if (acos(u_NB.z) < 70.0*RAD) return true;
+				}
+				else
+				{
+					if (acos(u_NB.z) < 10.0*RAD) return true;
+				}
+			}
 		}
 		else
 		{
-			if (in.LMCOASAxis)
+			//X-axis
+
+			//Within 5 degrees of X-Z plane?
+			if (asin(abs(u_NB.y)) < 5.0*RAD)
 			{
-				u_LOS = _V(0, 0, 1);
-			}
-			else
-			{
-				u_LOS = _V(1, 0, 0);
+				//In BSS pitch limits (-5° to +35.0°)?
+				if (u_NB.z < 0.0)
+				{
+					if (acos(u_NB.x) <= 5.0*RAD) return true;
+				}
+				else
+				{
+					if (acos(u_NB.x) <= 35.0*RAD) return true;
+				}
 			}
 		}
-
-		//TBD
-		if (acos(dotp(u_NB, u_LOS)) < 10.0*RAD) return true;
 	}
-	else
+	else if (in.Instrument == 2)
 	{
 		//AOT
 		double AZ, EL;
 
-		AZ = pRTCC->SystemParameters.MDGTCD[in.AOTDetent - 1];
-		EL = pRTCC->SystemParameters.MDGETA[in.AOTDetent - 1];
-
+		GetAOTNBAngle(in.AOTDetent, AZ, EL);
 		u_LOS = OrbMech::AOTNavigationBase(AZ, EL);
 
-		if (acos(dotp(u_NB, u_LOS)) < 50.0*RAD) return true;
+		if (acos(dotp(u_NB, u_LOS)) < 30.0*RAD) return true;
+	}
+	else
+	{
+		//CSM COAS
+
+		//Within 5 degrees of X-Z plane?
+		if (asin(abs(u_NB.y)) < 5.0*RAD)
+		{
+			//In BSS pitch limits (-15° to +36.5°)?
+			if (u_NB.z < 0.0)
+			{
+				if (acos(u_NB.x) <= 15.0*RAD) return true;
+			}
+			else
+			{
+				if (acos(u_NB.x) <= 36.5*RAD) return true;
+			}
+		}
 	}
 
 	return false;
+}
+
+void AGOP::InstrumentAngles(VECTOR3 u_NB, int Instrument, int AOTDetent, bool LMCOASAxis, double &pitch, double &yaw) const
+{
+	if (Instrument == 0)
+	{
+		SextantAngles(u_NB, pitch, yaw);
+	}
+	else if (Instrument == 1)
+	{
+		LMCOASAngles(LMCOASAxis, u_NB, pitch, yaw);
+	}
+	else if (Instrument == 2)
+	{
+		AOTAngles(AOTDetent, u_NB, pitch, yaw);
+	}
+	else
+	{
+		CSMCOASAngles(u_NB, pitch, yaw);
+	}
 }
 
 void AGOP::SextantAngles(VECTOR3 u_NB, double &TA, double &SA) const
@@ -2508,8 +2641,7 @@ void AGOP::AOTAngles(int Detent, VECTOR3 u_NB, double &YROT, double &SROT) const
 	VECTOR3 u_OAN, UNITX, TS2, TS4;
 	double AZ, EL, C1, theta, C2;
 
-	AZ = pRTCC->SystemParameters.MDGTCD[Detent - 1];
-	EL = pRTCC->SystemParameters.MDGETA[Detent - 1];
+	GetAOTNBAngle(Detent, AZ, EL);
 
 	u_OAN = _V(sin(EL), cos(EL)*sin(AZ), cos(EL)*cos(AZ));
 	C1 = dotp(u_OAN, u_NB);
@@ -2524,12 +2656,12 @@ void AGOP::AOTAngles(int Detent, VECTOR3 u_NB, double &YROT, double &SROT) const
 		theta = PI2 - theta;
 	}
 	YROT = PI2 + theta + AZ;
-	if (YROT >= PI2)
+	while (YROT >= PI2)
 	{
 		YROT -= PI2;
 	}
 	SROT = YROT + 12.0*acos(C1);
-	if (SROT >= PI2)
+	while (SROT >= PI2)
 	{
 		SROT -= PI2;
 	}
@@ -2537,8 +2669,8 @@ void AGOP::AOTAngles(int Detent, VECTOR3 u_NB, double &YROT, double &SROT) const
 
 void AGOP::CSMCOASAngles(VECTOR3 u_NB, double &SPA, double &SXP) const
 {
-	SXP = atan(u_NB.y / u_NB.z);
-	SPA = asin(u_NB.x);
+	SPA = -atan(u_NB.z / u_NB.x);
+	SXP = asin(u_NB.y);
 }
 
 void AGOP::LMCOASAngles(bool Axis, VECTOR3 u_NB, double &EL, double &SXP) const
@@ -2609,6 +2741,125 @@ void AGOP::LMCOASAngles(bool Axis, VECTOR3 u_NB, double &EL, double &SXP) const
 	}
 }
 
+//Calculates station vector in ECT coordinates
+VECTOR3 Station_ECT(double GMT, double R_E_sin_lat, double R_E_cos_lat, double stat_lng)
+{
+	double lng = stat_lng + OrbMech::w_Earth*GMT;
+	return _V(R_E_cos_lat*cos(lng), R_E_cos_lat*sin(lng), R_E_sin_lat);
+}
+
+int AGOP::FindLandmarkAOS(AGOPOutputs &out, StationData station, double GMT_start, double ElevationAngle, double &GMT_elev)
+{
+	//GMT assumed to be 0° elevation crossing time
+	EphemerisData sv;
+	VECTOR3 R_S, N, rho;
+	double TL, TR, GMT, sinang, sinang_desired, eps;
+	unsigned i, j, limit;
+	bool err;
+
+	sinang_desired = sin(ElevationAngle);
+	i = 0U;
+	j = 0U;
+	limit = 100U;
+	eps = 1.0;
+	if (ephemeris.Header.CSI == RTCC_COORDINATES_MCT) R_S = _V(station.R_E_cos_lat*station.cos_lng, station.R_E_cos_lat*station.sin_lng, station.R_E_sin_lat);
+
+	//Find first state vector after GMT
+
+	while (GMT_start <= ephemeris.table[i].GMT)
+	{
+		i++;
+
+		if (i >= ephemeris.table.size())
+		{
+			//Error
+			return 1;
+		}
+	}
+
+	TL = GMT_start;
+	TR = ephemeris.table[i].GMT;
+
+	do
+	{
+		GMT = ephemeris.table[i].GMT;
+
+		err = Interpolation(GMT, sv);
+		if (err)
+		{
+			WriteError(out, 4);
+			return 4;
+		}
+
+		if (ephemeris.Header.CSI == RTCC_COORDINATES_ECT) R_S = Station_ECT(GMT, station.R_E_sin_lat, station.R_E_cos_lat, station.lng);
+		OrbMech::EMXINGElev(sv.R, R_S, N, rho, sinang);
+
+		if (sinang > sinang_desired)
+		{
+			//Past target
+			TR = GMT;
+			break;
+		}
+		else
+		{
+			//Before target
+			TL = GMT;
+		}
+
+		i++;
+
+	} while (i < ephemeris.table.size());
+
+	if (i >= ephemeris.table.size())
+	{
+		//Error
+		return 1;
+	}
+
+	//Interval halfing
+	while (TR - TL > eps)
+	{
+		//Try at midpoint
+		GMT = (TL + TR) / 2.0;
+
+		err = Interpolation(GMT, sv);
+		if (err)
+		{
+			WriteError(out, 4);
+			return 4;
+		}
+
+		if (ephemeris.Header.CSI == RTCC_COORDINATES_ECT) R_S = Station_ECT(GMT, station.R_E_sin_lat, station.R_E_cos_lat, station.lng);
+		OrbMech::EMXINGElev(sv.R, R_S, N, rho, sinang);
+
+		//Test condition
+		if (sinang > sinang_desired)
+		{
+			//Condition exists at GMT, set as new right limit
+			TR = GMT;
+		}
+		else
+		{
+			//Condition does not exist at GMT, new left limit
+			TL = GMT;
+		}
+		j++;
+		if (j >= limit)
+		{
+			break;
+		}
+	}
+
+	if (j == limit)
+	{
+		WriteError(out, 4);
+		return 4;
+	}
+
+	GMT_elev = (TL + TR) / 2.0;
+	return 0;
+}
+
 bool AGOP::Interpolation(double GMT, EphemerisData &sv)
 {
 	ELVCTRInputTable intab;
@@ -2643,6 +2894,48 @@ EphemerisData AGOP::SingleStateVector()
 	return sv;
 }
 
+MATRIX3 AGOP::BRCStoNBMatrix(const AGOPInputs &in, int set) const
+{
+	//Returns the BRCS to NB matrix for the NB of the vehicle with the instrument
+
+	MATRIX3 M_BRCS_SM, M_SM_NB, M_BRCS_NB;
+	bool conv;
+
+	//Does the attitude have to be converged from one vehicle to the other?
+	conv = PointInstrumentOfOtherVehicle(in);
+
+	if (in.AttIsCSM)
+	{
+		M_BRCS_SM = in.CSM_REFSMMAT;
+	}
+	else
+	{
+		M_BRCS_SM = in.LM_REFSMMAT;
+	}
+	M_SM_NB = OrbMech::CALCSMSC(in.IMUAttitude[0]);
+
+	//BRCS to NB (of vehicle with the attitude!) matrix
+	M_BRCS_NB = mul(M_SM_NB, M_BRCS_SM);
+
+	if (conv)
+	{
+		MATRIX3 M_NBCSM_NBLM;
+
+		M_NBCSM_NBLM = OrbMech::CSMBodyToLMBody(in.DockingAngle);
+
+		if (in.AttIsCSM)
+		{
+			M_BRCS_NB = mul(M_NBCSM_NBLM, M_BRCS_NB);
+		}
+		else
+		{
+			M_BRCS_NB = mul(OrbMech::tmat(M_NBCSM_NBLM), M_BRCS_NB);
+		}
+	}
+
+	return M_BRCS_NB;
+}
+
 void AGOP::GetAttitudeMatrix(const AGOPInputs &in, int set, VECTOR3 &GA, MATRIX3 &MAT) const
 {
 	// Stable member to navigation base
@@ -2664,4 +2957,34 @@ void AGOP::GetAttitudeMatrix(const AGOPInputs &in, int set, VECTOR3 &GA, MATRIX3
 	}
 
 	MAT = OrbMech::CALCSMSC(GA);
+}
+
+bool AGOP::PointInstrumentOfOtherVehicle(const AGOPInputs &in) const
+{
+	bool conv = false;
+
+	if (in.Instrument == 0 || in.Instrument == 3)
+	{
+		//CSM
+		if (in.AttIsCSM == false)
+		{
+			conv = true;
+		}
+	}
+	else
+	{
+		//LM
+		if (in.AttIsCSM == true)
+		{
+			conv = true;
+		}
+	}
+
+	return conv;
+}
+
+void AGOP::GetAOTNBAngle(int Detent, double &AZ, double &EL) const
+{
+	AZ = pRTCC->SystemParameters.MDGTCD[Detent];
+	EL = pRTCC->SystemParameters.MDGETA[Detent];
 }

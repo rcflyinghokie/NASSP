@@ -2011,50 +2011,6 @@ struct CapeCrossingTable
 	double GMTCross[30];
 };
 
-struct StationData
-{
-	std::string code;
-	//Geodetic longitude
-	double lng;
-	//Geodetic latitude
-	double lat_geod;
-	//Geocentric latitude
-	double lat_geoc;
-	//sin((lng))
-	double sin_lng;
-	//cos((lng))
-	double cos_lng;
-	//sin((lat_geod))
-	double sin_lat_geod;
-	//cos((lat_geod))
-	double cos_lat_geod;
-	//sin((lat_geoc))
-	double sin_lat_geoc;
-	//cos((lat_geoc))
-	double cos_lat_geoc;
-	//R_E*sin((lat_geod)-(lat_geoc))
-	double R_sin_dlat;
-	//R_E*cos((lat_geod)-(lat_geoc))
-	double R_cos_dlat;
-	//Inertial longitude at reference time
-	double lng_iner;
-	//Altitude above ellipsoid (H)
-	double H;
-	//Station radius R(S)
-	double R_S;
-	//Ellipsoid radius R(E)
-	double R_E;
-	//R(E)*cos((lat_geoc)) + H*cos(lat_geod))
-	double R_E_cos_lat;
-	//R(E)*sin((lat_geoc)) + H*sin(lat_geod))
-	double R_E_sin_lat;
-};
-
-struct StationTable
-{
-	std::vector<StationData> table;
-};
-
 struct LunarDescentPlanningTable
 {
 	LunarDescentPlanningTable();
@@ -2090,16 +2046,20 @@ struct SunriseSunsetData
 	int REV = 0;
 	//GET of terminator rise from liftoff
 	double GETTR = 0.0;
+	bool BestAvailableGETTR = false;
 	//GET of sunrise from liftoff
 	double GETSR = 0.0;
+	bool BestAvailableGETSR = false;
 	//Pitch at sunrise
 	double theta_SR = 0.0;
 	//Yaw at sunrise
 	double psi_SR = 0.0;
 	//GET of terminator set from liftoff
 	double GETTS = 0.0;
+	bool BestAvailableGETTS = false;
 	//GET of sunset from liftoff
 	double GETSS = 0.0;
+	bool BestAvailableGETSS = false;
 	//Pitch at sunset
 	double theta_SS = 0.0;
 	//Yaw at sunset
@@ -2619,21 +2579,27 @@ public:
 	//Ascending Node Computation
 	int RMMASCND(EphemerisDataTable2 &EPHEM, ManeuverTimesTable &MANTIMES, double GMT_min, double &lng_asc);
 	//Environment Change Calculations
+	struct EMMENVInputTable
+	{
+		double GMT;			//Threshold GMT for the environment change search
+		int option;			//0 = Sun, 1 = Moon, 2 = star
+		bool terminator;	//Search for terminator of above condition
+		bool present;		//Search for condition being present (e.g. sunshine for sunrise)
+		VECTOR3 u_vec; //Star unit vector for option 2
+	};
 
-	struct NewEMMENVTable
+	struct EMMENVOutputTable
 	{
 		double T_Change = 0.0; //Time of environment change
-		bool ChangeFound = false; //Desired condition not found
+		int err = 0; //Error condition: 0 = no error, 1 = too many iterations, 2 = requested GMT not in ephemeris limits, 3 = ran out of ephemeris, 4 = interpolation error, 5 = fatal ephemeris error (not available or wrong coordinate system)
 		bool IsActualChange = false; //Condition already existed at input GMT
 	};
 
 	bool EMMENVCondition(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, LunarStayTimesTable *LUNRSTAY, double GMT, int option, bool terminator, VECTOR3 u_vec, int &err);
-	int NewEMMENV(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, LunarStayTimesTable *LUNRSTAY, double GMT_begin, int option, bool present, bool terminator, VECTOR3 u_star, NewEMMENVTable &out);
-	int EMMENV(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, double GMT_begin, int option, SunriseSunsetTable &table, VECTOR3 *u_inter = NULL);
-	//Sunrise/Sunset Display
-	void EMDSSEMD(int ind, double param);
-	//Moonrise/Moonset Display
-	void EMDSSMMD(int ind, double param);
+	void EMMENV(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, LunarStayTimesTable *LUNRSTAY, const EMMENVInputTable &in, EMMENVOutputTable &out);
+	
+	//Sunrise/Sunset, Moonrise/Moonset Display
+	void EMDSSMMD(bool sun, int ind, double param);
 	int NewMPTTrajectory(int L, SV &sv0);
 	//RTE Tradeoff Display Sort and Order Routine
 	int PMQREAP(const std::vector<TradeoffData> &TOdata);
