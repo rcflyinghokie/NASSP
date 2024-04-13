@@ -199,7 +199,7 @@ void DSKY::Reset()
 
 	DSKYOutEnabled = false;
 	strcpy(DSKYOutIp, "127.0.0.1");
-	DSKYOutPort = 3002;
+	DSKYOutPort = 3001;
 }
 
 DSKY::~DSKY()
@@ -1477,7 +1477,12 @@ void DSKY::SendNetworkPacketDSKY()
 		r2 = r2 + "\"" + R2 + "\",";
 		r3 = r3 + "\"" + R3 + "\",";
 
-		std::string message = "{" + compLight + prog + verb + noun + flashing + r1 + r2 + r3;
+		alarms = alarms + "\"" + B2S(UplinkLight) + " " + B2S(NoAttLight) + " " + B2S(StbyLight) + " "
+			+ B2S(KbRelLight) + " " + B2S(OprErrLight) + " " + B2S(TempLight) + " " + B2S(GimbalLockLight)
+			+ " " + B2S(ProgLight) + " " + B2S(RestartLight) + " " + B2S(TrackerLight) + " " + B2S(VelLight)
+			+ " " + B2S(AltLight) + " " + B2S(PrioDispLight) + " " + B2S(NoDAPLight) + "\"";
+
+		std::string message = "{" + compLight + prog + verb + noun + flashing + r1 + r2 + r3 + alarms + "}";
 
 		sendto(clientSock, message.c_str(), message.length(), 0, (LPSOCKADDR)&serverAddr, sizeof(struct sockaddr));
 		strcpy(oapiDebugString(), message.c_str()); //Leaving this debug string for now
