@@ -1143,12 +1143,18 @@ void Saturn::RegisterActiveAreas() {
 			oapiVCSetAreaClickmode_Quadrilateral(AID_VC_SWITCH_P2_01 + i, P2_TOGGLE_POS[i] + _V(UL.x * SWITCH, UL.y * SWITCH, UL.z * SWITCH) + P1_3_CLICK + ofs, P2_TOGGLE_POS[i] + _V(UR.x * SWITCH, UR.y * SWITCH, UR.z * SWITCH) + P1_3_CLICK + ofs, P2_TOGGLE_POS[i] + _V(DL.x * SWITCH, DL.y * SWITCH, DL.z * SWITCH) + P1_3_CLICK + ofs, P2_TOGGLE_POS[i] + _V(DR.x * SWITCH, DR.y * SWITCH, DR.z * SWITCH) + P1_3_CLICK + ofs);
 		}
 
-		for (i = 0; i < P2_ROTCOUNT; i++)
+		for (i = 0; i < 2; i++)
 		{
 			oapiVCRegisterArea(AID_VC_ROT_P2_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN);
 			oapiVCSetAreaClickmode_Spherical(AID_VC_ROT_P2_01 + i, P2_ROT_POS[i] + ofs, ROT);
 		}
 
+		for (i = 2; i < 4; i++)
+		{
+			oapiVCRegisterArea(AID_VC_ROT_P2_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN | PANEL_MOUSE_LBPRESSED | PANEL_MOUSE_UP);
+			oapiVCSetAreaClickmode_Quadrilateral(AID_VC_ROT_P2_01 + i, P2_ROT_POS[i] + UL * ROT + P1_3_CLICK + ofs, P2_ROT_POS[i] + UR * ROT + P1_3_CLICK + ofs, P2_ROT_POS[i] + DL * ROT + P1_3_CLICK + ofs, P2_ROT_POS[i] + DR * ROT + P1_3_CLICK + ofs);
+		}
+		
 		for (i = 0; i < P2_PUSHBCOUNT; i++)
 		{
 			oapiVCRegisterArea(AID_VC_PUSHB_P2_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN | PANEL_MOUSE_UP);
@@ -2628,16 +2634,16 @@ void Saturn::DefineVCAnimations()
 
 	MainPanelVC.AddSwitch(&SPSGimbalPitchThumbwheel, AID_VC_TW_P1_01);
 	SPSGimbalPitchThumbwheel.SetReference(P1_TW_POS[0], _V(1, 0, 0));
-	SPSGimbalPitchThumbwheel.SetRotationRange(RAD * 293);
+	//SPSGimbalPitchThumbwheel.SetRotationRange(RAD * 293);
 	SPSGimbalPitchThumbwheel.DefineMeshGroup(VC_GRP_TW_P1_01);
-	SPSGimbalPitchThumbwheel.SetInitialAnimState(0.5);
+	//SPSGimbalPitchThumbwheel.SetInitialAnimState(0.5);
 
 	const VECTOR3	TW_SPSYAW_AXIS = { -0.00, sin(P1_3_TILT + (90.0 * RAD)), -cos(P1_3_TILT + (90.0 * RAD)) };
 	MainPanelVC.AddSwitch(&SPSGimbalYawThumbwheel, AID_VC_TW_P1_02);
 	SPSGimbalYawThumbwheel.SetReference(P1_TW_POS[1], TW_SPSYAW_AXIS);
-	SPSGimbalYawThumbwheel.SetRotationRange(RAD * 293);
+	//SPSGimbalYawThumbwheel.SetRotationRange(RAD * 293);
 	SPSGimbalYawThumbwheel.DefineMeshGroup(VC_GRP_TW_P1_02);
-	SPSGimbalYawThumbwheel.SetInitialAnimState(0.5);
+	//SPSGimbalYawThumbwheel.SetInitialAnimState(0.5);
 
 	MainPanelVC.AddSwitch(&EMSFunctionSwitch, AID_VC_ROT_P1_01);
 	EMSFunctionSwitch.SetReference(P1_ROT_POS[0], P1_3_ROT_AXIS);

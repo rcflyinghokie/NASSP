@@ -2243,10 +2243,10 @@ protected:
 	ToggleSwitch GHAServoElecSwitch;
 	
 	SwitchRow HighGainAntennaPitchPositionSwitchRow;
-	RotationalSwitch HighGainAntennaPitchPositionSwitch;
+	ContinuousRotationalSwitch HighGainAntennaPitchPositionSwitch;
 
 	SwitchRow HighGainAntennaYawPositionSwitchRow;
-	RotationalSwitch HighGainAntennaYawPositionSwitch;
+	ContinuousRotationalSwitch HighGainAntennaYawPositionSwitch;
 
 	SwitchRow HighGainAntennaMetersRow;
 	SaturnHighGainAntennaPitchMeter HighGainAntennaPitchMeter;

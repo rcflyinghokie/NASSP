@@ -1159,6 +1159,103 @@ protected:
 	Sound guardClick;
 };
 
+//Any switch that does not have a discrete position
+class ContinuousSwitch : public PanelSwitchItem
+{
+public:
+	ContinuousSwitch();
+	virtual ~ContinuousSwitch();
+
+	//No wraparound
+	virtual void Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultVal, double minVal, double maxVal, double minAng, double maxAng, double clickIncr, int maximumState);
+	//Wraparound
+	void ContinuousSwitch::Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultVal, double minVal, double maxVal, double clickIncr, int maximumState);
+	virtual void Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row);
+
+	void DefineVCAnimations(UINT vc_idx);
+	void DefineMeshGroup(UINT _grpIndex);
+
+	void DrawFlash(SURFHANDLE drawSurface);
+
+	void DrawSwitchVC(int id, int event, SURFHANDLE drawSurface);
+
+	virtual void SaveState(FILEHANDLE scn);
+	virtual void LoadState(char *line);
+
+	//Checklist MFD
+	void SetState(int value);
+	int GetState();
+
+	//Returns value (not animation angle)
+	double GetPosition();
+protected:
+	void SetValue(double newAngle);
+	double DisplayToAngle(double value) const;
+	double AngletoDisplay(double angle) const;
+	bool SwitchTo(double newPosition);
+
+	void LoadSound(char *soundname);
+
+	//Common variables
+	double state;		//0 to PI2
+	double minAngle;	//0 to PI2
+	double maxAngle;	//0 to PI2
+	double minValue;
+	double maxValue;
+	double slope;		//Slope of function converting displayed state to angle
+	double clickIncrement; //Increment of a mouse click of the displayed state. Left click is 5x this value.
+	bool Wraparound;
+
+	//2D
+	int	x;
+	int y;
+	int width;
+	int height;
+	int maxState; //Number of discrete states in the bitmap
+	SURFHANDLE switchSurface;
+	SURFHANDLE switchBorder;
+
+	//VC
+	UINT grpIndex;
+	MGROUP_ROTATE* pswitchrot;
+	UINT anim_switch;
+
+	VESSEL *OurVessel;
+	SwitchRow *switchRow;
+	Sound sclick;
+};
+
+class ContinuousThumbwheelSwitch : public ContinuousSwitch
+{
+public:
+	ContinuousThumbwheelSwitch();
+	virtual ~ContinuousThumbwheelSwitch();
+
+	virtual void Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultValue, double minValue, double maxValue, double minAngle, double maxAngle, double clickIncr, int maximumState, bool horizontal = false);
+	virtual void Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row);
+
+	void DrawSwitch(SURFHANDLE drawSurface);
+	virtual bool CheckMouseClick(int event, int mx, int my);
+	bool CheckMouseClickVC(int event, VECTOR3 &p);
+protected:
+	bool isHorizontal;
+};
+
+class ContinuousRotationalSwitch : public ContinuousSwitch
+{
+public:
+	ContinuousRotationalSwitch();
+	virtual ~ContinuousRotationalSwitch();
+
+	virtual void Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row);
+
+	void DrawSwitch(SURFHANDLE drawSurface);
+	virtual bool CheckMouseClick(int event, int mx, int my);
+	bool CheckMouseClickVC(int event, VECTOR3 &p);
+protected:
+	double lastX;
+	bool mouseDown;
+};
 
 typedef struct {
 	double angle;
@@ -1425,27 +1522,6 @@ protected:
 	double RotationRange;
 };
 
-class ContinuousThumbwheelSwitch : public ThumbwheelSwitch {
-public:
-	ContinuousThumbwheelSwitch();
-	void Register(PanelSwitchScenarioHandler &scnh, char *n, int defaultState, int maximumState, bool horizontal, int multPos);
-	bool CheckMouseClick(int event, int mx, int my);
-	bool CheckMouseClickVC(int event, VECTOR3 &p);
-	void DrawSwitchVC(int id, int event, SURFHANDLE drawSurface);
-	bool SwitchTo(int newPosition);
-	void LoadState(char *line);
-	void SetState(int value);
-	int GetPosition();
-protected:
-	int StateToPosition(int st);
-	int PositionToState(int pos);
-
-	int multiplicator;
-	int numPositions;
-	int position;
-};
-
-
 class HandcontrollerSwitch: public PanelSwitchItem {
 
 public:
@@ -1534,6 +1610,7 @@ protected:
 	friend class CircuitBrakerSwitch;
 	friend class HandcontrollerSwitch;
 	friend class MeterSwitch;
+	friend class ContinuousSwitch;
 };
 
 class PanelSwitchListener {
@@ -1605,6 +1682,7 @@ protected:
 	friend class CircuitBrakerSwitch;
 	friend class HandcontrollerSwitch;
 	friend class MeterSwitch;
+	friend class ContinuousSwitch;
 };
 
 

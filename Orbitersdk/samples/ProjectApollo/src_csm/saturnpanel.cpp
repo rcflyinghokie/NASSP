@@ -5576,8 +5576,8 @@ void Saturn::InitSwitches() {
 
 	SPSswitch.Register(PSH, "SPSswitch", false);
 
-	SPSGimbalPitchThumbwheel.Register(PSH, "SPSGimbalPitchThumbwheel", 8, 16, false, 5);
-	SPSGimbalYawThumbwheel.Register(PSH, "SPSGimbalYawThumbwheel", 8, 16, true, 5);
+	SPSGimbalPitchThumbwheel.Register(PSH, "SPSGimbalPitchThumbwheel", 0.0, -4.0, 4.0, 33.5*RAD, 326.5*RAD, 0.5, 17, false);
+	SPSGimbalYawThumbwheel.Register(PSH, "SPSGimbalYawThumbwheel", 0.0, -4.0, 4.0, 33.5*RAD, 326.5*RAD, 0.5, 17, true);
 
 	SPSOxidPercentMeter.Register(PSH, "SPSOxidPercentMeter", 0, 0.999, 1, 0.999);
 	SPSFuelPercentMeter.Register(PSH, "SPSFuelPercentMeter", 0, 0.999, 1, 0.999);
@@ -5718,47 +5718,8 @@ void Saturn::InitSwitches() {
 	RightFloodRotarySwitch.AddPosition(10, 160);
 	RightFloodRotarySwitch.Register(PSH, "RightFloodRotarySwitch", 0);
 
-	HighGainAntennaPitchPositionSwitch.AddPosition(0,   0);
-	HighGainAntennaPitchPositionSwitch.AddPosition(1,  15);
-	HighGainAntennaPitchPositionSwitch.AddPosition(2,  30);
-	HighGainAntennaPitchPositionSwitch.AddPosition(3,  45);
-	HighGainAntennaPitchPositionSwitch.AddPosition(4,  60);
-	HighGainAntennaPitchPositionSwitch.AddPosition(5,  75);
-	HighGainAntennaPitchPositionSwitch.AddPosition(6,  90);
-	HighGainAntennaPitchPositionSwitch.AddPosition(7,  105);
-	HighGainAntennaPitchPositionSwitch.AddPosition(8,  120);
-	HighGainAntennaPitchPositionSwitch.AddPosition(9,  135);
-	HighGainAntennaPitchPositionSwitch.AddPosition(10, 150);
-	HighGainAntennaPitchPositionSwitch.AddPosition(11, 165);
-	HighGainAntennaPitchPositionSwitch.AddPosition(12, 180);
-	HighGainAntennaPitchPositionSwitch.Register(PSH, "HighGainAntennaPitchPositionSwitch", 3);
-
-	HighGainAntennaYawPositionSwitch.AddPosition(0,    0);
-	HighGainAntennaYawPositionSwitch.AddPosition(1,   15);
-	HighGainAntennaYawPositionSwitch.AddPosition(2,   30);
-	HighGainAntennaYawPositionSwitch.AddPosition(3,   45);
-	HighGainAntennaYawPositionSwitch.AddPosition(4,   60);
-	HighGainAntennaYawPositionSwitch.AddPosition(5,   75);
-	HighGainAntennaYawPositionSwitch.AddPosition(6,   90);
-	HighGainAntennaYawPositionSwitch.AddPosition(7,  105);
-	HighGainAntennaYawPositionSwitch.AddPosition(8,  120);
-	HighGainAntennaYawPositionSwitch.AddPosition(9,  135);
-	HighGainAntennaYawPositionSwitch.AddPosition(10, 150);
-	HighGainAntennaYawPositionSwitch.AddPosition(11, 165);
-	HighGainAntennaYawPositionSwitch.AddPosition(12, 180);
-	HighGainAntennaYawPositionSwitch.AddPosition(13, 195);
-	HighGainAntennaYawPositionSwitch.AddPosition(14, 210);
-	HighGainAntennaYawPositionSwitch.AddPosition(15, 225);
-	HighGainAntennaYawPositionSwitch.AddPosition(16, 240);
-	HighGainAntennaYawPositionSwitch.AddPosition(17, 255);
-	HighGainAntennaYawPositionSwitch.AddPosition(18, 270);
-	HighGainAntennaYawPositionSwitch.AddPosition(19, 285);
-	HighGainAntennaYawPositionSwitch.AddPosition(20, 300);
-	HighGainAntennaYawPositionSwitch.AddPosition(21, 315);
-	HighGainAntennaYawPositionSwitch.AddPosition(22, 330);
-	HighGainAntennaYawPositionSwitch.AddPosition(23, 345);
-	HighGainAntennaYawPositionSwitch.Register(PSH, "HighGainAntennaYawPositionSwitch", 6);
-	HighGainAntennaYawPositionSwitch.SetWraparound(true);
+	HighGainAntennaPitchPositionSwitch.Register(PSH, "HighGainAntennaPitchPositionSwitch", 0.0, 90.0, -90.0, PI, PI2, 15.0, 24);
+	HighGainAntennaYawPositionSwitch.Register(PSH, "HighGainAntennaYawPositionSwitch", 180.0, 180.0, -180.0, 15.0, 24);
 
 	HighGainAntennaPitchMeter.Register(PSH, "HighGainAntennaPitchMeter", -90, 90, 5, 90);
 	HighGainAntennaStrengthMeter.Register(PSH, "HighGainAntennaStrengthMeter", 0, 100, 5);

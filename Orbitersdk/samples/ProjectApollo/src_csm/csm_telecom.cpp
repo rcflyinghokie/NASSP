@@ -891,8 +891,10 @@ void HGA::TimeStep(double simt, double simdt)
 	if (AutoTrackingMode == false) //manual control if switch is set to manual or scanlimit has been hit in reacq mode
 	{
 		double PitchCmd, YawCmd;
-		PitchCmd = -(double)sat->HighGainAntennaPitchPositionSwitch.GetState()*15.0 + 90.0;
-		YawCmd = (double)sat->HighGainAntennaYawPositionSwitch.GetState()*15.0;
+		PitchCmd = sat->HighGainAntennaPitchPositionSwitch.GetPosition()*RAD;
+		YawCmd = sat->HighGainAntennaYawPositionSwitch.GetPosition()*RAD;
+
+		sprintf(oapiDebugString(), "%lf %lf", PitchCmd*DEG, YawCmd*DEG);
 
 		if (abs((YawRes * DEG) - YawCmd) < 1.0 && abs((PitchRes * DEG) - PitchCmd) < 1.0) {
 			DriveToReacqSetPoint = false;
