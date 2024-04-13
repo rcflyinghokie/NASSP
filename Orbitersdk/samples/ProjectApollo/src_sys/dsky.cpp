@@ -199,7 +199,7 @@ void DSKY::Reset()
 
 	DSKYOutEnabled = false;
 	strcpy(DSKYOutIp, "127.0.0.1");
-	DSKYOutPort = 3001;
+	DSKYOutPort = 3002;
 }
 
 DSKY::~DSKY()
