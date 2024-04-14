@@ -1467,6 +1467,7 @@ void DSKY::SendNetworkPacketDSKY()
 		std::string r2 = "\"r2\": ";
 		std::string r3 = "\"r3\": ";
 		std::string alarms = "\"alarms\": ";
+		std::string powered = "\"powered\": ";
 
 		compLight = compLight + "\"" + B2S(CompActy) + "\",";
 		prog = prog + "\"" + Prog + "\",";
@@ -1480,9 +1481,13 @@ void DSKY::SendNetworkPacketDSKY()
 		alarms = alarms + "\"" + B2S(UplinkLight) + " " + B2S(NoAttLight) + " " + B2S(StbyLight) + " "
 			+ B2S(KbRelLight) + " " + B2S(OprErrLight) + " " + B2S(TempLight) + " " + B2S(GimbalLockLight)
 			+ " " + B2S(ProgLight) + " " + B2S(RestartLight) + " " + B2S(TrackerLight) + " " + B2S(VelLight)
-			+ " " + B2S(AltLight) + " " + B2S(PrioDispLight) + " " + B2S(NoDAPLight) + "\"";
+			+ " " + B2S(AltLight) + " " + B2S(PrioDispLight) + " " + B2S(NoDAPLight) + "\",";
 
-		std::string message = "{" + compLight + prog + verb + noun + flashing + r1 + r2 + r3 + alarms + "}";
+		bool elPowered = true;
+		if (!IsSegmentPowered() || ELOff) { elPowered = false; }
+		powered = powered + "\"" + B2S(IsStatusPowered()) + " " + B2S(elPowered) + "\"";
+
+		std::string message = "{" + compLight + prog + verb + noun + flashing + r1 + r2 + r3 + alarms + powered + "}";
 
 		sendto(clientSock, message.c_str(), message.length(), 0, (LPSOCKADDR)&serverAddr, sizeof(struct sockaddr));
 		strcpy(oapiDebugString(), message.c_str()); //Leaving this debug string for now
