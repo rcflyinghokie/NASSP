@@ -1344,10 +1344,10 @@ protected:
 	RotationalSwitch Panel12SBandAntSelKnob;
 	
 	SwitchRow Panel12AntPitchSwitchRow;
-	RotationalSwitch Panel12AntPitchKnob;
+	ContinuousRotationalSwitch Panel12AntPitchKnob;
 
 	SwitchRow Panel12AntYawSwitchRow;
-	RotationalSwitch Panel12AntYawKnob;
+	ContinuousRotationalSwitch Panel12AntYawKnob;
 
 	SwitchRow LMPManualEngineStopSwitchRow;
 	EngineStopButton LMPManualEngineStop;

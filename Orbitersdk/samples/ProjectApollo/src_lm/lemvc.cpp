@@ -129,6 +129,7 @@ const VECTOR3	P14_ROT_AXIS = { -sin((90 * RAD) - P14_TILT), cos((90 * RAD) - P14
 
 // Clickspot radius
 const double SWITCH = 0.015;
+const double ROT = 0.02;
 
 // Switch clickspot offset
 const VECTOR3	P1_CLICK = { 0, 0.0011, -0.0078 };
@@ -1198,7 +1199,13 @@ void LEM::RegisterActiveAreas()
 		oapiVCSetAreaClickmode_Quadrilateral(AID_VC_SWITCH_P12_01 + i, P12_TOGGLE_POS[i] + _V(UL.x * SWITCH, UL.y * SWITCH, UL.z * SWITCH) + P12_CLICK + ofs, P12_TOGGLE_POS[i] + _V(UR.x * SWITCH, UR.y * SWITCH, UR.z * SWITCH) + P12_CLICK + ofs, P12_TOGGLE_POS[i] + _V(DL.x * SWITCH, DL.y * SWITCH, DL.z * SWITCH) + P12_CLICK + ofs, P12_TOGGLE_POS[i] + _V(DR.x * SWITCH, DR.y * SWITCH, DR.z * SWITCH) + P12_CLICK + ofs);
 	}
 
-	for (i = 0; i < P12_ROTCOUNT; i++)
+	for (i = 0; i < 2; i++)
+	{
+		oapiVCRegisterArea(AID_VC_ROT_P12_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN | PANEL_MOUSE_LBPRESSED | PANEL_MOUSE_UP);
+		oapiVCSetAreaClickmode_Quadrilateral(AID_VC_ROT_P12_01 + i, P12_ROT_POS[i] + UL * ROT + P12_CLICK + ofs, P12_ROT_POS[i] + UR * ROT + P12_CLICK + ofs, P12_ROT_POS[i] + DL * ROT + P12_CLICK + ofs, P12_ROT_POS[i] + DR * ROT + P12_CLICK + ofs);
+	}
+
+	for (i = 2; i < P12_ROTCOUNT; i++)
 	{
 		oapiVCRegisterArea(AID_VC_ROT_P12_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN);
 		oapiVCSetAreaClickmode_Spherical(AID_VC_ROT_P12_01 + i, P12_ROT_POS[i] + ofs, 0.02);
@@ -2844,10 +2851,12 @@ void LEM::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&Panel12AntPitchKnob, AID_VC_ROT_P12_01);
 	Panel12AntPitchKnob.SetReference(P12_ROT_POS[0], P12_ROT_AXIS);
 	Panel12AntPitchKnob.DefineMeshGroup(VC_GRP_Rot_P12_01);
+	Panel12AntPitchKnob.SetInitialAnimState(0.5);
 
 	MainPanelVC.AddSwitch(&Panel12AntYawKnob, AID_VC_ROT_P12_02);
 	Panel12AntYawKnob.SetReference(P12_ROT_POS[1], P12_ROT_AXIS);
 	Panel12AntYawKnob.DefineMeshGroup(VC_GRP_Rot_P12_02);
+	Panel12AntYawKnob.SetInitialAnimState(0.5);
 
 	MainPanelVC.AddSwitch(&Panel12SBandAntSelKnob, AID_VC_ROT_P12_03);
 	Panel12SBandAntSelKnob.SetReference(P12_ROT_POS[2], P12_ROT_AXIS);

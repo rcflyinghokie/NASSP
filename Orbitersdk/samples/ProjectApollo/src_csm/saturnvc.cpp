@@ -2634,16 +2634,14 @@ void Saturn::DefineVCAnimations()
 
 	MainPanelVC.AddSwitch(&SPSGimbalPitchThumbwheel, AID_VC_TW_P1_01);
 	SPSGimbalPitchThumbwheel.SetReference(P1_TW_POS[0], _V(1, 0, 0));
-	//SPSGimbalPitchThumbwheel.SetRotationRange(RAD * 293);
 	SPSGimbalPitchThumbwheel.DefineMeshGroup(VC_GRP_TW_P1_01);
-	//SPSGimbalPitchThumbwheel.SetInitialAnimState(0.5);
+	SPSGimbalPitchThumbwheel.SetInitialAnimState(0.5);
 
 	const VECTOR3	TW_SPSYAW_AXIS = { -0.00, sin(P1_3_TILT + (90.0 * RAD)), -cos(P1_3_TILT + (90.0 * RAD)) };
 	MainPanelVC.AddSwitch(&SPSGimbalYawThumbwheel, AID_VC_TW_P1_02);
 	SPSGimbalYawThumbwheel.SetReference(P1_TW_POS[1], TW_SPSYAW_AXIS);
-	//SPSGimbalYawThumbwheel.SetRotationRange(RAD * 293);
 	SPSGimbalYawThumbwheel.DefineMeshGroup(VC_GRP_TW_P1_02);
-	//SPSGimbalYawThumbwheel.SetInitialAnimState(0.5);
+	SPSGimbalYawThumbwheel.SetInitialAnimState(0.5);
 
 	MainPanelVC.AddSwitch(&EMSFunctionSwitch, AID_VC_ROT_P1_01);
 	EMSFunctionSwitch.SetReference(P1_ROT_POS[0], P1_3_ROT_AXIS);
@@ -3145,10 +3143,12 @@ void Saturn::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&HighGainAntennaPitchPositionSwitch, AID_VC_ROT_P2_03);
 	HighGainAntennaPitchPositionSwitch.SetReference(P2_ROT_POS[2], P1_3_ROT_AXIS);
 	HighGainAntennaPitchPositionSwitch.DefineMeshGroup(VC_GRP_Rot_P2_03);
+	HighGainAntennaPitchPositionSwitch.SetInitialAnimState(0.0);
 
 	MainPanelVC.AddSwitch(&HighGainAntennaYawPositionSwitch, AID_VC_ROT_P2_04);
 	HighGainAntennaYawPositionSwitch.SetReference(P2_ROT_POS[3], P1_3_ROT_AXIS);
 	HighGainAntennaYawPositionSwitch.DefineMeshGroup(VC_GRP_Rot_P2_04);
+	HighGainAntennaYawPositionSwitch.SetInitialAnimState(0.0);
 
 	NEEDLE_POS = { -0.187906, 0.721, 0.455917 };
 

@@ -1166,10 +1166,7 @@ public:
 	ContinuousSwitch();
 	virtual ~ContinuousSwitch();
 
-	//No wraparound
-	virtual void Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultVal, double minVal, double maxVal, double minAng, double maxAng, double clickIncr, int maximumState);
-	//Wraparound
-	void ContinuousSwitch::Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultVal, double minVal, double maxVal, double clickIncr, int maximumState);
+	virtual void Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultVal, double minVal, double maxVal, double clickIncr, int maximumState);
 	virtual void Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row);
 
 	void DefineVCAnimations(UINT vc_idx);
@@ -1188,6 +1185,9 @@ public:
 
 	//Returns value (not animation angle)
 	double GetPosition();
+
+	void SetRotationRange(double _range);
+	void SetWraparound(bool _Wraparound);
 protected:
 	void SetValue(double newAngle);
 	double DisplayToAngle(double value) const;
@@ -1196,15 +1196,15 @@ protected:
 
 	void LoadSound(char *soundname);
 
+	double RotationRange;
+
 	//Common variables
-	double state;		//0 to PI2
-	double minAngle;	//0 to PI2
-	double maxAngle;	//0 to PI2
-	double minValue;
-	double maxValue;
+	double state;		//Equivalent to animation range, 0-1
+	double minValue;	//Value on the panel equivalent to animation state 0.0
+	double maxValue;	//Value on the panel equivalent to animation state 1.0
 	double slope;		//Slope of function converting displayed state to angle
 	double clickIncrement; //Increment of a mouse click of the displayed state. Left click is 5x this value.
-	bool Wraparound;
+	bool Wraparound;	//Switch can wraparound limits of animation state
 
 	//2D
 	int	x;
@@ -1231,7 +1231,7 @@ public:
 	ContinuousThumbwheelSwitch();
 	virtual ~ContinuousThumbwheelSwitch();
 
-	virtual void Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultValue, double minValue, double maxValue, double minAngle, double maxAngle, double clickIncr, int maximumState, bool horizontal = false);
+	virtual void Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultValue, double minValue, double maxValue, double clickIncr, int maximumState, bool horizontal = false);
 	virtual void Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row);
 
 	void DrawSwitch(SURFHANDLE drawSurface);
@@ -1249,10 +1249,13 @@ public:
 
 	virtual void Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row);
 
+	void SetOffset(double Offset);
+
 	void DrawSwitch(SURFHANDLE drawSurface);
 	virtual bool CheckMouseClick(int event, int mx, int my);
 	bool CheckMouseClickVC(int event, VECTOR3 &p);
 protected:
+	double rotOffset; //For converting to 2D panel bitmap
 	double lastX;
 	bool mouseDown;
 };

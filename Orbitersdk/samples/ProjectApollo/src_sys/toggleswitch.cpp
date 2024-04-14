@@ -2277,11 +2277,9 @@ void GuardedThreePosSwitch::LoadState(char *line) {
 
 ContinuousSwitch::ContinuousSwitch()
 {
-	state = PI;
+	state = 0.0;
 	minValue = 0.0;
 	maxValue = 1.0;
-	minAngle = 0.0;
-	maxAngle = PI2;
 	slope = 1.0;
 	clickIncrement = 0.0;
 	Wraparound = false;
@@ -2300,60 +2298,34 @@ ContinuousSwitch::ContinuousSwitch()
 	switchSurface = 0;
 	switchBorder = 0;
 	switchRow = 0;
+
+	RotationRange = 0.0;
 }
 
 ContinuousSwitch::~ContinuousSwitch()
 {
-
+	if (pswitchrot)
+		delete pswitchrot;
 }
 
-void ContinuousSwitch::Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultVal, double minVal, double maxVal, double minAng, double maxAng, double clickIncr, int maximumState)
+void ContinuousSwitch::Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultVal, double minVal, double maxVal, double clickIncr, int maximumState)
 {
 	//defaultValue: default display value (e.g. 0°)
 	//minValue: minimum displayed value (e.g. -4°)
 	//maxValue: maximum displayed value (e.g. -4°)
-	//minAngle: rotation that corresponds to minValue (e.g. 170°, limited 0-2pi)
-	//MaxAngle: rotation that corresponds to maxValue (e.g. 190°, limited 0-2pi)
 	//clickIncr: displayed value by which the state increases with one right mouseclick. Left mouseclick is 5x larger.
 	//maxState: maximum number of bitmap positions
 
 	minValue = minVal;
 	maxValue = maxVal;
-	minAngle = minAng;
-	maxAngle = maxAng;
 	maxState = maximumState;
 
-	//Limits
-	if (minAngle < 0.0)
-	{
-		minAngle = 0.0;
-	}
-	else if (minAngle >= PI2)
-	{
-		minAngle = PI2;
-	}
-	if (maxAngle < 0.0)
-	{
-		maxAngle = 0.0;
-	}
-	else if (maxAngle >= PI2)
-	{
-		maxAngle = PI2;
-	}
-
-	slope = (maxAngle - minAngle) / (maxValue - minValue);
+	slope = 1.0 / (maxValue - minValue);
 	clickIncrement = clickIncr * abs(slope); //clickIncrement in radians, units of actual state
 
 	name = n;
 	SetValue(DisplayToAngle(defaultVal));
 	scnh.RegisterSwitch(this);
-}
-
-void ContinuousSwitch::Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultVal, double minVal, double maxVal, double clickIncr, int maximumState)
-{
-	//Version of Register for wraparound, which doesn't need the angle limits
-	Register(scnh, n, defaultVal, minVal, maxVal, 0.0, PI2, clickIncr, maximumState);
-	Wraparound = true;
 }
 
 void ContinuousSwitch::Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row)
@@ -2372,10 +2344,20 @@ void ContinuousSwitch::Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFH
 	OurVessel = switchRow->panelSwitches->vessel;
 }
 
+void ContinuousSwitch::SetWraparound(bool _Wraparound)
+{
+	Wraparound = _Wraparound;
+}
+
 double ContinuousSwitch::GetPosition()
 {
 	//Returns value of displayed state
 	return AngletoDisplay(state);
+}
+
+void ContinuousSwitch::SetRotationRange(double _range)
+{
+	RotationRange = _range;
 }
 
 void ContinuousSwitch::SetState(int value)
@@ -2419,22 +2401,22 @@ void ContinuousSwitch::SetValue(double newAngle)
 	{
 		while (newAngle < 0.0)
 		{
-			newAngle += PI2;
+			newAngle += 1.0;
 		}
-		while (newAngle >= PI2)
+		while (newAngle >= 1.0)
 		{
-			newAngle -= PI2;
+			newAngle -= 1.0;
 		}
 	}
 	else
 	{
-		if (newAngle < minAngle)
+		if (newAngle < 0.0)
 		{
-			newAngle = minAngle;
+			newAngle = 0.0;
 		}
-		else if (newAngle > maxAngle)
+		else if (newAngle > 1.0)
 		{
-			newAngle = maxAngle;
+			newAngle = 1.0;
 		}
 	}
 
@@ -2443,12 +2425,12 @@ void ContinuousSwitch::SetValue(double newAngle)
 
 double ContinuousSwitch::DisplayToAngle(double value) const
 {
-	return minAngle + slope * (value - minValue);
+	return slope * (value - minValue);
 }
 
 double ContinuousSwitch::AngletoDisplay(double angle) const
 {
-	return minValue + (angle - minAngle) / slope;
+	return minValue + angle / slope;
 }
 
 void ContinuousSwitch::DefineMeshGroup(UINT _grpIndex)
@@ -2460,8 +2442,8 @@ void ContinuousSwitch::DefineVCAnimations(UINT vc_idx)
 {
 	if (bHasReference && bHasDirection && !bHasAnimations)
 	{
-		pswitchrot = new MGROUP_ROTATE(vc_idx, &grpIndex, 1, GetReference(), GetDirection(), (float)(RAD * 360));
-		anim_switch = OurVessel->CreateAnimation(0.5);
+		pswitchrot = new MGROUP_ROTATE(vc_idx, &grpIndex, 1, GetReference(), GetDirection(), (float)(RotationRange));
+		anim_switch = OurVessel->CreateAnimation(InitialAnimState());
 		OurVessel->AddAnimationComponent(anim_switch, 0.0f, 1.0f, pswitchrot);
 		VerifyAnimations();
 	}
@@ -2479,7 +2461,7 @@ void ContinuousSwitch::DrawFlash(SURFHANDLE drawSurface)
 void ContinuousSwitch::DrawSwitchVC(int id, int event, SURFHANDLE drawSurface)
 {
 	if (!bHasAnimations) return;
-	OurVessel->SetAnimation(anim_switch, state / PI2);
+	OurVessel->SetAnimation(anim_switch, state);
 }
 
 void ContinuousSwitch::SaveState(FILEHANDLE scn)
@@ -2517,9 +2499,9 @@ ContinuousThumbwheelSwitch::~ContinuousThumbwheelSwitch()
 
 }
 
-void ContinuousThumbwheelSwitch::Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultValue, double minValue, double maxValue, double minAngle, double maxAngle, double clickIncr, int maximumState, bool horizontal)
+void ContinuousThumbwheelSwitch::Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultValue, double minValue, double maxValue, double clickIncr, int maximumState, bool horizontal)
 {
-	ContinuousSwitch::Register(scnh, n, defaultValue, minValue, maxValue, minAngle, maxAngle, clickIncr, maximumState);
+	ContinuousSwitch::Register(scnh, n, defaultValue, minValue, maxValue, clickIncr, maximumState);
 
 	isHorizontal = horizontal;
 }
@@ -2533,10 +2515,8 @@ void ContinuousThumbwheelSwitch::Init(int xp, int yp, int w, int h, SURFHANDLE s
 
 void ContinuousThumbwheelSwitch::DrawSwitch(SURFHANDLE drawSurface)
 {
-	//Scaled to 0-1
-	double val = (state - minAngle) / (maxAngle - minAngle);
 	//Scaled to number of bitmap positions
-	double val2 = val * (double)(maxState - 1);
+	double val2 = state * (double)(maxState - 1);
 	//Same in integer
 	int srcx = (int)(val2 + 0.5);
 
@@ -2631,6 +2611,7 @@ ContinuousRotationalSwitch::ContinuousRotationalSwitch()
 {
 	lastX = 0.0;
 	mouseDown = false;
+	rotOffset = 0.0;
 }
 
 ContinuousRotationalSwitch::~ContinuousRotationalSwitch()
@@ -2645,14 +2626,33 @@ void ContinuousRotationalSwitch::Init(int xp, int yp, int w, int h, SURFHANDLE s
 	LoadSound(ROTARY_SOUND);
 }
 
+void ContinuousRotationalSwitch::SetOffset(double Offset)
+{
+	rotOffset = Offset;
+}
+
 void ContinuousRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface)
 {
-	//Scaled to 0-1
-	double val = (state - minAngle) / (maxAngle - minAngle);
+	//Convert animation state to bitmap state (0-1)
+	double val = (rotOffset + state * RotationRange) / PI2;
+	if (val < 0.0)
+	{
+		val += 1.0;
+	}
 	//Scaled to number of bitmap positions
-	double val2 = val * (double)(maxState - 1);
+	double val2 = val * (double)(maxState);
 	//Same in integer
 	int srcx = (int)(val2 + 0.5);
+	//Overflow
+	if (srcx < 0)
+	{
+		srcx = 0;
+	}
+	if (srcx >= maxState)
+	{
+		srcx -= maxState;
+	}
+	//Bitmap has alternating 15° positions up and down
 	int srcx2, srcy;
 	if (srcx % 2 == 0)
 	{
@@ -2691,15 +2691,11 @@ bool ContinuousRotationalSwitch::CheckMouseClick(int event, int mx, int my)
 	//Update state
 	SwitchTo(state + clickIncrement * sgn);
 
-	sprintf(oapiDebugString(), "state %lf", AngletoDisplay(state));
-
 	return true;
 }
 
 bool ContinuousRotationalSwitch::CheckMouseClickVC(int event, VECTOR3 &p)
 {
-	sprintf(oapiDebugString(), "%lf", p.x);
-
 	if (event & PANEL_MOUSE_LBDOWN)
 	{
 		//Mouse click to start
@@ -2709,15 +2705,17 @@ bool ContinuousRotationalSwitch::CheckMouseClickVC(int event, VECTOR3 &p)
 	}
 	else if (((event & PANEL_MOUSE_LBPRESSED) != 0) && mouseDown)
 	{
-		//More than 0.5% changed?
-		if (abs(p.x - lastX) >= 0.005)
+		//More than 1% changed?
+		if (abs(p.x - lastX) >= 0.01)
 		{
-			//Rotation speed
-			double incr = clickIncrement * (p.x - lastX)*0.5;
+			//Increase state by difference in mouse position
+			double incr = 60.0*RAD / RotationRange * (p.x - lastX);
 			//Update state
 			SwitchTo(state + incr);
+			//Save last position
+			lastX = p.x;
 
-			sprintf(oapiDebugString(), "%lf %lf %lf %lf", state, p.x, lastX, incr);
+			//sprintf(oapiDebugString(), "%lf %lf %lf %lf", state, p.x, lastX, incr);
 		}
 	}
 	else if (event & PANEL_MOUSE_LBUP)

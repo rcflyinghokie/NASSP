@@ -5576,8 +5576,10 @@ void Saturn::InitSwitches() {
 
 	SPSswitch.Register(PSH, "SPSswitch", false);
 
-	SPSGimbalPitchThumbwheel.Register(PSH, "SPSGimbalPitchThumbwheel", 0.0, -4.0, 4.0, 33.5*RAD, 326.5*RAD, 0.5, 17, false);
-	SPSGimbalYawThumbwheel.Register(PSH, "SPSGimbalYawThumbwheel", 0.0, -4.0, 4.0, 33.5*RAD, 326.5*RAD, 0.5, 17, true);
+	SPSGimbalPitchThumbwheel.Register(PSH, "SPSGimbalPitchThumbwheel", 0.0, -4.0, 4.0, 0.5, 17, false);
+	SPSGimbalPitchThumbwheel.SetRotationRange(RAD * 293);
+	SPSGimbalYawThumbwheel.Register(PSH, "SPSGimbalYawThumbwheel", 0.0, -4.0, 4.0, 0.5, 17, true);
+	SPSGimbalYawThumbwheel.SetRotationRange(RAD * 293);
 
 	SPSOxidPercentMeter.Register(PSH, "SPSOxidPercentMeter", 0, 0.999, 1, 0.999);
 	SPSFuelPercentMeter.Register(PSH, "SPSFuelPercentMeter", 0, 0.999, 1, 0.999);
@@ -5718,8 +5720,12 @@ void Saturn::InitSwitches() {
 	RightFloodRotarySwitch.AddPosition(10, 160);
 	RightFloodRotarySwitch.Register(PSH, "RightFloodRotarySwitch", 0);
 
-	HighGainAntennaPitchPositionSwitch.Register(PSH, "HighGainAntennaPitchPositionSwitch", 0.0, 90.0, -90.0, PI, PI2, 15.0, 24);
-	HighGainAntennaYawPositionSwitch.Register(PSH, "HighGainAntennaYawPositionSwitch", 180.0, 180.0, -180.0, 15.0, 24);
+	HighGainAntennaPitchPositionSwitch.Register(PSH, "HighGainAntennaPitchPositionSwitch", 0.0, 90.0, -90.0, 15.0, 24);
+	HighGainAntennaPitchPositionSwitch.SetRotationRange(PI);
+
+	HighGainAntennaYawPositionSwitch.Register(PSH, "HighGainAntennaYawPositionSwitch", 180.0, 0.0, 360.0, 15.0, 24);
+	HighGainAntennaYawPositionSwitch.SetRotationRange(PI2);
+	HighGainAntennaYawPositionSwitch.SetWraparound(true);
 
 	HighGainAntennaPitchMeter.Register(PSH, "HighGainAntennaPitchMeter", -90, 90, 5, 90);
 	HighGainAntennaStrengthMeter.Register(PSH, "HighGainAntennaStrengthMeter", 0, 100, 5);
