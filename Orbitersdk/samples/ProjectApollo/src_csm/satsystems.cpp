@@ -2774,6 +2774,7 @@ void Saturn::CheckSMSystemsState()
 		SPSOxidizerLineTempSensor.WireTo(NULL);
 		SPSFuelFeedTempSensor.WireTo(NULL);
 		SPSOxidizerFeedTempSensor.WireTo(NULL);
+		SPSEngVlvTempSensor.WireTo(NULL);
 
 		// Fuel Cell Sensors
 		FCH2PressureSensor1.WireTo(NULL);
