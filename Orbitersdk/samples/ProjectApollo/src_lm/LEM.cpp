@@ -1316,6 +1316,10 @@ void LEM::clbkPreStep (double simt, double simdt, double mjd) {
 			VcInfoActive = false;
 		}
 	}
+
+	if (oapiGetFocusObject() == GetHandle()) {
+		dsky.SendNetworkPacketDSKY();
+	}
 }
 
 

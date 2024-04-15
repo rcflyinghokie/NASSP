@@ -22,6 +22,9 @@
 
   **************************************************************************/
 
+//Network code slightly modified from here
+//https://github.com/jchamet/cpp-send-udp
+
 #pragma once
 
 ///
@@ -157,6 +160,8 @@ public:
 	void SaveState(FILEHANDLE scn, char *start_str, char *end_str);
 	void LoadState(FILEHANDLE scn, char *end_str);
 
+	void SendNetworkPacketDSKY();
+
 	char *GetProg() { return Prog; };
 
 protected:
@@ -275,6 +280,17 @@ protected:
 	RotationalSwitch *DimmerRotationalSwitch;
 
 	//
+	//DSKY output stuff
+	//
+
+	bool DSKYOutEnabled;
+	char DSKYOutIp[256];
+	int DSKYOutPort;
+	WSADATA wsaData;
+	struct sockaddr_in serverAddr;
+	int clientSock;
+	
+	//
 	// Local helper functions.
 	//
 
@@ -300,3 +316,7 @@ protected:
 #define DSKY2_START_STRING	"DSKY2_BEGIN"
 #define DSKY2_END_STRING	"DSKY2_END"
 
+inline const char* const B2S(bool b)
+{
+	return b ? "1" : "0";
+}

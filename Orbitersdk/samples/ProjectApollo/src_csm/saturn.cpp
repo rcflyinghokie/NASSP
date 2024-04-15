@@ -1549,6 +1549,10 @@ void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 
 	Timestep(simt, simdt, mjd);
 
+	if (oapiGetFocusObject() == GetHandle()) {
+		dsky.SendNetworkPacketDSKY();
+	}
+
 	sprintf(buffer, "End time(0) %lld", time(0)); 
 	TRACE(buffer);
 }
