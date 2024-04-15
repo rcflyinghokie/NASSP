@@ -1490,6 +1490,6 @@ void DSKY::SendNetworkPacketDSKY()
 		std::string message = "{" + compLight + prog + verb + noun + flashing + r1 + r2 + r3 + alarms + powered + "}";
 
 		sendto(clientSock, message.c_str(), message.length(), 0, (LPSOCKADDR)&serverAddr, sizeof(struct sockaddr));
-		strcpy(oapiDebugString(), message.c_str()); //Leaving this debug string for now
+		//strcpy(oapiDebugString(), message.c_str());
 	}
 }
