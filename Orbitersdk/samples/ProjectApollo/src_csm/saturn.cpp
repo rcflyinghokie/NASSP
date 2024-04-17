@@ -3461,64 +3461,64 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 
 	if (KEYMOD_SHIFT(kstate)){
 		// Do DSKY stuff
-		// Handle key up-down in one switch block
+		DSKYPushSwitch* dskyKeyChanged = nullptr;
 		switch (key) {
 			case OAPI_KEY_DECIMAL:
-				DskySwitchClear.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchClear;
 				break;
 			case OAPI_KEY_PRIOR:
-				DskySwitchReset.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchReset;
 				break;
 			case OAPI_KEY_HOME:
-				DskySwitchKeyRel.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchKeyRel;
 				break;
 			case OAPI_KEY_NUMPADENTER:
-				DskySwitchEnter.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchEnter;
 				break;
 			case OAPI_KEY_DIVIDE:
-				DskySwitchVerb.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchVerb;
 				break;
 			case OAPI_KEY_MULTIPLY:
-				DskySwitchNoun.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchNoun;
 				break;
 			case OAPI_KEY_ADD:
-				DskySwitchPlus.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchPlus;
 				break;
 			case OAPI_KEY_SUBTRACT:
-				DskySwitchMinus.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchMinus;
 				break;
 			case OAPI_KEY_END:
-				DskySwitchProceed.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchProceed;
 				break;
 			case OAPI_KEY_NUMPAD1:
-				DskySwitchOne.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchOne;
 				break;
 			case OAPI_KEY_NUMPAD2:
-				DskySwitchTwo.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchTwo;
 				break;
 			case OAPI_KEY_NUMPAD3:
-				DskySwitchThree.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchThree;
 				break;
 			case OAPI_KEY_NUMPAD4:
-				DskySwitchFour.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchFour;
 				break;
 			case OAPI_KEY_NUMPAD5:
-				DskySwitchFive.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchFive;
 				break;
 			case OAPI_KEY_NUMPAD6:
-				DskySwitchSix.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchSix;
 				break;
 			case OAPI_KEY_NUMPAD7:
-				DskySwitchSeven.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchSeven;
 				break;
 			case OAPI_KEY_NUMPAD8:
-				DskySwitchEight.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchEight;
 				break;
 			case OAPI_KEY_NUMPAD9:
-				DskySwitchNine.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchNine;
 				break;
 			case OAPI_KEY_NUMPAD0:
-				DskySwitchZero.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				dskyKeyChanged = &DskySwitchZero;
 				break;
 			case OAPI_KEY_W: // Minimum impulse controller, pitch down
 				agc.SetInputChannelBit(032, MinusPitchMinImpulse, down ? 1 : 0);
@@ -3539,14 +3539,27 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 				agc.SetInputChannelBit(032, PlusRollMinimumImpulse, down ? 1 : 0);
 				break;
 		}
-		// direction-specific code
+
+		// Direction-specific code, handle DSKY key presses if any.
 		if (down) {
 			// KEY DOWN
+			if (dskyKeyChanged != nullptr) {
+				dskyKeyChanged->SetHeld(true);
+				dskyKeyChanged->SetState(PUSHBUTTON_PUSHED);
+			}
+
 			switch (key) {
 			case OAPI_KEY_K:
 				//kill rotation
 				SetAngularVel(_V(0, 0, 0));
 				break;
+			}
+		}
+		else {
+			// KEY UP
+			if (dskyKeyChanged != nullptr) {
+				// Omitting SetState prevents a second click on key up, the spring-loaded buttons will reset themselves.
+				dskyKeyChanged->SetHeld(false);
 			}
 		}
 		return 0;
