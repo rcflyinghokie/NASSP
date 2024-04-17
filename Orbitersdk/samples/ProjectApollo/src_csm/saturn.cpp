@@ -3554,8 +3554,7 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 				SetAngularVel(_V(0, 0, 0));
 				break;
 			}
-		}
-		else {
+		} else {
 			// KEY UP
 			if (dskyKeyChanged != nullptr) {
 				// Doing SwitchTo instead of SetState prevents a second click on key up.

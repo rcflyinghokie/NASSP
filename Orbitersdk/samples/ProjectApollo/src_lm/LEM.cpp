@@ -839,63 +839,63 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 		// Do DSKY stuff
 		DSKYPushSwitch* dskyKeyChanged = nullptr;
 		switch (key) {
-		case OAPI_KEY_DECIMAL:
-			dskyKeyChanged = &DskySwitchClear;
-			break;
-		case OAPI_KEY_PRIOR:
-			dskyKeyChanged = &DskySwitchReset;
-			break;
-		case OAPI_KEY_HOME:
-			dskyKeyChanged = &DskySwitchKeyRel;
-			break;
-		case OAPI_KEY_NUMPADENTER:
-			dskyKeyChanged = &DskySwitchEnter;
-			break;
-		case OAPI_KEY_DIVIDE:
-			dskyKeyChanged = &DskySwitchVerb;
-			break;
-		case OAPI_KEY_MULTIPLY:
-			dskyKeyChanged = &DskySwitchNoun;
-			break;
-		case OAPI_KEY_ADD:
-			dskyKeyChanged = &DskySwitchPlus;
-			break;
-		case OAPI_KEY_SUBTRACT:
-			dskyKeyChanged = &DskySwitchMinus;
-			break;
-		case OAPI_KEY_END:
-			dskyKeyChanged = &DskySwitchProceed;
-			break;
-		case OAPI_KEY_NUMPAD1:
-			dskyKeyChanged = &DskySwitchOne;
-			break;
-		case OAPI_KEY_NUMPAD2:
-			dskyKeyChanged = &DskySwitchTwo;
-			break;
-		case OAPI_KEY_NUMPAD3:
-			dskyKeyChanged = &DskySwitchThree;
-			break;
-		case OAPI_KEY_NUMPAD4:
-			dskyKeyChanged = &DskySwitchFour;
-			break;
-		case OAPI_KEY_NUMPAD5:
-			dskyKeyChanged = &DskySwitchFive;
-			break;
-		case OAPI_KEY_NUMPAD6:
-			dskyKeyChanged = &DskySwitchSix;
-			break;
-		case OAPI_KEY_NUMPAD7:
-			dskyKeyChanged = &DskySwitchSeven;
-			break;
-		case OAPI_KEY_NUMPAD8:
-			dskyKeyChanged = &DskySwitchEight;
-			break;
-		case OAPI_KEY_NUMPAD9:
-			dskyKeyChanged = &DskySwitchNine;
-			break;
-		case OAPI_KEY_NUMPAD0:
-			dskyKeyChanged = &DskySwitchZero;
-			break;
+			case OAPI_KEY_DECIMAL:
+				dskyKeyChanged = &DskySwitchClear;
+				break;
+			case OAPI_KEY_PRIOR:
+				dskyKeyChanged = &DskySwitchReset;
+				break;
+			case OAPI_KEY_HOME:
+				dskyKeyChanged = &DskySwitchKeyRel;
+				break;
+			case OAPI_KEY_NUMPADENTER:
+				dskyKeyChanged = &DskySwitchEnter;
+				break;
+			case OAPI_KEY_DIVIDE:
+				dskyKeyChanged = &DskySwitchVerb;
+				break;
+			case OAPI_KEY_MULTIPLY:
+				dskyKeyChanged = &DskySwitchNoun;
+				break;
+			case OAPI_KEY_ADD:
+				dskyKeyChanged = &DskySwitchPlus;
+				break;
+			case OAPI_KEY_SUBTRACT:
+				dskyKeyChanged = &DskySwitchMinus;
+				break;
+			case OAPI_KEY_END:
+				dskyKeyChanged = &DskySwitchProceed;
+				break;
+			case OAPI_KEY_NUMPAD1:
+				dskyKeyChanged = &DskySwitchOne;
+				break;
+			case OAPI_KEY_NUMPAD2:
+				dskyKeyChanged = &DskySwitchTwo;
+				break;
+			case OAPI_KEY_NUMPAD3:
+				dskyKeyChanged = &DskySwitchThree;
+				break;
+			case OAPI_KEY_NUMPAD4:
+				dskyKeyChanged = &DskySwitchFour;
+				break;
+			case OAPI_KEY_NUMPAD5:
+				dskyKeyChanged = &DskySwitchFive;
+				break;
+			case OAPI_KEY_NUMPAD6:
+				dskyKeyChanged = &DskySwitchSix;
+				break;
+			case OAPI_KEY_NUMPAD7:
+				dskyKeyChanged = &DskySwitchSeven;
+				break;
+			case OAPI_KEY_NUMPAD8:
+				dskyKeyChanged = &DskySwitchEight;
+				break;
+			case OAPI_KEY_NUMPAD9:
+				dskyKeyChanged = &DskySwitchNine;
+				break;
+			case OAPI_KEY_NUMPAD0:
+				dskyKeyChanged = &DskySwitchZero;
+				break;
 		}
 
 		// Direction-specific code, handle DSKY key presses if any.
@@ -912,8 +912,7 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 				SetAngularVel(_V(0, 0, 0));
 				break;
 			}
-		}
-		else {
+		} else {
 			// KEY UP
 			if (dskyKeyChanged != nullptr) {
 				// Doing SwitchTo instead of SetState prevents a second click on key up.
@@ -988,8 +987,7 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 				dedaKeyChanged->SetHeld(true);
 				dedaKeyChanged->SetState(PUSHBUTTON_PUSHED);
 			}
-		}
-		else {
+		} else {
 			// KEY UP
 			if (dedaKeyChanged != nullptr) {
 				// Doing SwitchTo instead of SetState prevents a second click on key up.
