@@ -933,7 +933,7 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 			case OAPI_KEY_NUMPADENTER:
 				dedaKeyChanged = &DedaSwitchEnter;
 				break;
-			case OAPI_KEY_DIVIDE:
+			case OAPI_KEY_PRIOR:
 				dedaKeyChanged = &DedaSwitchHold;
 				break;
 			case OAPI_KEY_MULTIPLY:
