@@ -147,7 +147,7 @@ void cbCSMVesim(int inputID, int eventType, int newValue, void *pdata) {
 			pSaturn->MoveTHC(0);
 			break;
 		case CSM_BUTTON_DSKY1_PRO:
-			pSaturn->dsky.ProgPressed();
+			pSaturn->dsky.ProceedPressed();
 			break;
 		case CSM_BUTTON_DSKY1_KEY_REL:
 			pSaturn->dsky.KeyRel();
@@ -204,7 +204,7 @@ void cbCSMVesim(int inputID, int eventType, int newValue, void *pdata) {
 			pSaturn->dsky.NumberPressed(9);
 			break;
 		case CSM_BUTTON_DSKY2_PRO:
-			pSaturn->dsky2.ProgPressed();
+			pSaturn->dsky2.ProceedPressed();
 			break;
 		case CSM_BUTTON_DSKY2_KEY_REL:
 			pSaturn->dsky2.KeyRel();
@@ -283,10 +283,10 @@ void cbCSMVesim(int inputID, int eventType, int newValue, void *pdata) {
 	else if (eventType == VESIM_EVTTYPE_BUTTON_OFF) {
 		switch (inputID) {		
 		case CSM_BUTTON_DSKY1_PRO:
-			pSaturn->dsky.ProgReleased();
+			pSaturn->dsky.ProceedReleased();
 			break;
 		case CSM_BUTTON_DSKY2_PRO:
-			pSaturn->dsky2.ProgReleased();
+			pSaturn->dsky2.ProceedReleased();
 			break;
 		case CSM_BUTTON_DIR_ULL:
 			pSaturn->DirectUllageButton.VesimSwitchTo(0);
@@ -3461,112 +3461,92 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 
 	if (KEYMOD_SHIFT(kstate)){
 		// Do DSKY stuff
-		if(down){
-			switch(key){
-				case OAPI_KEY_DECIMAL:
-					dsky.ClearPressed();
-					break;
-				case OAPI_KEY_PRIOR:
-					dsky.ResetPressed();
-					break;
-				case OAPI_KEY_HOME:
-					dsky.KeyRel();
-					break;
-				case OAPI_KEY_NUMPADENTER:
-					dsky.EnterPressed();
-					break;
-				case OAPI_KEY_DIVIDE:
-					dsky.VerbPressed();
-					break;
-				case OAPI_KEY_MULTIPLY:
-					dsky.NounPressed();
-					break;
-				case OAPI_KEY_ADD:
-					dsky.PlusPressed();
-					break;
-				case OAPI_KEY_SUBTRACT:
-					dsky.MinusPressed();
-					break;
-				case OAPI_KEY_END:
-					dsky.ProgPressed();
-					break;
-				case OAPI_KEY_NUMPAD1:
-					dsky.NumberPressed(1);
-					break;
-				case OAPI_KEY_NUMPAD2:
-					dsky.NumberPressed(2);
-					break;
-				case OAPI_KEY_NUMPAD3:
-					dsky.NumberPressed(3);
-					break;
-				case OAPI_KEY_NUMPAD4:
-					dsky.NumberPressed(4);
-					break;
-				case OAPI_KEY_NUMPAD5:
-					dsky.NumberPressed(5);
-					break;
-				case OAPI_KEY_NUMPAD6:
-					dsky.NumberPressed(6);
-					break;
-				case OAPI_KEY_NUMPAD7:
-					dsky.NumberPressed(7);
-					break;
-				case OAPI_KEY_NUMPAD8:
-					dsky.NumberPressed(8);
-					break;
-				case OAPI_KEY_NUMPAD9:
-					dsky.NumberPressed(9);
-					break;
-				case OAPI_KEY_NUMPAD0:
-					dsky.NumberPressed(0);
-					break;
-				case OAPI_KEY_W: // Minimum impulse controller, pitch down
-					agc.SetInputChannelBit(032, MinusPitchMinImpulse,1);
-					break;
-				case OAPI_KEY_S: // Minimum impulse controller, pitch up
-					agc.SetInputChannelBit(032, PlusPitchMinImpulse,1);
-					break;
-				case OAPI_KEY_A: // Minimum impulse controller, yaw left
-					agc.SetInputChannelBit(032, MinusYawMinimumImpulse,1);
-					break;
-				case OAPI_KEY_D: // Minimum impulse controller, yaw right
-					agc.SetInputChannelBit(032, PlusYawMinimumImpulse,1);
-					break;
-				case OAPI_KEY_Q: // Minimum impulse controller, roll left
-					agc.SetInputChannelBit(032, MinusRollMinimumImpulse,1);
-					break;
-				case OAPI_KEY_E: // Minimum impulse controller, roll right
-					agc.SetInputChannelBit(032, PlusRollMinimumImpulse,1);
-					break;
-				case OAPI_KEY_K:
-					//kill rotation
-					SetAngularVel(_V(0, 0, 0));
-					break;
-			}
-		}else{
-			// KEY UP
-			switch(key){
-				case OAPI_KEY_END:
-					dsky.ProgReleased();
-					break;
-				case OAPI_KEY_W: // Minimum impulse controller, pitch down
-					agc.SetInputChannelBit(032, MinusPitchMinImpulse, 0);
-					break;
-				case OAPI_KEY_S: // Minimum impulse controller, pitch up
-					agc.SetInputChannelBit(032, PlusPitchMinImpulse, 0);
-					break;
-				case OAPI_KEY_A: // Minimum impulse controller, yaw left
-					agc.SetInputChannelBit(032, MinusYawMinimumImpulse, 0);
-					break;
-				case OAPI_KEY_D: // Minimum impulse controller, yaw right
-					agc.SetInputChannelBit(032, PlusYawMinimumImpulse, 0);
-					break;
-				case OAPI_KEY_Q: // Minimum impulse controller, roll left
-					agc.SetInputChannelBit(032, MinusRollMinimumImpulse, 0);
-					break;
-				case OAPI_KEY_E: // Minimum impulse controller, roll right
-					agc.SetInputChannelBit(032, PlusRollMinimumImpulse, 0);
-					break;
+		// Handle key up-down in one switch block
+		switch (key) {
+			case OAPI_KEY_DECIMAL:
+				DskySwitchClear.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_PRIOR:
+				DskySwitchReset.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_HOME:
+				DskySwitchKeyRel.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_NUMPADENTER:
+				DskySwitchEnter.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_DIVIDE:
+				DskySwitchVerb.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_MULTIPLY:
+				DskySwitchNoun.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_ADD:
+				DskySwitchPlus.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_SUBTRACT:
+				DskySwitchMinus.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_END:
+				DskySwitchProceed.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_NUMPAD1:
+				DskySwitchOne.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_NUMPAD2:
+				DskySwitchTwo.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_NUMPAD3:
+				DskySwitchThree.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_NUMPAD4:
+				DskySwitchFour.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_NUMPAD5:
+				DskySwitchFive.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_NUMPAD6:
+				DskySwitchSix.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_NUMPAD7:
+				DskySwitchSeven.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_NUMPAD8:
+				DskySwitchEight.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_NUMPAD9:
+				DskySwitchNine.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_NUMPAD0:
+				DskySwitchZero.SetState(down ? PUSHBUTTON_PUSHED : PUSHBUTTON_UNPUSHED);
+				break;
+			case OAPI_KEY_W: // Minimum impulse controller, pitch down
+				agc.SetInputChannelBit(032, MinusPitchMinImpulse, down ? 1 : 0);
+				break;
+			case OAPI_KEY_S: // Minimum impulse controller, pitch up
+				agc.SetInputChannelBit(032, PlusPitchMinImpulse, down ? 1 : 0);
+				break;
+			case OAPI_KEY_A: // Minimum impulse controller, yaw left
+				agc.SetInputChannelBit(032, MinusYawMinimumImpulse, down ? 1 : 0);
+				break;
+			case OAPI_KEY_D: // Minimum impulse controller, yaw right
+				agc.SetInputChannelBit(032, PlusYawMinimumImpulse, down ? 1 : 0);
+				break;
+			case OAPI_KEY_Q: // Minimum impulse controller, roll left
+				agc.SetInputChannelBit(032, MinusRollMinimumImpulse, down ? 1 : 0);
+				break;
+			case OAPI_KEY_E: // Minimum impulse controller, roll right
+				agc.SetInputChannelBit(032, PlusRollMinimumImpulse, down ? 1 : 0);
+				break;
+		}
+		// direction-specific code
+		if (down) {
+			// KEY DOWN
+			switch (key) {
+			case OAPI_KEY_K:
+				//kill rotation
+				SetAngularVel(_V(0, 0, 0));
+				break;
 			}
 		}
 		return 0;

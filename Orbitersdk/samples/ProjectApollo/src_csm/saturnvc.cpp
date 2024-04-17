@@ -3271,9 +3271,9 @@ void Saturn::DefineVCAnimations()
 	DskySwitchClear.SetDirection(P1_3_PB_VECT);
 	DskySwitchClear.DefineMeshGroup(VC_GRP_PB_P2_15);
 
-	MainPanelVC.AddSwitch(&DskySwitchProg, AID_VC_PUSHB_P2_16);
-	DskySwitchProg.SetDirection(P1_3_PB_VECT);
-	DskySwitchProg.DefineMeshGroup(VC_GRP_PB_P2_16);
+	MainPanelVC.AddSwitch(&DskySwitchProceed, AID_VC_PUSHB_P2_16);
+	DskySwitchProceed.SetDirection(P1_3_PB_VECT);
+	DskySwitchProceed.DefineMeshGroup(VC_GRP_PB_P2_16);
 
 	MainPanelVC.AddSwitch(&DskySwitchKeyRel, AID_VC_PUSHB_P2_17);
 	DskySwitchKeyRel.SetDirection(P1_3_PB_VECT);
@@ -4665,9 +4665,9 @@ void Saturn::DefineVCAnimations()
 	Dsky2SwitchClear.SetDirection(pb_P122_vector);
 	Dsky2SwitchClear.DefineMeshGroup(VC_GRP_PB_P122_15);
 
-	MainPanelVC.AddSwitch(&Dsky2SwitchProg, AID_VC_PUSHB_P122_16);
-	Dsky2SwitchProg.SetDirection(pb_P122_vector);
-	Dsky2SwitchProg.DefineMeshGroup(VC_GRP_PB_P122_16);
+	MainPanelVC.AddSwitch(&Dsky2SwitchProceed, AID_VC_PUSHB_P122_16);
+	Dsky2SwitchProceed.SetDirection(pb_P122_vector);
+	Dsky2SwitchProceed.DefineMeshGroup(VC_GRP_PB_P122_16);
 
 	MainPanelVC.AddSwitch(&Dsky2SwitchKeyRel, AID_VC_PUSHB_P122_17);
 	Dsky2SwitchKeyRel.SetDirection(pb_P122_vector);
