@@ -916,8 +916,9 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 		else {
 			// KEY UP
 			if (dskyKeyChanged != nullptr) {
-				// Omitting SetState prevents a second click on key up, the spring-loaded buttons will reset themselves.
+				// Doing SwitchTo instead of SetState prevents a second click on key up.
 				dskyKeyChanged->SetHeld(false);
+				dskyKeyChanged->SwitchTo(PUSHBUTTON_UNPUSHED);
 			}
 		}
 		return 0;
@@ -991,8 +992,9 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 		else {
 			// KEY UP
 			if (dedaKeyChanged != nullptr) {
-				// Omitting SetState prevents a second click on key up, the spring-loaded buttons will reset themselves.
+				// Doing SwitchTo instead of SetState prevents a second click on key up.
 				dedaKeyChanged->SetHeld(false);
+				dedaKeyChanged->SwitchTo(PUSHBUTTON_UNPUSHED);
 			}
 		}
 		return 0;
