@@ -996,7 +996,7 @@ protected:
 	ThreePosSwitch FloodSwitch;
 
 	SwitchRow FloodRotaryRow;
-	RotationalSwitch FloodRotary;
+	ContinuousRotationalSwitch FloodRotary;
 
 	SwitchRow LampToneTestRotaryRow;
 	RotationalSwitch LampToneTestRotary;
@@ -1206,9 +1206,9 @@ protected:
 	ToggleSwitch LtgORideNumSwitch;
 	ToggleSwitch LtgORideIntegralSwitch;
 	ToggleSwitch LtgSidePanelsSwitch;
-	RotationalSwitch LtgFloodOhdFwdKnob;
-	RotationalSwitch LtgAnunNumKnob;
-	RotationalSwitch LtgIntegralKnob;
+	ContinuousRotationalSwitch LtgFloodOhdFwdKnob;
+	ContinuousRotationalSwitch LtgAnunNumKnob;
+	ContinuousRotationalSwitch LtgIntegralKnob;
 	PushSwitch PlusXTranslationButton;
 	EngineStartButton ManualEngineStart;
 	EngineStopButton CDRManualEngineStop;

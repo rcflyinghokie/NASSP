@@ -2281,7 +2281,6 @@ ContinuousSwitch::ContinuousSwitch()
 	minValue = 0.0;
 	maxValue = 1.0;
 	slope = 1.0;
-	clickIncrement = 0.0;
 	Wraparound = false;
 
 	grpIndex = NULL;
@@ -2308,20 +2307,17 @@ ContinuousSwitch::~ContinuousSwitch()
 		delete pswitchrot;
 }
 
-void ContinuousSwitch::Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultVal, double minVal, double maxVal, double clickIncr, int maximumState)
+void ContinuousSwitch::Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultVal, double minVal, double maxVal)
 {
 	//defaultValue: default display value (e.g. 0°)
 	//minValue: minimum displayed value (e.g. -4°)
-	//maxValue: maximum displayed value (e.g. -4°)
-	//clickIncr: displayed value by which the state increases with one right mouseclick. Left mouseclick is 5x larger.
+	//maxValue: maximum displayed value (e.g. +4°)
 	//maxState: maximum number of bitmap positions
 
 	minValue = minVal;
 	maxValue = maxVal;
-	maxState = maximumState;
 
 	slope = 1.0 / (maxValue - minValue);
-	clickIncrement = clickIncr * abs(slope); //clickIncrement in radians, units of actual state
 
 	name = n;
 	SetValue(DisplayToAngle(defaultVal));
@@ -2492,6 +2488,7 @@ ContinuousThumbwheelSwitch::ContinuousThumbwheelSwitch()
 {
 	maxState = 17;
 	isHorizontal = false;
+	clickIncrement = 0.0;
 }
 
 ContinuousThumbwheelSwitch::~ContinuousThumbwheelSwitch()
@@ -2499,11 +2496,12 @@ ContinuousThumbwheelSwitch::~ContinuousThumbwheelSwitch()
 
 }
 
-void ContinuousThumbwheelSwitch::Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultValue, double minValue, double maxValue, double clickIncr, int maximumState, bool horizontal)
+void ContinuousThumbwheelSwitch::Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultValue, double minValue, double maxValue, double clickIncr, bool horizontal)
 {
-	ContinuousSwitch::Register(scnh, n, defaultValue, minValue, maxValue, clickIncr, maximumState);
+	ContinuousSwitch::Register(scnh, n, defaultValue, minValue, maxValue);
 
 	isHorizontal = horizontal;
+	clickIncrement = clickIncr * abs(slope); //clickIncrement in radians, units of actual state
 }
 
 void ContinuousThumbwheelSwitch::Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row)
@@ -2609,6 +2607,7 @@ bool ContinuousThumbwheelSwitch::CheckMouseClickVC(int event, VECTOR3 &p)
 
 ContinuousRotationalSwitch::ContinuousRotationalSwitch()
 {
+	maxState = 17;
 	lastX = 0.0;
 	mouseDown = false;
 	rotOffset = 0.0;
@@ -2628,6 +2627,7 @@ void ContinuousRotationalSwitch::Init(int xp, int yp, int w, int h, SURFHANDLE s
 
 void ContinuousRotationalSwitch::SetOffset(double Offset)
 {
+	//Angle by which the switch has to be rotated from the up position to an animation state of zero, i.e. usually the minimum position
 	rotOffset = Offset;
 }
 
@@ -2664,7 +2664,7 @@ void ContinuousRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface)
 	}
 	srcx2 = srcx / 2;
 
-	sprintf(oapiDebugString(), "%s state %lf value %lf val %lf val2 %lf srcx %d srcx2 %d srcy %d", name, state, AngletoDisplay(state), val, val2, srcx, srcx2, srcy);
+	//sprintf(oapiDebugString(), "%s state %lf value %lf val %lf val2 %lf srcx %d srcx2 %d srcy %d", name, state, AngletoDisplay(state), val, val2, srcx, srcx2, srcy);
 
 	oapiBlt(drawSurface, switchSurface, x, y, srcx2 * width, srcy*height, width, height, SURF_PREDEF_CK);
 }
@@ -2678,20 +2678,12 @@ bool ContinuousRotationalSwitch::CheckMouseClick(int event, int mx, int my)
 	if (mx > (x + width) || my > (y + height))
 		return false;
 
-	double sgn = 0.0;
-	if (event == PANEL_MOUSE_LBDOWN)
-	{
-		sgn = -1.0;
-	}
-	else if (event == PANEL_MOUSE_RBDOWN)
-	{
-		sgn = 1.0;
-	}
+	VECTOR3 p;
 
-	//Update state
-	SwitchTo(state + clickIncrement * sgn);
+	p.x = (double)((mx - x)) / ((double)(width));
+	p.y = p.z = 0.0;
 
-	return true;
+	return CheckMouseClickVC(event, p);
 }
 
 bool ContinuousRotationalSwitch::CheckMouseClickVC(int event, VECTOR3 &p)

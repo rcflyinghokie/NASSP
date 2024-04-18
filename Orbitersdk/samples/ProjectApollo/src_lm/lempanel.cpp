@@ -352,16 +352,9 @@ void LEM::InitSwitches() {
 	TempMonitorRotary.AddPosition(6, 134);
 	TempMonitorRotary.Register(PSH, "TempMonitorRotary", 1);
 
-	FloodRotary.AddPosition(0, 240);
-	FloodRotary.AddPosition(1, 270);
-	FloodRotary.AddPosition(2, 300);
-	FloodRotary.AddPosition(3, 330);
-	FloodRotary.AddPosition(4, 360);
-	FloodRotary.AddPosition(5,  30);
-	FloodRotary.AddPosition(6,  60);
-	FloodRotary.AddPosition(7,  90);
-	FloodRotary.AddPosition(8, 120);
-	FloodRotary.Register(PSH, "FloodRotary", 8);
+	FloodRotary.Register(PSH, "FloodRotary", 8.0, 0.0, 8.0);
+	FloodRotary.SetRotationRange(240.0*RAD);
+	FloodRotary.SetOffset(-120.0*RAD);
 
 	LampToneTestRotary.AddPosition(0, 255);
 	LampToneTestRotary.AddPosition(1, 287);
@@ -428,38 +421,17 @@ void LEM::InitSwitches() {
 	LtgORideIntegralSwitch.Register(PSH,"LtgORideIntegralSwitch",TOGGLESWITCH_DOWN);
 	LtgSidePanelsSwitch.Register(PSH,"LtgSidePanelsSwitch",TOGGLESWITCH_DOWN);
 
-	LtgFloodOhdFwdKnob.AddPosition(0, 240);
-	LtgFloodOhdFwdKnob.AddPosition(1, 270);
-	LtgFloodOhdFwdKnob.AddPosition(2, 300);
-	LtgFloodOhdFwdKnob.AddPosition(3, 330);
-	LtgFloodOhdFwdKnob.AddPosition(4, 360);
-	LtgFloodOhdFwdKnob.AddPosition(5,  30);
-	LtgFloodOhdFwdKnob.AddPosition(6,  60);
-	LtgFloodOhdFwdKnob.AddPosition(7,  90);
-	LtgFloodOhdFwdKnob.AddPosition(8, 120);
-	LtgFloodOhdFwdKnob.Register(PSH, "LtgFloodOhdFwdKnob", 8);
+	LtgFloodOhdFwdKnob.Register(PSH, "LtgFloodOhdFwdKnob", 8.0, 0.0, 8.0);
+	LtgFloodOhdFwdKnob.SetRotationRange(240.0*RAD);
+	LtgFloodOhdFwdKnob.SetOffset(-120.0*RAD);
 
-	LtgAnunNumKnob.AddPosition(0, 240);
-	LtgAnunNumKnob.AddPosition(1, 270);
-	LtgAnunNumKnob.AddPosition(2, 300);
-	LtgAnunNumKnob.AddPosition(3, 330);
-	LtgAnunNumKnob.AddPosition(4, 360);
-	LtgAnunNumKnob.AddPosition(5,  30);
-	LtgAnunNumKnob.AddPosition(6,  60);
-	LtgAnunNumKnob.AddPosition(7,  90);
-	LtgAnunNumKnob.AddPosition(8, 120);
-	LtgAnunNumKnob.Register(PSH, "LtgAnunNumKnob", 0);
+	LtgAnunNumKnob.Register(PSH, "LtgAnunNumKnob", 0.0, 0.0, 8.0);
+	LtgAnunNumKnob.SetRotationRange(240.0*RAD);
+	LtgAnunNumKnob.SetOffset(-120.0*RAD);
 
-	LtgIntegralKnob.AddPosition(0, 240);
-	LtgIntegralKnob.AddPosition(1, 270);
-	LtgIntegralKnob.AddPosition(2, 300);
-	LtgIntegralKnob.AddPosition(3, 330);
-	LtgIntegralKnob.AddPosition(4, 360);
-	LtgIntegralKnob.AddPosition(5,  30);
-	LtgIntegralKnob.AddPosition(6,  60);
-	LtgIntegralKnob.AddPosition(7,  90);
-	LtgIntegralKnob.AddPosition(8, 120);
-	LtgIntegralKnob.Register(PSH, "LtgIntegralKnob", 0);
+	LtgIntegralKnob.Register(PSH, "LtgIntegralKnob", 0.0, 0.0, 8.0);
+	LtgIntegralKnob.SetRotationRange(240.0*RAD);
+	LtgIntegralKnob.SetOffset(-120.0*RAD);
 
 	ManualEngineStart.Register(PSH, "ManualEngineStart", 0);
 	CDRManualEngineStop.Register(PSH, "CDRManualEngineStop", 0);
@@ -539,11 +511,11 @@ void LEM::InitSwitches() {
 	Panel12SBandAntSelKnob.AddPosition(3, 30);
 	Panel12SBandAntSelKnob.Register(PSH, "Panel12SBandAntSelKnob", 1);
 
-	Panel12AntPitchKnob.Register(PSH, "Panel12AntPitchKnob", 255.0, -75.0, 255.0, 15.0, 24);
+	Panel12AntPitchKnob.Register(PSH, "Panel12AntPitchKnob", 255.0, -75.0, 255.0);
 	Panel12AntPitchKnob.SetRotationRange(330.0*RAD);
 	Panel12AntPitchKnob.SetOffset(-165.0*RAD);
 
-	Panel12AntYawKnob.Register(PSH, "Panel12AntYawKnob", -30.0, -90.0, 90.0, 15.0, 24);
+	Panel12AntYawKnob.Register(PSH, "Panel12AntYawKnob", -30.0, -90.0, 90.0);
 	Panel12AntYawKnob.SetRotationRange(PI);
 	Panel12AntYawKnob.SetOffset(-90.0*RAD);
 
@@ -1637,7 +1609,7 @@ bool LEM::clbkLoadPanel (int id) {
 		oapiRegisterPanelArea (AID_RR_NOTRACK,    					_R(1002,  1303, 1036, 1337), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE,			  PANEL_MAP_BACKGROUND);
 		oapiRegisterPanelArea (AID_RANGE_TAPE,    					_R(1052,  660, 1096,  823), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE,			  PANEL_MAP_BACKGROUND);
 		oapiRegisterPanelArea (AID_RATE_TAPE,    					_R(1103,  660, 1138,  823), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE,			  PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_LEM_PANEL_5,                      _R(  33, 1548,  593, 1889), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN | PANEL_MOUSE_UP, PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_LEM_PANEL_5,                      _R(  33, 1548,  593, 1889), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN | PANEL_MOUSE_LBPRESSED | PANEL_MOUSE_UP, PANEL_MAP_BACKGROUND);
 		oapiRegisterPanelArea (AID_CO2_LIGHT,						_R(1899, 1097, 1933, 1131), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE, PANEL_MAP_BACKGROUND);
 		oapiRegisterPanelArea (AID_SUITFAN_LIGHT,					_R(1823, 1074, 1857, 1108), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE, PANEL_MAP_BACKGROUND);
 		oapiRegisterPanelArea (AID_H2OSEP_LIGHT,					_R(1945, 1097, 1979, 1131), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE, PANEL_MAP_BACKGROUND);

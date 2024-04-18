@@ -5576,9 +5576,9 @@ void Saturn::InitSwitches() {
 
 	SPSswitch.Register(PSH, "SPSswitch", false);
 
-	SPSGimbalPitchThumbwheel.Register(PSH, "SPSGimbalPitchThumbwheel", 0.0, -4.0, 4.0, 0.5, 17, false);
+	SPSGimbalPitchThumbwheel.Register(PSH, "SPSGimbalPitchThumbwheel", 0.0, -4.0, 4.0, 0.5, false);
 	SPSGimbalPitchThumbwheel.SetRotationRange(RAD * 293);
-	SPSGimbalYawThumbwheel.Register(PSH, "SPSGimbalYawThumbwheel", 0.0, -4.0, 4.0, 0.5, 17, true);
+	SPSGimbalYawThumbwheel.Register(PSH, "SPSGimbalYawThumbwheel", 0.0, -4.0, 4.0, 0.5, true);
 	SPSGimbalYawThumbwheel.SetRotationRange(RAD * 293);
 
 	SPSOxidPercentMeter.Register(PSH, "SPSOxidPercentMeter", 0, 0.999, 1, 0.999);
@@ -5694,36 +5694,18 @@ void Saturn::InitSwitches() {
 	EcsGlycolPumpsSwitch.AddPosition(4, 356);
 	EcsGlycolPumpsSwitch.Register(PSH, "EcsGlycolPumpsSwitch", 2);
 
-	RightIntegralRotarySwitch.AddPosition(0,  200);
-	RightIntegralRotarySwitch.AddPosition(1,  232);
-	RightIntegralRotarySwitch.AddPosition(2,  264);
-	RightIntegralRotarySwitch.AddPosition(3,  296);
-	RightIntegralRotarySwitch.AddPosition(4,  328);
-	RightIntegralRotarySwitch.AddPosition(5,    0);
-	RightIntegralRotarySwitch.AddPosition(6,   32);
-	RightIntegralRotarySwitch.AddPosition(7,   64);
-	RightIntegralRotarySwitch.AddPosition(8,   96);
-	RightIntegralRotarySwitch.AddPosition(9,  128);
-	RightIntegralRotarySwitch.AddPosition(10, 160);
-	RightIntegralRotarySwitch.Register(PSH, "RightIntegralRotarySwitch", 0);
+	RightIntegralRotarySwitch.Register(PSH, "RightIntegralRotarySwitch", 0.0, 0.0, 10.0);
+	RightIntegralRotarySwitch.SetRotationRange(300.0*RAD);
+	RightIntegralRotarySwitch.SetOffset(-160.0*RAD);
 
-	RightFloodRotarySwitch.AddPosition(0,  200);
-	RightFloodRotarySwitch.AddPosition(1,  232);
-	RightFloodRotarySwitch.AddPosition(2,  264);
-	RightFloodRotarySwitch.AddPosition(3,  296);
-	RightFloodRotarySwitch.AddPosition(4,  328);
-	RightFloodRotarySwitch.AddPosition(5,    0);
-	RightFloodRotarySwitch.AddPosition(6,   32);
-	RightFloodRotarySwitch.AddPosition(7,   64);
-	RightFloodRotarySwitch.AddPosition(8,   96);
-	RightFloodRotarySwitch.AddPosition(9,  128);
-	RightFloodRotarySwitch.AddPosition(10, 160);
-	RightFloodRotarySwitch.Register(PSH, "RightFloodRotarySwitch", 0);
+	RightFloodRotarySwitch.Register(PSH, "RightFloodRotarySwitch", 0.0, 0.0, 10.0);
+	RightFloodRotarySwitch.SetRotationRange(300.0*RAD);
+	RightFloodRotarySwitch.SetOffset(-160.0*RAD);
 
-	HighGainAntennaPitchPositionSwitch.Register(PSH, "HighGainAntennaPitchPositionSwitch", 0.0, 90.0, -90.0, 15.0, 24);
+	HighGainAntennaPitchPositionSwitch.Register(PSH, "HighGainAntennaPitchPositionSwitch", 0.0, 90.0, -90.0);
 	HighGainAntennaPitchPositionSwitch.SetRotationRange(PI);
 
-	HighGainAntennaYawPositionSwitch.Register(PSH, "HighGainAntennaYawPositionSwitch", 180.0, 0.0, 360.0, 15.0, 24);
+	HighGainAntennaYawPositionSwitch.Register(PSH, "HighGainAntennaYawPositionSwitch", 180.0, 0.0, 360.0);
 	HighGainAntennaYawPositionSwitch.SetRotationRange(PI2);
 	HighGainAntennaYawPositionSwitch.SetWraparound(true);
 
@@ -5808,44 +5790,17 @@ void Saturn::InitSwitches() {
 	DockingProbeAIndicator.Register(PSH, "DockingProbeAIndicator", false);
 	DockingProbeBIndicator.Register(PSH, "DockingProbeBIndicator", false);
 
-	NumericRotarySwitch.AddPosition(0,  210);
-	NumericRotarySwitch.AddPosition(1,  240);
-	NumericRotarySwitch.AddPosition(2,  270);
-	NumericRotarySwitch.AddPosition(3,  300);
-	NumericRotarySwitch.AddPosition(4,  330);
-	NumericRotarySwitch.AddPosition(5,    0);
-	NumericRotarySwitch.AddPosition(6,   30);
-	NumericRotarySwitch.AddPosition(7,   60);
-	NumericRotarySwitch.AddPosition(8,   90);
-	NumericRotarySwitch.AddPosition(9,  120);
-	NumericRotarySwitch.AddPosition(10, 150);
-	NumericRotarySwitch.Register(PSH, "NumericRotarySwitch", 4);
+	NumericRotarySwitch.Register(PSH, "NumericRotarySwitch", 4.0, 0.0, 10.0);
+	NumericRotarySwitch.SetRotationRange(300.0*RAD);
+	NumericRotarySwitch.SetOffset(-150.0*RAD);
 
-	FloodRotarySwitch.AddPosition(0,  210);
-	FloodRotarySwitch.AddPosition(1,  240);
-	FloodRotarySwitch.AddPosition(2,  270);
-	FloodRotarySwitch.AddPosition(3,  300);
-	FloodRotarySwitch.AddPosition(4,  330);
-	FloodRotarySwitch.AddPosition(5,    0);
-	FloodRotarySwitch.AddPosition(6,   30);
-	FloodRotarySwitch.AddPosition(7,   60);
-	FloodRotarySwitch.AddPosition(8,   90);
-	FloodRotarySwitch.AddPosition(9,  120);
-	FloodRotarySwitch.AddPosition(10, 150);
-	FloodRotarySwitch.Register(PSH, "FloodRotarySwitch", 4);
+	FloodRotarySwitch.Register(PSH, "FloodRotarySwitch", 4.0, 0.0, 10.0);
+	FloodRotarySwitch.SetRotationRange(300.0*RAD);
+	FloodRotarySwitch.SetOffset(-150.0*RAD);
 
-	IntegralRotarySwitch.AddPosition(0,  210);
-	IntegralRotarySwitch.AddPosition(1,  240);
-	IntegralRotarySwitch.AddPosition(2,  270);
-	IntegralRotarySwitch.AddPosition(3,  300);
-	IntegralRotarySwitch.AddPosition(4,  330);
-	IntegralRotarySwitch.AddPosition(5,    0);
-	IntegralRotarySwitch.AddPosition(6,   30);
-	IntegralRotarySwitch.AddPosition(7,   60);
-	IntegralRotarySwitch.AddPosition(8,   90);
-	IntegralRotarySwitch.AddPosition(9,  120);
-	IntegralRotarySwitch.AddPosition(10, 150);
-	IntegralRotarySwitch.Register(PSH, "IntegralRotarySwitch", 4);
+	IntegralRotarySwitch.Register(PSH, "IntegralRotarySwitch", 4.0, 0.0, 10.0);
+	IntegralRotarySwitch.SetRotationRange(300.0*RAD);
+	IntegralRotarySwitch.SetOffset(-150.0*RAD);
 
 	FDAIPowerRotarySwitch.AddPosition(0, 355);
 	FDAIPowerRotarySwitch.AddPosition(1,  25);
@@ -5928,44 +5883,17 @@ void Saturn::InitSwitches() {
 	RightSystemTestRotarySwitch.AddPosition(3,   49);
 	RightSystemTestRotarySwitch.Register(PSH, "RightSystemTestRotarySwitch", 1);
 	
-	Panel100NumericRotarySwitch.AddPosition(0,  200);
-	Panel100NumericRotarySwitch.AddPosition(1,  232);
-	Panel100NumericRotarySwitch.AddPosition(2,  264);
-	Panel100NumericRotarySwitch.AddPosition(3,  296);
-	Panel100NumericRotarySwitch.AddPosition(4,  328);
-	Panel100NumericRotarySwitch.AddPosition(5,    0);
-	Panel100NumericRotarySwitch.AddPosition(6,   32);
-	Panel100NumericRotarySwitch.AddPosition(7,   64);
-	Panel100NumericRotarySwitch.AddPosition(8,   96);
-	Panel100NumericRotarySwitch.AddPosition(9,  128);
-	Panel100NumericRotarySwitch.AddPosition(10, 160);
-	Panel100NumericRotarySwitch.Register(PSH, "Panel100NumericRotarySwitch", 4);
+	Panel100NumericRotarySwitch.Register(PSH, "Panel100NumericRotarySwitch", 4.0, 0.0, 10.0);
+	Panel100NumericRotarySwitch.SetRotationRange(320.0*RAD);
+	Panel100NumericRotarySwitch.SetOffset(-160.0*RAD);
 
-	Panel100FloodRotarySwitch.AddPosition(0,  200);
-	Panel100FloodRotarySwitch.AddPosition(1,  232);
-	Panel100FloodRotarySwitch.AddPosition(2,  264);
-	Panel100FloodRotarySwitch.AddPosition(3,  296);
-	Panel100FloodRotarySwitch.AddPosition(4,  328);
-	Panel100FloodRotarySwitch.AddPosition(5,    0);
-	Panel100FloodRotarySwitch.AddPosition(6,   32);
-	Panel100FloodRotarySwitch.AddPosition(7,   64);
-	Panel100FloodRotarySwitch.AddPosition(8,   96);
-	Panel100FloodRotarySwitch.AddPosition(9,  128);
-	Panel100FloodRotarySwitch.AddPosition(10, 160);
-	Panel100FloodRotarySwitch.Register(PSH, "Panel100FloodRotarySwitch", 0);
+	Panel100FloodRotarySwitch.Register(PSH, "Panel100FloodRotarySwitch", 0.0, 0.0, 10.0);
+	Panel100FloodRotarySwitch.SetRotationRange(320.0*RAD);
+	Panel100FloodRotarySwitch.SetOffset(-160.0*RAD);
 
-	Panel100IntegralRotarySwitch.AddPosition(0,  200);
-	Panel100IntegralRotarySwitch.AddPosition(1,  232);
-	Panel100IntegralRotarySwitch.AddPosition(2,  264);
-	Panel100IntegralRotarySwitch.AddPosition(3,  296);
-	Panel100IntegralRotarySwitch.AddPosition(4,  328);
-	Panel100IntegralRotarySwitch.AddPosition(5,    0);
-	Panel100IntegralRotarySwitch.AddPosition(6,   32);
-	Panel100IntegralRotarySwitch.AddPosition(7,   64);
-	Panel100IntegralRotarySwitch.AddPosition(8,   96);
-	Panel100IntegralRotarySwitch.AddPosition(9,  128);
-	Panel100IntegralRotarySwitch.AddPosition(10, 160);
-	Panel100IntegralRotarySwitch.Register(PSH, "Panel100IntegralRotarySwitch", 4);
+	Panel100IntegralRotarySwitch.Register(PSH, "Panel100IntegralRotarySwitch", 4.0, 0.0, 10.0);
+	Panel100IntegralRotarySwitch.SetRotationRange(320.0*RAD);
+	Panel100IntegralRotarySwitch.SetOffset(-160.0*RAD);
 
 	OxygenSurgeTankValveRotary.AddPosition(0,  330);
 	OxygenSurgeTankValveRotary.AddPosition(1,    0);

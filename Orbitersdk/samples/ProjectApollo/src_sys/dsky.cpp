@@ -206,7 +206,7 @@ DSKY::~DSKY()
 	//
 }
 
-void DSKY::Init(e_object *statuslightpower, e_object *segmentlightpower, RotationalSwitch *dimmer)
+void DSKY::Init(e_object *statuslightpower, e_object *segmentlightpower, ContinuousRotationalSwitch *dimmer)
 
 {
 	StatusPower = statuslightpower;

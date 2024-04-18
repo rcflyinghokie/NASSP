@@ -4888,7 +4888,7 @@ EMS::~EMS()
 	if (rsirot) delete rsirot;
 }
 
-void EMS::Init(Saturn *vessel, e_object *a, e_object *b, RotationalSwitch *dimmer, e_object *c) {
+void EMS::Init(Saturn *vessel, e_object *a, e_object *b, ContinuousRotationalSwitch *dimmer, e_object *c) {
 	sat = vessel;
 	DCPower.WireToBuses(a, b);
 	WireTo(c);
