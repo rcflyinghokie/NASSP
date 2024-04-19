@@ -1347,8 +1347,8 @@ void Saturn::RegisterActiveAreas() {
 
 	for (i = 0; i < P8_ROTCOUNT; i++)
 	{
-		oapiVCRegisterArea(AID_VC_ROT_P8_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN);
-		oapiVCSetAreaClickmode_Quadrilateral(AID_VC_ROT_P8_02, P8_ROT_POS[i] + UL * ROT + P8_CLICK + ofs, P8_ROT_POS[i] + UR * ROT + P8_CLICK + ofs, P8_ROT_POS[i] + DL * ROT + P8_CLICK + ofs, P8_ROT_POS[i] + DR * ROT + P8_CLICK + ofs);
+		oapiVCRegisterArea(AID_VC_ROT_P8_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN | PANEL_MOUSE_LBPRESSED | PANEL_MOUSE_UP);
+		oapiVCSetAreaClickmode_Quadrilateral(AID_VC_ROT_P8_01 + i, P8_ROT_POS[i] + UL * ROT + P8_CLICK + ofs, P8_ROT_POS[i] + UR * ROT + P8_CLICK + ofs, P8_ROT_POS[i] + DL * ROT + P8_CLICK + ofs, P8_ROT_POS[i] + DR * ROT + P8_CLICK + ofs);
 
 	}
 
@@ -1454,7 +1454,7 @@ void Saturn::RegisterActiveAreas() {
 
 	for (i = 0; i < P100_ROTCOUNT; i++)
 	{
-		oapiVCRegisterArea(AID_VC_ROT_P100_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN);
+		oapiVCRegisterArea(AID_VC_ROT_P100_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN | PANEL_MOUSE_LBPRESSED | PANEL_MOUSE_UP);
 		oapiVCSetAreaClickmode_Quadrilateral(AID_VC_ROT_P100_01 + i, P100_ROT_POS[i] + UL * ROT + LEBFLOOR_CLICK + ofs, P100_ROT_POS[i] + UR * ROT + LEBFLOOR_CLICK + ofs, P100_ROT_POS[i] + DL * ROT + LEBFLOOR_CLICK + ofs, P100_ROT_POS[i] + DR * ROT + LEBFLOOR_CLICK + ofs);
 	}
 
@@ -4269,6 +4269,7 @@ void Saturn::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&NumericRotarySwitch, AID_VC_ROT_P8_01);
 	NumericRotarySwitch.SetReference(P8_ROT_POS[0], P8_ROT_AXIS);
 	NumericRotarySwitch.DefineMeshGroup(VC_GRP_Rot_P8_01);
+	NumericRotarySwitch.SetInitialAnimState(0.5);
 
 	MainPanelVC.AddSwitch(&FloodRotarySwitch, AID_VC_ROT_P8_02);
 	FloodRotarySwitch.SetReference(P8_ROT_POS[1], P8_ROT_AXIS);
@@ -4278,6 +4279,7 @@ void Saturn::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&IntegralRotarySwitch, AID_VC_ROT_P8_03);
 	IntegralRotarySwitch.SetReference(P8_ROT_POS[2], P8_ROT_AXIS);
 	IntegralRotarySwitch.DefineMeshGroup(VC_GRP_Rot_P8_03);
+	IntegralRotarySwitch.SetInitialAnimState(0.5);
 
 	const VECTOR3 cb_p8_vector = { -0.844819075554255 * 0.003, 0.0, 0.535052081184303 * 0.003 };
 

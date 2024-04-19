@@ -1255,6 +1255,8 @@ public:
 	virtual bool CheckMouseClick(int event, int mx, int my);
 	bool CheckMouseClickVC(int event, VECTOR3 &p);
 protected:
+	void ChangeSwitchState(double px);
+
 	double rotOffset; //For converting to 2D panel bitmap
 	double lastX;
 	bool mouseDown;

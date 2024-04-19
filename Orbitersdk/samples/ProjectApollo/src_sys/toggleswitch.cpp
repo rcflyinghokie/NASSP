@@ -2501,7 +2501,7 @@ void ContinuousThumbwheelSwitch::Register(PanelSwitchScenarioHandler &scnh, char
 	ContinuousSwitch::Register(scnh, n, defaultValue, minValue, maxValue);
 
 	isHorizontal = horizontal;
-	clickIncrement = clickIncr * abs(slope); //clickIncrement in radians, units of actual state
+	clickIncrement = clickIncr * abs(slope); //clickIncrement in units of actual state 0.0-1.0
 }
 
 void ContinuousThumbwheelSwitch::Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row)
@@ -2517,8 +2517,6 @@ void ContinuousThumbwheelSwitch::DrawSwitch(SURFHANDLE drawSurface)
 	double val2 = state * (double)(maxState - 1);
 	//Same in integer
 	int srcx = (int)(val2 + 0.5);
-
-	//sprintf(oapiDebugString(), "state %lf value %lf val %lf val2 %lf srcx %d", state, AngletoDisplay(state), val, val2, srcx);
 
 	oapiBlt(drawSurface, switchSurface, x, y, srcx * width, 0, width, height, SURF_PREDEF_CK);
 }
@@ -2597,8 +2595,6 @@ bool ContinuousThumbwheelSwitch::CheckMouseClickVC(int event, VECTOR3 &p)
 		{
 			SwitchTo(state - incr);
 		}
-
-		sprintf(oapiDebugString(), "%d %lf %lf %lf %lf %lf", isHorizontal, incr, p.x, p.y, state, AngletoDisplay(state));
 	}
 
 	return true;
@@ -2607,7 +2603,7 @@ bool ContinuousThumbwheelSwitch::CheckMouseClickVC(int event, VECTOR3 &p)
 
 ContinuousRotationalSwitch::ContinuousRotationalSwitch()
 {
-	maxState = 17;
+	maxState = 24;
 	lastX = 0.0;
 	mouseDown = false;
 	rotOffset = 0.0;
@@ -2671,19 +2667,37 @@ void ContinuousRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface)
 
 bool ContinuousRotationalSwitch::CheckMouseClick(int event, int mx, int my)
 {
-	// Check whether it's actually in our switch region.
-	if (mx < x || my < y)
+	if (event & PANEL_MOUSE_LBDOWN)
+	{
+		// Check whether it's actually in our switch region.
+		if (mx < x || my < y)
+			return false;
+
+		if (mx > (x + width) || my > (y + height))
+			return false;
+
+		//Mouse click to start
+		lastX = ((double)(mx - x)) / ((double)(width));
+		mouseDown = true;
+
+		return true;
+	}
+	else if (((event & PANEL_MOUSE_LBPRESSED) != 0) && mouseDown)
+	{
+		//Process held left mouse button
+		double px;
+		px = ((double)(mx - x)) / ((double)(width));
+
+		ChangeSwitchState(px);
+		return true;
+	}
+	else if (event & PANEL_MOUSE_LBUP && mouseDown)
+	{
+		//Stop
+		mouseDown = false;
 		return false;
-
-	if (mx > (x + width) || my > (y + height))
-		return false;
-
-	VECTOR3 p;
-
-	p.x = (double)((mx - x)) / ((double)(width));
-	p.y = p.z = 0.0;
-
-	return CheckMouseClickVC(event, p);
+	}
+	return false;
 }
 
 bool ContinuousRotationalSwitch::CheckMouseClickVC(int event, VECTOR3 &p)
@@ -2693,22 +2707,10 @@ bool ContinuousRotationalSwitch::CheckMouseClickVC(int event, VECTOR3 &p)
 		//Mouse click to start
 		lastX = p.x;
 		mouseDown = true;
-
 	}
 	else if (((event & PANEL_MOUSE_LBPRESSED) != 0) && mouseDown)
 	{
-		//More than 1% changed?
-		if (abs(p.x - lastX) >= 0.01)
-		{
-			//Increase state by difference in mouse position
-			double incr = 60.0*RAD / RotationRange * (p.x - lastX);
-			//Update state
-			SwitchTo(state + incr);
-			//Save last position
-			lastX = p.x;
-
-			//sprintf(oapiDebugString(), "%lf %lf %lf %lf", state, p.x, lastX, incr);
-		}
+		ChangeSwitchState(p.x);
 	}
 	else if (event & PANEL_MOUSE_LBUP)
 	{
@@ -2717,6 +2719,19 @@ bool ContinuousRotationalSwitch::CheckMouseClickVC(int event, VECTOR3 &p)
 		return false;
 	}
 	return true;
+}
+
+void ContinuousRotationalSwitch::ChangeSwitchState(double px)
+{
+	if (abs(px - lastX) >= 0.01)
+	{
+		//Increase state by difference in mouse position
+		double incr = 60.0*RAD / RotationRange * (px - lastX);
+		//Update state
+		SwitchTo(state + incr);
+		//Save last position
+		lastX = px;
+	}
 }
 
 //
