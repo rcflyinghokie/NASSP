@@ -5111,10 +5111,9 @@ void Saturn::SetCMVCIntegralLight(UINT meshidx, DWORD *matList, int EmissionMode
 #endif
 
 {
-	if (vis == NULL) return;
+	if (vis == NULL || meshidx == -1) return;
 	DEVMESHHANDLE hMesh = GetDevMesh(vis, meshidx);
 
-//    if (!vcmesh)
     if (!hMesh)
         return;
 
