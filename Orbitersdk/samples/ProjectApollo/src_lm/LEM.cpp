@@ -616,6 +616,8 @@ void LEM::Init()
 	lmpmesh = NULL;
 	vcmesh = NULL;
 
+	vis = NULL;
+
 	pMCC = NULL;
 
 	aeaa = NULL;
