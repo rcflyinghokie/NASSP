@@ -2770,8 +2770,8 @@ void LEM_SteerableAnt::Timestep(double simdt){
 	//Slew Mode
 	if (lem->Panel12AntTrackModeSwitch.GetState() == THREEPOSSWITCH_DOWN)
 	{
-		PitchSlew = lem->Panel12AntPitchKnob.GetPosition()*RAD;
-		YawSlew = lem->Panel12AntYawKnob.GetPosition()*RAD;
+		PitchSlew = lem->Panel12AntPitchKnob.GetValue()*RAD;
+		YawSlew = lem->Panel12AntYawKnob.GetValue()*RAD;
 	}
 	//Auto Tracking
 	else if (lem->Panel12AntTrackModeSwitch.GetState() == THREEPOSSWITCH_UP)

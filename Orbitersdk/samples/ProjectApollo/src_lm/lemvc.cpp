@@ -3069,6 +3069,7 @@ void LEM::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&ORDEALAltSetRotary, AID_VC_ROT_ORDEAL_01);
 	ORDEALAltSetRotary.SetReference(ORDEAL_RotLocation, ORDEAL_ROT_AXIS);
 	ORDEALAltSetRotary.DefineMeshGroup(VC_GRP_ORDEAL_Rot);
+	ORDEALAltSetRotary.SetInitialAnimState(0.0);// -0.033333);// 133.0 / 285.0 if state in mesh was up
 
 	// ECS Panels
 	const VECTOR3 ECSRotAxisOCM = { -0.12642632210213, 0.0, 0.991976000253902 };

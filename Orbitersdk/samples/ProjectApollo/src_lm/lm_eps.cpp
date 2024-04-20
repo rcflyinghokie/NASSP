@@ -1306,7 +1306,7 @@ double LEM_LCA::GetAnnunVoltage()
 		else
 		{
 			//2-5V
-			return (3.0 / 8.0*lem->LtgAnunNumKnob.GetPosition() + 2.0);
+			return (3.0 / 8.0*lem->LtgAnunNumKnob.GetValue() + 2.0);
 		}
 	}
 
@@ -1333,7 +1333,7 @@ double LEM_LCA::GetNumericVoltage()
 		else
 		{
 			//20-110V
-			return (90.0 / 8.0*lem->LtgAnunNumKnob.GetPosition() + 20.0);
+			return (90.0 / 8.0*lem->LtgAnunNumKnob.GetValue() + 20.0);
 		}
 	}
 
@@ -1351,7 +1351,7 @@ double LEM_LCA::GetIntegralVoltage()
 		else
 		{
 			//15-75V
-			return (60.0 / 8.0*lem->LtgIntegralKnob.GetPosition() + 15.0);
+			return (60.0 / 8.0*lem->LtgIntegralKnob.GetValue() + 15.0);
 		}
 	}
 
@@ -1518,7 +1518,7 @@ double LEM_FloodLights::GetLMPRotaryVoltage()
 {
 	if (IsPowered() && (IsHatchOpen() || FloodSwitch->GetState() != THREEPOSSWITCH_CENTER))
 	{
-		return (LMPRotary->GetPosition() + 0.6154) / 0.3077;	//Returns 2V-28V, need to check if max dim is actually 2V
+		return (LMPRotary->GetValue() + 0.6154) / 0.3077;	//Returns 2V-28V, need to check if max dim is actually 2V
 	}
 	return 0.0;
 }
@@ -1527,7 +1527,7 @@ double LEM_FloodLights::GetCDRRotaryVoltage()
 {
 	if (IsPowered() && (IsHatchOpen() || FloodSwitch->GetState() != THREEPOSSWITCH_CENTER))
 	{
-		return (CDRRotary->GetPosition() + 0.6154) / 0.3077;	//Returns 2V-28V, need to check if max dim is actually 2V
+		return (CDRRotary->GetValue() + 0.6154) / 0.3077;	//Returns 2V-28V, need to check if max dim is actually 2V
 	}
 	return 0.0;
 }

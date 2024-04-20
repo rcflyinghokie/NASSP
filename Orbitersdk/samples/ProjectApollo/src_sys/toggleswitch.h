@@ -1184,7 +1184,7 @@ public:
 	int GetState();
 
 	//Returns value (not animation angle)
-	double GetPosition();
+	double GetValue();
 
 	void SetRotationRange(double _range);
 	void SetWraparound(bool _Wraparound);
@@ -1251,7 +1251,7 @@ public:
 
 	void SetOffset(double Offset);
 
-	void DrawSwitch(SURFHANDLE drawSurface);
+	virtual void DrawSwitch(SURFHANDLE drawSurface);
 	virtual bool CheckMouseClick(int event, int mx, int my);
 	bool CheckMouseClickVC(int event, VECTOR3 &p);
 protected:
@@ -1358,22 +1358,11 @@ protected:
 	e_object *sources[16];
 };
 
-class OrdealRotationalSwitch : public RotationalSwitch {
+class OrdealRotationalSwitch : public ContinuousRotationalSwitch {
 
 public:
-	OrdealRotationalSwitch() { value = 100; lastX = 0; mouseDown = false; };
+	OrdealRotationalSwitch() { maxState = 12; };
 	virtual void DrawSwitch(SURFHANDLE drawSurface);
-	virtual void DrawSwitchVC(int id, int event, SURFHANDLE drawSurface);
-	virtual bool CheckMouseClick(int event, int mx, int my);
-	virtual bool CheckMouseClickVC(int event, VECTOR3 &p);
-	virtual void SaveState(FILEHANDLE scn);
-	virtual void LoadState(char *line);
-	int GetValue() { return value; }
-
-protected:
-	int value;
-	int lastX;
-	bool mouseDown;
 };
 
 class IndicatorSwitch: public PanelSwitchItem {
