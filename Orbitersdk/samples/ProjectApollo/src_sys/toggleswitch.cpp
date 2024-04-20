@@ -2345,7 +2345,7 @@ void ContinuousSwitch::SetWraparound(bool _Wraparound)
 	Wraparound = _Wraparound;
 }
 
-double ContinuousSwitch::GetPosition()
+double ContinuousSwitch::GetValue()
 {
 	//Returns value of displayed state
 	return AngletoDisplay(state);
@@ -2384,7 +2384,7 @@ bool ContinuousSwitch::SwitchTo(double newPosition)
 	if (state != oldState)
 	{
 		//Play sound
-		sclick.play();
+		if (sclick.isValid()) sclick.play();
 		return true;
 	}
 	return false;
@@ -2617,8 +2617,6 @@ ContinuousRotationalSwitch::~ContinuousRotationalSwitch()
 void ContinuousRotationalSwitch::Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row)
 {
 	ContinuousSwitch::Init(xp, yp, w, h, surf, bsurf, row);
-
-	LoadSound(ROTARY_SOUND);
 }
 
 void ContinuousRotationalSwitch::SetOffset(double Offset)
@@ -2648,19 +2646,31 @@ void ContinuousRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface)
 	{
 		srcx -= maxState;
 	}
-	//Bitmap has alternating 15° positions up and down
+	//Default bitmap has alternating 15° positions up and down
 	int srcx2, srcy;
-	if (srcx % 2 == 0)
+	if (maxState > 12)
 	{
-		srcy = 0;
+		if (srcx % 2 == 0)
+		{
+			srcy = 0;
+		}
+		else
+		{
+			srcy = 1;
+		}
+		srcx2 = srcx / 2;
 	}
 	else
 	{
-		srcy = 1;
+		//Bitmap with only 12 switch positions
+		srcx2 = srcx;
+		srcy = 0;
 	}
-	srcx2 = srcx / 2;
 
-	//sprintf(oapiDebugString(), "%s state %lf value %lf val %lf val2 %lf srcx %d srcx2 %d srcy %d", name, state, AngletoDisplay(state), val, val2, srcx, srcx2, srcy);
+	/*if (strcmp(name, "ORDEALAltSetRotary") == 0)
+	{
+		sprintf(oapiDebugString(), "name %s maxState %d state %lf value %lf val %lf val2 %lf srcx %d srcx2 %d srcy %d", name, maxState, state, AngletoDisplay(state), val, val2, srcx, srcx2, srcy);
+	}*/
 
 	oapiBlt(drawSurface, switchSurface, x, y, srcx2 * width, srcy*height, width, height, SURF_PREDEF_CK);
 }
@@ -3184,12 +3194,14 @@ void PowerStateRotationalSwitch::LoadState(char *line)
 
 void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 
-	RotationalSwitch::DrawSwitch(drawSurface);
+	ContinuousRotationalSwitch::DrawSwitch(drawSurface);
 
 	if (mouseDown) {
 		RECT rt;
+		double value;
 		char label[100];
-		sprintf(label, "%d", value);
+		value = GetValue();
+		sprintf(label, "%.0lf", value);
 
 		oapi::Sketchpad* skp = oapiGetSketchpad(drawSurface);
 		oapi::Font* font = oapiCreateFont(22, true, "Arial", FONT_BOLD);
@@ -3203,7 +3215,7 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 		skp->SetBackgroundMode(oapi::Sketchpad::BK_OPAQUE);
 		skp->SetBackgroundColor(RGB(146, 146, 146));
 
-		if (GetState() == 0) {
+		if (value <= 0.14) {
 			rt.left = 29 + x;
 			rt.top = 24 + y;
 			rt.right = 60 + x;
@@ -3212,7 +3224,7 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 			skp->Text(44 + x, 28 + y, label, strlen(label));
 
 		}
-		else if (GetState() == 1) {
+		else if (value <= 0.28) {
 			rt.left = 35 + x;
 			rt.top = 30 + y;
 			rt.right = 59 + x;
@@ -3221,7 +3233,7 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 			skp->Text(49 + x, 31 + y, label, strlen(label));
 
 		}
-		else if (GetState() == 2) {
+		else if (value <= 0.42) {
 			rt.left = 29 + x;
 			rt.top = 29 + y;
 			rt.right = 60 + x;
@@ -3230,7 +3242,7 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 			skp->Text(44 + x, 34 + y, label, strlen(label));
 
 		}
-		else if (GetState() == 3) {
+		else if (value <= 0.56) {
 			rt.left = 29 + x;
 			rt.top = 35 + y;
 			rt.right = 57 + x;
@@ -3239,7 +3251,7 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 			skp->Text(42 + x, 36 + y, label, strlen(label));
 
 		}
-		else if (GetState() == 4) {
+		else if (value <= 0.7) {
 			rt.left = 28 + x;
 			rt.top = 30 + y;
 			rt.right = 54 + x;
@@ -3248,11 +3260,11 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 			skp->Text(37 + x, 34 + y, label, strlen(label));
 
 		}
-		else if (GetState() == 5) {
+		else if (value <= 0.84) {
 			skp->Text(32 + x, 31 + y, label, strlen(label));
 
 		}
-		else if (GetState() == 6) {
+		else {
 			rt.left = 25 + x;
 			rt.top = 24 + y;
 			rt.right = 55 + x;
@@ -3265,87 +3277,6 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 		oapiReleaseBrush(brush);
 		oapiReleasePen(pen);
 		oapiReleaseSketchpad(skp);
-	}
-}
-
-void OrdealRotationalSwitch::DrawSwitchVC(int id, int event, SURFHANDLE drawSurface) {
-
-	OurVessel->SetAnimation(anim_switch, ((double)value / 310) * 0.78);
-	//sprintf(oapiDebugString(), "ALT %d", value);
-}
-
-bool OrdealRotationalSwitch::CheckMouseClick(int event, int mx, int my) {
-
-	if (event & PANEL_MOUSE_LBDOWN) {
-		// Check whether it's actually in our switch region.
-		if (mx < x || my < y)
-			return false;
-
-		if (mx >(x + width) || my >(y + height))
-			return false;
-
-		lastX = mx;
-		mouseDown = true;
-
-	}
-	else if (((event & PANEL_MOUSE_LBPRESSED) != 0) && mouseDown) {
-		if (abs(mx - lastX) >= 2) {
-			value += (int)((mx - lastX) / 2.);
-			value = min(max(value, 10), 310);
-			lastX = mx;
-		}
-
-	}
-	else if (event & PANEL_MOUSE_LBUP) {
-		mouseDown = false;
-		return false;
-	}
-	SetValue((int)((value / 50.) + 0.5));
-	return true;
-}
-
-bool OrdealRotationalSwitch::CheckMouseClickVC(int event, VECTOR3 &p) {
-
-	int mx = (int)(p.x * (x + width));
-
-	if (event & PANEL_MOUSE_LBDOWN) {
-
-		lastX = mx;
-		mouseDown = true;
-
-	}
-	else if (((event & PANEL_MOUSE_LBPRESSED) != 0) && mouseDown) {
-		if (abs(mx - lastX) >= 2) {
-			value += (int)((mx - lastX) / 2.);
-			value = min(max(value, 10), 310);
-			lastX = mx;
-		}
-
-	}
-	else if (event & PANEL_MOUSE_LBUP) {
-		mouseDown = false;
-		return false;
-	}
-	SetValue((int)((value / 50.) + 0.5));
-	return true;
-}
-
-void OrdealRotationalSwitch::SaveState(FILEHANDLE scn) {
-
-	if (position) {
-		oapiWriteScenario_int(scn, name, value);
-	}
-}
-
-void OrdealRotationalSwitch::LoadState(char *line) {
-
-	char buffer[100];
-	int val;
-
-	sscanf(line, "%s %i", buffer, &val);
-	if (!strnicmp(buffer, name, strlen(name))) {
-		value = val;
-		SetValue((int)((value / 50.) + 0.5));
 	}
 }
 

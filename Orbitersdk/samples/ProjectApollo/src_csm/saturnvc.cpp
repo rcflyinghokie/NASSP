@@ -1749,41 +1749,41 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 		return true;
 
 	case AID_VC_INTEGRAL_LIGHT_P8:
-        SetCMVCIntegralLight(vcidx, IntegralLights_P8, MatProp::Emission, IntegralRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(IntegralLights_P8));
-        SetCMVCIntegralLight(vcidx, IntergralLights_P8_NTex, MatProp::Light,IntegralRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(IntergralLights_P8_NTex));
+        SetCMVCIntegralLight(vcidx, IntegralLights_P8, MatProp::Emission, IntegralRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(IntegralLights_P8));
+        SetCMVCIntegralLight(vcidx, IntergralLights_P8_NTex, MatProp::Light,IntegralRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(IntergralLights_P8_NTex));
         return true;
 
 	case AID_VC_FLOOD_LIGHT_P8:
-        SetCMVCIntegralLight(vcidx, FloodLights_P8, MatProp::Light,FloodRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(FloodLights_P8));
-		SetCMVCIntegralLight(seatsunfoldedidx, CMVCSeatsUnFolded, MatProp::Light, FloodRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(CMVCSeatsUnFolded));
-		SetCMVCIntegralLight(seatsfoldedidx, CMVCSeatsFolded, MatProp::Light, FloodRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(CMVCSeatsFolded));
-		SetCMVCIntegralLight(coascdridx, CMVC_COAS_CDR, MatProp::Light, FloodRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(CMVC_COAS_CDR));
+        SetCMVCIntegralLight(vcidx, FloodLights_P8, MatProp::Light,FloodRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(FloodLights_P8));
+		SetCMVCIntegralLight(seatsunfoldedidx, CMVCSeatsUnFolded, MatProp::Light, FloodRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(CMVCSeatsUnFolded));
+		SetCMVCIntegralLight(seatsfoldedidx, CMVCSeatsFolded, MatProp::Light, FloodRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(CMVCSeatsFolded));
+		SetCMVCIntegralLight(coascdridx, CMVC_COAS_CDR, MatProp::Light, FloodRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(CMVC_COAS_CDR));
 
         return true;
 
 	case AID_VC_NUMERICS_LIGHT_P8:
-//        SetCMVCIntegralLight(vcidx,NumericLights_P8, MatProp::Light, NumericRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(NumericLights_P8));
-        SetCMVCIntegralLight(vcidx, NumericLights_P8_NTex, MatProp::Light, NumericRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(NumericLights_P8_NTex));
+//        SetCMVCIntegralLight(vcidx,NumericLights_P8, MatProp::Light, NumericRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(NumericLights_P8));
+        SetCMVCIntegralLight(vcidx, NumericLights_P8_NTex, MatProp::Light, NumericRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(NumericLights_P8_NTex));
         return true;
 
 	case AID_VC_INTEGRAL_LIGHT_P5:
-        SetCMVCIntegralLight(vcidx, IntegralLights_P5, MatProp::Emission, RightIntegralRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(IntegralLights_P5));
+        SetCMVCIntegralLight(vcidx, IntegralLights_P5, MatProp::Emission, RightIntegralRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(IntegralLights_P5));
         return true;
 
 	case AID_VC_FLOOD_LIGHT_P5:
-//		SetCMVCIntegralLight(vcidx, FloodLights_P5, MatProp::Light,RightFloodRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(FloodLights_P5));
+//		SetCMVCIntegralLight(vcidx, FloodLights_P5, MatProp::Light,RightFloodRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(FloodLights_P5));
         return true;
 
 	case AID_VC_INTEGRAL_LIGHT_P100:
-        SetCMVCIntegralLight(vcidx, IntegralLights_P100, MatProp::Emission, Panel100IntegralRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(IntegralLights_P100));
+        SetCMVCIntegralLight(vcidx, IntegralLights_P100, MatProp::Emission, Panel100IntegralRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(IntegralLights_P100));
         return true;
 
 	case AID_VC_FLOOD_LIGHT_P100:
-//		SetCMVCIntegralLight(vcidx, FloodLights_P100, MatProp::Light, Panel100FloodRotarySwitch.GetPosition*0.01, NUM_ELEMENTS(FloodLights_P100));
+//		SetCMVCIntegralLight(vcidx, FloodLights_P100, MatProp::Light, Panel100FloodRotarySwitch.GetValue*0.01, NUM_ELEMENTS(FloodLights_P100));
         return true;
 
 	case AID_VC_NUMERICS_LIGHT_P100:
-		SetCMVCIntegralLight(vcidx, NumericLights_P100, MatProp::Light, Panel100NumericRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(NumericLights_P100));
+		SetCMVCIntegralLight(vcidx, NumericLights_P100, MatProp::Light, Panel100NumericRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(NumericLights_P100));
 		return true;
 	case AID_VC_CUE_CARDS_LIGHTING:
 	{
@@ -1795,7 +1795,7 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 
 		for (unsigned i = 0; i < indices.size(); i++)
 		{
-			SetCMVCIntegralLight(indices[i], ccmat, MatProp::Light, FloodRotarySwitch.GetPosition()*0.1, 1);
+			SetCMVCIntegralLight(indices[i], ccmat, MatProp::Light, FloodRotarySwitch.GetValue()*0.1, 1);
 		}
 
 		return true;
@@ -1807,40 +1807,40 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 		return true;
 
 	case AID_VC_INTEGRAL_LIGHT_P8:
-        SetCMVCIntegralLight(vcidx, IntegralLights_P8, MESHM_EMISSION2, IntegralRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(IntegralLights_P8));
-		SetCMVCIntegralLight(vcidx, IntergralLights_P8_NTex, MESHM_EMISSION,IntegralRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(IntergralLights_P8_NTex));
+        SetCMVCIntegralLight(vcidx, IntegralLights_P8, MESHM_EMISSION2, IntegralRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(IntegralLights_P8));
+		SetCMVCIntegralLight(vcidx, IntergralLights_P8_NTex, MESHM_EMISSION,IntegralRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(IntergralLights_P8_NTex));
         return true;
 
 	case AID_VC_FLOOD_LIGHT_P8:
-		SetCMVCIntegralLight(vcidx, FloodLights_P8, MESHM_EMISSION, FloodRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(FloodLights_P8));
-		SetCMVCIntegralLight(seatsunfoldedidx, CMVCSeatsUnFolded, MESHM_EMISSION, FloodRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(CMVCSeatsUnFolded));
-		SetCMVCIntegralLight(seatsfoldedidx, CMVCSeatsFolded, MESHM_EMISSION, FloodRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(CMVCSeatsFolded));
-		SetCMVCIntegralLight(coascdridx, CMVC_COAS_CDR, MESHM_EMISSION, FloodRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(CMVC_COAS_CDR));
+		SetCMVCIntegralLight(vcidx, FloodLights_P8, MESHM_EMISSION, FloodRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(FloodLights_P8));
+		SetCMVCIntegralLight(seatsunfoldedidx, CMVCSeatsUnFolded, MESHM_EMISSION, FloodRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(CMVCSeatsUnFolded));
+		SetCMVCIntegralLight(seatsfoldedidx, CMVCSeatsFolded, MESHM_EMISSION, FloodRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(CMVCSeatsFolded));
+		SetCMVCIntegralLight(coascdridx, CMVC_COAS_CDR, MESHM_EMISSION, FloodRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(CMVC_COAS_CDR));
         return true;
 
 	case AID_VC_NUMERICS_LIGHT_P8:
-//        SetCMVCIntegralLight(vcidx,NumericLights_P8, MESHM_EMISSION,NumericRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(NumericLights_P8));
-        SetCMVCIntegralLight(vcidx, NumericLights_P8_NTex, MESHM_EMISSION, NumericRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(NumericLights_P8_NTex));
+//        SetCMVCIntegralLight(vcidx,NumericLights_P8, MESHM_EMISSION,NumericRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(NumericLights_P8));
+		SetCMVCIntegralLight(vcidx, NumericLights_P8_NTex, MESHM_EMISSION, NumericRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(NumericLights_P8_NTex));
         return true;
 
 	case AID_VC_INTEGRAL_LIGHT_P5:
-        SetCMVCIntegralLight(vcidx, IntegralLights_P5, MESHM_EMISSION2, RightIntegralRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(IntegralLights_P5));
+        SetCMVCIntegralLight(vcidx, IntegralLights_P5, MESHM_EMISSION2, RightIntegralRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(IntegralLights_P5));
         return true;
 
 	case AID_VC_FLOOD_LIGHT_P5:
-//		SetCMVCIntegralLight(vcidx, FloodLights_P5, MESHM_EMISSION, RightFloodRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(FloodLights_P5));
+//		SetCMVCIntegralLight(vcidx, FloodLights_P5, MESHM_EMISSION, RightFloodRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(FloodLights_P5));
 		return true;
 
 	case AID_VC_INTEGRAL_LIGHT_P100:
-		SetCMVCIntegralLight(vcidx, IntegralLights_P100, MESHM_EMISSION2, Panel100IntegralRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(IntegralLights_P100));
+		SetCMVCIntegralLight(vcidx, IntegralLights_P100, MESHM_EMISSION2, Panel100IntegralRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(IntegralLights_P100));
 		return true;
 
 	case AID_VC_FLOOD_LIGHT_P100:
-//		SetCMVCIntegralLight(vcidx, FloodLights_P100, MESHM_EMISSION, Panel100FloodRotarySwitch.GetPosition()*0.1, NUM_ELEMENTS(FloodLights_P100));
+//		SetCMVCIntegralLight(vcidx, FloodLights_P100, MESHM_EMISSION, Panel100FloodRotarySwitch.GetValue()*0.1, NUM_ELEMENTS(FloodLights_P100));
         return true;
 
 	case AID_VC_NUMERICS_LIGHT_P100:
-		SetCMVCIntegralLight(vcidx, NumericLights_P100, MESHM_EMISSION, Panel100NumericRotarySwitch.GetPosition() / 10.0, NUM_ELEMENTS(NumericLights_P100));
+		SetCMVCIntegralLight(vcidx, NumericLights_P100, MESHM_EMISSION, Panel100NumericRotarySwitch.GetValue() / 10.0, NUM_ELEMENTS(NumericLights_P100));
 		return true;
 
 
@@ -1854,7 +1854,7 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 
 		for (unsigned i = 0; i < indices.size(); i++)
 		{
-			SetCMVCIntegralLight(indices[i], ccmat, MESHM_EMISSION, FloodRotarySwitch.GetPosition()*0.1, 1);
+			SetCMVCIntegralLight(indices[i], ccmat, MESHM_EMISSION, FloodRotarySwitch.GetValue()*0.1, 1);
 		}
 
 		return true;
@@ -4470,6 +4470,7 @@ void Saturn::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&ORDEALAltSetRotary, AID_VC_ORDEAL_ROT);
 	ORDEALAltSetRotary.SetReference(ORDEAL_RotLocation, P13_ROT_AXIS);
 	ORDEALAltSetRotary.DefineMeshGroup(VC_GRP_ORDEAL_Rot);
+	ORDEALAltSetRotary.SetInitialAnimState(0.0);// 133.0 / 285.0 if state in mesh was up
 
 	// Panel 15
 
