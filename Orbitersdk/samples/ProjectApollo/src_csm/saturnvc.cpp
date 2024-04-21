@@ -4470,7 +4470,7 @@ void Saturn::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&ORDEALAltSetRotary, AID_VC_ORDEAL_ROT);
 	ORDEALAltSetRotary.SetReference(ORDEAL_RotLocation, P13_ROT_AXIS);
 	ORDEALAltSetRotary.DefineMeshGroup(VC_GRP_ORDEAL_Rot);
-	ORDEALAltSetRotary.SetInitialAnimState(0.0);// 133.0 / 285.0 if state in mesh was up
+	ORDEALAltSetRotary.SetInitialAnimState(133.0 / 285.0); //133° from 10 NM to 150 NM, 285° total range
 
 	// Panel 15
 

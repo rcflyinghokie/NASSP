@@ -790,8 +790,8 @@ void LEM::InitSwitches() {
 	DedaSwitchEnter.SetDelayTime(0.5);
 
 	ORDEALAltSetRotary.Register(PSH, "ORDEALAltSetRotary", 60.0, 10.0, 310.0);
-	ORDEALAltSetRotary.SetRotationRange(280.8*RAD);//271.74*RAD); //Should be 285.0*RAD
-	ORDEALAltSetRotary.SetOffset(-135.8709677419355*RAD);//-126.81*RAD); //Should be -133.0*RAD
+	ORDEALAltSetRotary.SetRotationRange(271.74*RAD); //Should be 285.0*RAD with correct ORDEAL scale
+	ORDEALAltSetRotary.SetOffset(-126.8129032258064*RAD); //Should be -133.0*RAD with correct ORDEAL scale
 
 	ORDEALFDAI1Switch.Register(PSH, "ORDEALFDAI1Switch", false);
 	ORDEALFDAI2Switch.Register(PSH, "ORDEALFDAI2Switch", false);
