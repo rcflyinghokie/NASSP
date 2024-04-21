@@ -2556,9 +2556,9 @@ void LEM::DefineVCAnimations()
 	DskySwitchClear.SetDirection(P4_PB_VECT);
 	DskySwitchClear.DefineMeshGroup(VC_GRP_PB_P4_15);
 
-	MainPanelVC.AddSwitch(&DskySwitchProg, AID_VC_PUSHB_P4_16);
-	DskySwitchProg.SetDirection(P4_PB_VECT);
-	DskySwitchProg.DefineMeshGroup(VC_GRP_PB_P4_16);
+	MainPanelVC.AddSwitch(&DskySwitchProceed, AID_VC_PUSHB_P4_16);
+	DskySwitchProceed.SetDirection(P4_PB_VECT);
+	DskySwitchProceed.DefineMeshGroup(VC_GRP_PB_P4_16);
 
 	MainPanelVC.AddSwitch(&DskySwitchKeyRel, AID_VC_PUSHB_P4_17);
 	DskySwitchKeyRel.SetDirection(P4_PB_VECT);

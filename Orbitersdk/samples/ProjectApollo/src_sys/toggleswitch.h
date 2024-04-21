@@ -41,8 +41,11 @@
 // Switch states. Only use positive numbers.
 //
 
-#define TOGGLESWITCH_DOWN		0			///< Toggle switch is up.
-#define TOGGLESWITCH_UP			1			///< Toggle switch is down.
+#define TOGGLESWITCH_DOWN		0			///< Toggle switch is down.
+#define TOGGLESWITCH_UP			1			///< Toggle switch is up.
+
+#define PUSHBUTTON_UNPUSHED		0			///< Push button is un-pushed (off).
+#define PUSHBUTTON_PUSHED		1			///< Push button is pushed (on).
 
 #define THREEPOSSWITCH_DOWN		0			///< Three-position switch is down.
 #define THREEPOSSWITCH_CENTER	1			///< Three-position switch is centered.

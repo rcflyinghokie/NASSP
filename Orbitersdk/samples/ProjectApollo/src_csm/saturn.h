@@ -3292,7 +3292,7 @@ protected:
 	DSKYPushSwitch DskySwitchEight;
 	DSKYPushSwitch DskySwitchNine;
 	DSKYPushSwitch DskySwitchClear;
-	DSKYPushSwitch DskySwitchProg;
+	DSKYPushSwitch DskySwitchProceed;
 	DSKYPushSwitch DskySwitchKeyRel;
 	DSKYPushSwitch DskySwitchEnter;
 	DSKYPushSwitch DskySwitchReset;
@@ -3313,7 +3313,7 @@ protected:
 	DSKYPushSwitch Dsky2SwitchEight;
 	DSKYPushSwitch Dsky2SwitchNine;
 	DSKYPushSwitch Dsky2SwitchClear;
-	DSKYPushSwitch Dsky2SwitchProg;
+	DSKYPushSwitch Dsky2SwitchProceed;
 	DSKYPushSwitch Dsky2SwitchKeyRel;
 	DSKYPushSwitch Dsky2SwitchEnter;
 	DSKYPushSwitch Dsky2SwitchReset;
