@@ -2187,8 +2187,8 @@ void ProjectApolloMFD::menuPressPROOnCMCLGC()
 
 	if (lem && saturn)
 	{
-		lem->DskySwitchProg.SetState(true);
-		saturn->DskySwitchProg.SetState(true);
+		lem->DskySwitchProceed.SetState(true);
+		saturn->DskySwitchProceed.SetState(true);
 	}
 
 	saturn = NULL;

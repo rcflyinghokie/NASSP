@@ -117,8 +117,8 @@ public:
 	void EnterPressed();
 	void ClearPressed();
 	void ResetPressed();
-	void ProgPressed();
-	void ProgReleased();
+	void ProceedPressed();
+	void ProceedReleased();
 	void PlusPressed();
 	void MinusPressed();
 	void NumberPressed(int n);
@@ -128,7 +128,7 @@ public:
 	void EnterCallback(PanelSwitchItem* s);
 	void ClearCallback(PanelSwitchItem* s);
 	void ResetCallback(PanelSwitchItem* s);
-	void ProgCallback(PanelSwitchItem* s);
+	void ProceedCallback(PanelSwitchItem* s);
 	void KeyRelCallback(PanelSwitchItem* s);
 	void PlusCallback(PanelSwitchItem* s);
 	void MinusCallback(PanelSwitchItem* s);
