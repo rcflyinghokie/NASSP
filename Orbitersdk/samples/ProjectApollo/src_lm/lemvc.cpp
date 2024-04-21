@@ -3424,10 +3424,9 @@ void LEM::SetLMVCIntegralLight(UINT meshidx, DWORD *matList, int EmissionMode, d
 #endif
 
 {
-	if (vis == NULL) return;
+	if (vis == NULL || meshidx == -1) return;
 	DEVMESHHANDLE hMesh = GetDevMesh(vis, meshidx);
 
-//    if (!vcmesh)
     if (!hMesh)
         return;
 
