@@ -1136,6 +1136,9 @@ void Saturn::initSaturn()
 	coascdridx = -1;
 	coascdrreticleidx = -1;
 
+	vcmesh = NULL;
+	vis = NULL;
+
 	Scorrec = false;
 
 	//
