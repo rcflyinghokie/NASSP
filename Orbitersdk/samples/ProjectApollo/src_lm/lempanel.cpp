@@ -782,7 +782,7 @@ void LEM::InitSwitches() {
 	DskySwitchEight.Register(PSH, "DskySwitchEight", false);
 	DskySwitchNine.Register(PSH, "DskySwitchNine", false);
 	DskySwitchClear.Register(PSH, "DskySwitchClear", false);
-	DskySwitchProg.Register(PSH, "DskySwitchProg", false);
+	DskySwitchProceed.Register(PSH, "DskySwitchProg", false);
 	DskySwitchKeyRel.Register(PSH, "DskySwitchKeyRel", false);
 	DskySwitchEnter.Register(PSH, "DskySwitchEnter", false);
 	DskySwitchReset.Register(PSH, "DskySwitchReset", false);
@@ -801,13 +801,13 @@ void LEM::InitSwitches() {
 	DskySwitchSeven.SetCallback(new PanelSwitchCallback<DSKY>(&dsky, &DSKY::sevenCallback));
 	DskySwitchEight.SetCallback(new PanelSwitchCallback<DSKY>(&dsky, &DSKY::eightCallback));
 	DskySwitchNine.SetCallback(new PanelSwitchCallback<DSKY>(&dsky, &DSKY::nineCallback));
-	DskySwitchProg.SetCallback(new PanelSwitchCallback<DSKY>(&dsky, &DSKY::ProgCallback));
+	DskySwitchProceed.SetCallback(new PanelSwitchCallback<DSKY>(&dsky, &DSKY::ProceedCallback));
 	DskySwitchClear.SetCallback(new PanelSwitchCallback<DSKY>(&dsky, &DSKY::ClearCallback));
 	DskySwitchKeyRel.SetCallback(new PanelSwitchCallback<DSKY>(&dsky, &DSKY::KeyRelCallback));
 	DskySwitchEnter.SetCallback(new PanelSwitchCallback<DSKY>(&dsky, &DSKY::EnterCallback));
 	DskySwitchReset.SetCallback(new PanelSwitchCallback<DSKY>(&dsky, &DSKY::ResetCallback));
 
-	DskySwitchProg.SetDelayTime(1.5);
+	DskySwitchProceed.SetDelayTime(1.5);
 
 	DedaSwitchPlus.Register(PSH, "DedaSwitchPlus", false);
 	DedaSwitchMinus.Register(PSH, "DedaSwitchMinus", false);
@@ -2296,7 +2296,7 @@ void LEM::SetSwitches(int panel) {
 	DskySwitchSix.Init(164, 40, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], DskySwitchRow, 164, 40);
 	DskySwitchThree.Init(164, 80, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], DskySwitchRow, 164, 80);
 	DskySwitchClear.Init(205, 0, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], DskySwitchRow, 205, 0);
-	DskySwitchProg.Init(205, 40, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], DskySwitchRow, 205, 40);
+	DskySwitchProceed.Init(205, 40, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], DskySwitchRow, 205, 40);
 	DskySwitchKeyRel.Init(205, 80, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], DskySwitchRow, 205, 80);
 	DskySwitchEnter.Init(246, 20, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], DskySwitchRow, 246, 20);
 	DskySwitchReset.Init(246, 60, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], DskySwitchRow, 246, 60);
