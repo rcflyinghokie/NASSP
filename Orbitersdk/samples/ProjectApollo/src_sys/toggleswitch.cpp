@@ -3198,7 +3198,7 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 		char label[100];
 		value = GetValue();
 		sprintf(label, "%.0lf", value);
-		rotstate = (int)((state * RotationRange - 6.8129*RAD) / PI2 * 12.0 + 0.5); //Lengthy conversion from animation state to state of rotational switch starting with 0
+		rotstate = (int)(value / 33.3333333333333);
 
 		oapi::Sketchpad* skp = oapiGetSketchpad(drawSurface);
 		oapi::Font* font = oapiCreateFont(22, true, "Arial", FONT_BOLD);
@@ -3212,62 +3212,62 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 		skp->SetBackgroundMode(oapi::Sketchpad::BK_OPAQUE);
 		skp->SetBackgroundColor(RGB(146, 146, 146));
 
-		if (rotstate == 0) {
+		switch (rotstate)
+		{
+		case 0: //-120°
 			rt.left = 29 + x;
 			rt.top = 24 + y;
 			rt.right = 60 + x;
 			rt.bottom = 55 + y;
 			skp->Rectangle(rt.left, rt.top, rt.right, rt.bottom);
 			skp->Text(44 + x, 28 + y, label, strlen(label));
-
-		}
-		else if (rotstate == 1) {
+			break;
+		case 1: //-90°
 			rt.left = 35 + x;
 			rt.top = 30 + y;
 			rt.right = 59 + x;
 			rt.bottom = 52 + y;
 			skp->Rectangle(rt.left, rt.top, rt.right, rt.bottom);
 			skp->Text(49 + x, 31 + y, label, strlen(label));
-
-		}
-		else if (rotstate == 2) {
+			break;
+		case 2: //-60°
+		case 3: //-30°
 			rt.left = 29 + x;
 			rt.top = 29 + y;
 			rt.right = 60 + x;
 			rt.bottom = 59 + y;
 			skp->Rectangle(rt.left, rt.top, rt.right, rt.bottom);
 			skp->Text(44 + x, 34 + y, label, strlen(label));
-
-		}
-		else if (rotstate == 3) {
+			break;
+		case 4: //0°
 			rt.left = 29 + x;
 			rt.top = 35 + y;
 			rt.right = 57 + x;
 			rt.bottom = 59 + y;
 			skp->Rectangle(rt.left, rt.top, rt.right, rt.bottom);
 			skp->Text(42 + x, 36 + y, label, strlen(label));
-
-		}
-		else if (rotstate == 4) {
+			break;
+		case 5: //30°
+		case 6: //60°
 			rt.left = 28 + x;
 			rt.top = 30 + y;
 			rt.right = 54 + x;
 			rt.bottom = 60 + y;
 			skp->Rectangle(rt.left, rt.top, rt.right, rt.bottom);
 			skp->Text(37 + x, 34 + y, label, strlen(label));
-
-		}
-		else if (rotstate == 5) {
+			break;
+		case 7: //90°
 			skp->Text(32 + x, 31 + y, label, strlen(label));
-
-		}
-		else {
+			break;
+		case 8: //120°
+		case 9: //150°
 			rt.left = 25 + x;
 			rt.top = 24 + y;
 			rt.right = 55 + x;
 			rt.bottom = 54 + y;
 			skp->Rectangle(rt.left, rt.top, rt.right, rt.bottom);
 			skp->Text(39 + x, 28 + y, label, strlen(label));
+			break;
 		}
 
 		oapiReleaseFont(font);

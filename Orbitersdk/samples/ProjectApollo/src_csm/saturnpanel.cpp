@@ -5858,8 +5858,8 @@ void Saturn::InitSwitches() {
 	OxygenRepressPackageRotary.Register(PSH, "OxygenRepressPackageRotary", 1);
 
 	ORDEALAltSetRotary.Register(PSH, "ORDEALAltSetRotary", 100.0, 10.0, 310.0);
-	ORDEALAltSetRotary.SetRotationRange(271.74*RAD); //Should be 285.0*RAD with correct ORDEAL scale
-	ORDEALAltSetRotary.SetOffset(-126.8129032258064*RAD); //Should be -133.0*RAD with correct ORDEAL scale
+	ORDEALAltSetRotary.SetRotationRange(270.0*RAD); //Should be 285.0*RAD with correct ORDEAL scale
+	ORDEALAltSetRotary.SetOffset(-126.0*RAD); //Should be -133.0*RAD with correct ORDEAL scale
 
 	LeftSystemTestRotarySwitch.AddPosition(0,  240);
 	LeftSystemTestRotarySwitch.AddPosition(1,  270);
