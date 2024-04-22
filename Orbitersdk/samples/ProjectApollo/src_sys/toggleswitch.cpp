@@ -2667,11 +2667,6 @@ void ContinuousRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface)
 		srcy = 0;
 	}
 
-	/*if (strcmp(name, "ORDEALAltSetRotary") == 0)
-	{
-		sprintf(oapiDebugString(), "name %s maxState %d state %lf value %lf val %lf val2 %lf srcx %d srcx2 %d srcy %d", name, maxState, state, AngletoDisplay(state), val, val2, srcx, srcx2, srcy);
-	}*/
-
 	oapiBlt(drawSurface, switchSurface, x, y, srcx2 * width, srcy*height, width, height, SURF_PREDEF_CK);
 }
 
@@ -3199,9 +3194,11 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 	if (mouseDown) {
 		RECT rt;
 		double value;
+		int rotstate;
 		char label[100];
 		value = GetValue();
 		sprintf(label, "%.0lf", value);
+		rotstate = (int)((state * RotationRange - 6.8129*RAD) / PI2 * 12.0 + 0.5); //Lengthy conversion from animation state to state of rotational switch starting with 0
 
 		oapi::Sketchpad* skp = oapiGetSketchpad(drawSurface);
 		oapi::Font* font = oapiCreateFont(22, true, "Arial", FONT_BOLD);
@@ -3215,7 +3212,7 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 		skp->SetBackgroundMode(oapi::Sketchpad::BK_OPAQUE);
 		skp->SetBackgroundColor(RGB(146, 146, 146));
 
-		if (value <= 0.14) {
+		if (rotstate == 0) {
 			rt.left = 29 + x;
 			rt.top = 24 + y;
 			rt.right = 60 + x;
@@ -3224,7 +3221,7 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 			skp->Text(44 + x, 28 + y, label, strlen(label));
 
 		}
-		else if (value <= 0.28) {
+		else if (rotstate == 1) {
 			rt.left = 35 + x;
 			rt.top = 30 + y;
 			rt.right = 59 + x;
@@ -3233,7 +3230,7 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 			skp->Text(49 + x, 31 + y, label, strlen(label));
 
 		}
-		else if (value <= 0.42) {
+		else if (rotstate == 2) {
 			rt.left = 29 + x;
 			rt.top = 29 + y;
 			rt.right = 60 + x;
@@ -3242,7 +3239,7 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 			skp->Text(44 + x, 34 + y, label, strlen(label));
 
 		}
-		else if (value <= 0.56) {
+		else if (rotstate == 3) {
 			rt.left = 29 + x;
 			rt.top = 35 + y;
 			rt.right = 57 + x;
@@ -3251,7 +3248,7 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 			skp->Text(42 + x, 36 + y, label, strlen(label));
 
 		}
-		else if (value <= 0.7) {
+		else if (rotstate == 4) {
 			rt.left = 28 + x;
 			rt.top = 30 + y;
 			rt.right = 54 + x;
@@ -3260,7 +3257,7 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 			skp->Text(37 + x, 34 + y, label, strlen(label));
 
 		}
-		else if (value <= 0.84) {
+		else if (rotstate == 5) {
 			skp->Text(32 + x, 31 + y, label, strlen(label));
 
 		}

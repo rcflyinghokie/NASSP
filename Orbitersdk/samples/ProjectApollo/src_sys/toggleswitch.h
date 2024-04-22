@@ -1199,14 +1199,13 @@ protected:
 
 	void LoadSound(char *soundname);
 
-	double RotationRange;
-
 	//Common variables
-	double state;		//Equivalent to animation range, 0-1
-	double minValue;	//Value on the panel equivalent to animation state 0.0
-	double maxValue;	//Value on the panel equivalent to animation state 1.0
-	double slope;		//Slope of function converting displayed state to angle
-	bool Wraparound;	//Switch can wraparound limits of animation state
+	double state;			//Equivalent to animation range, 0-1
+	double minValue;		//Value on the panel equivalent to animation state 0.0
+	double maxValue;		//Value on the panel equivalent to animation state 1.0
+	double slope;			//Slope of function converting displayed state to angle
+	bool Wraparound;		//Switch can wraparound limits of animation state
+	double RotationRange;	//Range of rotation in radians
 
 	//2D
 	int	x;
