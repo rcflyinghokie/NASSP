@@ -3520,7 +3520,7 @@ void Saturn::SetSwitches(int panel) {
 	DskySwitchSix.Init(164, 40, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], DskySwitchRow, 164, 40);
 	DskySwitchThree.Init(164, 80, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], DskySwitchRow, 164, 80);
 	DskySwitchClear.Init(205, 0, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], DskySwitchRow, 205, 0);
-	DskySwitchProg.Init(205, 40, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], DskySwitchRow, 205, 40);
+	DskySwitchProceed.Init(205, 40, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], DskySwitchRow, 205, 40);
 	DskySwitchKeyRel.Init(205, 80, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], DskySwitchRow, 205, 80);
 	DskySwitchEnter.Init(246, 20, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], DskySwitchRow, 246, 20);
 	DskySwitchReset.Init(246, 60, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], DskySwitchRow, 246, 60);
@@ -3548,7 +3548,7 @@ void Saturn::SetSwitches(int panel) {
 	Dsky2SwitchSix.Init(164 + dx, 40 + dy, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], Dsky2SwitchRow, 164, 40);
 	Dsky2SwitchThree.Init(164 + dx, 80 + dy, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], Dsky2SwitchRow, 164, 80);
 	Dsky2SwitchClear.Init(205 + dx, 0 + dy, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], Dsky2SwitchRow, 205, 0);
-	Dsky2SwitchProg.Init(205 + dx, 40 + dy, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], Dsky2SwitchRow, 205, 40);
+	Dsky2SwitchProceed.Init(205 + dx, 40 + dy, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], Dsky2SwitchRow, 205, 40);
 	Dsky2SwitchKeyRel.Init(205 + dx, 80 + dy, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], Dsky2SwitchRow, 205, 80);
 	Dsky2SwitchEnter.Init(246 + dx, 20 + dy, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], Dsky2SwitchRow, 246, 20);
 	Dsky2SwitchReset.Init(246 + dx, 60 + dy, 38, 38, srf[SRF_DSKYKEY], srf[SRF_BORDER_38x38], Dsky2SwitchRow, 246, 60);
@@ -4333,11 +4333,11 @@ void Saturn::RenderS1bEngineLight(bool EngineOn, SURFHANDLE dest, SURFHANDLE src
 	yoffs *= TexMul;
 	if (EngineOn)
 	{
-		oapiBlt(dest, src, xoffs, yoffs, xoffs, yoffs, 29*TexMul, 29*TexMul);
+		oapiBlt(dest, src, xoffs, yoffs, xoffs, yoffs, 33*TexMul, 30*TexMul);
 	}
 	else
 	{
-		oapiBlt(dest, src, xoffs, yoffs, xoffs + 101*TexMul, yoffs, 29*TexMul, 29*TexMul);
+		oapiBlt(dest, src, xoffs, yoffs, xoffs + 102*TexMul, yoffs,33*TexMul, 30*TexMul);
 	}
 }
 
@@ -6621,7 +6621,7 @@ void Saturn::InitSwitches() {
 	DskySwitchEight.Register(PSH, "DskySwitchEight", false);
 	DskySwitchNine.Register(PSH, "DskySwitchNine", false);
 	DskySwitchClear.Register(PSH, "DskySwitchClear", false);
-	DskySwitchProg.Register(PSH, "DskySwitchProg", false);
+	DskySwitchProceed.Register(PSH, "DskySwitchProg", false);
 	DskySwitchKeyRel.Register(PSH, "DskySwitchKeyRel", false);
 	DskySwitchEnter.Register(PSH, "DskySwitchEnter", false);
 	DskySwitchReset.Register(PSH, "DskySwitchReset", false);
@@ -6640,7 +6640,7 @@ void Saturn::InitSwitches() {
 	DskySwitchSeven.SetCallback(new PanelSwitchCallback<DSKY>(&dsky, &DSKY::sevenCallback));
 	DskySwitchEight.SetCallback(new PanelSwitchCallback<DSKY>(&dsky, &DSKY::eightCallback));
 	DskySwitchNine.SetCallback(new PanelSwitchCallback<DSKY>(&dsky, &DSKY::nineCallback));
-	DskySwitchProg.SetCallback(new PanelSwitchCallback<DSKY>(&dsky, &DSKY::ProgCallback));
+	DskySwitchProceed.SetCallback(new PanelSwitchCallback<DSKY>(&dsky, &DSKY::ProceedCallback));
 	DskySwitchClear.SetCallback(new PanelSwitchCallback<DSKY>(&dsky, &DSKY::ClearCallback));
 	DskySwitchKeyRel.SetCallback(new PanelSwitchCallback<DSKY>(&dsky, &DSKY::KeyRelCallback));
 	DskySwitchEnter.SetCallback(new PanelSwitchCallback<DSKY>(&dsky, &DSKY::EnterCallback));
@@ -6661,7 +6661,7 @@ void Saturn::InitSwitches() {
 	Dsky2SwitchEight.Register(PSH, "Dsky2SwitchEight", false);
 	Dsky2SwitchNine.Register(PSH, "Dsky2SwitchNine", false);
 	Dsky2SwitchClear.Register(PSH, "Dsky2SwitchClear", false);
-	Dsky2SwitchProg.Register(PSH, "Dsky2SwitchProg", false);
+	Dsky2SwitchProceed.Register(PSH, "Dsky2SwitchProg", false);
 	Dsky2SwitchKeyRel.Register(PSH, "Dsky2SwitchKeyRel", false);
 	Dsky2SwitchEnter.Register(PSH, "Dsky2SwitchEnter", false);
 	Dsky2SwitchReset.Register(PSH, "Dsky2SwitchReset", false);
@@ -6680,14 +6680,14 @@ void Saturn::InitSwitches() {
 	Dsky2SwitchSeven.SetCallback(new PanelSwitchCallback<DSKY>(&dsky2, &DSKY::sevenCallback));
 	Dsky2SwitchEight.SetCallback(new PanelSwitchCallback<DSKY>(&dsky2, &DSKY::eightCallback));
 	Dsky2SwitchNine.SetCallback(new PanelSwitchCallback<DSKY>(&dsky2, &DSKY::nineCallback));
-	Dsky2SwitchProg.SetCallback(new PanelSwitchCallback<DSKY>(&dsky2, &DSKY::ProgCallback));
+	Dsky2SwitchProceed.SetCallback(new PanelSwitchCallback<DSKY>(&dsky2, &DSKY::ProceedCallback));
 	Dsky2SwitchClear.SetCallback(new PanelSwitchCallback<DSKY>(&dsky2, &DSKY::ClearCallback));
 	Dsky2SwitchKeyRel.SetCallback(new PanelSwitchCallback<DSKY>(&dsky2, &DSKY::KeyRelCallback));
 	Dsky2SwitchEnter.SetCallback(new PanelSwitchCallback<DSKY>(&dsky2, &DSKY::EnterCallback));
 	Dsky2SwitchReset.SetCallback(new PanelSwitchCallback<DSKY>(&dsky2, &DSKY::ResetCallback));
 
-	DskySwitchProg.SetDelayTime(1.5);
-	Dsky2SwitchProg.SetDelayTime(1.5);
+	DskySwitchProceed.SetDelayTime(1.5);
+	Dsky2SwitchProceed.SetDelayTime(1.5);
 
 	ASCPRollSwitch.Register(PSH, "ASCPRollSwitch", 0, 0, 0, 0);	// dummy switch/display for checklist controller
 	ASCPPitchSwitch.Register(PSH, "ASCPPitchSwitch", 0, 0, 0, 0);

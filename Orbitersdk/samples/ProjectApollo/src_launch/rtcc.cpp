@@ -12384,14 +12384,14 @@ void RTCC::MPTMassUpdate(VESSEL *vessel, MED_M50 &med1, MED_M55 &med2, MED_M49 &
 						cfg = "CL";
 						lmapsmass = lem->AscentFuelMassKg;
 						lmdpsmass = lm->GetPropellantMass(lm->GetPropellantHandleByIndex(0));
+						lmrcsmass = lm->GetPropellantMass(lm->GetPropellantHandleByIndex(1)) + lm->GetPropellantMass(lm->GetPropellantHandleByIndex(2));
 					}
 					else
 					{
 						cfg = "CA";
-						lmapsmass = lm->GetPropellantMass(lm->GetPropellantHandleByIndex(0));
+						lmapsmass = lm->GetPropellantMass(lm->GetPropellantHandleByIndex(2));
+						lmrcsmass = lm->GetPropellantMass(lm->GetPropellantHandleByIndex(0)) + lm->GetPropellantMass(lm->GetPropellantHandleByIndex(1));
 					}
-
-					lmrcsmass = lm->GetPropellantMass(lm->GetPropellantHandleByIndex(1)) + lm->GetPropellantMass(lm->GetPropellantHandleByIndex(2));
 				}
 				else
 				{
@@ -12431,6 +12431,7 @@ void RTCC::MPTMassUpdate(VESSEL *vessel, MED_M50 &med1, MED_M55 &med2, MED_M49 &
 			}
 			lmapsmass = lem->AscentFuelMassKg;
 			lmdpsmass = lem->GetPropellantMass(lem->GetPropellantHandleByIndex(0));
+			lmrcsmass = vessel->GetPropellantMass(vessel->GetPropellantHandleByIndex(1)) + vessel->GetPropellantMass(vessel->GetPropellantHandleByIndex(2));
 		}
 		else
 		{
@@ -12442,10 +12443,9 @@ void RTCC::MPTMassUpdate(VESSEL *vessel, MED_M50 &med1, MED_M55 &med2, MED_M49 &
 			{
 				cfg = "A";
 			}
-			lmapsmass = lem->GetPropellantMass(lem->GetPropellantHandleByIndex(0));
+			lmapsmass = lem->GetPropellantMass(lem->GetPropellantHandleByIndex(2));
+			lmrcsmass = vessel->GetPropellantMass(vessel->GetPropellantHandleByIndex(0)) + vessel->GetPropellantMass(vessel->GetPropellantHandleByIndex(1));
 		}
-
-		lmrcsmass = vessel->GetPropellantMass(vessel->GetPropellantHandleByIndex(1)) + vessel->GetPropellantMass(vessel->GetPropellantHandleByIndex(2));
 
 		if (cfg[0] == 'C')
 		{
