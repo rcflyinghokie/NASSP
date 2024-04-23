@@ -3196,6 +3196,52 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		}
 	}
 	break;
+	case 140: //PTC QUADS DECISION
+	{
+		GENERICPAD * form = (GENERICPAD *)pad;
+
+		Saturn *cm = (Saturn *)calcParams.src;
+
+		double m_quads[4], min_mass;
+		int j;
+
+		//Get propellant mass from all 4 RCS quads
+		m_quads[0] = cm->GetPropellantMass(cm->ph_rcs0);
+		m_quads[1] = cm->GetPropellantMass(cm->ph_rcs1);
+		m_quads[2] = cm->GetPropellantMass(cm->ph_rcs2);
+		m_quads[3] = cm->GetPropellantMass(cm->ph_rcs3);
+
+		//Set quads D and A as initial minimum adjacent quads
+		min_mass = m_quads[0] + m_quads[3];
+		j = 0;
+
+		//Search through the 3 other adjacent quad combinations for a lower pair
+		for (int i = 0; i < 3; i++)
+		{
+			if (m_quads[i] + m_quads[i + 1] < min_mass)
+			{
+				j = i + 1;
+				min_mass = m_quads[i] + m_quads[i + 1];
+			}
+		}
+
+		switch (j)
+		{
+		case 0:
+			sprintf(form->paddata, "Quads to disable for PTC are A and D");
+			break;
+		case 1:
+			sprintf(form->paddata, "Quads to disable for PTC are A and B");
+			break;
+		case 2:
+			sprintf(form->paddata, "Quads to disable for PTC are B and C");
+			break;
+		default:
+			sprintf(form->paddata, "Quads to disable for PTC are C and D");
+			break;
+		}
+	}
+	break;
 	case 200: //TEI EVALUATION
 	{
 		SV sv;
