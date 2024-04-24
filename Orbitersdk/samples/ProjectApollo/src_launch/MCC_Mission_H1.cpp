@@ -204,7 +204,7 @@ void MCC::MissionSequence_H1()
 		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, rtcc->GETEval2(rtcc->calcParams.LOI - 23.5*3600.0), 5, MST_H1_TRANSLUNAR_DAY3_1);
 		break;
 	case MST_H1_TRANSLUNAR_DAY3_1: //MCC-3 update to PTC Quads Decision
-		UpdateMacro(UTP_PADWITHCMCUPLINK, PT_AP11MNV, rtcc->GETEval2(rtcc->calcParams.LOI - 21.8*3600.0), 24, MST_H1_TRANSLUNAR_DAY3_2);
+		UpdateMacro(UTP_PADWITHCMCUPLINK, PT_AP11MNV, rtcc->GETEval2(rtcc->calcParams.LOI - 21.8*3600.0), 24, MST_H1_TRANSLUNAR_DAY3_2, scrubbed, rtcc->GETEval2(rtcc->calcParams.LOI - 6.5*3600.0), MST_H1_TRANSLUNAR_DAY4_1);
 		break;
 	case MST_H1_TRANSLUNAR_DAY3_2: //PTC Quads Decision to MCC-4 Evaluation
 		UpdateMacro(UTP_PADONLY, PT_GENERIC, rtcc->GETEval2(rtcc->calcParams.LOI - 6.5*3600.0), 140, MST_H1_TRANSLUNAR_DAY4_1);
