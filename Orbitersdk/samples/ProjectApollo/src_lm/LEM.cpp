@@ -223,7 +223,7 @@ void cbLMVesim(int inputID, int eventType, int newValue, void *pdata) {
 			pLM->ButtonClick(); // guardClick is inaccesible
 			break;
 		case LM_BUTTON_DSKY_PRO:
-			pLM->dsky.ProgPressed();
+			pLM->dsky.ProceedPressed();
 			break;
 		case LM_BUTTON_DSKY_KEY_REL:
 			pLM->dsky.KeyRel();
@@ -310,7 +310,7 @@ void cbLMVesim(int inputID, int eventType, int newValue, void *pdata) {
 			pLM->Sclick.play();;
 			break;
 		case LM_BUTTON_DSKY_PRO:
-			pLM->dsky.ProgReleased();
+			pLM->dsky.ProceedReleased();
 			break;
 		}
 	}
@@ -616,6 +616,8 @@ void LEM::Init()
 	lmpmesh = NULL;
 	vcmesh = NULL;
 
+	vis = NULL;
+
 	pMCC = NULL;
 
 	aeaa = NULL;
@@ -835,151 +837,164 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 	if (enableVESIM) vesim.clbkConsumeBufferedKey(key, down, keystate);
 
 	// DS20060404 Allow keys to control DSKY like in the CM
-	if (KEYMOD_SHIFT(keystate)){
+	if (KEYMOD_SHIFT(keystate)) {
 		// Do DSKY stuff
-		if(down){
-			switch(key){
-				case OAPI_KEY_DECIMAL:
-					dsky.ClearPressed();
-					break;
-				case OAPI_KEY_R:
-					dsky.ResetPressed();
-					break;
-				case OAPI_KEY_HOME:
-					dsky.KeyRel();
-					break;
-				case OAPI_KEY_T:
-					dsky.EnterPressed();
-					break;
-				case OAPI_KEY_V:
-					dsky.VerbPressed();
-					break;
-				case OAPI_KEY_N:
-					dsky.NounPressed();
-					break;
-				case OAPI_KEY_ADD:
-					dsky.PlusPressed();
-					break;
-				case OAPI_KEY_SUBTRACT:
-					dsky.MinusPressed();
-					break;
-				case OAPI_KEY_END:
-					dsky.ProgPressed();
-					break;
-				case OAPI_KEY_NUMPAD1:
-					dsky.NumberPressed(1);
-					break;
-				case OAPI_KEY_NUMPAD2:
-					dsky.NumberPressed(2);
-					break;
-				case OAPI_KEY_NUMPAD3:
-					dsky.NumberPressed(3);
-					break;
-				case OAPI_KEY_NUMPAD4:
-					dsky.NumberPressed(4);
-					break;
-				case OAPI_KEY_NUMPAD5:
-					dsky.NumberPressed(5);
-					break;
-				case OAPI_KEY_NUMPAD6:
-					dsky.NumberPressed(6);
-					break;
-				case OAPI_KEY_NUMPAD7:
-					dsky.NumberPressed(7);
-					break;
-				case OAPI_KEY_NUMPAD8:
-					dsky.NumberPressed(8);
-					break;
-				case OAPI_KEY_NUMPAD9:
-					dsky.NumberPressed(9);
-					break;
-				case OAPI_KEY_NUMPAD0:
-					dsky.NumberPressed(0);
-					break;
-				case OAPI_KEY_A:
-					AbortStageSwitch.SetState(0);
-					break;
-				case OAPI_KEY_K:
-					//kill rotation
-					SetAngularVel(_V(0, 0, 0));
-					break;
-			}
-		}else{
-			// KEY UP
-			switch(key){
-				case OAPI_KEY_END:
-					dsky.ProgReleased();
-					break;
+		DSKYPushSwitch* dskyKeyChanged = nullptr;
+		switch (key) {
+			case OAPI_KEY_DECIMAL:
+				dskyKeyChanged = &DskySwitchClear;
+				break;
+			case OAPI_KEY_R:
+				dskyKeyChanged = &DskySwitchReset;
+				break;
+			case OAPI_KEY_HOME:
+				dskyKeyChanged = &DskySwitchKeyRel;
+				break;
+			case OAPI_KEY_T:
+				dskyKeyChanged = &DskySwitchEnter;
+				break;
+			case OAPI_KEY_V:
+				dskyKeyChanged = &DskySwitchVerb;
+				break;
+			case OAPI_KEY_N:
+				dskyKeyChanged = &DskySwitchNoun;
+				break;
+			case OAPI_KEY_ADD:
+				dskyKeyChanged = &DskySwitchPlus;
+				break;
+			case OAPI_KEY_SUBTRACT:
+				dskyKeyChanged = &DskySwitchMinus;
+				break;
+			case OAPI_KEY_END:
+				dskyKeyChanged = &DskySwitchProceed;
+				break;
+			case OAPI_KEY_NUMPAD1:
+				dskyKeyChanged = &DskySwitchOne;
+				break;
+			case OAPI_KEY_NUMPAD2:
+				dskyKeyChanged = &DskySwitchTwo;
+				break;
+			case OAPI_KEY_NUMPAD3:
+				dskyKeyChanged = &DskySwitchThree;
+				break;
+			case OAPI_KEY_NUMPAD4:
+				dskyKeyChanged = &DskySwitchFour;
+				break;
+			case OAPI_KEY_NUMPAD5:
+				dskyKeyChanged = &DskySwitchFive;
+				break;
+			case OAPI_KEY_NUMPAD6:
+				dskyKeyChanged = &DskySwitchSix;
+				break;
+			case OAPI_KEY_NUMPAD7:
+				dskyKeyChanged = &DskySwitchSeven;
+				break;
+			case OAPI_KEY_NUMPAD8:
+				dskyKeyChanged = &DskySwitchEight;
+				break;
+			case OAPI_KEY_NUMPAD9:
+				dskyKeyChanged = &DskySwitchNine;
+				break;
+			case OAPI_KEY_NUMPAD0:
+				dskyKeyChanged = &DskySwitchZero;
+				break;
+		}
 
+		// Direction-specific code, handle DSKY key presses if any.
+		if (down) {
+			// KEY DOWN
+			if (dskyKeyChanged != nullptr) {
+				dskyKeyChanged->SetHeld(true);
+				dskyKeyChanged->SetState(PUSHBUTTON_PUSHED);
+			}
+
+			switch (key) {
+			case OAPI_KEY_K:
+				//kill rotation
+				SetAngularVel(_V(0, 0, 0));
+				break;
+			}
+		} else {
+			// KEY UP
+			if (dskyKeyChanged != nullptr) {
+				// Doing SwitchTo instead of SetState prevents a second click on key up.
+				dskyKeyChanged->SetHeld(false);
+				dskyKeyChanged->SwitchTo(PUSHBUTTON_UNPUSHED);
 			}
 		}
 		return 0;
 	}
 	else if (KEYMOD_CONTROL(keystate)) {
 		// Do DEDA stuff
-		if (down) {
-			switch (key) {
+		DEDAPushSwitch* dedaKeyChanged = nullptr;
+		switch (key) {
 			case OAPI_KEY_DECIMAL:
-				deda.ClearPressed();
+				dedaKeyChanged = &DedaSwitchClear;
 				break;
 			case OAPI_KEY_NUMPADENTER:
-				deda.EnterPressed();
+				dedaKeyChanged = &DedaSwitchEnter;
 				break;
-			case OAPI_KEY_DIVIDE:
-				deda.HoldPressed();
+			case OAPI_KEY_PRIOR:
+				dedaKeyChanged = &DedaSwitchHold;
 				break;
 			case OAPI_KEY_MULTIPLY:
-				deda.ReadOutPressed();
+				dedaKeyChanged = &DedaSwitchReadOut;
 				break;
 			case OAPI_KEY_ADD:
-				deda.PlusPressed();
+				dedaKeyChanged = &DedaSwitchPlus;
 				break;
 			case OAPI_KEY_SUBTRACT:
-				deda.MinusPressed();
+				dedaKeyChanged = &DedaSwitchMinus;
 				break;
 			case OAPI_KEY_NUMPAD1:
-				deda.NumberPressed(1);
+				dedaKeyChanged = &DedaSwitchOne;
 				break;
 			case OAPI_KEY_NUMPAD2:
-				deda.NumberPressed(2);
+				dedaKeyChanged = &DedaSwitchTwo;
 				break;
 			case OAPI_KEY_NUMPAD3:
-				deda.NumberPressed(3);
+				dedaKeyChanged = &DedaSwitchThree;
 				break;
 			case OAPI_KEY_NUMPAD4:
-				deda.NumberPressed(4);
+				dedaKeyChanged = &DedaSwitchFour;
 				break;
 			case OAPI_KEY_NUMPAD5:
-				deda.NumberPressed(5);
+				dedaKeyChanged = &DedaSwitchFive;
 				break;
 			case OAPI_KEY_NUMPAD6:
-				deda.NumberPressed(6);
+				dedaKeyChanged = &DedaSwitchSix;
 				break;
 			case OAPI_KEY_NUMPAD7:
-				deda.NumberPressed(7);
+				dedaKeyChanged = &DedaSwitchSeven;
 				break;
 			case OAPI_KEY_NUMPAD8:
-				deda.NumberPressed(8);
+				dedaKeyChanged = &DedaSwitchEight;
 				break;
 			case OAPI_KEY_NUMPAD9:
-				deda.NumberPressed(9);
+				dedaKeyChanged = &DedaSwitchNine;
 				break;
 			case OAPI_KEY_NUMPAD0:
-				deda.NumberPressed(0);
+				dedaKeyChanged = &DedaSwitchZero;
 				break;
 			case OAPI_KEY_D:
 				// Orbiter undocking messes with our undocking system. We consume the keybind here to block it.
 				// This won't work if the user has changed this keybind. Unfortunately Orbiter does not export the keymap through the API (yet). :(
 				return 1;
-			}
 		}
-		else {
-			// KEY UP
-			switch (key) {
-			case OAPI_KEY_DECIMAL:
-				deda.ResetKeyDown();
-				break;
 
+		// Direction-specific code, handle DEDA key presses if any.
+		if (down) {
+			// KEY DOWN
+			if (dedaKeyChanged != nullptr) {
+				dedaKeyChanged->SetHeld(true);
+				dedaKeyChanged->SetState(PUSHBUTTON_PUSHED);
+			}
+		} else {
+			// KEY UP
+			if (dedaKeyChanged != nullptr) {
+				// Doing SwitchTo instead of SetState prevents a second click on key up.
+				dedaKeyChanged->SetHeld(false);
+				dedaKeyChanged->SwitchTo(PUSHBUTTON_UNPUSHED);
 			}
 		}
 		return 0;
