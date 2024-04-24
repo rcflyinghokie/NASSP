@@ -3198,7 +3198,7 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 		char label[100];
 		value = GetValue();
 		sprintf(label, "%.0lf", value);
-		rotstate = (int)(value / 33.3333333333333);
+		rotstate = (int)(value*19.0 / 600.0 - 0.25); //31.57894736842105
 
 		oapi::Sketchpad* skp = oapiGetSketchpad(drawSurface);
 		oapi::Font* font = oapiCreateFont(22, true, "Arial", FONT_BOLD);
@@ -3231,6 +3231,13 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 			skp->Text(49 + x, 31 + y, label, strlen(label));
 			break;
 		case 2: //-60°
+			rt.left = 32 + x;
+			rt.top = 29 + y;
+			rt.right = 63 + x;
+			rt.bottom = 59 + y;
+			skp->Rectangle(rt.left, rt.top, rt.right, rt.bottom);
+			skp->Text(47 + x, 34 + y, label, strlen(label));
+			break;
 		case 3: //-30°
 			rt.left = 29 + x;
 			rt.top = 29 + y;
