@@ -200,6 +200,8 @@ void DSKY::Reset()
 	DSKYOutEnabled = false;
 	strcpy(DSKYOutIp, "127.0.0.1");
 	DSKYOutPort = 3002;
+	numericsOutEnabled = false;
+	NumericsOutPort = 3003;
 }
 
 DSKY::~DSKY()
@@ -253,12 +255,17 @@ void DSKY::Timestep(double simt)
 			oapiReadItem_bool(DSKYOutConfig, "ENABLED", DSKYOutEnabled);
 			oapiReadItem_string(DSKYOutConfig, "IP", DSKYOutIp);
 			oapiReadItem_int(DSKYOutConfig, "DSKYPORT", DSKYOutPort);
+			oapiReadItem_bool(DSKYOutConfig, "NUMERICSENABLED", numericsOutEnabled);
+			oapiReadItem_int(DSKYOutConfig, "NUMERICSPORT", NumericsOutPort);
 
 			//Set up network stuff
 			WSAStartup(0x0202, &wsaData);
-			serverAddr.sin_family = AF_INET;
-			serverAddr.sin_addr.s_addr = inet_addr(DSKYOutIp);
-			serverAddr.sin_port = htons((u_short)DSKYOutPort);
+			serverAddr[0].sin_family = AF_INET;
+			serverAddr[1].sin_family = AF_INET;
+			serverAddr[0].sin_addr.s_addr = inet_addr(DSKYOutIp);
+			serverAddr[1].sin_addr.s_addr = inet_addr(DSKYOutIp);
+			serverAddr[0].sin_port = htons((u_short)DSKYOutPort);
+			serverAddr[1].sin_port = htons((u_short)NumericsOutPort);
 			clientSock = socket(PF_INET, SOCK_DGRAM, 0);
 		}
 		oapiCloseFile(DSKYOutConfig, FILE_IN_ZEROONFAIL);
@@ -1491,5 +1498,22 @@ void DSKY::SendNetworkPacketDSKY()
 
 		sendto(clientSock, message.c_str(), message.length(), 0, (LPSOCKADDR)&serverAddr, sizeof(struct sockaddr));
 		//strcpy(oapiDebugString(), message.c_str());
+
+		//SendNetworkPacketNumerics();
+	}
+}
+
+void DSKY::SendNetworkPacketNumerics()
+{
+	if (numericsOutEnabled == true) {
+		std::string message = "{\"brightness\": \"";
+		char numLvl[256] = "";
+
+		sprintf(numLvl, "%i", DimmerRotationalSwitch->GetState());
+
+		message = message + numLvl + "\"}";
+
+		sendto(clientSock, message.c_str(), message.length(), 0, (LPSOCKADDR)&serverAddr, sizeof(struct sockaddr));
+		strcpy(oapiDebugString(), message.c_str());
 	}
 }
