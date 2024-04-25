@@ -101,7 +101,6 @@ void ORDEAL::Timestep(double simdt) {
 
 	// Calculate rate, see "Guidance and control systems - Orbital rate drive electronics for the Apollo command module and lunar module", NTRS ID 19740026211
 	double rate = 0;
-	sprintf(oapiDebugString(), "%lf", AltSetRotary->GetValue());
 	if (EarthSwitch->IsUp()) {
 		rate = 0.2 * RAD / (2.8182 + 0.001265 * AltSetRotary->GetValue());
 	}
