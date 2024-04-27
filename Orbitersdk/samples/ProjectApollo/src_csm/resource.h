@@ -1683,6 +1683,9 @@
 // Integral Lights Cue Card
 #define AID_VC_CUE_CARDS_LIGHTING  7020
 
+// Integral DSKY and CW Lights
+#define AID_VC_DSKY_CW_LIGHT_EMISSIONS  7021
+
 // Next default values for new objects
 //
 #ifdef APSTUDIO_INVOKED

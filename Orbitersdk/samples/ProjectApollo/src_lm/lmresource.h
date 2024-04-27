@@ -1090,6 +1090,7 @@
 #define AID_LMVC_INTEGRAL_LIGHT  3831
 #define AID_LMVC_FLOOD_LIGHT     3832
 #define AID_LMVC_NUMERICS_LIGHT  3833
+#define AID_LMVC_DSKY_CW_LIGHT   3834
 
 // VC Active Areas (Panel 11)
 #define AID_VC_PANEL_11			((id >= 4100) && (id <= 4199))

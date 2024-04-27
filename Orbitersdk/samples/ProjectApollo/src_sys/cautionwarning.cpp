@@ -309,6 +309,20 @@ typedef union
 } CWSState;
 
 //
+// Functions to Read the CW lights states. Code by Jordan. Needs to be checked.
+//
+
+int CautionWarningSystem::GetLightsStates(bool *LightState)
+
+{
+		for (int i = 0; i < CWS_LIGHTS_PER_PANEL; i++) {
+			LightState[i] = LeftLights[i];
+			LightState[i+30] = RightLights[i];
+		}
+	return 0;
+}
+
+//
 // Functions to pack and unpack light states.
 //
 

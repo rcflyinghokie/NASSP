@@ -105,8 +105,16 @@ public:
 	virtual ~CautionWarningSystem();
 
 	///
+	/// \brief Reads The CW Lights State
+	/// This function Reads the CW Lights State
+	///
+	/// \param LightState Array of light states.
+	///
+	int GetLightsStates(bool *LightState);
+
+	///
 	/// \brief Test caution and warning lights.
-	/// \param state Which tset to perform.
+	/// \param state Which test to perform.
 	///
 	virtual void LightTest(LightTestState state);
 

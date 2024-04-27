@@ -704,6 +704,9 @@ void Saturn::InitVC()
 	oapiVCRegisterArea(AID_VC_FLOOD_LIGHT_P100, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE);
 	oapiVCRegisterArea(AID_VC_NUMERICS_LIGHT_P100, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE);
 
+	// Integral DSKY and CW Lights
+    oapiVCRegisterArea(AID_VC_DSKY_CW_LIGHT_EMISSIONS, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE);
+
 	// Cue Cards Lighting
 	oapiVCRegisterArea(AID_VC_CUE_CARDS_LIGHTING, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE);
 
@@ -1735,7 +1738,7 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 	//	Redraw Panel stuff
 	//	return true if dynamic texture modified, false if not
 	
-#ifdef _OPENORBITER
+#ifdef _OPENORBITER // Code for OpenOrbiter
 	case AID_VC_SWITCH_P13_04: // CMVC Ordeal Lighting Switch
         SetCMVCIntegralLight(vcidx, IntegralLights_CMVC_Ordeal, MatProp::Emission, ordeal.LightingPower(), NUM_ELEMENTS(IntegralLights_CMVC_Ordeal));
 		ORDEALLightingSwitch.DrawSwitchVC(id, event, surf);
@@ -1778,6 +1781,41 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 	case AID_VC_NUMERICS_LIGHT_P100:
 		SetCMVCIntegralLight(vcidx, NumericLights_P100, MatProp::Light, (double)(Panel100NumericRotarySwitch.GetState())/10.0, NUM_ELEMENTS(NumericLights_P100));
 		return true;
+
+	case AID_VC_DSKY_CW_LIGHT_EMISSIONS:
+    {
+		std::vector<DWORD> DSKY_CW_Lights;
+		std::vector<DWORD> DSKY_LEB_Lights;
+
+		bool LightStates[CWS_LIGHTS_PER_PANEL*2];
+
+		for (int i = 0; i < CWS_LIGHTS_PER_PANEL*2; i++) {
+			LightStates[i] = false;
+		}
+		cws.GetLightsStates(LightStates);
+
+		if (dsky.UplinkLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_UPLINK_ACTY);	DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_UPLINK_ACTY); }
+		if (dsky.NoAttLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_NO_ATT); 		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_NO_ATT); }
+		if (dsky.StbyLit())			{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_STBY);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_STBY); }
+		if (dsky.KbRelLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_KEY_REL);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_KEY_REL); }
+		if (dsky.OprErrLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_OPR_ERR);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_OPR_ERR); }
+		if (dsky.TempLit())			{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_TEMP);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_TEMP); }
+		if (dsky.GimbalLockLit())	{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_GIMBAL_LOCK);	DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_GIMBAL_LOCK); }
+		if (dsky.ProgLit())			{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_PROG);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_PROG); }
+		if (dsky.RestartLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_RESTART);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_RESTART); }
+		if (dsky.TrackerLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_TRACKER);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_TRACKER); }
+
+		for (int i = 0; i < CWS_LIGHTS_PER_PANEL*2; i++)
+		{
+			if (LightStates[i])		{ DSKY_CW_Lights.push_back(IntegralLights_CW_Lights[i]); }
+		}
+
+		SetCMVCIntegralLight(vcidx, &DSKY_CW_Lights[0],  MatProp::Light, ((double)(IntegralRotarySwitch.GetState()) / 10.0 + (double)(FloodRotarySwitch.GetState()) / 10.0) /2.0, DSKY_CW_Lights.size());
+		SetCMVCIntegralLight(vcidx, &DSKY_LEB_Lights[0], MatProp::Light, ((double)(Panel100IntegralRotarySwitch.GetState()) / 10.0 + (double)(FloodRotarySwitch.GetState()) / 10.0) /2.0, DSKY_LEB_Lights.size());
+
+		return true;
+    }
+
 	case AID_VC_CUE_CARDS_LIGHTING:
 	{
 		//Get list of mesh indices
@@ -1793,7 +1831,7 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 
 		return true;
 	}
-#else
+#else // Code for Orbiter Beta
 	case AID_VC_SWITCH_P13_04: // CMVC Ordeal Lighting Switch
         SetCMVCIntegralLight(vcidx, IntegralLights_CMVC_Ordeal, MESHM_EMISSION2, ordeal.LightingPower(), NUM_ELEMENTS(IntegralLights_CMVC_Ordeal));
 		ORDEALLightingSwitch.DrawSwitchVC(id, event, surf);
@@ -1806,6 +1844,8 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 
 	case AID_VC_FLOOD_LIGHT_P8:
         SetCMVCIntegralLight(vcidx, FloodLights_P8, MESHM_EMISSION,(double)(FloodRotarySwitch.GetState())/10.0, NUM_ELEMENTS(FloodLights_P8));
+
+		// External meshes
 		SetCMVCIntegralLight(seatsunfoldedidx, CMVCSeatsUnFolded, MESHM_EMISSION, (double)(FloodRotarySwitch.GetState()) / 10.0, NUM_ELEMENTS(CMVCSeatsUnFolded));
 		SetCMVCIntegralLight(seatsfoldedidx, CMVCSeatsFolded, MESHM_EMISSION, (double)(FloodRotarySwitch.GetState()) / 10.0, NUM_ELEMENTS(CMVCSeatsFolded));
 		SetCMVCIntegralLight(coascdridx, CMVC_COAS_CDR, MESHM_EMISSION, (double)(FloodRotarySwitch.GetState()) / 10.0, NUM_ELEMENTS(CMVC_COAS_CDR));
@@ -1813,7 +1853,7 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 
 	case AID_VC_NUMERICS_LIGHT_P8:
 //        SetCMVCIntegralLight(vcidx,NumericLights_P8, MESHM_EMISSION,(double)(NumericRotarySwitch.GetState())/10.0, NUM_ELEMENTS(NumericLights_P8));
-        SetCMVCIntegralLight(vcidx, NumericLights_P8_NTex, MESHM_EMISSION, (double)(NumericRotarySwitch.GetState())/10.0, NUM_ELEMENTS(NumericLights_P8_NTex));
+        SetCMVCIntegralLight(vcidx, NumericLights_P8_NTex, MESHM_EMISSION, ((double)(NumericRotarySwitch.GetState()) / 10.0 + (double)(FloodRotarySwitch.GetState()) / 10.0) /2.0, NUM_ELEMENTS(NumericLights_P8_NTex));
         return true;
 
 	case AID_VC_INTEGRAL_LIGHT_P5:
@@ -1833,9 +1873,42 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
         return true;
 
 	case AID_VC_NUMERICS_LIGHT_P100:
-		SetCMVCIntegralLight(vcidx, NumericLights_P100, MESHM_EMISSION, (double)(Panel100NumericRotarySwitch.GetState()) / 10.0, NUM_ELEMENTS(NumericLights_P100));
+		SetCMVCIntegralLight(vcidx, NumericLights_P100, MESHM_EMISSION, ((double)(Panel100NumericRotarySwitch.GetState()) / 10.0 + (double)(FloodRotarySwitch.GetState()) / 10.0) /2.0, NUM_ELEMENTS(NumericLights_P100));
 		return true;
 
+	case AID_VC_DSKY_CW_LIGHT_EMISSIONS:
+    {
+		std::vector<DWORD> DSKY_CW_Lights;
+		std::vector<DWORD> DSKY_LEB_Lights;
+
+		bool LightStates[CWS_LIGHTS_PER_PANEL*2];
+
+		for (int i = 0; i < CWS_LIGHTS_PER_PANEL*2; i++) {
+			LightStates[i] = false;
+		}
+		cws.GetLightsStates(LightStates);
+
+		if (dsky.UplinkLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_UPLINK_ACTY);	DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_UPLINK_ACTY); }
+		if (dsky.NoAttLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_NO_ATT); 		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_NO_ATT); }
+		if (dsky.StbyLit())			{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_STBY);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_STBY); }
+		if (dsky.KbRelLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_KEY_REL);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_KEY_REL); }
+		if (dsky.OprErrLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_OPR_ERR);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_OPR_ERR); }
+		if (dsky.TempLit())			{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_TEMP);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_TEMP); }
+		if (dsky.GimbalLockLit())	{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_GIMBAL_LOCK);	DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_GIMBAL_LOCK); }
+		if (dsky.ProgLit())			{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_PROG);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_PROG); }
+		if (dsky.RestartLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_RESTART);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_RESTART); }
+		if (dsky.TrackerLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_TRACKER);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_TRACKER); }
+
+		for (int i = 0; i < CWS_LIGHTS_PER_PANEL*2; i++)
+		{
+			if (LightStates[i])		{ DSKY_CW_Lights.push_back(IntegralLights_CW_Lights[i]); }
+		}
+
+		SetCMVCIntegralLight(vcidx, &DSKY_CW_Lights[0],  MESHM_EMISSION, ((double)(IntegralRotarySwitch.GetState()) / 10.0 + (double)(FloodRotarySwitch.GetState()) / 10.0) /2.0, DSKY_CW_Lights.size());
+		SetCMVCIntegralLight(vcidx, &DSKY_LEB_Lights[0], MESHM_EMISSION, ((double)(Panel100IntegralRotarySwitch.GetState()) / 10.0 + (double)(FloodRotarySwitch.GetState()) / 10.0) /2.0, DSKY_LEB_Lights.size());
+
+		return true;
+    }
 
 	case AID_VC_CUE_CARDS_LIGHTING:
 	{
@@ -2028,10 +2101,22 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 		return true;
 
 	case AID_VC_CWS_LIGHTS_LEFT:
+		// TODO Test by Jordan
+#ifdef _OPENORBITER  // Code for OpenOrbiter
+		SetCMVCIntegralLight(vcidx, IntegralLights_CW_LeftLights, MatProp::Light,((double)(IntegralRotarySwitch.GetState()) / 10.0 + (double)(FloodRotarySwitch.GetState()) / 10.0) /2.0, NUM_ELEMENTS(IntegralLights_CW_LeftLights));
+#else
+		SetCMVCIntegralLight(vcidx, IntegralLights_CW_LeftLights, MESHM_EMISSION,((double)(IntegralRotarySwitch.GetState()) / 10.0 + (double)(FloodRotarySwitch.GetState()) / 10.0) /2.0, NUM_ELEMENTS(IntegralLights_CW_LeftLights));
+#endif
 		cws.RenderLights(surf, srf[SRF_VC_CW_LIGHTS], true, TexMul);
 		return true;
 
 	case AID_VC_CWS_LIGHTS_RIGHT:
+		// TODO Test by Jordan
+#ifdef _OPENORBITER  // Code for OpenOrbiter
+		SetCMVCIntegralLight(vcidx, IntegralLights_CW_RightLights, MatProp::Light,((double)(IntegralRotarySwitch.GetState()) / 10.0 + (double)(FloodRotarySwitch.GetState()) / 10.0) /2.0, NUM_ELEMENTS(IntegralLights_CW_RightLights));
+#else
+		SetCMVCIntegralLight(vcidx, IntegralLights_CW_RightLights, MESHM_EMISSION,((double)(IntegralRotarySwitch.GetState()) / 10.0 + (double)(FloodRotarySwitch.GetState()) / 10.0) /2.0, NUM_ELEMENTS(IntegralLights_CW_RightLights));
+#endif
 		cws.RenderLights(surf, srf[SRF_VC_CW_LIGHTS], false, TexMul);
 		return true;
 

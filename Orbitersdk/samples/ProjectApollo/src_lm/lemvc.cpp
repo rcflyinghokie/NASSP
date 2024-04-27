@@ -992,8 +992,10 @@ void LEM::RegisterActiveAreas()
 		oapiVCSetAreaClickmode_Spherical(AID_VC_ROT_P1_01 + i, P1_ROT_POS[i] + ofs, 0.02);
 	}
 
+	// Integral DSKY and CW Lights
+    oapiVCRegisterArea(AID_LMVC_DSKY_CW_LIGHT,  PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE);
 	oapiVCRegisterArea(AID_LMVC_INTEGRAL_LIGHT, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE);
-	oapiVCRegisterArea(AID_LMVC_FLOOD_LIGHT, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE);
+	oapiVCRegisterArea(AID_LMVC_FLOOD_LIGHT,    PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE);
 	oapiVCRegisterArea(AID_LMVC_NUMERICS_LIGHT, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE);
 
 	oapiVCRegisterArea(AID_VC_LM_CWS_LEFT, _R(238*TexMul, 27*TexMul, 559*TexMul, 153*TexMul), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE, PANEL_MAP_BACKGROUND, MainPanelTex1);
@@ -1555,41 +1557,119 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 {
 	switch (id) {
 
-#ifdef _OPENORBITER
+#ifdef _OPENORBITER  // Code for OpenOrbiter
 	case AID_LMVC_INTEGRAL_LIGHT:
-        SetLMVCIntegralLight(vcidx, IntegralLights_LMVC, MatProp::Emission, lca.GetIntegralVoltage() / 100.0, NUM_ELEMENTS(IntegralLights_LMVC));
-//		SetLMVCIntegralLight(vcidx, IntegralLights_LMVC_NoTex, MatProp::Light, lca.GetIntegralVoltage() / 100.0, NUM_ELEMENTS(IntegralLights_LMVC_NoTex)));
-		SetLMVCIntegralLight(vcidx, IntegralLights_LMVC_NoTex, MatProp::Light, ( (lca.GetIntegralVoltage() / 100.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0) )/2.0, NUM_ELEMENTS(IntegralLights_LMVC_NoTex));
-//		SetLMVCIntegralLight(vcidx, IntegralLights_LMVC_NoTex, MatProp::Emission, lca.GetIntegralVoltage() / 100.0, NUM_ELEMENTS(IntegralLights_LMVC_NoTex));
-        return true;
-
-	case AID_LMVC_FLOOD_LIGHT:
-        SetLMVCIntegralLight(vcidx, FloodLights_LMVC, MatProp::Light, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_LMVC));
-        SetLMVCIntegralLight(xpointershadesidx, FloodLights_XPointer_Shades, MatProp::Light, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_XPointer_Shades));
-        return true;
-
-	case AID_LMVC_NUMERICS_LIGHT:
-		SetLMVCIntegralLight(vcidx, NumericLights_LMVC, MatProp::Light, ( (lca.GetNumericVoltage() / 115.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0) )/2, NUM_ELEMENTS(NumericLights_LMVC));
-		return true;
-
-#else
-	case AID_LMVC_INTEGRAL_LIGHT:
-        SetLMVCIntegralLight(vcidx, IntegralLights_LMVC, MESHM_EMISSION2, lca.GetIntegralVoltage() / 75.0, NUM_ELEMENTS(IntegralLights_LMVC));
-		SetLMVCIntegralLight(vcidx, IntegralLights_LMVC_NoTex, MESHM_EMISSION, lca.GetIntegralVoltage() / 75.0, NUM_ELEMENTS(IntegralLights_LMVC_NoTex));
-        SetLMVCIntegralLight(vcidx, IntegralLights_LMVC_NoTex, MESHM_EMISSION2, lca.GetIntegralVoltage() / 75.0, NUM_ELEMENTS(IntegralLights_LMVC_NoTex));
+		SetLMVCIntegralLight(vcidx, IntegralLights_LMVC, MatProp::Emission, lca.GetIntegralVoltage() / 75.0, NUM_ELEMENTS(IntegralLights_LMVC));
 		return true;
 
 	case AID_LMVC_FLOOD_LIGHT:
-        SetLMVCIntegralLight(vcidx, FloodLights_LMVC, MESHM_EMISSION, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_LMVC));
-        SetLMVCIntegralLight(xpointershadesidx, FloodLights_XPointer_Shades, MESHM_EMISSION, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_XPointer_Shades));
+	{
+		std::vector<DWORD> DSKY_CW_Lights;
+
+		if (dsky.UplinkLit())     { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_UPLINK_ACTY); }
+		if (dsky.NoAttLit())      { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_NO_ATT); }
+		if (dsky.StbyLit())       { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_STBY); }
+		if (dsky.KbRelLit())      { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_KEY_REL); }
+		if (dsky.OprErrLit())     { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_OPR_ERR); }
+		if (dsky.TempLit())       { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_TEMP); }
+		if (dsky.GimbalLockLit()) { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_GIMBAL_LOCK); }
+		if (dsky.ProgLit())       { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_PROG); }
+		if (dsky.RestartLit())    { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_RESTART); }
+		if (dsky.TrackerLit())    { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_TRACKER); }
+
+//		sprintf(oapiDebugString(), "DSKY Lights on -> %i", DSKY_CW_Lights.size());
+//		sprintf(oapiDebugString(), "Integral Voltage = %lf", lca.GetIntegralVoltage());
+
+		SetLMVCIntegralLight(vcidx, FloodLights_LMVC, MatProp::Light, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_LMVC));
+		SetLMVCIntegralLight(xpointershadesidx, FloodLights_XPointer_Shades, MatProp::Light, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_XPointer_Shades));
+		SetLMVCIntegralLight(vcidx, &DSKY_CW_Lights[0], MatProp::Light, ((lca.GetIntegralVoltage() / 75.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0)) / 2.0, DSKY_CW_Lights.size());
+		return true;
+	}
+	case AID_LMVC_NUMERICS_LIGHT:
+		SetLMVCIntegralLight(vcidx, NumericLights_LMVC, MatProp::Light, ( (lca.GetNumericVoltage() / 110.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0) )/2, NUM_ELEMENTS(NumericLights_LMVC));
+		return true;
+
+	case AID_LMVC_DSKY_CW_LIGHT:
+	{
+/*
+		std::vector<DWORD> DSKY_CW_Lights;
+
+		if (dsky.UplinkLit())     { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_UPLINK_ACTY); }
+		if (dsky.NoAttLit())      { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_NO_ATT); }
+		if (dsky.StbyLit())       { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_STBY); }
+		if (dsky.KbRelLit())      { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_KEY_REL); }
+		if (dsky.OprErrLit())     { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_OPR_ERR); }
+		if (dsky.TempLit())       { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_TEMP); }
+		if (dsky.GimbalLockLit()) { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_GIMBAL_LOCK); }
+		if (dsky.ProgLit())       { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_PROG); }
+		if (dsky.RestartLit())    { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_RESTART); }
+		if (dsky.TrackerLit())    { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_TRACKER); }
+
+//		sprintf(oapiDebugString(), "WE ARE IN -> %i", DSKY_CW_Lights.size());
+//		sprintf(oapiDebugString(), "Integral Voltage = %lf", lca.GetIntegralVoltage());
+
+//		SetLMVCIntegralLight(vcidx, &DSKY_CW_Lights[0], MatProp::Light, lca.GetIntegralVoltage() / 75.0, DSKY_CW_Lights.size());
+		SetLMVCIntegralLight(vcidx, &DSKY_CW_Lights[0], MatProp::Light, ((lca.GetIntegralVoltage() / 75.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0)) / 2.0, DSKY_CW_Lights.size());
+*/
+		return true;
+	}
+
+#else  // Code for Orbiter Beta
+	case AID_LMVC_INTEGRAL_LIGHT:
+		SetLMVCIntegralLight(vcidx, IntegralLights_LMVC, MESHM_EMISSION2, lca.GetIntegralVoltage() / 75.0, NUM_ELEMENTS(IntegralLights_LMVC));
+		return true;
+
+	case AID_LMVC_FLOOD_LIGHT:
+ 	{
+		std::vector<DWORD> DSKY_CW_Lights;
+
+		if (dsky.UplinkLit())     { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_UPLINK_ACTY); }
+		if (dsky.NoAttLit())      { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_NO_ATT); }
+		if (dsky.StbyLit())       { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_STBY); }
+		if (dsky.KbRelLit())      { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_KEY_REL); }
+		if (dsky.OprErrLit())     { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_OPR_ERR); }
+		if (dsky.TempLit())       { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_TEMP); }
+		if (dsky.GimbalLockLit()) { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_GIMBAL_LOCK); }
+		if (dsky.ProgLit())       { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_PROG); }
+		if (dsky.RestartLit())    { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_RESTART); }
+		if (dsky.TrackerLit())    { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_TRACKER); }
+
+//		sprintf(oapiDebugString(), "DSKY Lights on -> %i", DSKY_CW_Lights.size());
+//		sprintf(oapiDebugString(), "Integral Voltage = %lf", lca.GetIntegralVoltage());
+
+		SetLMVCIntegralLight(vcidx, FloodLights_LMVC, MESHM_EMISSION, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_LMVC));
+		SetLMVCIntegralLight(xpointershadesidx, FloodLights_XPointer_Shades, MESHM_EMISSION, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_XPointer_Shades));
+		SetLMVCIntegralLight(vcidx, &DSKY_CW_Lights[0], MESHM_EMISSION, ((lca.GetIntegralVoltage() / 75.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0)) / 2.0, DSKY_CW_Lights.size());
         return true;
+	}
 
 	case AID_LMVC_NUMERICS_LIGHT:
-		SetLMVCIntegralLight(vcidx, NumericLights_LMVC, MESHM_EMISSION, ( (lca.GetNumericVoltage() / 115.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0) )/2, NUM_ELEMENTS(NumericLights_LMVC));
-
-//		sprintf(oapiDebugString(), "Numerics Voltage = %lf", lca.GetNumericVoltage());
-		
+		SetLMVCIntegralLight(vcidx, NumericLights_LMVC, MESHM_EMISSION, ( (lca.GetNumericVoltage() / 110.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0) )/2, NUM_ELEMENTS(NumericLights_LMVC));
         return true;
+
+	case AID_LMVC_DSKY_CW_LIGHT:
+	{
+/*
+		std::vector<DWORD> DSKY_CW_Lights;
+
+		if (dsky.UplinkLit())     { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_UPLINK_ACTY); }
+		if (dsky.NoAttLit())      { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_NO_ATT); }
+		if (dsky.StbyLit())       { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_STBY); }
+		if (dsky.KbRelLit())      { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_KEY_REL); }
+		if (dsky.OprErrLit())     { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_OPR_ERR); }
+		if (dsky.TempLit())       { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_TEMP); }
+		if (dsky.GimbalLockLit()) { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_GIMBAL_LOCK); }
+		if (dsky.ProgLit())       { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_PROG); }
+		if (dsky.RestartLit())    { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_RESTART); }
+		if (dsky.TrackerLit())    { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_TRACKER); }
+
+//		sprintf(oapiDebugString(), "DSKY Lights on -> %i", DSKY_CW_Lights.size());
+//		sprintf(oapiDebugString(), "Integral Voltage = %lf", lca.GetIntegralVoltage());
+
+		SetLMVCIntegralLight(vcidx, &DSKY_CW_Lights[0], MESHM_EMISSION, ((lca.GetIntegralVoltage() / 75.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0)) / 2.0, DSKY_CW_Lights.size());
+ */
+		return true;
+	}
 
 #endif
 
