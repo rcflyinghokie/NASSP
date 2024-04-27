@@ -59,7 +59,39 @@ DWORD FloodLights_LMVC[] = {
 	VC_MAT_DSKY_LIGHTS_STBY,
 	VC_MAT_DSKY_LIGHTS_TEMP,
 	VC_MAT_DSKY_LIGHTS_TRACKER,
-	VC_MAT_DSKY_LIGHTS_UPLINK_ACTY
+	VC_MAT_DSKY_LIGHTS_UPLINK_ACTY,
+
+	// CW Lights
+	VC_MAT_Panel_01_CW_Lights_AGS,
+	VC_MAT_Panel_01_CW_Lights_ASC_PRESS,
+	VC_MAT_Panel_01_CW_Lights_CABIN,
+	VC_MAT_Panel_01_CW_Lights_CES_AC,
+	VC_MAT_Panel_01_CW_Lights_CES_DC,
+	VC_MAT_Panel_01_CW_Lights_DC_BUS,
+	VC_MAT_Panel_01_CW_Lights_DES_REG,
+	VC_MAT_Panel_01_CW_Lights_ISS,
+	VC_MAT_Panel_01_CW_Lights_LGC,
+	VC_MAT_Panel_01_CW_Lights_RCS_A_REG,
+	VC_MAT_Panel_01_CW_Lights_RCS_B_REG,
+	VC_MAT_Panel_01_CW_Lights_RCS_TCA,
+	VC_MAT_Panel_01_CW_Lights_SUIT_FAN,
+	VC_MAT_Panel_02_CW_Lights_ASC_HI_REG,
+	VC_MAT_Panel_02_CW_Lights_ASC_QTY,
+	VC_MAT_Panel_02_CW_Lights_BATTERY,
+	VC_MAT_Panel_02_CW_Lights_CW_PWR,
+	VC_MAT_Panel_02_CW_Lights_ECS,
+	VC_MAT_Panel_02_CW_Lights_ED_RELAYS,
+	VC_MAT_Panel_02_CW_Lights_ENG_GMBL,
+	VC_MAT_Panel_02_CW_Lights_GLYCOL,
+	VC_MAT_Panel_02_CW_Lights_HEATER,
+	VC_MAT_Panel_02_CW_Lights_INVERTER,
+	VC_MAT_Panel_02_CW_Lights_LDG_RDR,
+	VC_MAT_Panel_02_CW_Lights_O2_QTY,
+	VC_MAT_Panel_02_CW_Lights_PRE_AMPS,
+	VC_MAT_Panel_02_CW_Lights_RCS,
+	VC_MAT_Panel_02_CW_Lights_RNDZ_RDR,
+	VC_MAT_Panel_02_CW_Lights_SBD_RCVR,
+	VC_MAT_Panel_02_CW_Lights_WATER_QTY
 
 };
 
@@ -93,4 +125,62 @@ DWORD IntegralLights_LMVC_NoTex[] = {
 DWORD FloodLights_XPointer_Shades[] = {
 	0
 };
+
+DWORD LMVC_CW_Lights[5][8] = {
+	{
+		1000,
+		VC_MAT_Panel_01_CW_Lights_CES_AC,
+		VC_MAT_Panel_01_CW_Lights_RCS_TCA,
+		VC_MAT_Panel_01_CW_Lights_CABIN,
+		VC_MAT_Panel_02_CW_Lights_ASC_HI_REG,
+		VC_MAT_Panel_02_CW_Lights_INVERTER,
+		VC_MAT_Panel_02_CW_Lights_ED_RELAYS,
+		VC_MAT_Panel_02_CW_Lights_ECS
+	},
+
+	{
+		VC_MAT_Panel_01_CW_Lights_ASC_PRESS,
+		VC_MAT_Panel_01_CW_Lights_CES_DC,
+		VC_MAT_Panel_01_CW_Lights_RCS_A_REG,
+		VC_MAT_Panel_01_CW_Lights_SUIT_FAN,
+		VC_MAT_Panel_02_CW_Lights_ASC_QTY,
+		VC_MAT_Panel_02_CW_Lights_BATTERY,
+		VC_MAT_Panel_02_CW_Lights_RCS,
+		VC_MAT_Panel_02_CW_Lights_O2_QTY
+	},
+
+	{
+		VC_MAT_Panel_01_CW_Lights_DES_REG,
+		VC_MAT_Panel_01_CW_Lights_AGS,
+		VC_MAT_Panel_01_CW_Lights_RCS_B_REG,
+		1000,
+		VC_MAT_Panel_02_CW_Lights_ENG_GMBL,
+		VC_MAT_Panel_02_CW_Lights_RNDZ_RDR,
+		VC_MAT_Panel_02_CW_Lights_HEATER,
+		VC_MAT_Panel_02_CW_Lights_GLYCOL
+	},
+
+	{
+		1000,
+		VC_MAT_Panel_01_CW_Lights_LGC,
+		VC_MAT_Panel_01_CW_Lights_DC_BUS,
+		1000,
+		1000,
+		VC_MAT_Panel_02_CW_Lights_LDG_RDR,
+		VC_MAT_Panel_02_CW_Lights_CW_PWR,
+		VC_MAT_Panel_02_CW_Lights_WATER_QTY
+	},
+
+	{
+		1000,
+		VC_MAT_Panel_01_CW_Lights_ISS,
+		1000,
+		1000,
+		1000,
+		VC_MAT_Panel_02_CW_Lights_PRE_AMPS,
+		1000,
+		VC_MAT_Panel_02_CW_Lights_SBD_RCVR,
+	}
+};
+
 #endif // !__EMISSIONLISTCMVC

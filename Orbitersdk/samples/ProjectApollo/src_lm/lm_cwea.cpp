@@ -35,6 +35,13 @@ See http://nassp.sourceforge.net/license/ for more details.
 
 // CWEA 
 
+
+int LEM_CWEA::GetLightStatus(int i, int j)
+{
+	return LightStatus[i][j];
+}
+
+
 LEM_CWEA::LEM_CWEA(SoundLib &s) : soundlib(s) {
 	cwea_pwr = NULL;
 	ma_pwr = NULL;
