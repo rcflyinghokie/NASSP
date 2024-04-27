@@ -4164,7 +4164,8 @@ protected:
 	virtual void LoadSI(FILEHANDLE scn) = 0;
 	virtual void SaveSII(FILEHANDLE scn) {};
 	virtual void LoadSII(FILEHANDLE scn) {};
-	virtual void SetEngineFailure(int failstage, int faileng) = 0;
+
+	virtual void SetFailure(int failuretype, bool condition) = 0;
 
 	void GetScenarioState (FILEHANDLE scn, void *status);
 	bool ProcessConfigFileLine (FILEHANDLE scn, char *line);

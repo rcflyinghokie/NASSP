@@ -640,14 +640,22 @@ int Saturn1b::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 	return Saturn::clbkConsumeBufferedKey(key, down, kstate);
 }
 
-void Saturn1b::SetEngineFailure(int failstage, int faileng)
+void Saturn1b::SetFailure(int failuretype, bool condition)
 {
-	if (failstage == 1)
+	switch (failuretype)
 	{
-		if (sib) sib->SetEngineFailed(faileng);
-	}
-	else if (failstage == 3)
-	{
+	case CSMFailures_SI_Engine_1_Failure:
+	case CSMFailures_SI_Engine_2_Failure:
+	case CSMFailures_SI_Engine_3_Failure:
+	case CSMFailures_SI_Engine_4_Failure:
+	case CSMFailures_SI_Engine_5_Failure:
+	case CSMFailures_SI_Engine_6_Failure:
+	case CSMFailures_SI_Engine_7_Failure:
+	case CSMFailures_SI_Engine_8_Failure:
+		if (sib) sib->SetEngineFailed(failuretype - CSMFailures_SI_Engine_1_Failure);
+		break;
+	case CSMFailures_SIVB_Engine_Failure:
 		if (sivb) sivb->SetEngineFailed();
+		break;
 	}
 }

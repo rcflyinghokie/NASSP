@@ -60,6 +60,8 @@ class Saturn;
 #define CSMFailures_Fuel_Cell_2_Disconnect 29
 #define CSMFailures_Fuel_Cell_3_Disconnect 30
 #define CSMFailures_CSM_LV_Separation_Failure 31
+#define CSMFailures_SIVB_O2_H2_Burner_Failure 32
+#define CSMFailures_CWS_Light_Failure 33 //Plus 60
 
 class CSMMalfunctionSimulation : public MalfunctionSimulation
 {
@@ -73,6 +75,8 @@ protected:
 	void SetFailure(unsigned i);
 	void ResetFailure(unsigned i);
 	void SetSwitchFailure(unsigned i, bool set);
+
+	bool GetDamageModel(); //Check if failures are to be simulated
 
 	Saturn *sat;
 };

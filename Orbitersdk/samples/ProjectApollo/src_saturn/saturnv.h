@@ -166,7 +166,7 @@ protected:
 	void DeactivatePrelaunchVenting();
 	void ActivateStagingVent();
 	void DeactivateStagingVent();
-	void SetEngineFailure(int failstage, int faileng);
+	void SetFailure(int failuretype, bool condition);
 
 	//
 	// Class variables.

@@ -62,12 +62,21 @@ CSMMalfunctionSimulation::CSMMalfunctionSimulation(Saturn *s) : sat(s)
 	Add(new Malfunction("S-II Engine 3 Fail"));
 	Add(new Malfunction("S-II Engine 4 Fail"));
 	Add(new Malfunction("S-II Engine 5 Fail"));
-	Add(new Malfunction("IU Platform Failure"));
-	Add(new Malfunction("S-IVB Engine Failure"));
-	Add(new Malfunction("Fuel Cell 1 Disconnect"));
-	Add(new Malfunction("Fuel Cell 2 Disconnect"));
-	Add(new Malfunction("Fuel Cell 3 Disconnect"));
-	Add(new Malfunction("CSM LV Separation Failure"));
+	Add(new Malfunction("IU Platform Fail"));
+	Add(new Malfunction("S-IVB Engine Fail"));
+	Add(new Malfunction("Fuel Cell 1 Discon."));
+	Add(new Malfunction("Fuel Cell 2 Discon."));
+	Add(new Malfunction("Fuel Cell 3 Discon."));
+	Add(new Malfunction("CSM LV Separation Fail"));
+	Add(new Malfunction("S4B O2/H2 Burner Fail"));
+
+	//Add 60 CWS light failures, as each needs to be handled separately
+	char Buffer[128];
+	for (int i = 0; i < 60; i++)
+	{
+		sprintf(Buffer, "CWS Light %d Fail", i + 1);
+		Add(new Malfunction(Buffer));
+	}
 }
 
 double CSMMalfunctionSimulation::GetTimeReference(int i)
@@ -151,20 +160,17 @@ void CSMMalfunctionSimulation::SetFailure(unsigned i)
 	case CSMFailures_SI_Engine_6_Failure:
 	case CSMFailures_SI_Engine_7_Failure:
 	case CSMFailures_SI_Engine_8_Failure:
-		sat->SetEngineFailure(1, i - CSMFailures_SI_Engine_1_Failure);
-		break;
 	case CSMFailures_SII_Engine_1_Failure:
 	case CSMFailures_SII_Engine_2_Failure:
 	case CSMFailures_SII_Engine_3_Failure:
 	case CSMFailures_SII_Engine_4_Failure:
 	case CSMFailures_SII_Engine_5_Failure:
-		sat->SetEngineFailure(2, i - CSMFailures_SII_Engine_1_Failure);
+	case CSMFailures_SIVB_Engine_Failure:
+	case CSMFailures_SIVB_O2_H2_Burner_Failure:
+		sat->SetFailure(i, true);
 		break;
 	case CSMFailures_IU_Platform_Failure:
 		if(sat->GetIU()) sat->GetIU()->GetLVIMU()->SetFailed();
-		break;
-	case CSMFailures_SIVB_Engine_Failure:
-		sat->SetEngineFailure(3, 0);
 		break;
 	case CSMFailures_Fuel_Cell_1_Disconnect:
 		sat->MainBusAController.ConnectFuelCell(1, false);
@@ -177,6 +183,12 @@ void CSMMalfunctionSimulation::SetFailure(unsigned i)
 	case CSMFailures_Fuel_Cell_3_Disconnect:
 		sat->MainBusAController.ConnectFuelCell(3, false);
 		sat->MainBusBController.ConnectFuelCell(3, false);
+		break;
+	default:
+		if (i >= CSMFailures_CWS_Light_Failure && i < CSMFailures_CWS_Light_Failure + 60)
+		{
+			sat->cws.FailLight(i - CSMFailures_CWS_Light_Failure, true);
+		}
 		break;
 	}
 }
@@ -202,6 +214,15 @@ void CSMMalfunctionSimulation::ResetFailure(unsigned i)
 		break;
 	case CSMFailures_SM_Jett2_Fail:
 		sat->CmSmSep2Switch.SetFailed(false);
+		break;
+	case CSMFailures_SIVB_O2_H2_Burner_Failure:
+		sat->SetFailure(i, false);
+		break;
+	default:
+		if (i >= CSMFailures_CWS_Light_Failure && i < CSMFailures_CWS_Light_Failure + 60)
+		{
+			sat->cws.FailLight(i - CSMFailures_CWS_Light_Failure, false);
+		}
 		break;
 	}
 }
@@ -317,4 +338,9 @@ void CSMMalfunctionSimulation::SetRandomFailures(double FailureMultiplier)
 			sat->cws.FailLight(rand() & 63, true);
 		}
 	}
+}
+
+bool CSMMalfunctionSimulation::GetDamageModel()
+{
+	return sat->GetDamageModel();
 }

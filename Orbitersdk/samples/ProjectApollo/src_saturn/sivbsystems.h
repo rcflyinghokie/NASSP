@@ -198,6 +198,7 @@ protected:
 	DelayTimer SparksDeenergizedTimer;
 
 	bool EngineFailed;
+	bool O2H2BurnerFailed;
 	//double DebugTimer;
 	double F_CVS;
 };
@@ -246,6 +247,7 @@ public:
 	bool GetBurnerMalfunction() { return BurnerMalfunctionSignal; }
 
 	void SetEngineFailed();
+	void SetO2H2BurnerFailed(bool fail);
 
 	void SaveState(FILEHANDLE scn);
 	void LoadState(FILEHANDLE scn);

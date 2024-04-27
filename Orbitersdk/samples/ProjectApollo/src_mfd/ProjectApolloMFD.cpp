@@ -1410,102 +1410,63 @@ bool ProjectApolloMFD::Update (oapi::Sketchpad* skp)
 	}
 	else if (screen == m_buttonPages.page.Failures)
 	{
+		skp->Text(width / 2, (int)(height * 0.3), "Failure Simulation", 18);
+
 		if (saturn)
 		{
-			skp->SetTextAlign(oapi::Sketchpad::CENTER);
-
-			if (FailureSubpage == 0)
+			if (saturn->GetDamageModel() == false)
 			{
-				skp->Text(width / 2, (int)(height * 0.3), "CSM SECS Failures", 17);
-
-				sprintf(buffer, "1: LET AutoJet Fail: %d", saturn->Failures.IsFailureArmed(CSMFailures_LET_AutoJet_Fail));
-				skp->Text(width / 2, (int)(height * 0.4), buffer, strlen(buffer));
-				sprintf(buffer, "2: LES Jet Motor Fail: %d", saturn->Failures.IsFailureArmed(CSMFailures_LES_Jet_Motor_Fail));
-				skp->Text(width / 2, (int)(height * 0.45), buffer, strlen(buffer));
-				if (saturn->stage < CSM_LEM_STAGE)
-				{
-					sprintf(buffer, "3: Liftoff Signal A Fail: %d", saturn->Failures.IsFailureArmed(CSMFailures_Liftoff_Circuit_A_Failure));
-					skp->Text(width / 2, (int)(height * 0.5), buffer, strlen(buffer));
-					sprintf(buffer, "4: Liftoff Signal B Fail: %d", saturn->Failures.IsFailureArmed(CSMFailures_Liftoff_Circuit_B_Failure));
-					skp->Text(width / 2, (int)(height * 0.55), buffer, strlen(buffer));
-				}
-				sprintf(buffer, "5: Auto Abort Enable Fail: %d", saturn->Failures.IsFailureArmed(CSMFailures_Auto_Abort_Enable_Fail));
-				skp->Text(width / 2, (int)(height * 0.6), buffer, strlen(buffer));
-				sprintf(buffer, "6: Tower Jett 1 Fail: %d", saturn->Failures.IsFailureArmed(CSMFailures_Tower_Jett1_Fail));
-				skp->Text(width / 2, (int)(height * 0.65), buffer, strlen(buffer));
-				sprintf(buffer, "7: Tower Jett 2 Fail: %d", saturn->Failures.IsFailureArmed(CSMFailures_Tower_Jett2_Fail));
-				skp->Text(width / 2, (int)(height * 0.7), buffer, strlen(buffer));
-				sprintf(buffer, "8: SM Jett 1 Fail: %d", saturn->Failures.IsFailureArmed(CSMFailures_SM_Jett1_Fail));
-				skp->Text(width / 2, (int)(height * 0.75), buffer, strlen(buffer));
-				sprintf(buffer, "9: SM Jett 2 Fail: %d", saturn->Failures.IsFailureArmed(CSMFailures_SM_Jett2_Fail));
-				skp->Text(width / 2, (int)(height * 0.8), buffer, strlen(buffer));
-				sprintf(buffer, "10: Auto Apex Cover Deploy Fail: %d", saturn->Failures.IsFailureArmed(CSMFailures_Apex_Cover_Fail));
-				skp->Text(width / 2, (int)(height * 0.85), buffer, strlen(buffer));
-				sprintf(buffer, "11: Auto Drogue Chute Deploy Fail: %d", saturn->Failures.IsFailureArmed(CSMFailures_Drogue_Chute_Fail));
-				skp->Text(width / 2, (int)(height * 0.9), buffer, strlen(buffer));
-				sprintf(buffer, "12: Auto Main Chute Deploy Fail: %d", saturn->Failures.IsFailureArmed(CSMFailures_Main_Chute_Fail));
-				skp->Text(width / 2, (int)(height * 0.95), buffer, strlen(buffer));
+				skp->Text(width / 2, (int)(height * 0.6), "Failures disabled in Orbiter Launchpad", 38);
 			}
-			else if (FailureSubpage == 1)
+			else
 			{
-				if (isSaturnV)
+				skp->SetTextAlign(oapi::Sketchpad::LEFT);
+
+				unsigned int offset = FailureSubpage * 10U; //Per per page
+				unsigned j, len = 0;
+
+				for (unsigned i = 0; i < 10; i++)
 				{
-					skp->Text(width / 2, (int)(height * 0.3), "Saturn V Failures", 17);
+					j = i + offset;
 
-					bool fail = 0.0;
-					double failtime = 0.0;
-					if (saturn->stage < LAUNCH_STAGE_TWO)
+					if (j >= saturn->Failures.GetNumberOfMalfunctions()) break;
+
+					len = sprintf(buffer, "%d: %s: ", j + 1, saturn->Failures.GetName(j).c_str());// , saturn->Failures.IsFailureArmed(j));
+
+					if (saturn->Failures.IsFailureArmed(j))
 					{
-						for (int i = 0;i < 5;i++)
+						switch (saturn->Failures.GetCondition(j))
 						{
-							fail = saturn->Failures.IsFailureArmed(CSMFailures_SI_Engine_1_Failure + i);
-							failtime = saturn->Failures.GetConditionValue(CSMFailures_SI_Engine_1_Failure + i);
-
-							sprintf(buffer, "S-IC Eng %d Fail: %d at T%+.1lf s", i + 1, fail, failtime);
-							skp->Text(width / 2, (int)(height * (0.5 + 0.04 * (double)i)), buffer, strlen(buffer));
+						case 0:
+							len += sprintf(buffer + len, "MT+");
+							break;
+						case 1:
+							len += sprintf(buffer + len, "SimT+");
+							break;
+						case 2:
+							len += sprintf(buffer + len, "S-II+");
+							break;
+						case 3:
+							len += sprintf(buffer + len, "S-IVB+");
+							break;
+						case 4:
+							len += sprintf(buffer + len, "Ins+");
+							break;
+						case 5:
+							len += sprintf(buffer + len, "TB6+");
+							break;
+						case 6:
+							len += sprintf(buffer + len, "TLI+");
+							break;
 						}
+						len += sprintf(buffer + len, " %.0lf s", saturn->Failures.GetConditionValue(j));
 					}
-					if (saturn->stage < LAUNCH_STAGE_SIVB)
+					else
 					{
-						sprintf(buffer, "13: S-II Auto Sep Fail: %d", saturn->Failures.IsFailureArmed(CSMFailures_SII_Auto_Sep_Fail));
-						skp->Text(width / 2, (int)(height * 0.45), buffer, strlen(buffer));
-
-						for (int i = 0;i < 5;i++)
-						{
-							fail = saturn->Failures.IsFailureArmed(CSMFailures_SII_Engine_1_Failure + i);
-							failtime = saturn->Failures.GetConditionValue(CSMFailures_SII_Engine_1_Failure + i);
-
-							sprintf(buffer, "S-II Eng %d Fail: %d at Ign%+.1lf s", i + 1, fail, failtime);
-							skp->Text(width / 2, (int)(height * (0.75 + 0.04 * (double)i)), buffer, strlen(buffer));
-						}
+						len += sprintf(buffer + len, "Off");
 					}
-				}
-				else
-				{
-					skp->Text(width / 2, (int)(height * 0.3), "Saturn IB Failures", 18);
 
-					bool fail = 0.0;
-					double failtime = 0.0;
-					if (saturn->stage < LAUNCH_STAGE_TWO)
-					{
-						for (int i = 0;i < 8;i++)
-						{
-							fail = saturn->Failures.IsFailureArmed(CSMFailures_SI_Engine_1_Failure + i);
-							failtime = saturn->Failures.GetConditionValue(CSMFailures_SI_Engine_1_Failure + i);
-
-							sprintf(buffer, "S-IB Eng %d Fail: %d at T%+.1lf s", i + 1, fail, failtime);
-							skp->Text(width / 2, (int)(height* (0.5 + 0.04 * (double)i)), buffer, strlen(buffer));
-						}
-					}
-				}
-				
-				if (saturn->stage < CSM_LEM_STAGE)
-				{
-					bool fail = saturn->Failures.IsFailureArmed(CSMFailures_IU_Platform_Failure);
-					double failtime = saturn->Failures.GetConditionValue(CSMFailures_IU_Platform_Failure);
-
-					sprintf(buffer, "IU Platform Fail: %d at T%+.1lf s", fail, failtime);
-					skp->Text(width / 2, (int)(height * 0.4), buffer, strlen(buffer));
+					skp->Text(width / 16, (9 + i)*height / 20, buffer, strlen(buffer));
 				}
 			}
 		}
@@ -1764,20 +1725,13 @@ bool ProjectApolloMFD::SetTimebaseUpdate(char *rstr)
 	return false;
 }
 
-bool ProjectApolloMFD::SetSaturnSwitchFailure(int n)
+bool ProjectApolloMFD::SaturnSetFailureInput(unsigned n, int Condition, double ConditionValue)
 {
 	if (saturn)
 	{
-		if (n >= 1 && n <= 13)
+		if (n >= 1 && n <= saturn->Failures.GetNumberOfMalfunctions())
 		{
-			if (saturn->Failures.IsFailureArmed(n - 1))
-			{
-				saturn->Failures.ResetFailureArm(n - 1);
-			}
-			else
-			{
-				saturn->Failures.ArmFailure(n - 1);
-			}
+			saturn->Failures.ArmFailure(n - 1, Condition, ConditionValue);
 			return true;
 		}
 	}
@@ -1785,55 +1739,17 @@ bool ProjectApolloMFD::SetSaturnSwitchFailure(int n)
 	return false;
 }
 
-bool ProjectApolloMFD::SetIUPlatformFailure(double misst)
+bool ProjectApolloMFD::SaturnResetFailureInput(unsigned n)
 {
-	if (saturn == NULL) return false;
-	if (saturn->stage >= CSM_LEM_STAGE) return false;
-
-	if (misst == 0.0)
+	if (saturn)
 	{
-		saturn->Failures.ResetFailureArm(CSMFailures_IU_Platform_Failure);
-	}
-	else
-	{
-		saturn->Failures.ArmFailure(CSMFailures_IU_Platform_Failure, 0, misst);
-	}
-
-	return true;
-}
-
-void ProjectApolloMFD::SetSIEngineFailure(int n, double misst)
-{
-	if (n < 1 || n > 8) return;
-
-	if (saturn && saturn->stage < LAUNCH_STAGE_TWO)
-	{
-		if (misst == 0.0)
+		if (n >= 1 && n <= saturn->Failures.GetNumberOfMalfunctions())
 		{
-			saturn->Failures.ResetFailureArm(CSMFailures_SI_Engine_1_Failure + n - 1);
-		}
-		else
-		{
-			saturn->Failures.ArmFailure(CSMFailures_SI_Engine_1_Failure + n - 1, 0, misst);
+			saturn->Failures.ResetFailureArm(n - 1);
+			return true;
 		}
 	}
-}
-
-void ProjectApolloMFD::SetSIIEngineFailure(int n, double misst)
-{
-	if (n < 1 || n > 5) return;
-
-	if (saturn && saturn->stage < LAUNCH_STAGE_SIVB && isSaturnV)
-	{
-		if (misst == 0.0)
-		{
-			saturn->Failures.ResetFailureArm(CSMFailures_SII_Engine_1_Failure + n - 1);
-		}
-		else
-		{
-			saturn->Failures.ArmFailure(CSMFailures_SII_Engine_1_Failure + n - 1, 2, misst);
-		}
-	}
+	return false;
 }
 
 void ProjectApolloMFD::SetRandomFailures(double FailureMultiplier)
@@ -1991,6 +1907,8 @@ void ProjectApolloMFD::menuSetLGCPage()
 
 void ProjectApolloMFD::menuSetFailuresPage()
 {
+	FailureSubpage = 0;
+
 	screen = m_buttonPages.page.Failures;
 	m_buttonPages.SelectPage(this, screen);
 }
@@ -2499,28 +2417,16 @@ void ProjectApolloMFD::menuIUUplink()
 	}
 }
 
-void ProjectApolloMFD::menuSetSaturnSwitchFailure()
+void ProjectApolloMFD::menuSetFailure()
 {
-	bool SaturnSwitchFailureInput(void *id, char *str, void *data);
-	oapiOpenInputBox("Number of failure type:", SaturnSwitchFailureInput, 0, 20, (void*)this);
+	bool SaturnFailureInput(void *id, char *str, void *data);
+	oapiOpenInputBox("Enter the number of failure type. Optional: condition for failure (0 = mission time, 1 = simulation time, 2+ vessel specific) and condition (time)", SaturnFailureInput, 0, 30, (void*)this);
 }
 
-void ProjectApolloMFD::menuSetIUPlatformFailure()
+void ProjectApolloMFD::menuResetFailure()
 {
-	bool IUPlatformFailureInput(void *id, char *str, void *data);
-	oapiOpenInputBox("IU platform failure time in seconds (0 to disable):", IUPlatformFailureInput, 0, 20, (void*)this);
-}
-
-void ProjectApolloMFD::menuSetSIEngineFailure()
-{
-	bool SIEngineFailureInput(void *id, char *str, void *data);
-	oapiOpenInputBox("S-IB/S-IC engine failure (number of engine, time of failure, 0 to disable):", SIEngineFailureInput, 0, 20, (void*)this);
-}
-
-void ProjectApolloMFD::menuSetSIIEngineFailure()
-{
-	bool SIIEngineFailureInput(void *id, char *str, void *data);
-	oapiOpenInputBox("S-II engine failure (number of engine, time of failure, 0 to disable):", SIIEngineFailureInput, 0, 20, (void*)this);
+	bool SaturnResetFailureInput(void *id, char *str, void *data);
+	oapiOpenInputBox("Enter the number of failure type to reset:", SaturnResetFailureInput, 0, 30, (void*)this);
 }
 
 void ProjectApolloMFD::menuSetRandomFailures()
@@ -2529,20 +2435,28 @@ void ProjectApolloMFD::menuSetRandomFailures()
 	oapiOpenInputBox("Randomize failures, input multiplier (1.0 for standard failure rate):", RandomFailuresInput, 0, 20, (void*)this);
 }
 
-void ProjectApolloMFD::menuClearFailures()
+void ProjectApolloMFD::menuClearAllFailures()
 {
 	if (saturn) saturn->Failures.ClearAllFailures();
 }
 
 void ProjectApolloMFD::menuCycleFailuresSubpage()
 {
-	if (FailureSubpage < 1)
+	if (saturn)
 	{
-		FailureSubpage++;
-	}
-	else
-	{
-		FailureSubpage = 0;
+		unsigned num = saturn->Failures.GetNumberOfMalfunctions();
+		if (num == 0) return;
+
+		unsigned pages = (num - 1) / 10;
+
+		if (FailureSubpage < pages)
+		{
+			FailureSubpage++;
+		}
+		else
+		{
+			FailureSubpage = 0;
+		}
 	}
 }
 
@@ -2629,38 +2543,22 @@ bool GeneralizedManeuverAttitudeInput(void *id, char *str, void *data)
 	return ((ProjectApolloMFD*)data)->SetGeneralizedManeuverAttitude(str);
 }
 
-bool SaturnSwitchFailureInput(void *id, char *str, void *data)
+bool SaturnFailureInput(void *id, char *str, void *data)
 {
-	return ((ProjectApolloMFD*)data)->SetSaturnSwitchFailure(atoi(str));
-}
+	unsigned type;
+	int Condition = 1; //Simulation Time
+	double ConditionValue = 0.0; //Immediately
 
-bool IUPlatformFailureInput(void *id, char *str, void *data)
-{
-	return ((ProjectApolloMFD*)data)->SetIUPlatformFailure(atof(str));
-}
-
-bool SIEngineFailureInput(void *id, char *str, void *data)
-{
-	int eng;
-	double failtime;
-	if (sscanf(str, "%d %lf", &eng, &failtime) == 2)
+	if (sscanf(str, "%d %d %lf", &type, &Condition, &ConditionValue) >= 1)
 	{
-		((ProjectApolloMFD*)data)->SetSIEngineFailure(eng, failtime);
-		return true;
+		return ((ProjectApolloMFD*)data)->SaturnSetFailureInput(type, Condition, ConditionValue);
 	}
 	return false;
 }
 
-bool SIIEngineFailureInput(void *id, char *str, void *data)
+bool SaturnResetFailureInput(void *id, char *str, void *data)
 {
-	int eng;
-	double failtime;
-	if (sscanf(str, "%d %lf", &eng, &failtime) == 2)
-	{
-		((ProjectApolloMFD*)data)->SetSIIEngineFailure(eng, failtime);
-		return true;
-	}
-	return false;
+	return ((ProjectApolloMFD*)data)->SaturnResetFailureInput(atoi(str));
 }
 
 bool RandomFailuresInput(void *id, char *str, void *data)

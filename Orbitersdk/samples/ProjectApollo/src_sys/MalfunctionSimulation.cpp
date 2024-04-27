@@ -43,6 +43,9 @@ MalfunctionSimulation::~MalfunctionSimulation()
 
 void MalfunctionSimulation::Timestep()
 {
+	//Don't simulate failures if it has been disabled in the Orbiter launchpad
+	if (GetDamageModel() == false) return;
+
 	unsigned i;
 	bool activate;
 
@@ -95,6 +98,14 @@ void MalfunctionSimulation::SaveState(FILEHANDLE scn)
 		{
 			sprintf(buffer, "%d %d %d %lf", i, malfunctions[i]->GetFailed(), malfunctions[i]->GetCondition(), malfunctions[i]->GetConditionValue());
 			oapiWriteScenario_string(scn, "MALFUNCTION", buffer);
+		}
+	}
+	for (i = 0; i < switchmalfunctions.size(); i++)
+	{
+		if (switchmalfunctions[i]->GetActivated())
+		{
+			sprintf(buffer, "%s %d %d %lf", switchmalfunctions[i]->GetSwitchName().c_str(), switchmalfunctions[i]->GetFailState(), switchmalfunctions[i]->GetCondition(), switchmalfunctions[i]->GetConditionValue());
+			oapiWriteScenario_string(scn, "SWITCHMALFUNCTION", buffer);
 		}
 	}
 
@@ -173,11 +184,23 @@ bool MalfunctionSimulation::GetFailure(unsigned i)
 	return malfunctions[i]->GetFailed();
 }
 
-double  MalfunctionSimulation::GetAnalogFailure(unsigned i)
+double MalfunctionSimulation::GetAnalogFailure(unsigned i)
 {
 	if (i >= malfunctions.size()) return 0.0;
 
 	return malfunctions[i]->GetAnalogFailure();
+}
+
+unsigned int MalfunctionSimulation::GetNumberOfMalfunctions()
+{
+	return malfunctions.size();
+}
+
+std::string MalfunctionSimulation::GetName(unsigned i)
+{
+	if (i >= malfunctions.size()) return "None";
+
+	return malfunctions[i]->GetName();
 }
 
 bool MalfunctionSimulation::IsFailureArmed(unsigned i)
@@ -185,6 +208,13 @@ bool MalfunctionSimulation::IsFailureArmed(unsigned i)
 	if (i >= malfunctions.size()) return false;
 
 	return malfunctions[i]->GetActivated();
+}
+
+int MalfunctionSimulation::GetCondition(unsigned i)
+{
+	if (i >= malfunctions.size()) return 0;
+
+	return malfunctions[i]->GetCondition();
 }
 
 double MalfunctionSimulation:: GetConditionValue(unsigned i)

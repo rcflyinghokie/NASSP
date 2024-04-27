@@ -58,6 +58,11 @@ double Malfunction::GetAnalogFailure()
 	return 0.0;
 }
 
+std::string Malfunction::GetName()
+{
+	return Description;
+}
+
 void Malfunction::SetCondition(int Cond, double CondVal)
 {
 	Activated = true;

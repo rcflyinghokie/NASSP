@@ -1024,22 +1024,30 @@ void SaturnV::LoadSII(FILEHANDLE scn)
 	sii->LoadState(scn);
 }
 
-void SaturnV::SetEngineFailure(int failstage, int faileng)
+void SaturnV::SetFailure(int failuretype, bool condition)
 {
-	if (failstage == 1)
+	switch (failuretype)
 	{
-		if (sic)
-			sic->SetEngineFailed(faileng);
-	}
-	else if (failstage == 2)
-	{
-		if (sii)
-			sii->SetEngineFailed(faileng);
-	}
-	else if (failstage == 3)
-	{
-		if (sivb)
-			sivb->SetEngineFailed();
+	case CSMFailures_SI_Engine_1_Failure:
+	case CSMFailures_SI_Engine_2_Failure:
+	case CSMFailures_SI_Engine_3_Failure:
+	case CSMFailures_SI_Engine_4_Failure:
+	case CSMFailures_SI_Engine_5_Failure:
+		if (sic) sic->SetEngineFailed(failuretype - CSMFailures_SI_Engine_1_Failure);
+		break;
+	case CSMFailures_SII_Engine_1_Failure:
+	case CSMFailures_SII_Engine_2_Failure:
+	case CSMFailures_SII_Engine_3_Failure:
+	case CSMFailures_SII_Engine_4_Failure:
+	case CSMFailures_SII_Engine_5_Failure:
+		if (sii) sii->SetEngineFailed(failuretype - CSMFailures_SII_Engine_1_Failure);
+		break;
+	case CSMFailures_SIVB_Engine_Failure:
+		if (sivb) sivb->SetEngineFailed();
+		break;
+	case CSMFailures_SIVB_O2_H2_Burner_Failure:
+		if (sivb) sivb->SetO2H2BurnerFailed(condition);
+		break;
 	}
 }
 

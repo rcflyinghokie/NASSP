@@ -36,6 +36,7 @@ public:
 	int GetCondition();
 	double GetConditionValue();
 	double GetAnalogFailure();
+	std::string GetName();
 
 	void SetCondition(int Cond, double CondVal);
 	void SetFailed();

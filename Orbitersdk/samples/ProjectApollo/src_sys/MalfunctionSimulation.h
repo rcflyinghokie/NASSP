@@ -42,13 +42,16 @@ public:
 	void LoadState(FILEHANDLE scn);
 
 	bool GetFailure(unsigned i); // Function to call by any system that checks on a failure condition
-	double GetAnalogFailure(unsigned i); //Analogi failure, e.g. a sudden shift in an accelerometer bias
+	double GetAnalogFailure(unsigned i); //Analog failure, e.g. a sudden shift in an accelerometer bias
+	virtual unsigned int GetNumberOfMalfunctions(); //All, not only the active ones
+	virtual std::string GetName(unsigned i);
 
 	//Functions to set up the failures, e.g. by the PAMFD
 	virtual void ArmFailure(unsigned i, int cond, double condval);
 	virtual void ArmFailure(unsigned i);
 	virtual void ResetFailureArm(unsigned i);
 	virtual bool IsFailureArmed(unsigned i);
+	virtual int GetCondition(unsigned i);
 	virtual double GetConditionValue(unsigned i);
 	virtual void ClearAllFailures();
 protected:
@@ -63,6 +66,8 @@ protected:
 	void RandomizedFailure(unsigned i, double FailureChance); //Helper function to randomize failures
 
 	void DeleteSwitchMalfunctions();
+
+	virtual bool GetDamageModel() = 0; //Check if failures are to be simulated
 
 	std::vector<Malfunction*> malfunctions; //Permanently set up malfunctions for the vessel
 	std::vector<SwitchMalfunction*> switchmalfunctions; //Dynamically loaded when failures are desired
