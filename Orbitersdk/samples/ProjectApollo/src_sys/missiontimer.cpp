@@ -168,7 +168,7 @@ bool MissionTimer::IsDisplayPowered()
 	{
 		//Do nothing
 	}
-	else if (DimmerRotationalSwitch->GetState() == 0)
+	else if (DimmerRotationalSwitch->GetOutput() < 0.00001)
 	{
 		return false;
 	}

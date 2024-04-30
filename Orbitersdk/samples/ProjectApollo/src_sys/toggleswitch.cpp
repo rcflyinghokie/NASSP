@@ -2351,6 +2351,11 @@ double ContinuousSwitch::GetValue()
 	return AngletoDisplay(state);
 }
 
+double ContinuousSwitch::GetOutput()
+{
+	return state;
+}
+
 void ContinuousSwitch::SetRotationRange(double _range)
 {
 	RotationRange = _range;
@@ -2358,14 +2363,14 @@ void ContinuousSwitch::SetRotationRange(double _range)
 
 void ContinuousSwitch::SetState(int value)
 {
-	//This function called by checklist controller. Input is integer, so to get fine control this assumes the checklist has a value of 10x the desired one
-	SwitchTo(DisplayToAngle((double)(value) / 10.0));
+	//This function called by checklist controller
+	SwitchTo(DisplayToAngle((double)value));
 }
 
 int ContinuousSwitch::GetState()
 {
 	//Return to checklist controller
-	double value = AngletoDisplay(state)*10.0;
+	double value = AngletoDisplay(state);
 
 	if (value < 0.0)
 	{
@@ -2509,6 +2514,24 @@ void ContinuousThumbwheelSwitch::Init(int xp, int yp, int w, int h, SURFHANDLE s
 	ContinuousSwitch::Init(xp, yp, w, h, surf, bsurf, row);
 
 	LoadSound(THUMBWHEEL_SOUND);
+}
+
+void ContinuousThumbwheelSwitch::SetState(int value)
+{
+	//This function called by checklist controller. Input is integer, so to get fine control this assumes the checklist has a value of 10x the desired one
+	SwitchTo(DisplayToAngle((double)(value) / 10.0));
+}
+
+int ContinuousThumbwheelSwitch::GetState()
+{
+	//Return to checklist controller
+	double value = AngletoDisplay(state)*10.0;
+
+	if (value < 0.0)
+	{
+		return (int)(value - 0.5);
+	}
+	return (int)(value + 0.5);
 }
 
 void ContinuousThumbwheelSwitch::DrawSwitch(SURFHANDLE drawSurface)

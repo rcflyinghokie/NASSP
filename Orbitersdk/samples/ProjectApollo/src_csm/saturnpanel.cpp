@@ -5702,10 +5702,10 @@ void Saturn::InitSwitches() {
 	RightFloodRotarySwitch.SetRotationRange(300.0*RAD);
 	RightFloodRotarySwitch.SetOffset(-160.0*RAD);
 
-	HighGainAntennaPitchPositionSwitch.Register(PSH, "HighGainAntennaPitchPositionSwitch", 0.0, 90.0, -90.0);
+	HighGainAntennaPitchPositionSwitch.Register(PSH, "HighGainAntennaPitchPositionSwitch", 6.0, 0.0, 12.0); //For now retain the 0-12 scaling of the bitmaps for checklist backwards compatibility
 	HighGainAntennaPitchPositionSwitch.SetRotationRange(PI);
 
-	HighGainAntennaYawPositionSwitch.Register(PSH, "HighGainAntennaYawPositionSwitch", 180.0, 0.0, 360.0);
+	HighGainAntennaYawPositionSwitch.Register(PSH, "HighGainAntennaYawPositionSwitch", 12.0, 0.0, 24.0); //For now retain the 0-24 scaling of the bitmaps for checklist backwards compatibility
 	HighGainAntennaYawPositionSwitch.SetRotationRange(PI2);
 	HighGainAntennaYawPositionSwitch.SetWraparound(true);
 

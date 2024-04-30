@@ -1183,11 +1183,13 @@ public:
 	virtual void LoadState(char *line);
 
 	//Checklist MFD
-	void SetState(int value);
-	int GetState();
+	virtual void SetState(int value);
+	virtual int GetState();
 
-	//Returns value (not animation angle)
+	//Returns displayed value (not animation state)
 	double GetValue();
+	//Returns animation state (0-1), could be overloaded to provide output voltage
+	virtual double GetOutput();
 
 	void SetRotationRange(double _range);
 	void SetWraparound(bool _Wraparound);
@@ -1204,7 +1206,7 @@ protected:
 	double minValue;		//Value on the panel equivalent to animation state 0.0
 	double maxValue;		//Value on the panel equivalent to animation state 1.0
 	double slope;			//Slope of function converting displayed state to angle
-	bool Wraparound;		//Switch can wraparound limits of animation state
+	bool Wraparound;		//Switch can wrap around limits of animation state, rotation range should be set to 360 degres for that
 	double RotationRange;	//Range of rotation in radians
 
 	//2D
@@ -1234,6 +1236,9 @@ public:
 
 	virtual void Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultValue, double minValue, double maxValue, double clickIncr, bool horizontal = false);
 	virtual void Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row);
+
+	void SetState(int value);
+	int GetState();
 
 	void DrawSwitch(SURFHANDLE drawSurface);
 	virtual bool CheckMouseClick(int event, int mx, int my);
