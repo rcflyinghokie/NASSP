@@ -1726,6 +1726,7 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 
 	case AID_CMVC_LIGHTING:
 	{
+
 		// CMVC Ordeal Lighting Switch
 		SetCMVCIntegralLight(vcidx, IntegralLights_CMVC_Ordeal, MAT_EMISSION, ordeal.LightingPower(), NUM_ELEMENTS(IntegralLights_CMVC_Ordeal));
 		ORDEALLightingSwitch.DrawSwitchVC(id, event, surf);
@@ -1792,6 +1793,41 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 
 		SetCMVCIntegralLight(vcidx, &DSKY_CW_Lights[0], MAT_LIGHT, ((double)(IntegralRotarySwitch.GetState()) / 10.0 + (double)(FloodRotarySwitch.GetState()) / 10.0) / 2.0, DSKY_CW_Lights.size());
 		SetCMVCIntegralLight(vcidx, &DSKY_LEB_Lights[0], MAT_LIGHT, ((double)(Panel100IntegralRotarySwitch.GetState()) / 10.0 + (double)(FloodRotarySwitch.GetState()) / 10.0) / 2.0, DSKY_LEB_Lights.size());
+
+		// Full Lit Lights
+		if (Saturn::AbortLightLogic()) {
+			SetCMVCIntegralLight(vcidx, FullLitAbort, MAT_LIGHT, 1.0, 1);
+		}
+
+		if (secs.LiftoffLightPower()) {
+			if (!secs.NoAutoAbortLightPower()){
+				SetCMVCIntegralLight(vcidx, FullLitLiftOffNoAutoAbort, MAT_LIGHT, 1, 1);
+			}
+		}
+
+		if (cws.GetMasterAlarm()) {
+			SetCMVCIntegralLight(vcidx, FullLitMasterAlarm1, MAT_LIGHT, 1.0, 1);
+			SetCMVCIntegralLight(vcidx, FullLitMasterAlarm2, MAT_LIGHT, 1.0, 1);
+		}
+
+		if (SI_EngineNum > 5){
+			if (ENGIND[0]) SetCMVCIntegralLight(vcidx, LVEngine_8_1, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_1));
+			if (ENGIND[1]) SetCMVCIntegralLight(vcidx, LVEngine_8_2, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_2));
+			if (ENGIND[2]) SetCMVCIntegralLight(vcidx, LVEngine_8_3, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_3));
+			if (ENGIND[3]) SetCMVCIntegralLight(vcidx, LVEngine_8_4, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_4));
+			if (ENGIND[4]) SetCMVCIntegralLight(vcidx, LVEngine_8_5, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_5));
+			if (ENGIND[5]) SetCMVCIntegralLight(vcidx, LVEngine_8_6, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_6));
+			if (ENGIND[6]) SetCMVCIntegralLight(vcidx, LVEngine_8_7, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_7));
+			if (ENGIND[7]) SetCMVCIntegralLight(vcidx, LVEngine_8_8, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_8));
+		}
+		else
+		{
+			if (ENGIND[0]) SetCMVCIntegralLight(vcidx, LVEngine_5_1, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_1));
+			if (ENGIND[1]) SetCMVCIntegralLight(vcidx, LVEngine_5_2, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_2));
+			if (ENGIND[2]) SetCMVCIntegralLight(vcidx, LVEngine_5_3, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_3));
+			if (ENGIND[3]) SetCMVCIntegralLight(vcidx, LVEngine_5_4, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_4));
+			if (ENGIND[4]) SetCMVCIntegralLight(vcidx, LVEngine_5_5, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_5));
+		}
 
 		return true;
 	}
@@ -2022,7 +2058,6 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 			oapiBlt(surf, srf[SRF_VC_EMS_LIGHTS], 0, 0, 0, 0, 41*TexMul, 16*TexMul);
 		}
 		return true;
-
 
 	case AID_VC_EMSDVDISPLAY:
 		EMSDvDisplay.DoDrawSwitchVC(surf, EMSDvDisplay.QueryValue(), srf[SRF_VC_DIGITALDISP]);

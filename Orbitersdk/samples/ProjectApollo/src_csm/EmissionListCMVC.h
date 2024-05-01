@@ -107,6 +107,10 @@ DWORD FloodLights_P8[] = {
 	VC_MAT_Talkbacks_Frame_t,
 	VC_MAT_Talkbacks_P2_t,
 	VC_MAT_Talkbacks_P3_t,
+	VC_MAT_MASTERALARM_PANEL1,
+	VC_MAT_MASTERALARM_PANEL2,
+	VC_MAT_ABORTLIGHT_PANEL1,
+	VC_MAT_CMVC_LIFT_OFF_NO_ABORT,
 
 	// DSKY Panel 2 Lights Materials
 	VC_MAT_DSKY_Lights_GIMBAL_LOCK,
@@ -169,7 +173,36 @@ DWORD FloodLights_P8[] = {
 	VC_MAT_CW_Lights_P2_CMC,
 	VC_MAT_CW_Lights_P2_O2_FLOW_HI,
 	VC_MAT_CW_Lights_P2_SUIT_COMPRESSOR,
-	VC_MAT_CW_Lights_P2_SPS_FLANGE_TEMP_HI
+	VC_MAT_CW_Lights_P2_SPS_FLANGE_TEMP_HI,
+
+	// LV Engines
+	VC_MAT_LVEngine_5_1,
+	VC_MAT_LVEngine_5_1_1,
+	VC_MAT_LVEngine_5_1_2,
+	VC_MAT_LVEngine_5_2,
+	VC_MAT_LVEngine_5_2_1,
+	VC_MAT_LVEngine_5_2_2,
+	VC_MAT_LVEngine_5_2_3,
+	VC_MAT_LVEngine_5_3,
+	VC_MAT_LVEngine_5_3_1,
+	VC_MAT_LVEngine_5_3_2,
+	VC_MAT_LVEngine_5_3_3,
+	VC_MAT_LVEngine_5_4,
+	VC_MAT_LVEngine_5_4_1,
+	VC_MAT_LVEngine_5_4_2,
+	VC_MAT_LVEngine_5_5,
+	VC_MAT_LVEngine_5_5_1,
+	VC_MAT_LVEngine_5_5_2,
+	VC_MAT_LVEngine_5_5_3,
+	VC_MAT_LVEngine_8_1,
+	VC_MAT_LVEngine_8_2,
+	VC_MAT_LVEngine_8_3,
+	VC_MAT_LVEngine_8_4,
+	VC_MAT_LVEngine_8_5,
+	VC_MAT_LVEngine_8_6,
+	VC_MAT_LVEngine_8_7,
+	VC_MAT_LVEngine_8_8,
+
 
 //	VC_MAT_DSKY_Alarm_Lights_P2_t,
 //	VC_MAT_EMS_Scroll_Timer_P1_t,
@@ -302,6 +335,24 @@ DWORD IntegralLights_DSKY_Lights[] = {
 	VC_MAT_DSKY_Lights_UPLINK_ACTY,
 };
 
+DWORD FullLitMasterAlarm1[] = {
+	VC_MAT_MASTERALARM_PANEL1
+};
+
+DWORD FullLitMasterAlarm2[] = {
+	VC_MAT_MASTERALARM_PANEL2
+};
+
+DWORD FullLitAbort[]{
+	VC_MAT_ABORTLIGHT_PANEL1
+};
+
+DWORD FullLitLiftOffNoAutoAbort[]{
+	VC_MAT_CMVC_LIFT_OFF_NO_ABORT
+};
+
+
+
 DWORD IntegralLights_DSKY_LEB_Lights[] = {
 
 	// DSKY LEB Lights Materials
@@ -423,6 +474,92 @@ DWORD IntegralLights_CW_Lights[] = {
 	VC_MAT_CW_Lights_P2_CW,
 	VC_MAT_CW_Lights_P2_O2_FLOW_HI,
 	VC_MAT_CW_Lights_P2_SUIT_COMPRESSOR
+};
+
+DWORD LVEngine_5_1[] = {
+	VC_MAT_LVEngine_5_1,
+	VC_MAT_LVEngine_5_1_1,
+	VC_MAT_LVEngine_5_1_2
+};
+
+DWORD LVEngine_5_2[] = {
+	VC_MAT_LVEngine_5_2,
+	VC_MAT_LVEngine_5_2_1,
+	VC_MAT_LVEngine_5_2_2,
+	VC_MAT_LVEngine_5_2_3
+};
+
+DWORD LVEngine_5_3[] = {
+	VC_MAT_LVEngine_5_3,
+	VC_MAT_LVEngine_5_3_1,
+	VC_MAT_LVEngine_5_3_2,
+	VC_MAT_LVEngine_5_3_3
+};
+
+DWORD LVEngine_5_4[] = {
+	VC_MAT_LVEngine_5_4,
+	VC_MAT_LVEngine_5_4_1,
+	VC_MAT_LVEngine_5_4_2
+
+};
+
+DWORD LVEngine_5_5[] = {
+	VC_MAT_LVEngine_5_5,
+	VC_MAT_LVEngine_5_5_1,
+	VC_MAT_LVEngine_5_5_2,
+	VC_MAT_LVEngine_5_5_3
+};
+
+DWORD LVEngine_8_1[] = {
+	VC_MAT_LVEngine_8_1,
+	VC_MAT_LVEngine_5_1_2
+};
+
+
+DWORD LVEngine_8_2[] = {
+	VC_MAT_LVEngine_8_2,
+	VC_MAT_LVEngine_5_2_3
+};
+
+
+DWORD LVEngine_8_3[] = {
+	VC_MAT_LVEngine_8_3,
+	VC_MAT_LVEngine_5_3_2
+};
+
+
+DWORD LVEngine_8_4[] = {
+	VC_MAT_LVEngine_8_4,
+	VC_MAT_LVEngine_5_4_1
+};
+
+
+DWORD LVEngine_8_5[] = {
+	VC_MAT_LVEngine_8_5,
+	VC_MAT_LVEngine_5_4_2,
+	VC_MAT_LVEngine_5_1_1,
+	VC_MAT_LVEngine_5_5_1
+};
+
+
+DWORD LVEngine_8_6[] = {
+	VC_MAT_LVEngine_8_6,
+	VC_MAT_LVEngine_5_5_3,
+	VC_MAT_LVEngine_5_2_1
+};
+
+
+DWORD LVEngine_8_7[] = {
+	VC_MAT_LVEngine_8_7,
+	VC_MAT_LVEngine_5_3_3,
+	VC_MAT_LVEngine_5_2_2
+};
+
+
+DWORD LVEngine_8_8[] = {
+	VC_MAT_LVEngine_8_8,
+	VC_MAT_LVEngine_5_5_2,
+	VC_MAT_LVEngine_5_3_1
 };
 
 #endif // !__EMISSIONLISTCMVC
