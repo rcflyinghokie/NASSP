@@ -796,8 +796,12 @@ bool Saturn::clbkLoadVC (int id)
 	//Reset Clip Radius settings
 	SetClipRadius(0.0);
 
-	if ((viewpos >= SATVIEW_ENG1) && (viewpos <= SATVIEW_ENG6))
+	if ((id >= SATVIEW_ENG1) && (id <= SATVIEW_ENG6))
+	{
+		viewpos = id;
+		SetView(true);
 		return true;
+	}
 
 	// Init the 2D panel switches to fix XRSound not giving us switch clicks if we load directly into the VC.
 	// Calling InitPanel(SATPANEL_MAIN) also works, since that function calls SetSwitches() as well.
