@@ -67,7 +67,7 @@ protected:
 
 	void DeleteSwitchMalfunctions();
 
-	virtual bool GetDamageModel() = 0; //Check if failures are to be simulated
+	virtual int GetDamageModel() = 0; //Check if failures are to be simulated
 
 	std::vector<Malfunction*> malfunctions; //Permanently set up malfunctions for the vessel
 	std::vector<SwitchMalfunction*> switchmalfunctions; //Dynamically loaded when failures are desired

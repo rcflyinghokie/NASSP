@@ -340,7 +340,7 @@ void CSMMalfunctionSimulation::SetRandomFailures(double FailureMultiplier)
 	}
 }
 
-bool CSMMalfunctionSimulation::GetDamageModel()
+int CSMMalfunctionSimulation::GetDamageModel()
 {
 	return sat->GetDamageModel();
 }

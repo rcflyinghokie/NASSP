@@ -76,7 +76,7 @@ protected:
 	void ResetFailure(unsigned i);
 	void SetSwitchFailure(unsigned i, bool set);
 
-	bool GetDamageModel(); //Check if failures are to be simulated
+	int GetDamageModel(); //Check if failures are to be simulated
 
 	Saturn *sat;
 };

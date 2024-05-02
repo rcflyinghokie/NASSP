@@ -44,7 +44,7 @@ MalfunctionSimulation::~MalfunctionSimulation()
 void MalfunctionSimulation::Timestep()
 {
 	//Don't simulate failures if it has been disabled in the Orbiter launchpad
-	if (GetDamageModel() == false) return;
+	if (GetDamageModel() == 0) return;
 
 	unsigned i;
 	bool activate;

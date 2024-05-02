@@ -31,13 +31,20 @@ class Malfunction
 public:
 	Malfunction(std::string Desc, double FailedOutp = 0.0);
 
+	//Has malfunction been scheduled?
 	bool GetActivated();
+	//Has malfunction already occured?
 	bool GetFailed();
+	//Get failure trigger for malfunction e.g. 0 = mission time
 	int GetCondition();
+	//Get value of failure trigger, e.g. the mission time at which the malfunction will occur
 	double GetConditionValue();
+	//Returns either 0.0 (malfunction has not occured) or FailedOutput (if malfunction has occured)
 	double GetAnalogFailure();
+	//Name of malfunction for display
 	std::string GetName();
 
+	//Functions for saving/loading
 	void SetCondition(int Cond, double CondVal);
 	void SetFailed();
 	void Clear();
