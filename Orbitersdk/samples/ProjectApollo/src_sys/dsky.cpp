@@ -1496,10 +1496,10 @@ void DSKY::SendNetworkPacketDSKY()
 
 		std::string message = "{" + compLight + prog + verb + noun + flashing + r1 + r2 + r3 + alarms + powered + "}";
 
-		sendto(clientSock, message.c_str(), message.length(), 0, (LPSOCKADDR)&serverAddr, sizeof(struct sockaddr));
+		sendto(clientSock, message.c_str(), message.length(), 0, (LPSOCKADDR)&serverAddr[0], sizeof(struct sockaddr));
 		//strcpy(oapiDebugString(), message.c_str());
 
-		//SendNetworkPacketNumerics();
+		SendNetworkPacketNumerics();
 	}
 }
 
@@ -1509,11 +1509,11 @@ void DSKY::SendNetworkPacketNumerics()
 		std::string message = "{\"brightness\": \"";
 		char numLvl[256] = "";
 
-		sprintf(numLvl, "%i", DimmerRotationalSwitch->GetState());
+		sprintf(numLvl, "%lf", DimmerRotationalSwitch->GetOutput());
 
 		message = message + numLvl + "\"}";
 
-		sendto(clientSock, message.c_str(), message.length(), 0, (LPSOCKADDR)&serverAddr, sizeof(struct sockaddr));
-		strcpy(oapiDebugString(), message.c_str());
+		sendto(clientSock, message.c_str(), message.length(), 0, (LPSOCKADDR)&serverAddr[1], sizeof(struct sockaddr));
+		//strcpy(oapiDebugString(), message.c_str());
 	}
 }
