@@ -61,7 +61,7 @@ MissionTimer::~MissionTimer()
 	// Nothing for now.
 }
 
-void MissionTimer::Init(e_object *a, e_object *b, RotationalSwitch *dimmer, e_object *c, ToggleSwitch *override)
+void MissionTimer::Init(e_object *a, e_object *b, ContinuousRotationalSwitch *dimmer, e_object *c, ToggleSwitch *override)
 {
 	DCPower.WireToBuses(a, b);
 	WireTo(c);
@@ -168,7 +168,7 @@ bool MissionTimer::IsDisplayPowered()
 	{
 		//Do nothing
 	}
-	else if (DimmerRotationalSwitch->GetState() == 0)
+	else if (DimmerRotationalSwitch->GetOutput() < 0.00001)
 	{
 		return false;
 	}

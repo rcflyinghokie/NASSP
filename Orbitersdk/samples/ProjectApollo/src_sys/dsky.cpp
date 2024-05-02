@@ -211,7 +211,7 @@ DSKY::~DSKY()
 	WSACleanup();
 }
 
-void DSKY::Init(e_object *statuslightpower, e_object *segmentlightpower, RotationalSwitch *dimmer)
+void DSKY::Init(e_object *statuslightpower, e_object *segmentlightpower, ContinuousRotationalSwitch *dimmer)
 
 {
 	StatusPower = statuslightpower;
@@ -225,7 +225,7 @@ bool DSKY::IsStatusPowered() {
 	if (StatusPower->Voltage() < 2){ return false; } //Used 2V for now as input voltage can be 0-5V AC or DC here
 
 	if (DimmerRotationalSwitch != NULL) {
-		if (DimmerRotationalSwitch->GetState() == 0) {
+		if (DimmerRotationalSwitch->GetOutput() < 0.00001) {
 			return false;
 		}
 	}
@@ -236,7 +236,7 @@ bool DSKY::IsSegmentPowered() {
 	if (SegmentPower->Voltage() < SP_MIN_DCVOLTAGE) { return false; }
 
 	if (DimmerRotationalSwitch != NULL) {
-		if (DimmerRotationalSwitch->GetState() == 0) {
+		if (DimmerRotationalSwitch->GetOutput() < 0.00001) {
 			return false;
 		}
 	}
