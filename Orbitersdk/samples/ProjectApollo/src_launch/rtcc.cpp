@@ -13427,7 +13427,7 @@ void RTCC::PMXSPT(std::string source, int n)
 		break;
 	case 65:
 		message.push_back("AEG/PIATSU ERROR - LONGITUDE OF ASCENDING NODE HAS BEEN");
-		message.push_back("ZEROED FOR MANEUVER" + RTCCONLINEMON.TextBuffer[0]);
+		message.push_back("ZEROED FOR MANEUVER " + RTCCONLINEMON.TextBuffer[0]);
 		break;
 	case 66:
 		message.push_back("MANEUVER " + RTCCONLINEMON.TextBuffer[0] + " OVERLAPS PREVIOUS MPT MANEUVER - WILL");
@@ -17606,6 +17606,8 @@ void RTCC::EMSEPH(int QUEID, StateVectorTableEntry &sv, int &L, double PresentGM
 				if (IsKickout[num] == false)
 				{
 					InTable.NIAuxOutputTable.TerminationCode = 7; //To make it continue processing
+					InTable.EphemerisLeftLimitGMT = InTable.AnchorVector.GMT; //Write more ephemeris, starting at current time
+
 					if (num == BODY_EARTH)
 					{
 						InTable.EarthRelStopParam = 50000.0*0.3048;
@@ -17688,6 +17690,17 @@ void RTCC::EMSEPH(int QUEID, StateVectorTableEntry &sv, int &L, double PresentGM
 
 		//Update mission plan table display
 		PMDMPT();
+
+		/*
+		//Debug code
+		char Buffer[256];
+		oapiWriteLog("Ephemeris Points Delta T:");
+		for (unsigned j = 1; j < table->EPHEM.table.size(); j++)
+		{
+			sprintf(Buffer, "%lf", table->EPHEM.table[j].GMT - table->EPHEM.table[j - 1].GMT);
+			oapiWriteLog(Buffer);
+		}
+		*/
 	}
 	StateVectorTableEntry sv_out;
 	sv_out.LandingSiteIndicator = InTable.NIAuxOutputTable.landed;
