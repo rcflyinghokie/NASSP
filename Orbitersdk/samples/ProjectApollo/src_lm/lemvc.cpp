@@ -138,6 +138,7 @@ const VECTOR3	P14_ROT_AXIS = { -sin((90 * RAD) - P14_TILT), cos((90 * RAD) - P14
 
 // Clickspot radius
 const double SWITCH = 0.015;
+const double ROT = 0.02;
 
 // Switch clickspot offset
 const VECTOR3	P1_CLICK = { 0, 0.0011, -0.0078 };
@@ -1059,11 +1060,14 @@ void LEM::RegisterActiveAreas()
 		oapiVCSetAreaClickmode_Quadrilateral(AID_VC_SWITCH_P3_01 + i, P3_TOGGLE_POS[i] + _V(UL.x * SWITCH, UL.y * SWITCH, UL.z * SWITCH) + P3_CLICK + ofs, P3_TOGGLE_POS[i] + _V(UR.x * SWITCH, UR.y * SWITCH, UR.z * SWITCH) + P3_CLICK + ofs, P3_TOGGLE_POS[i] + _V(DL.x * SWITCH, DL.y * SWITCH, DL.z * SWITCH) + P3_CLICK + ofs, P3_TOGGLE_POS[i] + _V(DR.x * SWITCH, DR.y * SWITCH, DR.z * SWITCH) + P3_CLICK + ofs);
 	}
 
-	for (i = 0; i < P3_ROTCOUNT; i++)
+	for (i = 0; i < 4; i++)
 	{
 		oapiVCRegisterArea(AID_VC_ROT_P3_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN);
 		oapiVCSetAreaClickmode_Spherical(AID_VC_ROT_P3_01 + i, P3_ROT_POS[i] + ofs, 0.02);
 	}
+
+	oapiVCRegisterArea(AID_VC_ROT_P3_05, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN | PANEL_MOUSE_LBPRESSED | PANEL_MOUSE_UP);
+	oapiVCSetAreaClickmode_Quadrilateral(AID_VC_ROT_P3_05, P3_ROT_POS[4] + UL * ROT + P3_CLICK + ofs, P3_ROT_POS[4] + UR * ROT + P3_CLICK + ofs, P3_ROT_POS[4] + DL * ROT + P3_CLICK + ofs, P3_ROT_POS[4] + DR * ROT + P3_CLICK + ofs);
 
 	oapiVCRegisterArea(AID_VC_RR_NOTRACK, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE);
 	oapiVCRegisterArea(AID_VC_CONTACTLIGHT2, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE);
@@ -1107,8 +1111,8 @@ void LEM::RegisterActiveAreas()
 
 	for (i = 0; i < P5_ROTCOUNT; i++)
 	{
-		oapiVCRegisterArea(AID_VC_ROT_P5_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN);
-		oapiVCSetAreaClickmode_Spherical(AID_VC_ROT_P5_01 + i, P5_ROT_POS[i] + ofs, 0.02);
+		oapiVCRegisterArea(AID_VC_ROT_P5_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN | PANEL_MOUSE_LBPRESSED | PANEL_MOUSE_UP);
+		oapiVCSetAreaClickmode_Quadrilateral(AID_VC_ROT_P5_01 + i, P5_ROT_POS[i] + UL * ROT + P5_CLICK + ofs, P5_ROT_POS[i] + UR * ROT + P5_CLICK + ofs, P5_ROT_POS[i] + DL * ROT + P5_CLICK + ofs, P5_ROT_POS[i] + DR * ROT + P5_CLICK + ofs);
 	}
 
 	oapiVCRegisterArea(AID_VC_START_BUTTON, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN | PANEL_MOUSE_UP);
@@ -1211,7 +1215,13 @@ void LEM::RegisterActiveAreas()
 		oapiVCSetAreaClickmode_Quadrilateral(AID_VC_SWITCH_P12_01 + i, P12_TOGGLE_POS[i] + _V(UL.x * SWITCH, UL.y * SWITCH, UL.z * SWITCH) + P12_CLICK + ofs, P12_TOGGLE_POS[i] + _V(UR.x * SWITCH, UR.y * SWITCH, UR.z * SWITCH) + P12_CLICK + ofs, P12_TOGGLE_POS[i] + _V(DL.x * SWITCH, DL.y * SWITCH, DL.z * SWITCH) + P12_CLICK + ofs, P12_TOGGLE_POS[i] + _V(DR.x * SWITCH, DR.y * SWITCH, DR.z * SWITCH) + P12_CLICK + ofs);
 	}
 
-	for (i = 0; i < P12_ROTCOUNT; i++)
+	for (i = 0; i < 2; i++)
+	{
+		oapiVCRegisterArea(AID_VC_ROT_P12_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN | PANEL_MOUSE_LBPRESSED | PANEL_MOUSE_UP);
+		oapiVCSetAreaClickmode_Quadrilateral(AID_VC_ROT_P12_01 + i, P12_ROT_POS[i] + UL * ROT + P12_CLICK + ofs, P12_ROT_POS[i] + UR * ROT + P12_CLICK + ofs, P12_ROT_POS[i] + DL * ROT + P12_CLICK + ofs, P12_ROT_POS[i] + DR * ROT + P12_CLICK + ofs);
+	}
+
+	for (i = 2; i < P12_ROTCOUNT; i++)
 	{
 		oapiVCRegisterArea(AID_VC_ROT_P12_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN);
 		oapiVCSetAreaClickmode_Spherical(AID_VC_ROT_P12_01 + i, P12_ROT_POS[i] + ofs, 0.02);
@@ -2462,6 +2472,7 @@ void LEM::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&FloodRotary, AID_VC_ROT_P3_05);
 	FloodRotary.SetReference(P3_ROT_POS[4], P3_ROT_AXIS);
 	FloodRotary.DefineMeshGroup(VC_GRP_Rot_P3_05);
+	FloodRotary.SetInitialAnimState(0.5);
 
 	NEEDLE_POS = {0,0.179865,1.699588};
 
@@ -2614,14 +2625,17 @@ void LEM::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&LtgFloodOhdFwdKnob, AID_VC_ROT_P5_01);
 	LtgFloodOhdFwdKnob.SetReference(P5_ROT_POS[0], P5_ROT_AXIS);
 	LtgFloodOhdFwdKnob.DefineMeshGroup(VC_GRP_Rot_P5_01);
+	LtgFloodOhdFwdKnob.SetInitialAnimState(0.5);
 
 	MainPanelVC.AddSwitch(&LtgAnunNumKnob, AID_VC_ROT_P5_02);
 	LtgAnunNumKnob.SetReference(P5_ROT_POS[1], P5_ROT_AXIS);
 	LtgAnunNumKnob.DefineMeshGroup(VC_GRP_Rot_P5_02);
+	LtgAnunNumKnob.SetInitialAnimState(0.5);
 
 	MainPanelVC.AddSwitch(&LtgIntegralKnob, AID_VC_ROT_P5_03);
 	LtgIntegralKnob.SetReference(P5_ROT_POS[2], P5_ROT_AXIS);
 	LtgIntegralKnob.DefineMeshGroup(VC_GRP_Rot_P5_03);
+	LtgIntegralKnob.SetInitialAnimState(0.5);
 
 	MainPanelVC.AddSwitch(&ManualEngineStart, AID_VC_START_BUTTON);
 	ManualEngineStart.SetDirection(_V(0.00, -0.004*cos(P5_TILT - (90.0 * RAD)), -0.004*sin(P5_TILT - (90.0 * RAD))));
@@ -2900,10 +2914,12 @@ void LEM::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&Panel12AntPitchKnob, AID_VC_ROT_P12_01);
 	Panel12AntPitchKnob.SetReference(P12_ROT_POS[0], P12_ROT_AXIS);
 	Panel12AntPitchKnob.DefineMeshGroup(VC_GRP_Rot_P12_01);
+	Panel12AntPitchKnob.SetInitialAnimState(0.5);
 
 	MainPanelVC.AddSwitch(&Panel12AntYawKnob, AID_VC_ROT_P12_02);
 	Panel12AntYawKnob.SetReference(P12_ROT_POS[1], P12_ROT_AXIS);
 	Panel12AntYawKnob.DefineMeshGroup(VC_GRP_Rot_P12_02);
+	Panel12AntYawKnob.SetInitialAnimState(0.5);
 
 	MainPanelVC.AddSwitch(&Panel12SBandAntSelKnob, AID_VC_ROT_P12_03);
 	Panel12SBandAntSelKnob.SetReference(P12_ROT_POS[2], P12_ROT_AXIS);
@@ -3053,6 +3069,7 @@ void LEM::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&ORDEALAltSetRotary, AID_VC_ROT_ORDEAL_01);
 	ORDEALAltSetRotary.SetReference(ORDEAL_RotLocation, ORDEAL_ROT_AXIS);
 	ORDEALAltSetRotary.DefineMeshGroup(VC_GRP_ORDEAL_Rot);
+	ORDEALAltSetRotary.SetInitialAnimState(133.0 / 285.0); //133° from 10 NM to 150 NM, 285° total range
 
 	// ECS Panels
 	const VECTOR3 ECSRotAxisOCM = { -0.12642632210213, 0.0, 0.991976000253902 };
