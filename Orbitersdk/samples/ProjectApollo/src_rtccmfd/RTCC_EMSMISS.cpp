@@ -481,6 +481,7 @@ void RTCC_EMSMISS::CallCoastIntegrator()
 	emmeniin.StopParamRefFrame = intab->StopParamRefFrame;
 	emmeniin.Weight = state.WeightsTable.ConfigWeight;
 	emmeniin.MinEphemDT = intab->MinEphemDT;
+	emmeniin.UseFixedStepLength = false;
 
 	emmeniin.EphemerisBuildIndicator = EphemerisBuildOn;
 	emmeniin.ECIEphemerisIndicator = intab->ECIEphemerisIndicator;
@@ -501,7 +502,70 @@ void RTCC_EMSMISS::CallCoastIntegrator()
 		emmeniin.VentPerturbationFactor = -1.0;
 	}
 
-	pRTCC->EMMENI(emmeniin);
+	for (int ii = 0; ii < 2; ii++)
+	{
+		//Clear temporary ephemeris tables
+		for (int j = 0; j < 4; j++)
+		{
+			tempcoastephemtable[j].table.clear();
+		}
+
+		//Call Encke integrator
+		pRTCC->EMMENI(emmeniin);
+
+		//No need for the checks on the second pass through
+		if (ii > 0) break;
+
+		if (emmeniin.EphemerisBuildIndicator && intab->MinNumEphemPoints > 0U)
+		{
+			//If ephemeris is being built and the minimum number of desired points haven't been generated, repeat EMMENI with fixed step length
+
+			bool enough = true;
+
+			if (emmeniin.ECIEphemerisIndicator)
+			{
+				if (intab->MinNumEphemPoints > emmeniin.ECIEphemTableIndicator->Header.NumVec) enough = false;
+			}
+			if (emmeniin.ECTEphemerisIndicator)
+			{
+				if (intab->MinNumEphemPoints > emmeniin.ECTEphemTableIndicator->Header.NumVec) enough = false;
+			}
+			if (emmeniin.MCIEphemerisIndicator)
+			{
+				if (intab->MinNumEphemPoints > emmeniin.MCIEphemTableIndicator->Header.NumVec) enough = false;
+			}
+			if (emmeniin.MCTEphemerisIndicator)
+			{
+				if (intab->MinNumEphemPoints > emmeniin.MCTEphemTableIndicator->Header.NumVec) enough = false;
+			}
+
+			if (enough == false)
+			{
+				double interval;
+
+				//Repeat EMMENI with step length giving desired number of ephemeris points
+
+				//Turn this off so it doesn't get in the way
+				emmeniin.MinEphemDT = 0.0;
+				//Turn on fixed step integration
+				emmeniin.UseFixedStepLength = true;
+				//Interval is output GMT minus anchor vector GMT, as integration might have not stopped at time but e.g. altitude
+				interval = emmeniin.sv_cutoff.GMT - emmeniin.AnchorVector.GMT;
+				//Step length adjusted to give desired number of ephemeris points
+				emmeniin.FixedStepLength = interval / ((double)(intab->MinNumEphemPoints - 1U));
+			}
+			else
+			{
+				//Enough state vectors
+				break;
+			}
+		}
+		else
+		{
+			//Otherwise we are finished
+			break;
+		}
+	}
 	svtemp = emmeniin.sv_cutoff;
 	TerminationCode = emmeniin.TerminationCode;
 }

@@ -2245,10 +2245,10 @@ protected:
 	ToggleSwitch GHAServoElecSwitch;
 	
 	SwitchRow HighGainAntennaPitchPositionSwitchRow;
-	RotationalSwitch HighGainAntennaPitchPositionSwitch;
+	ContinuousRotationalSwitch HighGainAntennaPitchPositionSwitch;
 
 	SwitchRow HighGainAntennaYawPositionSwitchRow;
-	RotationalSwitch HighGainAntennaYawPositionSwitch;
+	ContinuousRotationalSwitch HighGainAntennaYawPositionSwitch;
 
 	SwitchRow HighGainAntennaMetersRow;
 	SaturnHighGainAntennaPitchMeter HighGainAntennaPitchMeter;
@@ -2531,8 +2531,8 @@ protected:
 	//////////////////////
 	
 	SwitchRow RightInteriorLightRotariesRow;
-	RotationalSwitch RightIntegralRotarySwitch;
-	RotationalSwitch RightFloodRotarySwitch;
+	ContinuousRotationalSwitch RightIntegralRotarySwitch;
+	ContinuousRotationalSwitch RightFloodRotarySwitch;
 
 	//////////////////////
 	// Panel 4 switches //
@@ -2622,9 +2622,9 @@ protected:
 	ThreePosSwitch Panel100RNDZXPDRSwitch;
 
 	SwitchRow Panel100LightingRoatariesRow;
-	RotationalSwitch Panel100NumericRotarySwitch;
-	RotationalSwitch Panel100FloodRotarySwitch;
-	RotationalSwitch Panel100IntegralRotarySwitch;
+	ContinuousRotationalSwitch Panel100NumericRotarySwitch;
+	ContinuousRotationalSwitch Panel100FloodRotarySwitch;
+	ContinuousRotationalSwitch Panel100IntegralRotarySwitch;
 	
 	///////////////
 	// Panel 101 //
@@ -2880,9 +2880,9 @@ protected:
 	//////////////////////
 
 	SwitchRow LeftInteriorLightRotariesRow;
-	RotationalSwitch NumericRotarySwitch;
-	RotationalSwitch FloodRotarySwitch;
-	RotationalSwitch IntegralRotarySwitch;
+	ContinuousRotationalSwitch NumericRotarySwitch;
+	ContinuousRotationalSwitch FloodRotarySwitch;
+	ContinuousRotationalSwitch IntegralRotarySwitch;
 
 	SwitchRow FDAIPowerRotaryRow;
 	FDAIPowerRotationalSwitch FDAIPowerRotarySwitch;
@@ -3292,7 +3292,7 @@ protected:
 	DSKYPushSwitch DskySwitchEight;
 	DSKYPushSwitch DskySwitchNine;
 	DSKYPushSwitch DskySwitchClear;
-	DSKYPushSwitch DskySwitchProg;
+	DSKYPushSwitch DskySwitchProceed;
 	DSKYPushSwitch DskySwitchKeyRel;
 	DSKYPushSwitch DskySwitchEnter;
 	DSKYPushSwitch DskySwitchReset;
@@ -3313,7 +3313,7 @@ protected:
 	DSKYPushSwitch Dsky2SwitchEight;
 	DSKYPushSwitch Dsky2SwitchNine;
 	DSKYPushSwitch Dsky2SwitchClear;
-	DSKYPushSwitch Dsky2SwitchProg;
+	DSKYPushSwitch Dsky2SwitchProceed;
 	DSKYPushSwitch Dsky2SwitchKeyRel;
 	DSKYPushSwitch Dsky2SwitchEnter;
 	DSKYPushSwitch Dsky2SwitchReset;
