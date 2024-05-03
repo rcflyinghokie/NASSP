@@ -60,6 +60,20 @@ void EnckeFreeFlightIntegrator::Propagate(EMMENIInputTable &in)
 	STOPVAE = in.EarthRelStopParam;
 	STOPVAM = in.MoonRelStopParam;
 	HMULT = in.IsForwardIntegration;
+	UseFixedStepLength = in.UseFixedStepLength;
+	FixedStepLength = in.FixedStepLength;
+	if (UseFixedStepLength)
+	{
+		//With integration fixed step length, turn off step size multiplier
+		if (HMULT >= 0.0)
+		{
+			HMULT = 1.0;
+		}
+		else
+		{
+			HMULT = -1.0;
+		}
+	}
 	DRAG = in.DensityMultiplier;
 	VENT = in.VentPerturbationFactor;
 	CSA = -0.5*in.Area*pRTCC->SystemParameters.MCADRG;
@@ -201,7 +215,14 @@ void EnckeFreeFlightIntegrator::Edit()
 EMMENI_Edit_3B:
 	TIME = abs(TRECT + tau);
 	rr = length(R);
-	dt_max = min(dt_lim, K*OrbMech::power(rr, 1.5) / sqrt(mu));
+	if (UseFixedStepLength)
+	{
+		dt_max = FixedStepLength;
+	}
+	else
+	{
+		dt_max = min(dt_lim, K*OrbMech::power(rr, 1.5) / sqrt(mu));
+	}
 
 	//Should we even check?
 	if (ISTOPS == 1)
@@ -329,6 +350,8 @@ EMMENI_Edit_4A:
 		{
 			RestoreVariables();
 		}
+		//Mark as bounding
+		INITE = 1;
 		//Go back to find new dt
 		goto EMMENI_Edit_3B;
 	}

@@ -2242,10 +2242,10 @@ protected:
 	ToggleSwitch GHAServoElecSwitch;
 	
 	SwitchRow HighGainAntennaPitchPositionSwitchRow;
-	RotationalSwitch HighGainAntennaPitchPositionSwitch;
+	ContinuousRotationalSwitch HighGainAntennaPitchPositionSwitch;
 
 	SwitchRow HighGainAntennaYawPositionSwitchRow;
-	RotationalSwitch HighGainAntennaYawPositionSwitch;
+	ContinuousRotationalSwitch HighGainAntennaYawPositionSwitch;
 
 	SwitchRow HighGainAntennaMetersRow;
 	SaturnHighGainAntennaPitchMeter HighGainAntennaPitchMeter;
@@ -2528,8 +2528,8 @@ protected:
 	//////////////////////
 	
 	SwitchRow RightInteriorLightRotariesRow;
-	RotationalSwitch RightIntegralRotarySwitch;
-	RotationalSwitch RightFloodRotarySwitch;
+	ContinuousRotationalSwitch RightIntegralRotarySwitch;
+	ContinuousRotationalSwitch RightFloodRotarySwitch;
 
 	//////////////////////
 	// Panel 4 switches //
@@ -2619,9 +2619,9 @@ protected:
 	ThreePosSwitch Panel100RNDZXPDRSwitch;
 
 	SwitchRow Panel100LightingRoatariesRow;
-	RotationalSwitch Panel100NumericRotarySwitch;
-	RotationalSwitch Panel100FloodRotarySwitch;
-	RotationalSwitch Panel100IntegralRotarySwitch;
+	ContinuousRotationalSwitch Panel100NumericRotarySwitch;
+	ContinuousRotationalSwitch Panel100FloodRotarySwitch;
+	ContinuousRotationalSwitch Panel100IntegralRotarySwitch;
 	
 	///////////////
 	// Panel 101 //
@@ -2877,9 +2877,9 @@ protected:
 	//////////////////////
 
 	SwitchRow LeftInteriorLightRotariesRow;
-	RotationalSwitch NumericRotarySwitch;
-	RotationalSwitch FloodRotarySwitch;
-	RotationalSwitch IntegralRotarySwitch;
+	ContinuousRotationalSwitch NumericRotarySwitch;
+	ContinuousRotationalSwitch FloodRotarySwitch;
+	ContinuousRotationalSwitch IntegralRotarySwitch;
 
 	SwitchRow FDAIPowerRotaryRow;
 	FDAIPowerRotationalSwitch FDAIPowerRotarySwitch;
