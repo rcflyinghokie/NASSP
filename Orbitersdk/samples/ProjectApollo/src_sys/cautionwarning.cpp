@@ -312,7 +312,7 @@ typedef union
 // Functions to Read the CW lights states. Code by Jordan. Needs to be checked.
 //
 
-int CautionWarningSystem::GetLightsStates(bool *LightState)
+int CautionWarningSystem::GetCWLightStates(bool *LightState)
 
 {
 		for (int i = 0; i < CWS_LIGHTS_PER_PANEL; i++) {

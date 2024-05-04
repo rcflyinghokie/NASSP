@@ -1735,43 +1735,44 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 	{
 
 		// CMVC Ordeal Lighting Switch
-		SetCMVCIntegralLight(vcidx, IntegralLights_CMVC_Ordeal, MAT_EMISSION, ordeal.LightingPower(), NUM_ELEMENTS(IntegralLights_CMVC_Ordeal));
+		SetVCLighting(vcidx, IntegralLights_CMVC_Ordeal, MAT_EMISSION, ordeal.LightingPower(), NUM_ELEMENTS(IntegralLights_CMVC_Ordeal));
 		ORDEALLightingSwitch.DrawSwitchVC(id, event, surf);
 
 		// Integral Lights Panel 8
-		SetCMVCIntegralLight(vcidx, IntegralLights_P8, MAT_EMISSION, IntegralRotarySwitch.GetOutput(), NUM_ELEMENTS(IntegralLights_P8));
-		SetCMVCIntegralLight(vcidx, IntergralLights_P8_NTex, MAT_LIGHT, IntegralRotarySwitch.GetOutput(), NUM_ELEMENTS(IntergralLights_P8_NTex));
+		SetVCLighting(vcidx, IntegralLights_P8, MAT_EMISSION, IntegralRotarySwitch.GetOutput(), NUM_ELEMENTS(IntegralLights_P8));
+		SetVCLighting(vcidx, IntergralLights_P8_NTex, MAT_LIGHT, IntegralRotarySwitch.GetOutput(), NUM_ELEMENTS(IntergralLights_P8_NTex));
 
 		// Flood Lights Panel 8
-		SetCMVCIntegralLight(vcidx, FloodLights_P8, MAT_LIGHT, FloodRotarySwitch.GetOutput(), NUM_ELEMENTS(FloodLights_P8));
+		SetVCLighting(vcidx, FloodLights_P8, MAT_LIGHT, FloodRotarySwitch.GetOutput(), NUM_ELEMENTS(FloodLights_P8));
 
 		// External meshes
-		SetCMVCIntegralLight(seatsunfoldedidx, CMVCSeatsUnFolded, MAT_LIGHT, FloodRotarySwitch.GetOutput(), NUM_ELEMENTS(CMVCSeatsUnFolded));
-		SetCMVCIntegralLight(seatsfoldedidx, CMVCSeatsFolded, MAT_LIGHT, FloodRotarySwitch.GetOutput(), NUM_ELEMENTS(CMVCSeatsFolded));
-		SetCMVCIntegralLight(coascdridx, CMVC_COAS_CDR, MAT_LIGHT, FloodRotarySwitch.GetOutput(), NUM_ELEMENTS(CMVC_COAS_CDR));
+		SetVCLighting(seatsunfoldedidx, CMVCSeatsUnFolded, MAT_LIGHT, FloodRotarySwitch.GetOutput(), NUM_ELEMENTS(CMVCSeatsUnFolded));
+		SetVCLighting(seatsfoldedidx, CMVCSeatsFolded, MAT_LIGHT, FloodRotarySwitch.GetOutput(), NUM_ELEMENTS(CMVCSeatsFolded));
+		SetVCLighting(coascdridx, CMVC_COAS_CDR, MAT_LIGHT, FloodRotarySwitch.GetOutput(), NUM_ELEMENTS(CMVC_COAS_CDR));
 
 		// Numerics Lights Panel 8
-//        SetCMVCIntegralLight(vcidx,NumericLights_P8, MAT_LIGHT,NumericRotarySwitch.GetOutput(), NUM_ELEMENTS(NumericLights_P8));
-		SetCMVCIntegralLight(vcidx, NumericLights_P8_NTex, MAT_LIGHT, (NumericRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, NUM_ELEMENTS(NumericLights_P8_NTex));
+//      SetVCLighting(vcidx,NumericLights_P8, MAT_LIGHT,NumericRotarySwitch.GetOutput(), NUM_ELEMENTS(NumericLights_P8));
+		SetVCLighting(vcidx, NumericLights_P8_NTex, MAT_LIGHT, (NumericRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, NUM_ELEMENTS(NumericLights_P8_NTex));
 
 		// Integral Lights Panel 5
-		SetCMVCIntegralLight(vcidx, IntegralLights_P5, MAT_EMISSION, RightIntegralRotarySwitch.GetOutput(), NUM_ELEMENTS(IntegralLights_P5));
+		SetVCLighting(vcidx, IntegralLights_P5, MAT_EMISSION, RightIntegralRotarySwitch.GetOutput(), NUM_ELEMENTS(IntegralLights_P5));
 
 		// Flood Lights Panel 5 *** NOT FUNCTIONALY YET ***
-//		SetCMVCIntegralLight(vcidx, FloodLights_P5, MAT_LIGHT, RightFloodRotarySwitch.GetOutput(), NUM_ELEMENTS(FloodLights_P5));
+//		SetVCLighting(vcidx, FloodLights_P5, MAT_LIGHT, RightFloodRotarySwitch.GetOutput(), NUM_ELEMENTS(FloodLights_P5));
 
 		// Integral Lights Panel 100
-		SetCMVCIntegralLight(vcidx, IntegralLights_P100, MAT_EMISSION, Panel100IntegralRotarySwitch.GetOutput(), NUM_ELEMENTS(IntegralLights_P100));
+		SetVCLighting(vcidx, IntegralLights_P100, MAT_EMISSION, Panel100IntegralRotarySwitch.GetOutput(), NUM_ELEMENTS(IntegralLights_P100));
 
 		//// Flood Lights Panel 100 *** NOT FUNCTIONALY YET ***
-//		SetCMVCIntegralLight(vcidx, FloodLights_P100, MAT_LIGHT, Panel100FloodRotarySwitch.GetOutput(), NUM_ELEMENTS(FloodLights_P100));
+//		SetVCLighting(vcidx, FloodLights_P100, MAT_LIGHT, Panel100FloodRotarySwitch.GetOutput(), NUM_ELEMENTS(FloodLights_P100));
 
 		// Numerics Lights Panel 100
-		SetCMVCIntegralLight(vcidx, NumericLights_P100, MAT_LIGHT, (Panel100NumericRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, NUM_ELEMENTS(NumericLights_P100));
+		SetVCLighting(vcidx, NumericLights_P100, MAT_LIGHT, (Panel100NumericRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, NUM_ELEMENTS(NumericLights_P100));
 
 		// DSKY and Caution & Warning Lights
 		std::vector<DWORD> DSKY_CW_Lights;
 		std::vector<DWORD> DSKY_LEB_Lights;
+		std::vector<DWORD> CW_Lights;
 
 		bool LightStates[CWS_LIGHTS_PER_PANEL * 2];
 
@@ -1780,7 +1781,7 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 			LightStates[i] = false;
 		}
 		// ... and Read them
-		cws.GetLightsStates(LightStates);
+		cws.GetCWLightStates(LightStates);
 
 		if (dsky.UplinkLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_UPLINK_ACTY);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_UPLINK_ACTY); }
 		if (dsky.NoAttLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_NO_ATT); 			DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_NO_ATT); }
@@ -1795,45 +1796,46 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 
 		for (int i = 0; i < CWS_LIGHTS_PER_PANEL*2; i++)
 		{
-			if (LightStates[i])		{ DSKY_CW_Lights.push_back(IntegralLights_CW_Lights[i]); }
+			if (LightStates[i])		{ CW_Lights.push_back(IntegralLights_CW_Lights[i]); }
 		}
 
-		SetCMVCIntegralLight(vcidx, &DSKY_CW_Lights[0], MAT_LIGHT, (IntegralRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, DSKY_CW_Lights.size());
-		SetCMVCIntegralLight(vcidx, &DSKY_LEB_Lights[0], MAT_LIGHT, (Panel100IntegralRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, DSKY_LEB_Lights.size());
+		SetVCLighting(vcidx, &CW_Lights[0], MAT_LIGHT, 1, CW_Lights.size()); 	//Caution & Warning Lights
+		SetVCLighting(vcidx, &DSKY_CW_Lights[0], MAT_LIGHT, (IntegralRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, DSKY_CW_Lights.size());
+		SetVCLighting(vcidx, &DSKY_LEB_Lights[0], MAT_LIGHT, (Panel100IntegralRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, DSKY_LEB_Lights.size());
 
 		// Full Lit Lights
 		if (AbortLightLogic()) {
-			SetCMVCIntegralLight(vcidx, FullLitAbort, MAT_LIGHT, 1.0, 1);
+			SetVCLighting(vcidx, FullLitAbort, MAT_LIGHT, 1.0, 1);
 		}
 
 		if (secs.LiftoffLightPower()) {
 			if (!secs.NoAutoAbortLightPower()){
-				SetCMVCIntegralLight(vcidx, FullLitLiftOffNoAutoAbort, MAT_LIGHT, 1, 1);
+				SetVCLighting(vcidx, FullLitLiftOffNoAutoAbort, MAT_LIGHT, 1, 1);
 			}
 		}
 
 		if (cws.GetMasterAlarm()) {
-			SetCMVCIntegralLight(vcidx, FullLitMasterAlarm1, MAT_LIGHT, 1.0, 1);
-			SetCMVCIntegralLight(vcidx, FullLitMasterAlarm2, MAT_LIGHT, 1.0, 1);
+			SetVCLighting(vcidx, FullLitMasterAlarm1, MAT_LIGHT, 1.0, 1);
+			SetVCLighting(vcidx, FullLitMasterAlarm2, MAT_LIGHT, 1.0, 1);
 		}
 
 		if (SI_EngineNum > 5){
-			if (ENGIND[0]) SetCMVCIntegralLight(vcidx, LVEngine_8_1, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_1));
-			if (ENGIND[1]) SetCMVCIntegralLight(vcidx, LVEngine_8_2, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_2));
-			if (ENGIND[2]) SetCMVCIntegralLight(vcidx, LVEngine_8_3, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_3));
-			if (ENGIND[3]) SetCMVCIntegralLight(vcidx, LVEngine_8_4, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_4));
-			if (ENGIND[4]) SetCMVCIntegralLight(vcidx, LVEngine_8_5, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_5));
-			if (ENGIND[5]) SetCMVCIntegralLight(vcidx, LVEngine_8_6, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_6));
-			if (ENGIND[6]) SetCMVCIntegralLight(vcidx, LVEngine_8_7, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_7));
-			if (ENGIND[7]) SetCMVCIntegralLight(vcidx, LVEngine_8_8, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_8));
+			if (ENGIND[0]) SetVCLighting(vcidx, LVEngine_8_1, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_1));
+			if (ENGIND[1]) SetVCLighting(vcidx, LVEngine_8_2, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_2));
+			if (ENGIND[2]) SetVCLighting(vcidx, LVEngine_8_3, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_3));
+			if (ENGIND[3]) SetVCLighting(vcidx, LVEngine_8_4, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_4));
+			if (ENGIND[4]) SetVCLighting(vcidx, LVEngine_8_5, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_5));
+			if (ENGIND[5]) SetVCLighting(vcidx, LVEngine_8_6, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_6));
+			if (ENGIND[6]) SetVCLighting(vcidx, LVEngine_8_7, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_7));
+			if (ENGIND[7]) SetVCLighting(vcidx, LVEngine_8_8, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_8_8));
 		}
 		else
 		{
-			if (ENGIND[0]) SetCMVCIntegralLight(vcidx, LVEngine_5_1, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_1));
-			if (ENGIND[1]) SetCMVCIntegralLight(vcidx, LVEngine_5_2, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_2));
-			if (ENGIND[2]) SetCMVCIntegralLight(vcidx, LVEngine_5_3, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_3));
-			if (ENGIND[3]) SetCMVCIntegralLight(vcidx, LVEngine_5_4, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_4));
-			if (ENGIND[4]) SetCMVCIntegralLight(vcidx, LVEngine_5_5, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_5));
+			if (ENGIND[0]) SetVCLighting(vcidx, LVEngine_5_1, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_1));
+			if (ENGIND[1]) SetVCLighting(vcidx, LVEngine_5_2, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_2));
+			if (ENGIND[2]) SetVCLighting(vcidx, LVEngine_5_3, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_3));
+			if (ENGIND[3]) SetVCLighting(vcidx, LVEngine_5_4, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_4));
+			if (ENGIND[4]) SetVCLighting(vcidx, LVEngine_5_5, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_5));
 		}
 
 		return true;
@@ -1849,7 +1851,7 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 
 		for (unsigned i = 0; i < indices.size(); i++)
 		{
-			SetCMVCIntegralLight(indices[i], ccmat, MAT_LIGHT, FloodRotarySwitch.GetOutput(), 1);
+			SetVCLighting(indices[i], ccmat, MAT_LIGHT, FloodRotarySwitch.GetOutput(), 1);
 		}
 
 		return true;
@@ -2030,13 +2032,14 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 
 	case AID_VC_CWS_LIGHTS_LEFT:
 		// TODO Test by Jordan
-		SetCMVCIntegralLight(vcidx, IntegralLights_CW_LeftLights, MAT_LIGHT,(IntegralRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) /2.0, NUM_ELEMENTS(IntegralLights_CW_LeftLights));
+		SetVCLighting(vcidx, IntegralLights_CW_LeftLights, MAT_LIGHT,1, NUM_ELEMENTS(IntegralLights_CW_LeftLights));
+
 		cws.RenderLights(surf, srf[SRF_VC_CW_LIGHTS], true, TexMul);
 		return true;
 
 	case AID_VC_CWS_LIGHTS_RIGHT:
 		// TODO Test by Jordan
-		SetCMVCIntegralLight(vcidx, IntegralLights_CW_RightLights, MAT_LIGHT, (IntegralRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, NUM_ELEMENTS(IntegralLights_CW_RightLights));
+		SetVCLighting(vcidx, IntegralLights_CW_RightLights, MAT_LIGHT, 1, NUM_ELEMENTS(IntegralLights_CW_RightLights));
 		cws.RenderLights(surf, srf[SRF_VC_CW_LIGHTS], false, TexMul);
 		return true;
 
@@ -5102,9 +5105,9 @@ void Saturn::InitFDAI(UINT mesh)
 }
 
 #ifdef _OPENORBITER
-void Saturn::SetCMVCIntegralLight(UINT meshidx, DWORD *matList, MatProp EmissionMode, double state, int cnt)
+void Saturn::SetVCLighting(UINT meshidx, DWORD *matList, MatProp EmissionMode, double state, int cnt)
 #else
-void Saturn::SetCMVCIntegralLight(UINT meshidx, DWORD *matList, int EmissionMode, double state, int cnt)
+void Saturn::SetVCLighting(UINT meshidx, DWORD *matList, int EmissionMode, double state, int cnt)
 #endif
 
 {

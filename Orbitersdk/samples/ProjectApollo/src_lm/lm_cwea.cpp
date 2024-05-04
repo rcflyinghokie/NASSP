@@ -36,7 +36,7 @@ See http://nassp.sourceforge.net/license/ for more details.
 // CWEA 
 
 
-int LEM_CWEA::GetLightStatus(int i, int j)
+int LEM_CWEA::GetCWLightStatus(int i, int j)
 {
 	return LightStatus[i][j];
 }

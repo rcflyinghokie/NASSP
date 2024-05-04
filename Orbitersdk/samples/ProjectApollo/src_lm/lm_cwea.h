@@ -50,7 +50,7 @@ public:
 	double GetNumberLightsOn();
 	double GetNonDimmableLoad();
 	double GetDimmableLoad();
-	int GetLightStatus(int, int);
+	int GetCWLightStatus(int, int);
 
 	//For SCEA
 	//TBD: Should use relays, light status is also set during light test

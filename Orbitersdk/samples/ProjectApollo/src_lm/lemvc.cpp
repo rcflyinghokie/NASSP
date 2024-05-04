@@ -1571,7 +1571,7 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 		// Get the Caution& Warning Light Status
 		for (int i = 0; i < 5;  i++) {
 			for (int j = 0; j < 8; j++) {
-				if (CWEA.GetLightStatus(i, j)) { DSKY_CW_Lights.push_back(LMVC_CW_Lights[i][j]); }
+				if (CWEA.GetCWLightStatus(i, j)==1) { DSKY_CW_Lights.push_back(LMVC_CW_Lights[i][j]); }
 			}
 		}
 		
@@ -1586,16 +1586,24 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 		if (dsky.RestartLit())    { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_RESTART); }
 		if (dsky.TrackerLit())    { DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_TRACKER); }
 
-//		sprintf(oapiDebugString(), "DSKY Lights on -> %i", DSKY_CW_Lights.size());
-//		sprintf(oapiDebugString(), "Integral Voltage = %lf", lca.GetIntegralVoltage());
+//		sprintf(oapiDebugString(), "Integral Voltage = %lf", lca.GetNumericVoltage());
+
 		// MAT_LIGHT changes the Brightness of the Material
 		// MAT_EMISSION changes the Brightness of the Material controlled by its _emis Texture
+		SetVCLighting(vcidx, FloodLights_LMVC,    MAT_LIGHT, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_LMVC));
+		SetVCLighting(vcidx, IntegralLights_LMVC, MAT_EMISSION, ((lca.GetIntegralVoltage() / 75.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0)) / 2.0, NUM_ELEMENTS(IntegralLights_LMVC));
+		SetVCLighting(vcidx, IntegralLights_LMVC_NoTex, MAT_LIGHT, ((lca.GetIntegralVoltage() / 75.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0)) / 2.0, NUM_ELEMENTS(IntegralLights_LMVC));
+		SetVCLighting(vcidx, NumericLights_LMVC,  MAT_LIGHT, ((lca.GetNumericVoltage() / 110.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0) )/2, NUM_ELEMENTS(NumericLights_LMVC));
 
-		SetLMVCIntegralLight(vcidx, IntegralLights_LMVC, MAT_EMISSION, lca.GetIntegralVoltage() / 75.0, NUM_ELEMENTS(IntegralLights_LMVC));
-		SetLMVCIntegralLight(vcidx, NumericLights_LMVC, MAT_LIGHT, ( (lca.GetNumericVoltage() / 110.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0) )/2, NUM_ELEMENTS(NumericLights_LMVC));
-		SetLMVCIntegralLight(vcidx, FloodLights_LMVC, MAT_LIGHT, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_LMVC));
-		SetLMVCIntegralLight(xpointershadesidx, FloodLights_XPointer_Shades, MAT_LIGHT, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_XPointer_Shades));
-		SetLMVCIntegralLight(vcidx, &DSKY_CW_Lights[0], MAT_LIGHT, ((lca.GetIntegralVoltage() / 75.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0)) / 2.0, DSKY_CW_Lights.size());
+		if (CWEA.GetMasterAlarm()) {
+			SetVCLighting(vcidx, MasterAlarm_NoTex,  MAT_LIGHT, 1, NUM_ELEMENTS(MasterAlarm_NoTex));
+		}
+
+		SetVCLighting(vcidx, &DSKY_CW_Lights[0],  MAT_LIGHT, ((lca.GetIntegralVoltage() / 75.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0))/2.0, DSKY_CW_Lights.size());
+
+		//External Meshes
+		SetVCLighting(xpointershadesidx, FloodLights_XPointer_Shades, MAT_LIGHT, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_XPointer_Shades));
+		SetVCLighting(windowshadesidx,   FloodLights_WindowShades,    MAT_LIGHT, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_WindowShades));
         return true;
 	}
 
@@ -3431,9 +3439,9 @@ void LEM::SetStageSeqRelayLight(int m, bool state) {
 }
 
 #ifdef _OPENORBITER
-void LEM::SetLMVCIntegralLight(UINT meshidx, DWORD *matList, MatProp EmissionMode, double state, int cnt)
+void LEM::SetVCLighting(UINT meshidx, DWORD *matList, MatProp EmissionMode, double state, int cnt)
 #else
-void LEM::SetLMVCIntegralLight(UINT meshidx, DWORD *matList, int EmissionMode, double state, int cnt)
+void LEM::SetVCLighting(UINT meshidx, DWORD *matList, int EmissionMode, double state, int cnt)
 #endif
 
 {

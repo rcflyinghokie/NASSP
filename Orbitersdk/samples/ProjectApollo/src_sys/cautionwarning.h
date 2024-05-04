@@ -110,7 +110,7 @@ public:
 	///
 	/// \param LightState Array of light states.
 	///
-	int GetLightsStates(bool *LightState);
+	int GetCWLightStates(bool *LightState);
 
 	///
 	/// \brief Test caution and warning lights.

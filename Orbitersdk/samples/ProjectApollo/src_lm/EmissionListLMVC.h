@@ -48,6 +48,12 @@ DWORD FloodLights_LMVC[] = {
 	VC_MAT_WaterControlModule_t,
 	VC_MAT_WindowsRim,
 	VC_MAT_FDAI_ball_LM_t,
+	VC_MAT_LMVC_Tapemeter_t,
+	VC_MAT_MasterAlarm1,
+	VC_MAT_MasterAlarm2,
+	VC_MAT_DEDA_Display,
+	VC_MAT_DEDA_Light,
+
 
 	// DSKY Lights
 	VC_MAT_DSKY_LIGHTS_NO_ATT,
@@ -100,16 +106,31 @@ DWORD IntegralLights_LMVC[] = {
 	VC_MAT_LMVC_t,
 	VC_MAT_Rotary_LM_t,
 	VC_MAT_FDAI_LM_t,
+//	VC_MAT_FDAI_ball_LM_t
+};
+
+DWORD MasterAlarm_NoTex[] = {
+	VC_MAT_MasterAlarm1,
+	VC_MAT_MasterAlarm2
+};
+
+DWORD IntegralLights_LMVC_NoTex[] = {
+//	VC_MAT_LMVC_2_t,
+//	VC_MAT_LMVC_t,
+//	VC_MAT_Rotary_LM_t,
+//	VC_MAT_FDAI_LM_t,
+	VC_MAT_LMVC_Tapemeter_t,
 	VC_MAT_FDAI_ball_LM_t
 };
 
 DWORD NumericLights_LMVC[] = {
 	VC_MAT_Panel4_DSKY,
-	VC_MAT_LMVC_Tapemeter_t,
-	VC_MAT_Panel1_Numerics_Timer
+	VC_MAT_Panel1_Numerics_Timer,
+	VC_MAT_DEDA_Display,
+	VC_MAT_DEDA_Light
 };
 
-DWORD IntegralLights_LMVC_NoTex[] = {
+DWORD LMVC_DSKY_Lights[] = {
 	VC_MAT_DSKY_LIGHTS_NO_ATT,
 	VC_MAT_DSKY_LIGHTS_GIMBAL_LOCK,
 	VC_MAT_DSKY_LIGHTS_KEY_REL,
@@ -120,10 +141,6 @@ DWORD IntegralLights_LMVC_NoTex[] = {
 	VC_MAT_DSKY_LIGHTS_TEMP,
 	VC_MAT_DSKY_LIGHTS_TRACKER,
 	VC_MAT_DSKY_LIGHTS_UPLINK_ACTY
-};
-
-DWORD FloodLights_XPointer_Shades[] = {
-	0
 };
 
 DWORD LMVC_CW_Lights[5][8] = {
@@ -181,6 +198,15 @@ DWORD LMVC_CW_Lights[5][8] = {
 		1000,
 		VC_MAT_Panel_02_CW_Lights_SBD_RCVR,
 	}
+};
+
+// External Meshes
+DWORD FloodLights_XPointer_Shades[] = {
+	0
+};
+
+DWORD FloodLights_WindowShades[] = {
+	0
 };
 
 #endif // !__EMISSIONLISTCMVC
