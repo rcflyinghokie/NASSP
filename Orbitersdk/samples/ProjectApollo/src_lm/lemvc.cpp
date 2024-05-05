@@ -1604,7 +1604,11 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 		//External Meshes
 		SetVCLighting(xpointershadesidx, FloodLights_XPointer_Shades, MAT_LIGHT, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_XPointer_Shades));
 		SetVCLighting(windowshadesidx,   FloodLights_WindowShades,    MAT_LIGHT, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_WindowShades));
-        return true;
+
+		if (deda.OprErrLit()) {
+			SetVCLighting(vcidx, DEDA_LightsFullLit,  MAT_LIGHT, 1, 1);
+		}
+		return true;
 	}
 
 	case AID_VC_LM_CWS_LEFT:

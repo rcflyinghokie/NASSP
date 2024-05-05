@@ -114,6 +114,11 @@ DWORD MasterAlarm_NoTex[] = {
 	VC_MAT_MasterAlarm2
 };
 
+DWORD DEDA_LightsFullLit[] = {
+	VC_MAT_DEDA_Light
+};
+
+
 DWORD IntegralLights_LMVC_NoTex[] = {
 //	VC_MAT_LMVC_2_t,
 //	VC_MAT_LMVC_t,
@@ -126,8 +131,7 @@ DWORD IntegralLights_LMVC_NoTex[] = {
 DWORD NumericLights_LMVC[] = {
 	VC_MAT_Panel4_DSKY,
 	VC_MAT_Panel1_Numerics_Timer,
-	VC_MAT_DEDA_Display,
-	VC_MAT_DEDA_Light
+	VC_MAT_DEDA_Display
 };
 
 DWORD LMVC_DSKY_Lights[] = {
