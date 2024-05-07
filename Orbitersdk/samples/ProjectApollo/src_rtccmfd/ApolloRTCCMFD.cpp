@@ -5846,6 +5846,11 @@ void ApolloRTCCMFD::menuSetMapUpdateGET()
 	GenericGETInput(&G->mapUpdateGET, "Choose the GET for the anchor vector (Format: hhh:mm:ss)");
 }
 
+void ApolloRTCCMFD::menuCycleMapUpdatePM()
+{
+	G->mapUpdatePM = !G->mapUpdatePM;
+}
+
 void ApolloRTCCMFD::menuCycleSPQMode()
 {
 	if (G->SPQMode < 2)

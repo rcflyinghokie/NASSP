@@ -7755,14 +7755,13 @@ void RTCC::RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res)
 void RTCC::LunarOrbitMapUpdate(EphemerisData sv0, AP10MAPUPDATE &pad, double pm)
 {
 	double ttoLOS, ttoAOS, ttoSS, ttoSR, ttoPM, MJD;
-	OBJHANDLE hEarth, hSun, gravref;
+	OBJHANDLE hSun, gravref;
 	double t_lng, GETbase;
 
 	GETbase = CalcGETBase();
 	MJD = OrbMech::MJDfromGET(sv0.GMT, GetGMTBase());
 	gravref = GetGravref(sv0.RBI);
 
-	hEarth = oapiGetObjectByName("Earth");
 	hSun = oapiGetObjectByName("Sun");
 
 	ttoLOS = OrbMech::sunrise(SystemParameters.MAT_J2000_BRCS, sv0.R, sv0.V, MJD, gravref, hEarth, 0, 0, true);
