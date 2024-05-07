@@ -203,14 +203,8 @@ DWORD FloodLights_P8[] = {
 	VC_MAT_LVEngine_8_7,
 	VC_MAT_LVEngine_8_8,
 
-
-//	VC_MAT_DSKY_Alarm_Lights_P2_t,
-//	VC_MAT_EMS_Scroll_Timer_P1_t,
-//	VC_MAT_FDAI_Ball_t,
-//	VC_MAT_FDAI_errorneedle,
-//	VC_MAT_FDAI_Cue,
-//	VC_MAT_Black,
-//	VC_MAT_CWLights_P8_t,
+	VC_MAT_LiftVectorindicatorBottom,
+	VC_MAT_LiftVectorindicatorTop
 
 };
 
@@ -229,9 +223,7 @@ DWORD IntegralLights_P5[] = {
 	VC_MAT_Rotarys_P5_t,
 	VC_MAT_Talkbacks_P2_t,
 	VC_MAT_Talkbacks_P3_t
-//	MAT_LMVC_t,
-//	VC_MAT_MAT_Colors_t,
-//	VC_MAT_CB_black_t
+
 };
 
 DWORD FloodLights_P5[] = {
@@ -252,9 +244,6 @@ DWORD FloodLights_P5[] = {
 DWORD IntegralLights_P100[] = {
 
 	// TODO Material List
-//	VC_MAT_MAINVCTEX_t,
-//	VC_MAT_csm_lower_equip_bay_t,
-//	VC_MAT_csm_right_cb_panels_t,		
 	VC_MAT_CMVCTex1_ILL_P100_t,
 	VC_MAT_CMVCTex2_ILL_P100_t,
 	VC_MAT_DSKY_Keys_LEB_t,
@@ -560,6 +549,14 @@ DWORD LVEngine_8_8[] = {
 	VC_MAT_LVEngine_8_8,
 	VC_MAT_LVEngine_5_5_2,
 	VC_MAT_LVEngine_5_3_1
+};
+
+DWORD LiftVectorInd1[] = {
+	VC_MAT_LiftVectorindicatorTop
+};
+
+DWORD LiftVectorInd2[] = {
+	VC_MAT_LiftVectorindicatorBottom
 };
 
 #endif // !__EMISSIONLISTCMVC

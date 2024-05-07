@@ -315,10 +315,10 @@ typedef union
 int CautionWarningSystem::GetCWLightStates(bool *LightState)
 
 {
-		for (int i = 0; i < CWS_LIGHTS_PER_PANEL; i++) {
-			LightState[i] = LeftLights[i];
-			LightState[i+30] = RightLights[i];
-		}
+	for (int i = 0; i < CWS_LIGHTS_PER_PANEL; i++) {
+		LightState[i] = LeftLights[i];
+		LightState[i+30] = RightLights[i];
+	}
 	return 0;
 }
 
