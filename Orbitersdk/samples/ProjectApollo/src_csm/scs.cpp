@@ -4560,16 +4560,16 @@ void TVSA::TimeStep(double simdt)
 	//Trim
 	if (acpower1)
 	{
-		pitchGimbalTrim1 = (sat->SPSGimbalPitchThumbwheel.GetPosition() - 40.0) / 10.0*RAD;
-		yawGimbalTrim1 = (sat->SPSGimbalYawThumbwheel.GetPosition() - 40.0) / 10.0*RAD;
+		pitchGimbalTrim1 = sat->SPSGimbalPitchThumbwheel.GetValue()*RAD;
+		yawGimbalTrim1 = sat->SPSGimbalYawThumbwheel.GetValue()*RAD;
 	}
 	else
 		pitchGimbalTrim1 = yawGimbalTrim1 = 0.0;
 
 	if (acpower2)
 	{
-		pitchGimbalTrim2 = (sat->SPSGimbalPitchThumbwheel.GetPosition() - 40.0) / 10.0*RAD;
-		yawGimbalTrim2 = (sat->SPSGimbalYawThumbwheel.GetPosition() - 40.0) / 10.0*RAD;
+		pitchGimbalTrim2 = sat->SPSGimbalPitchThumbwheel.GetValue()*RAD;
+		yawGimbalTrim2 = sat->SPSGimbalYawThumbwheel.GetValue()*RAD;
 	}
 	else
 		pitchGimbalTrim2 = yawGimbalTrim2 = 0.0;
@@ -4888,7 +4888,7 @@ EMS::~EMS()
 	if (rsirot) delete rsirot;
 }
 
-void EMS::Init(Saturn *vessel, e_object *a, e_object *b, RotationalSwitch *dimmer, e_object *c) {
+void EMS::Init(Saturn *vessel, e_object *a, e_object *b, ContinuousRotationalSwitch *dimmer, e_object *c) {
 	sat = vessel;
 	DCPower.WireToBuses(a, b);
 	WireTo(c);
