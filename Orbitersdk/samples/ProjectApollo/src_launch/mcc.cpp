@@ -2248,17 +2248,17 @@ void MCC::LoadState(FILEHANDLE scn) {
 		{
 			AP10MAPUPDATE * form = (AP10MAPUPDATE *)padForm;
 
-			LOAD_INT("MCC_AP10MAPUPDATE_REV", form->Rev);
-			LOAD_INT("MCC_AP10MAPUPDATE_type", form->type);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_AOSGET", form->AOSGET);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_LOSGET", form->LOSGET);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_PMGET", form->PMGET);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_SRGET", form->SRGET);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_SSGET", form->SSGET);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_AOSGET2", form->AOSGET2);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_LOSGET2", form->LOSGET2);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_PMGET2", form->PMGET2);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_SSGET2", form->SSGET2);
+			papiReadScenario_int(line, "MCC_AP10MAPUPDATE_REV", form->Rev);
+			papiReadScenario_int(line, "MCC_AP10MAPUPDATE_type", form->type);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_AOSGET", form->AOSGET);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_LOSGET", form->LOSGET);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_PMGET", form->PMGET);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_SRGET", form->SRGET);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_SSGET", form->SSGET);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_AOSGET2", form->AOSGET2);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_LOSGET2", form->LOSGET2);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_PMGET2", form->PMGET2);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_SSGET2", form->SSGET2);
 		}
 		else if (padNumber == 13)
 		{
