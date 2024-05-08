@@ -229,7 +229,7 @@ void CSMMalfunctionSimulation::ResetFailure(unsigned i)
 
 void CSMMalfunctionSimulation::SetSwitchFailure(unsigned i, bool set)
 {
-	if (i >= malfunctions.size()) return;
+	if (i >= switchmalfunctions.size()) return;
 
 	sat->MainPanel.SetFailedState(switchmalfunctions[i]->GetSwitchName().c_str(), set, switchmalfunctions[i]->GetFailState());
 }
