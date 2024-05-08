@@ -39,7 +39,7 @@ DWORD NumericLights_P8_NTex[] = {
 	// TODO Material List
 	VC_MAT_DSKY_P8_t,
 	VC_MAT_EMS_DeltaV_Range_P8_t,
-	VC_MAT_MisisonTimer_P8_t
+	VC_MAT_MissionTimer_P2
 };
 
 DWORD NumericLights_P8[] = {
@@ -111,6 +111,10 @@ DWORD FloodLights_P8[] = {
 	VC_MAT_MASTERALARM_PANEL2,
 	VC_MAT_ABORTLIGHT_PANEL1,
 	VC_MAT_CMVC_LIFT_OFF_NO_ABORT,
+	VC_MAT_MissionTimerLEB,
+	VC_MAT_MissionTimer_P2,
+	VC_MAT_Panel306,
+	VC_MAT_EventTimerLEB,
 
 	// DSKY Panel 2 Lights Materials
 	VC_MAT_DSKY_Lights_GIMBAL_LOCK,
@@ -247,7 +251,12 @@ DWORD IntegralLights_P100[] = {
 	VC_MAT_CMVCTex1_ILL_P100_t,
 	VC_MAT_CMVCTex2_ILL_P100_t,
 	VC_MAT_DSKY_Keys_LEB_t,
-	VC_MAT_Rotarys_P100_t
+	VC_MAT_Rotarys_P100_t,
+	VC_MAT_Panel306,
+};
+
+DWORD IntegralLights_P100_NoTex[] = {
+	VC_MAT_EventTimerLEB
 };
 
 DWORD FloodLights_P100[] = {
@@ -261,7 +270,9 @@ DWORD FloodLights_P100[] = {
 DWORD NumericLights_P100[] = {
 
 	// TODO Material List
-	VC_MAT_DSKY_LEB_CMVCTex2_t
+	VC_MAT_DSKY_LEB_CMVCTex2_t,
+	VC_MAT_MissionTimerLEB
+
 };
 
 //
