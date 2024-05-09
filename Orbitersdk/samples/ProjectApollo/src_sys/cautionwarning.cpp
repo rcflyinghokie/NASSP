@@ -263,6 +263,19 @@ void CautionWarningSystem::SetMode(CWSOperationMode mode)
 	}
 }
 
+
+
+// by Jordan beginn
+//
+// Read mode
+//
+
+int CautionWarningSystem::GetMode()
+{
+	return Mode;
+}
+// by Jordan end
+
 void CautionWarningSystem::SetLight(int lightnum, bool state)
 
 {
@@ -320,6 +333,16 @@ int CautionWarningSystem::GetCWLightStates(bool *LightState)
 		LightState[i+30] = RightLights[i];
 	}
 	return 0;
+}
+
+//
+// Functions to Read the CW lights states. Code by Jordan. Needs to be checked.
+//
+
+int CautionWarningSystem::GetCWLightTest()
+
+{
+	return TestState ;
 }
 
 //

@@ -112,6 +112,12 @@ public:
 	///
 	int GetCWLightStates(bool *LightState);
 
+	/// by Jordan beginn
+	/// Test if CW Testswitch is pressed
+	///
+	int GetCWLightTest();
+	///by Jordan end
+
 	///
 	/// \brief Test caution and warning lights.
 	/// \param state Which test to perform.
@@ -135,6 +141,13 @@ public:
 	/// \param mode Operating mode to set.
 	///
 	void SetMode(CWSOperationMode mode);
+
+// by Jordan beginn
+	///
+	/// \brief Read the operating mode.
+	///
+	int GetMode(void);
+// by Jordan end
 
 	///
 	/// \brief Set the CWS source.

@@ -1792,10 +1792,22 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 		if (dsky.RestartLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_RESTART);			DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_RESTART); }
 		if (dsky.TrackerLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_TRACKER);			DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_TRACKER); }
 
-		for (int i = 0; i < CWS_LIGHTS_PER_PANEL*2; i++)
+		for (int i = 0; i < CWS_LIGHTS_PER_PANEL; i++)
 		{
-			if (LightStates[i])		{ CW_Lights.push_back(IntegralLights_CW_Lights[i]); }
-		}
+			if ((LightStates[i]  && cws.GetMode() != CWS_MODE_ACK) || cws.GetCWLightTest() == CWS_TEST_LIGHTS_LEFT)
+			{
+				CW_Lights.push_back(IntegralLights_CW_Lights[i]);
+			}
+		 }
+
+
+		for (int i = 0; i < CWS_LIGHTS_PER_PANEL; i++)
+		{
+			if ((LightStates[i+30]  && cws.GetMode() != CWS_MODE_ACK) || cws.GetCWLightTest() == CWS_TEST_LIGHTS_RIGHT)
+			{
+				CW_Lights.push_back(IntegralLights_CW_Lights[i+30]);
+			}
+		 }
 
 		SetVCLighting(vcidx, &CW_Lights[0], MAT_LIGHT, 1, CW_Lights.size()); 	//Caution & Warning Lights
 		SetVCLighting(vcidx, &DSKY_CW_Lights[0], MAT_LIGHT, (IntegralRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, DSKY_CW_Lights.size());
