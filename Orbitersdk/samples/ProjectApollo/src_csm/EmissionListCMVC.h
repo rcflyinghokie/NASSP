@@ -28,9 +28,11 @@ DWORD IntegralLights_P8[] = {
 DWORD IntergralLights_P8_NTex[] = {
 
 	// TODO Material List
-	VC_MAT_CWLights_P8_t,
+//	VC_MAT_CWLights_P8_t,
 	VC_MAT_EMS_Scroll_Timer_P1_t,
-	VC_MAT_FDAI_Ball_t
+	VC_MAT_FDAI_Ball_t,
+	VC_MAT_AttitudeSetNumbers
+
 };
 
 // Material Emissions Panel 8 without Emission Texture
@@ -52,6 +54,7 @@ DWORD FloodLights_P8[] = {
 
 	// TODO Material List
 	VC_MAT_AdditionalParts_t,
+//	VC_MAT_AttitudeSetNumbers,
 	VC_MAT_Alluminum,
 	VC_MAT_CB_black_t,
 	VC_MAT_CM_VC_Color_1,
