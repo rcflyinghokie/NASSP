@@ -476,7 +476,13 @@ DWORD IntegralLights_CW_Lights[] = {
 	VC_MAT_CW_Lights_P2_ISS,
 	VC_MAT_CW_Lights_P2_CW,
 	VC_MAT_CW_Lights_P2_O2_FLOW_HI,
-	VC_MAT_CW_Lights_P2_SUIT_COMPRESSOR
+	VC_MAT_CW_Lights_P2_SUIT_COMPRESSOR,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000
 };
 
 DWORD LVEngine_5_1[] = {
