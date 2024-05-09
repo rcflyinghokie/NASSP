@@ -1116,7 +1116,7 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 	//	pHeader->mass, pBlanket->mass);
 
 // SPS Line Temp Debug Lines
-	/*
+	///*
 	double *SPSFuelLineTemp = (double *)Panelsdk.GetPointerByString("HYDRAULIC:SPSFUELLINE:TEMP");
 	double *SPSOxLineTemp = (double *)Panelsdk.GetPointerByString("HYDRAULIC:SPSOXIDIZERLINE:TEMP");
 	double *SPSFuelFeedTemp = (double *)Panelsdk.GetPointerByString("HYDRAULIC:SPSFUELFEEDLINE:TEMP");
@@ -1140,7 +1140,7 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 	//sprintf(oapiDebugString(), "Fuel %.3f Ox %.3f FuelFeed %.3f OxFeed %.3f FuelVlv: %.3f OxVlv: %.3f EngVlv: %.3f Injector: %.3f Flange %.3f Heat %.1f", KelvinToFahrenheit(*SPSFuelLineTemp), KelvinToFahrenheit(*SPSOxLineTemp), KelvinToFahrenheit(*SPSFuelFeedTemp),
 		//KelvinToFahrenheit(*SPSOxFeedTemp), KelvinToFahrenheit(*SPSFuelValveTemp), KelvinToFahrenheit(*SPSOxValveTemp), KelvinToFahrenheit(*SPSEngineValveTemp), KelvinToFahrenheit(*SPSInjectorTemp), 
 		//KelvinToFahrenheit(*SPSFlangeTemp), *SPSThrustHeat);
-		*/
+		//*/
 
 //GSE Cooling Debug Lines
 	/*
