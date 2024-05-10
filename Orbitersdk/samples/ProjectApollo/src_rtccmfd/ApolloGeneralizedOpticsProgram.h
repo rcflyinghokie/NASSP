@@ -57,6 +57,7 @@ struct AGOPInputs
 	//LM REFSMMAT (option 4)
 	MATRIX3 LM_REFSMMAT;
 	//For option 4, 7. Second set used for REFSMMAT calculation (option 7, mode 3) and docked alignment (option 7, mode 4)
+	//Option 7, mode 4 assumes the first set belongs to the CSM, second set to the LM
 	VECTOR3 IMUAttitude[2];
 	//Vehicle to which the IMU attitude belongs. True = CSM, false = LM
 	bool AttIsCSM;
@@ -122,6 +123,8 @@ struct AGOPInputs
 
 struct AGOPOutputs
 {
+	AGOPOutputs();
+
 	//Option 1 and 4
 	VECTOR3 IMUAttitude;
 	//For option 1 (true = near horizon, false = far horizon)
@@ -132,6 +135,7 @@ struct AGOPOutputs
 
 	//Option 5
 	MATRIX3 REFSMMAT;
+	int REFSMMAT_Vehicle;
 
 	//For display
 	std::vector<std::string> output_text;

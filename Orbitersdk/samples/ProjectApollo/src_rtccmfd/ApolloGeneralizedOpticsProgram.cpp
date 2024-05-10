@@ -24,6 +24,15 @@ See http://nassp.sourceforge.net/license/ for more details.
 #include "ApolloGeneralizedOpticsProgram.h"
 #include "rtcc.h"
 
+AGOPOutputs::AGOPOutputs()
+{
+	IMUAttitude = _V(0, 0, 0);
+	bIsNearHorizon = false;
+	pitch = yaw = 0.0;
+	REFSMMAT = _M(1, 0, 0, 0, 1, 0, 0, 0, 1);
+	REFSMMAT_Vehicle = 0;
+}
+
 AGOP::AGOP(RTCC *r) :RTCCModule(r)
 {
 
@@ -913,6 +922,7 @@ void AGOP::PassiveThermalControl(const AGOPInputs &in, AGOPOutputs &out)
 
 		out.IMUAttitude = OrbMech::CALCGAR(in.CSM_REFSMMAT, M_NB);
 		out.REFSMMAT = M_NB;
+		out.REFSMMAT_Vehicle = RTCC_MPT_CSM;
 
 		//Write line
 		OrbMech::format_time_HHMMSS(Buffer, pRTCC->GETfromGMT(sv.GMT));
@@ -1426,7 +1436,50 @@ void AGOP::OSTComputeREFSMMAT(const AGOPInputs &in, AGOPOutputs &out)
 	U_CBA_apo = tmul(M_SM_NB_A, U_NBA_apo);
 	U_CBB_apo = tmul(M_SM_NB_B, U_NBB_apo);
 
+	//Error check for vectors being too close to each other
+	const double eps = 0.01*RAD;
+	double arc1, arc2, starang;
+
+	arc1 = acos(dotp(U_CBA, U_CBB));
+	arc2 = acos(dotp(U_CBA_apo, U_CBB_apo));
+
+	if (arc1 < eps || arc2 < eps)
+	{
+		//Error
+		WriteError(out, 7);
+		return;
+	}
+
 	out.REFSMMAT = OrbMech::AXISGEN(U_CBA_apo, U_CBB_apo, U_CBA, U_CBB);
+	out.REFSMMAT_Vehicle = in.AttIsCSM ? RTCC_MPT_CSM : RTCC_MPT_LM;
+
+	starang = abs(arc1 - arc2);
+
+	//Display
+	std::string line;
+	char Buffer[128];
+
+	line = "MODE 3  OPTICAL SIGHTING TABLE  VEH ";
+
+	if (in.AttIsCSM)
+	{
+		line += "CSM";
+	}
+	else
+	{
+		line += "LEM";
+	}
+	out.output_text.push_back(line);
+	out.output_text.push_back("");
+	sprintf(Buffer, "XIXE %+.8lf XIYE %+0.8lf XIZE %+0.8lf", out.REFSMMAT.m11, out.REFSMMAT.m12, out.REFSMMAT.m13);
+	out.output_text.push_back(Buffer);
+	sprintf(Buffer, "YIXE %+.8lf YIYE %+0.8lf YIZE %+0.8lf", out.REFSMMAT.m21, out.REFSMMAT.m22, out.REFSMMAT.m23);
+	out.output_text.push_back(Buffer);
+	sprintf(Buffer, "ZIXE %+.8lf ZIYE %+0.8lf ZIZE %+0.8lf", out.REFSMMAT.m31, out.REFSMMAT.m32, out.REFSMMAT.m33);
+	out.output_text.push_back(Buffer);
+	out.output_text.push_back("");
+	sprintf(Buffer, "Star angle difference: %.3lf°", starang*DEG);
+	out.output_text.push_back(Buffer);
 }
 
 void AGOP::DockingAlignment(const AGOPInputs &in, AGOPOutputs &out)
@@ -1468,6 +1521,7 @@ void AGOP::DockingAlignment(const AGOPInputs &in, AGOPOutputs &out)
 		M_BRCS_SMLM = mul(OrbMech::tmat(M_SMLM_NBLM), M_BRCS_NBLM);
 
 		out.REFSMMAT = M_BRCS_SMLM;
+		out.REFSMMAT_Vehicle = RTCC_MPT_LM;
 	}
 	else if (in.AdditionalOption == 1)
 	{
@@ -1488,6 +1542,7 @@ void AGOP::DockingAlignment(const AGOPInputs &in, AGOPOutputs &out)
 		M_BRCS_SMCSM = mul(OrbMech::tmat(M_SMCSM_NBCSM), M_BRCS_NBCSM);
 
 		out.REFSMMAT = M_BRCS_SMCSM;
+		out.REFSMMAT_Vehicle = RTCC_MPT_CSM;
 	}
 
 	char Buffer[256];
@@ -2115,6 +2170,9 @@ void AGOP::WriteError(AGOPOutputs &out, int err)
 		break;
 	case 6:
 		out.errormessage = "NO AOS IN TIMESPAN";
+		break;
+	case 7:
+		out.errormessage = "STARS TOO CLOSE TO EACH OTHER";
 		break;
 	}
 }

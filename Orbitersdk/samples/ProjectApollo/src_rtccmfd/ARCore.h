@@ -72,6 +72,8 @@ public:
 	int AGOP_LMAOTDetent;
 	std::vector<std::string> AGOP_Output;
 	std::string AGOP_Error;
+	MATRIX3 AGOP_REFSMMAT;
+	int AGOP_REFSMMAT_Vehicle;
 };
 
 class ARCore {

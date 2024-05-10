@@ -61,6 +61,8 @@ AR_GCore::AR_GCore(VESSEL* v)
 	AGOP_InstrumentAngles1[1] = 0.0;
 	AGOP_InstrumentAngles2[0] = 0.0;
 	AGOP_InstrumentAngles2[1] = 0.0;
+	AGOP_REFSMMAT = _M(1, 0, 0, 0, 1, 0, 0, 0, 1);
+	AGOP_REFSMMAT_Vehicle = 0;
 
 	int mission = 0;
 
@@ -4991,6 +4993,13 @@ int ARCore::subThread()
 
 		GC->AGOP_Output = out.output_text;
 		GC->AGOP_Error = out.errormessage;
+
+		if (out.REFSMMAT_Vehicle != 0)
+		{
+			//Save REFSMMAT
+			GC->AGOP_REFSMMAT = out.REFSMMAT;
+			GC->AGOP_REFSMMAT_Vehicle = out.REFSMMAT_Vehicle;
+		}
 
 		Result = DONE;
 	}

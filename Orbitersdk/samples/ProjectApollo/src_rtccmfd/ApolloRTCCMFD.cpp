@@ -1332,7 +1332,7 @@ void ApolloRTCCMFD::menuSetAGOPInput()
 	case 0: //Cycle option
 		GC->AGOP_Mode = 1;
 		GC->AGOP_AdditionalOption = 0;
-		if (GC->AGOP_Option < 8)
+		if (GC->AGOP_Option < 7)
 		{
 			GC->AGOP_Option++;
 		}
@@ -1504,7 +1504,7 @@ void ApolloRTCCMFD::menuSetAGOPInput()
 	case 14: //Antenna Pitch
 		if (GC->AGOP_Option == 7 && GC->AGOP_Mode == 3)
 		{
-			GenericDouble2Input(&GC->AGOP_InstrumentAngles1[0], &GC->AGOP_InstrumentAngles1[1], "Input instrument angles:", RAD);
+			GenericDouble2Input(&GC->AGOP_InstrumentAngles1[0], &GC->AGOP_InstrumentAngles1[1], "Input instrument angles:", RAD, RAD);
 		}
 		else
 		{
@@ -1514,7 +1514,7 @@ void ApolloRTCCMFD::menuSetAGOPInput()
 	case 15: //Antenna Yaw
 		if (GC->AGOP_Option == 7 && GC->AGOP_Mode == 3)
 		{
-			GenericDouble2Input(&GC->AGOP_InstrumentAngles2[0], &GC->AGOP_InstrumentAngles2[1], "Input instrument angles:", RAD);
+			GenericDouble2Input(&GC->AGOP_InstrumentAngles2[0], &GC->AGOP_InstrumentAngles2[1], "Input instrument angles:", RAD, RAD);
 		}
 		else
 		{
@@ -1555,6 +1555,15 @@ void ApolloRTCCMFD::menuAGOPCalc()
 {
 	GC->AGOP_Page = 2;
 	G->startSubthread(51);
+}
+
+void ApolloRTCCMFD::menuAGOPSaveREFSMMAT()
+{
+	//If it is still zero then a REFSMMAT hasn't been saved yet
+	if (GC->AGOP_REFSMMAT_Vehicle == 0) return;
+
+	//Call RTCC function to save the REFSMMAT in the OST slot
+	GC->rtcc->EMGSTSTM(GC->AGOP_REFSMMAT_Vehicle, GC->AGOP_REFSMMAT, RTCC_REFSMMAT_TYPE_OST, GC->rtcc->RTCCPresentTimeGMT());
 }
 
 void ApolloRTCCMFD::menuLWPLiftoffTimeOption()
@@ -9625,19 +9634,4 @@ void ApolloRTCCMFD::GMPManeuverCodeName(char *buffer, int code)
 void ApolloRTCCMFD::Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax, int ymax)
 {
 	skp->Text(x * W / xmax, y * H / ymax, message.c_str(), message.size());
-}
-
-bool ApolloRTCCMFD::AGOPShowAttitude()
-{
-	bool temp = false;
-
-	if (GC->AGOP_Option == 4 && GC->AGOP_Mode <= 3) temp = true;
-	else if (GC->AGOP_Option == 7)
-	{
-		if (GC->AGOP_Mode < 3) temp = true;
-		else if (GC->AGOP_Mode == 4 && GC->AGOP_AdditionalOption != 2) temp = true;
-		else if (GC->AGOP_Mode == 6) temp = true;
-	}
-
-	return temp;
 }

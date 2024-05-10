@@ -820,6 +820,7 @@ public:
 	void menuCycleAGOPPage();
 	void menuSetAGOPInput();
 	void menuAGOPCalc();
+	void menuAGOPSaveREFSMMAT();
 	void menuSetRTACFPage();
 	void GenericGETInput(double *get, char *message);
 	void GenericDoubleInput(double *val, char* message, double factor = 1.0);
@@ -860,7 +861,17 @@ private:
 
 	RTCCMFDInputBoxData tempData;
 
-	bool AGOPShowAttitude();
+	//Additional display functions
+	void AGOPDisplay(oapi::Sketchpad*skp);
+	void AGOPDisplayOption1(oapi::Sketchpad*skp);
+	void AGOPDisplayOption2(oapi::Sketchpad*skp);
+	void AGOPDisplayOption3(oapi::Sketchpad*skp);
+	void AGOPDisplayOption4(oapi::Sketchpad*skp);
+	void AGOPDisplayOption5(oapi::Sketchpad*skp);
+	void AGOPDisplayOption6(oapi::Sketchpad*skp);
+	void AGOPDisplayOption7(oapi::Sketchpad*skp);
+	void AGOPDisplayOption8(oapi::Sketchpad*skp);
+	void AGOPDisplayOption9(oapi::Sketchpad*skp);
 };
 
 #endif // !__ApolloRTCCMFD_H
