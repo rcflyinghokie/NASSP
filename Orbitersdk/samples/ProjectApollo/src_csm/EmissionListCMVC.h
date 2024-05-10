@@ -211,7 +211,10 @@ DWORD FloodLights_P8[] = {
 	VC_MAT_LVEngine_8_8,
 
 	VC_MAT_LiftVectorindicatorBottom,
-	VC_MAT_LiftVectorindicatorTop
+	VC_MAT_LiftVectorindicatorTop,
+
+	VC_MAT_Panel1_05G,
+	VC_MAT_Panel1_SPS_THRUST
 
 };
 
@@ -279,53 +282,9 @@ DWORD NumericLights_P100[] = {
 };
 
 //
-// External Meshes
+// DSKY Panel 2 Lights
 //
-
-// SeatsUnFolded.msh
-DWORD CMVCSeatsUnFolded[] = {
-
-	// TODO Material List
-	VC_MAT_CM_VC_SeatsUnfolded_Couch_Frames_with_Tex,
-	VC_MAT_CM_VC_SeatsUnfolded_Floodlights_with_Tex,
-	VC_MAT_CM_VC_SeatsUnfolded_Floodlights_with_Tex2,
-	VC_MAT_CM_VC_SeatsUnfolded_MTL_11,
-	VC_MAT_CM_VC_SeatsUnfolded_MTL_7,
-	VC_MAT_CM_VC_SeatsUnfolded_SeatWeave_with_Tex,
-	VC_MAT_CM_VC_SeatsUnfolded_StdIntr_with_Tex,
-	VC_MAT_CM_VC_SeatsUnfolded_StdIntr2
-};
-
-// SeatsFolded.msh
-DWORD CMVCSeatsFolded[] = {
-
-	// TODO Material List
-	VC_MAT_CM_VC_SeatsFolded_Couch_Frames_with_Tex,
-	VC_MAT_CM_VC_SeatsFolded_Floodlights_with_Tex,
-	VC_MAT_CM_VC_SeatsFolded_Floodlights_with_Tex_2,
-	VC_MAT_CM_VC_SeatsFolded_MTL_11,
-	VC_MAT_CM_VC_SeatsFolded_MTL_7,
-	VC_MAT_CM_VC_SeatsFolded_SeatWeave_with_Tex,
-	VC_MAT_CM_VC_SeatsFolded_StdIntr2
-};
-
-// CM-COAS-CDR.msh
-DWORD CMVC_COAS_CDR[] = {
-
-	// TODO Material List
-	0
-};
-
-DWORD IntegralLights_CMVC_Ordeal[] = {
-
-	// TODO Material List
-	VC_MAT_Ordeal_Knob,
-	VC_MAT_Ordeal_Lighting
-};
-
 DWORD IntegralLights_DSKY_Lights[] = {
-
-	// DSKY Panel 2 Lights Materials
 	VC_MAT_DSKY_Lights_GIMBAL_LOCK,
 	VC_MAT_DSKY_Lights_KEY_REL,
 	VC_MAT_DSKY_Lights_NO_ATT,
@@ -355,10 +314,10 @@ DWORD FullLitLiftOffNoAutoAbort[]{
 };
 
 
-
+//
+// DSKY LEB Lights Materials
+//
 DWORD IntegralLights_DSKY_LEB_Lights[] = {
-
-	// DSKY LEB Lights Materials
 	VC_MAT_DSKY_LIGHT_LEB_GIMBAL_LOCK,
 	VC_MAT_DSKY_LIGHT_LEB_KEY_REL,
 	VC_MAT_DSKY_LIGHT_LEB_NO_ATT,
@@ -372,9 +331,10 @@ DWORD IntegralLights_DSKY_LEB_Lights[] = {
 
 };
 
+//
+// Caution & Warning Lights Left Panel
+//
 DWORD IntegralLights_CW_LeftLights[] = {
-
-	// CW Left Panel Lights Materials
 	VC_MAT_CW_Lights_P2_BMAG1_TEMP,
 	VC_MAT_CW_Lights_P2_BMAG2_TEMP,
 	VC_MAT_CW_Lights_P2_CO2_PPHI,
@@ -393,9 +353,10 @@ DWORD IntegralLights_CW_LeftLights[] = {
 
 };
 
+//
+// Caution & Warning Lights Right Panel
+//
 DWORD IntegralLights_CW_RightLights[] = {
-
-	// CW Right Panel Lights Materials
 	VC_MAT_CW_Lights_P2_SPS_FLANGE_TEMP_HI,
 	VC_MAT_CW_Lights_P2_FC1,
 	VC_MAT_CW_Lights_P2_FC2,
@@ -420,9 +381,10 @@ DWORD IntegralLights_CW_RightLights[] = {
 
 };
 
+//
+// Caution & Warning Lights 
+//
 DWORD IntegralLights_CW_Lights[] = {
-
-	// CW Lights Materials
 	VC_MAT_CW_Lights_P2_BMAG1_TEMP,
 	VC_MAT_CW_Lights_P2_BMAG2_TEMP,
 	1000,
@@ -485,6 +447,32 @@ DWORD IntegralLights_CW_Lights[] = {
 	1000
 };
 
+//
+// EMS .05G Light
+//
+
+DWORD EMSPoint05GLight[] = {
+	VC_MAT_Panel1_05G
+};
+
+//
+// EMS SPS THRUST Light
+//
+DWORD EMSSPSThrustLight[] = {
+	VC_MAT_Panel1_SPS_THRUST
+};
+
+//
+// Ordeal
+//
+DWORD IntegralLights_CMVC_Ordeal[] = {
+	VC_MAT_Ordeal_Knob,
+	VC_MAT_Ordeal_Lighting
+};
+
+//
+// LV Engines
+//
 DWORD LVEngine_5_1[] = {
 	VC_MAT_LVEngine_5_1,
 	VC_MAT_LVEngine_5_1_1,
@@ -524,24 +512,20 @@ DWORD LVEngine_8_1[] = {
 	VC_MAT_LVEngine_5_1_2
 };
 
-
 DWORD LVEngine_8_2[] = {
 	VC_MAT_LVEngine_8_2,
 	VC_MAT_LVEngine_5_2_3
 };
-
 
 DWORD LVEngine_8_3[] = {
 	VC_MAT_LVEngine_8_3,
 	VC_MAT_LVEngine_5_3_2
 };
 
-
 DWORD LVEngine_8_4[] = {
 	VC_MAT_LVEngine_8_4,
 	VC_MAT_LVEngine_5_4_1
 };
-
 
 DWORD LVEngine_8_5[] = {
 	VC_MAT_LVEngine_8_5,
@@ -550,13 +534,11 @@ DWORD LVEngine_8_5[] = {
 	VC_MAT_LVEngine_5_5_1
 };
 
-
 DWORD LVEngine_8_6[] = {
 	VC_MAT_LVEngine_8_6,
 	VC_MAT_LVEngine_5_5_3,
 	VC_MAT_LVEngine_5_2_1
 };
-
 
 DWORD LVEngine_8_7[] = {
 	VC_MAT_LVEngine_8_7,
@@ -564,19 +546,56 @@ DWORD LVEngine_8_7[] = {
 	VC_MAT_LVEngine_5_2_2
 };
 
-
 DWORD LVEngine_8_8[] = {
 	VC_MAT_LVEngine_8_8,
 	VC_MAT_LVEngine_5_5_2,
 	VC_MAT_LVEngine_5_3_1
 };
 
-DWORD LiftVectorInd1[] = {
+DWORD LiftVectorIndUp[] = {
 	VC_MAT_LiftVectorindicatorTop
 };
 
-DWORD LiftVectorInd2[] = {
+DWORD LiftVectorIndDown[] = {
 	VC_MAT_LiftVectorindicatorBottom
+};
+
+//
+// External Meshes
+//
+
+// SeatsUnFolded.msh
+DWORD CMVCSeatsUnFolded[] = {
+
+	// TODO Material List
+	VC_MAT_CM_VC_SeatsUnfolded_Couch_Frames_with_Tex,
+	VC_MAT_CM_VC_SeatsUnfolded_Floodlights_with_Tex,
+	VC_MAT_CM_VC_SeatsUnfolded_Floodlights_with_Tex2,
+	VC_MAT_CM_VC_SeatsUnfolded_MTL_11,
+	VC_MAT_CM_VC_SeatsUnfolded_MTL_7,
+	VC_MAT_CM_VC_SeatsUnfolded_SeatWeave_with_Tex,
+	VC_MAT_CM_VC_SeatsUnfolded_StdIntr_with_Tex,
+	VC_MAT_CM_VC_SeatsUnfolded_StdIntr2
+};
+
+// SeatsFolded.msh
+DWORD CMVCSeatsFolded[] = {
+
+	// TODO Material List
+	VC_MAT_CM_VC_SeatsFolded_Couch_Frames_with_Tex,
+	VC_MAT_CM_VC_SeatsFolded_Floodlights_with_Tex,
+	VC_MAT_CM_VC_SeatsFolded_Floodlights_with_Tex_2,
+	VC_MAT_CM_VC_SeatsFolded_MTL_11,
+	VC_MAT_CM_VC_SeatsFolded_MTL_7,
+	VC_MAT_CM_VC_SeatsFolded_SeatWeave_with_Tex,
+	VC_MAT_CM_VC_SeatsFolded_StdIntr2
+};
+
+//
+// COAS
+//
+DWORD CMVC_COAS_CDR[] = {
+	0
 };
 
 #endif // !__EMISSIONLISTCMVC

@@ -1824,8 +1824,11 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 			}
 		}
 
-		if (cws.GetMasterAlarm()) {
+		if (cws.GetMasterAlarm() || cws.GetCWLightTest() == CWS_TEST_LIGHTS_LEFT) {
 			SetVCLighting(vcidx, FullLitMasterAlarm1, MAT_LIGHT, 1.0, 1);
+		}
+		
+		if (cws.GetMasterAlarm() || cws.GetCWLightTest() == CWS_TEST_LIGHTS_RIGHT) {
 			SetVCLighting(vcidx, FullLitMasterAlarm2, MAT_LIGHT, 1.0, 1);
 		}
 
@@ -1848,23 +1851,31 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 			if (ENGIND[4]) SetVCLighting(vcidx, LVEngine_5_5, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_5));
 		}
 
-
 		switch (ems.LiftVectLight()) {
 		case 1:
 //			oapiBlt(surf, srf[SRF_VC_EMS_LIGHTS], 0, 0, 82*TexMul, 21*TexMul, 30*TexMul, 11*TexMul);
-			SetVCLighting(vcidx, LiftVectorInd1, MAT_LIGHT, 1.0, 1);
+			SetVCLighting(vcidx, LiftVectorIndUp, MAT_LIGHT, 1.0, 1);
 			break;
 		case -1:
 //			oapiBlt(surf, srf[SRF_VC_EMS_LIGHTS], 0, 63*TexMul, 82*TexMul, 21*TexMul, 30*TexMul, 11*TexMul);
-			SetVCLighting(vcidx, LiftVectorInd2, MAT_LIGHT, 1.0, 1);
+			SetVCLighting(vcidx, LiftVectorIndDown, MAT_LIGHT, 1.0, 1);
 			break;
 		case 0:
 //			oapiBlt(surf, srf[SRF_VC_EMS_LIGHTS], 0, 0, 82*TexMul, 10*TexMul, 30*TexMul, 11*TexMul);
 //			oapiBlt(surf, srf[SRF_VC_EMS_LIGHTS], 0, 63*TexMul, 82*TexMul, 10*TexMul, 30*TexMul, 11*TexMul);
-//			SetVCLighting(vcidx, LiftVectorInd1, MAT_LIGHT, 1.0, 1);
-			SetVCLighting(vcidx, LiftVectorInd2, MAT_LIGHT, 1.0, 1);
+//			SetVCLighting(vcidx, LiftVectorIndUp, MAT_LIGHT, 1.0, 1);
+//			SetVCLighting(vcidx, LiftVectorIndDown, MAT_LIGHT, 1.0, 1);
 			break;
 		}
+
+		if (ems.SPSThrustLight()) {
+			SetVCLighting(vcidx, EMSSPSThrustLight, MAT_LIGHT, 1.0, 1);
+		}
+
+		if (ems.pt05GLight()) {
+			SetVCLighting(vcidx, EMSPoint05GLight, MAT_LIGHT, 1.0, 1);
+		}
+
 		return true;
 	}
 
