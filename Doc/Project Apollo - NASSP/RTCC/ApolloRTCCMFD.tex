@@ -1029,9 +1029,23 @@ Option 4 will accept a state vector and IMU gimbal angles and compute the pitch 
 
 Option 5 computes the IMU gimbal angles required to place the spacecraft in a passive thermal control (PTC) attitude, with the +X-axis oriented 90 degrees with respect to the Sun and to the Earth for omnidirectional communication.\\
 
-Option 6 computes the attitude required to orientate the CSM to the forward or aft horizons, either in heads up or down.\
+Option 6 computes the attitude required to orientate the CSM to the forward or aft horizons, either in heads up or down.\\
 
-Options 7-9 will be implemented in the future.\\
+Option 7 (Optics Support Table) will primarily be used to verify the CMC and LGC stable member alignment made by using the onboard optical sighting equipment. This option is divided into 5 modes which are as follows:\\
+
+Mode 1 computes the yaw angle required to place the LM z-axis in the local vertical plane and a pitch angle which will place the horizon on the landing point designator LPD). The necessary inputs are REFSMMAT, gimbal angles, and time.\\
+
+Mode 2 uses an input REFSMMAT, spacecraft attitude, and time interval to compute AOS, LOS, and optics angles for 10 stars.\\
+
+Mode 3 computes a REFSMMAT by specifying star IDs, optics angles, and spacecraft attitude. The capability exists to input two sets of gimbal angles with the above input data and compute the REFSMMAT.\\
+
+Mode 4 uses an input REFSMMAT and spacecraft attitude for both vehicles to compute the second vehicle REFSMMAT. If both REFSMMATs are input, the second vehicle attitude will be computed.\\
+
+Mode 5 computes the CSM gimbal angles required to point the AOT at the desired target. The inputs are REFSMMAT, docking angle, one star ID, and optics angles.\\
+
+Mode 6 computes the attitude for the preferred REFSMMAT. Given a current and a desired REFSMMAT, it computes the gimbal angles for the current REFSMMAT, which define 0, 0, 0 gimbal angles for the preferred REFSMMAT and outputs a set of gimbal angles and FDAI angles which used in conjuction with the current REFSMMAT defines the spacecraft attitude necessary to switch to the preferred REFSMMAT and read 0, 0, 0 gimbal angles.\\
+
+Options 8 and 9 will be implemented in the future.\\
 \newpage
 \subsection{VECPOINT}
 
