@@ -137,7 +137,7 @@ void LEM_CWEA::Timestep(double simdt) {
 			lightlogic = true;
 		}
 		// Fuel and oxidizer pressure < 119.8 psia prior to staging, cut and capped from the CWEA on LM-8 and subsequent
-		if ((lem->pMission->GetLMCWEAVersion() < 8&& lem->stage < 2) && (lem->APSPropellant.GetFuelTrimOrificeOutletPressurePSI() < 119.8 || lem->APSPropellant.GetOxidTrimOrificeOutletPressurePSI() < 119.8)) {
+		if ((lem->pMission->GetLMCWEAVersion() < 8 && lem->stage < 2) && (lem->APSPropellant.GetFuelTrimOrificeOutletPressurePSI() < 119.8 || lem->APSPropellant.GetOxidTrimOrificeOutletPressurePSI() < 119.8)) {
 			lightlogic = true;
 		}
 
