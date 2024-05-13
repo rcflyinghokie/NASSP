@@ -627,7 +627,7 @@ void LEM_CWEA::SystemTimestep(double simdt) {
 
 void LEM_CWEA::TurnOn()
 {
-	//Reset all the non heater CWEA flip-flops when the CWEA is turned on
+	//Reset all the CWEA flip-flops when the CWEA is turned on
 
 	if (!Operate)
 	{
@@ -637,12 +637,13 @@ void LEM_CWEA::TurnOn()
 		CESACWarnFF.HardReset();
 		RCSCautFF1.HardReset();
 		RCSCautFF2.HardReset();
-		//RRHeaterCautFF.HardReset();
-		//SBDHeaterCautFF.HardReset();
-		//QD1HeaterCautFF.HardReset();
-		//QD2HeaterCautFF.HardReset();
-		//QD3HeaterCautFF.HardReset();
-		//QD4HeaterCautFF.HardReset();
+		LRHeaterCautFF.HardReset();
+		RRHeaterCautFF.HardReset();
+		SBDHeaterCautFF.HardReset();
+		QD1HeaterCautFF.HardReset();
+		QD2HeaterCautFF.HardReset();
+		QD3HeaterCautFF.HardReset();
+		QD4HeaterCautFF.HardReset();
 		OxygenCautFF1.HardReset();
 		OxygenCautFF2.HardReset();
 		OxygenCautFF3.HardReset();
