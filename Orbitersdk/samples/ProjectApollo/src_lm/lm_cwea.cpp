@@ -405,10 +405,10 @@ void LEM_CWEA::Timestep(double simdt) {
 
 		// 6DS33 HEATER FAILURE CAUTION
 		// On when:
-		// LR temp cut and capped from CW logic, need to research when it was first capped
+		// LR temp cut and capped from CW logic, appears to be capped LM-5 and subsequent
 		double cappedvoltage = 0;
-		LRHeaterCautFF.Set((lem->pMission->GetLMCWEAVersion() < 3 && (lem->scera1.GetVoltage(20, 4) < 2.30 || lem->scera1.GetVoltage(20, 4) > 4.36)) ||
-			lem->pMission->GetLMCWEAVersion() > 4 && (cappedvoltage < 2.305 || cappedvoltage > 4.136));
+		LRHeaterCautFF.Set((lem->pMission->GetLMCWEAVersion() < 4 && (lem->scera1.GetVoltage(20, 4) < 2.30 || lem->scera1.GetVoltage(20, 4) > 4.36)) ||
+			lem->pMission->GetLMCWEAVersion() > 3 && (cappedvoltage < 2.305 || cappedvoltage > 4.136));
 		LRHeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 1);
 
 		// RR Assembly < -54.07F or > 147.69F
