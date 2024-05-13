@@ -408,7 +408,7 @@ void LEM_CWEA::Timestep(double simdt) {
 		// LR temp cut and capped from CW logic, need to research when it was first capped
 		double cappedvoltage = 0;
 		LRHeaterCautFF.Set(cappedvoltage < 2.305 || cappedvoltage > 4.136);
-		LRHeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 0);
+		LRHeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 1);
 
 		// RR Assembly < -54.07F or > 147.69F
 		RRHeaterCautFF.Set(lem->scera1.GetVoltage(21, 4) < 1.869 || lem->scera1.GetVoltage(21, 4) > 4.361);
