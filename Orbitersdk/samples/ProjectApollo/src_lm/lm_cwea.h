@@ -78,6 +78,7 @@ protected:
 	CWEA_FlipFlop CESACWarnFF;
 	CWEA_FlipFlop RCSCautFF1;
 	CWEA_FlipFlop RCSCautFF2;
+	CWEA_FlipFlop LRHeaterCautFF;
 	CWEA_FlipFlop RRHeaterCautFF;
 	CWEA_FlipFlop SBDHeaterCautFF;
 	CWEA_FlipFlop QD1HeaterCautFF;
