@@ -3678,16 +3678,12 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 	//
 
 	if (key == OAPI_KEY_1 && down == true && InVC && stage < LAUNCH_STAGE_TWO && stage >= LAUNCH_STAGE_ONE) {
-		viewpos = SATVIEW_ENG1;
-		SetView();
-		oapiCameraAttach(GetHandle(), CAM_COCKPIT);
+		clbkLoadVC(SATVIEW_ENG1);
 		return 1;
 	}
 
 	if (key == OAPI_KEY_2 && down == true && InVC && stage < LAUNCH_STAGE_SIVB && stage >= LAUNCH_STAGE_ONE) {
-		viewpos = SATVIEW_ENG2;
-		oapiCameraAttach(GetHandle(), CAM_COCKPIT);
-		SetView();
+		clbkLoadVC(SATVIEW_ENG2);
 		return 1;
 	}
 
@@ -3718,8 +3714,13 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 			viewpos = SATVIEW_ENG3;
 			break;
 		}
-		oapiCameraAttach(GetHandle(), CAM_COCKPIT);
-		SetView();
+		clbkLoadVC(viewpos);
+		return 1;
+	}
+
+	//Load left seat
+	if (key == OAPI_KEY_4 && down == true && InVC) {
+		clbkLoadVC(SATVIEW_LEFTSEAT);
 		return 1;
 	}
 	return 0;

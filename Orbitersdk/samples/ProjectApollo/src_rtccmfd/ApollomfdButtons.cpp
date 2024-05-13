@@ -4365,7 +4365,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 		{ "Cycle Page", 0, 'E' },
 		{ "Calculate", 0, 'C' },
 		{ "", 0, ' ' },
-		{ "", 0, ' ' },
+		{ "Save REFSMMAT", 0, 'R' },
 		{ "", 0, ' ' },
 		{ "Back to menu", 0, 'B' },
 	};
@@ -4382,7 +4382,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	RegisterFunction("PAG", OAPI_KEY_E, &ApolloRTCCMFD::menuCycleAGOPPage);
 	RegisterFunction("CLC", OAPI_KEY_C, &ApolloRTCCMFD::menuAGOPCalc);
 	RegisterFunction("", OAPI_KEY_Q, &ApolloRTCCMFD::menuVoid);
-	RegisterFunction("", OAPI_KEY_R, &ApolloRTCCMFD::menuVoid);
+	RegisterFunction("REF", OAPI_KEY_R, &ApolloRTCCMFD::menuAGOPSaveREFSMMAT);
 	RegisterFunction("", OAPI_KEY_U, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("BCK", OAPI_KEY_B, &ApolloRTCCMFD::menuSetRTACFPage);
 

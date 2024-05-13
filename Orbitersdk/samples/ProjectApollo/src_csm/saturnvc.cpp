@@ -790,11 +790,18 @@ bool Saturn::clbkLoadVC (int id)
 		id = viewpos;
 	}
 
+	InVC = true;
+	InPanel = false;
+
 	//Reset Clip Radius settings
 	SetClipRadius(0.0);
 
-	//if ((viewpos >= SATVIEW_ENG1) && (viewpos <= SATVIEW_ENG6))
-	//	return true;
+	if ((id >= SATVIEW_ENG1) && (id <= SATVIEW_ENG6))
+	{
+		viewpos = id;
+		SetView(true);
+		return true;
+	}
 
 	// Init the 2D panel switches to fix XRSound not giving us switch clicks if we load directly into the VC.
 	// Calling InitPanel(SATPANEL_MAIN) also works, since that function calls SetSwitches() as well.
@@ -812,8 +819,7 @@ bool Saturn::clbkLoadVC (int id)
 		SetCameraRotationRange(0.8 * PI, 0.8 * PI, 0.4 * PI, 0.4 * PI);
 		SetCameraMovement(_V(0.0, -0.3, 0.0), 0, 0, _V(-0.3, -0.3, 0.1), 90 * RAD, 0, _V(0.25, -0.19, 0.15), 0, 0);
 		oapiVCSetNeighbours(-1, SATVIEW_CENTERSEAT, SATVIEW_LEFTDOCK, SATVIEW_LEBLEFT);
-		InVC = true;
-		InPanel = false;
+
 		SetView(true);
 		SetCOASMesh();
 
@@ -826,8 +832,7 @@ bool Saturn::clbkLoadVC (int id)
 		SetCameraRotationRange(0.8 * PI, 0.8 * PI, 0.4 * PI, 0.4 * PI);
 		SetCameraMovement(_V(-0.0, -0.15, 0.0), 0, 0, _V(-0.3, 0.0, 0.0), 0, 0, _V(0.3, 0.0, 0.0), 0, 0);
 		oapiVCSetNeighbours(SATVIEW_LEFTSEAT, SATVIEW_RIGHTSEAT, SATVIEW_UPPER_CENTER, SATVIEW_LOWER_CENTER);
-		InVC = true;
-		InPanel = false;
+
 		SetView(true);
 
 		RegisterActiveAreas();
@@ -839,8 +844,7 @@ bool Saturn::clbkLoadVC (int id)
 		SetCameraRotationRange(0.8 * PI, 0.8 * PI, 0.4 * PI, 0.4 * PI);
 		SetCameraMovement(_V(-0.0, -0.3, 0.0), 0, 0, _V(-0.3, 0.0, 0.0), 0, 0, _V(0.3, -0.3, 0.1), -90 * RAD, 0);
 		oapiVCSetNeighbours(SATVIEW_CENTERSEAT, -1, SATVIEW_RIGHTDOCK, SATVIEW_LEBRIGHT);
-		InVC = true;
-		InPanel = false;
+
 		SetView(true);
 
 		RegisterActiveAreas();
@@ -852,8 +856,7 @@ bool Saturn::clbkLoadVC (int id)
 		SetCameraRotationRange(0.8 * PI, 0.8 * PI, 0.8 * PI, 0.4 * PI);
 		oapiVCSetNeighbours(SATVIEW_LEBLEFT, SATVIEW_LEBRIGHT, SATVIEW_TUNNEL, -1);
 		SetCameraMovement(_V(0.0, -0.2, 0.0), 0, 0, _V(-0.4, -0.2, 0.0), 0, 0, _V(0.4, -0.2, 0.0), 0, 0);
-		InVC = true;
-		InPanel = false;
+
 		SetView(true);
 
 		PanelId = SATPANEL_TELESCOPE;
@@ -866,8 +869,7 @@ bool Saturn::clbkLoadVC (int id)
 		viewpos = SATVIEW_LEFTDOCK;
 		SetCameraMovement(_V(0.0, 0.0, 0.0), 0, 0, _V(0.0, 0.0, 0.0), 0, 0, _V(0.0, 0.0, 0.0), 0, 0);
 		oapiVCSetNeighbours(-1, SATVIEW_RIGHTDOCK, -1, SATVIEW_LEFTSEAT);
-		InVC = true;
-		InPanel = false;
+
 		SetView(true);
 		SetCOASMesh();
 
@@ -879,8 +881,7 @@ bool Saturn::clbkLoadVC (int id)
 		viewpos = SATVIEW_RIGHTDOCK;
 		SetCameraMovement(_V(0.0, 0.0, 0.0), 0, 0, _V(0.0, 0.0, 0.0), 0, 0, _V(0.0, 0.0, 0.0), 0, 0);
 		oapiVCSetNeighbours(SATVIEW_LEFTDOCK, -1, -1, SATVIEW_RIGHTSEAT);
-		InVC = true;
-		InPanel = false;
+
 		SetView(true);
 
 		RegisterActiveAreas();
@@ -891,8 +892,7 @@ bool Saturn::clbkLoadVC (int id)
 		viewpos = SATVIEW_LEBLEFT;
 		SetCameraMovement(_V(0.0, 1.4, -0.2), -20 * RAD, 0, _V(-0.1, 0.7, -0.3), -20 * RAD, 0, _V(-0.1, 0.55, 0.2), 0, 20 * RAD);
 		oapiVCSetNeighbours(-1, SATVIEW_GNPANEL, SATVIEW_LEFTSEAT, -1);
-		InVC = true;
-		InPanel = false;
+
 		SetView(true);
 
 		RegisterActiveAreas();
@@ -903,8 +903,7 @@ bool Saturn::clbkLoadVC (int id)
 		viewpos = SATVIEW_LEBRIGHT;
 		SetCameraMovement(_V(0.0, 0.4, 0.1), 0, 0, _V(0.0, 0.0, 0.0), 0, 0, _V(0.0, -0.15, -0.35), 0, 0);
 		oapiVCSetNeighbours(SATVIEW_GNPANEL, -1, SATVIEW_RIGHTSEAT, -1);
-		InVC = true;
-		InPanel = false;
+
 		SetView(true);
 
 		RegisterActiveAreas();
@@ -915,8 +914,7 @@ bool Saturn::clbkLoadVC (int id)
 		viewpos = SATVIEW_UPPER_CENTER;
 		SetCameraMovement(_V(0.0, 0.0, 0.0), 0, 0, _V(0.2, -0.03, -0.1), 0, 20 * RAD, _V(-0.2, -0.03, -0.1), 0, 20 * RAD);
 		oapiVCSetNeighbours(-1, -1, -1, SATVIEW_CENTERSEAT);
-		InVC = true;
-		InPanel = false;
+
 		SetView(true);
 
 		RegisterActiveAreas();
@@ -927,8 +925,7 @@ bool Saturn::clbkLoadVC (int id)
 		viewpos = SATVIEW_LOWER_CENTER;
 		SetCameraMovement(_V(0.0, 0.0, 0.0), 0, 0, _V(0.0, 0.0, 0.0), 0, 0, _V(0.0, 0.0, 0.0), 0, 0);
 		oapiVCSetNeighbours(-1, -1, SATVIEW_CENTERSEAT, SATVIEW_TUNNEL);
-		InVC = true;
-		InPanel = false;
+
 		SetView(true);
 
 		RegisterActiveAreas();
@@ -939,8 +936,7 @@ bool Saturn::clbkLoadVC (int id)
 		viewpos = SATVIEW_TUNNEL;
 		SetCameraMovement(_V(0.0, 0.0, 0.0), 0, 0, _V(-0.2, -0.1, 0.0), 90 * RAD, 0, _V(0.0, 0.0, 0.0), 0, 0);
 		oapiVCSetNeighbours(-1, -1, SATVIEW_LOWER_CENTER, SATVIEW_GNPANEL);
-		InVC = true;
-		InPanel = false;
+
 		SetView(true);
 
 		RegisterActiveAreas();
