@@ -375,14 +375,14 @@ void MCC::MissionSequence_H1()
 	case MST_H1_LUNAR_ORBIT_POST_LANDING_3: //T2 to Landing Site Update
 		UpdateMacro(UTP_NONE, PT_NONE, rtcc->GETEval2(rtcc->calcParams.PDI + 75.0*60.0), 81, MST_H1_LUNAR_ORBIT_POST_LANDING_4);
 		break;
-	case MST_H1_LUNAR_ORBIT_POST_LANDING_4: //Landing Site Update to CSM SV update
+	case MST_H1_LUNAR_ORBIT_POST_LANDING_4: //Landing Site Update to Lmk 193 Landmark Tracking PAD
 		UpdateMacro(UTP_PADWITHLGCUPLINK, PT_LMP22ACQPAD, SubStateTime > 8.0*60.0, 74, MST_H1_LUNAR_ORBIT_POST_LANDING_5);
 		break;
-	case MST_H1_LUNAR_ORBIT_POST_LANDING_5: //CSM SV update to Lmk 193 Landmark Tracking PAD
-		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, true, 1, MST_H1_LUNAR_ORBIT_POST_LANDING_6);
+	case MST_H1_LUNAR_ORBIT_POST_LANDING_5: //Lmk 193 Landmark Tracking PAD to CSM SV update
+		UpdateMacro(UTP_PADONLY, PT_AP11LMARKTRKPAD, true, 63, MST_H1_LUNAR_ORBIT_POST_LANDING_6);
 		break;
-	case MST_H1_LUNAR_ORBIT_POST_LANDING_6: //Lmk 193 Landmark Tracking PAD to rev 16 map update
-		UpdateMacro(UTP_PADONLY, PT_AP11LMARKTRKPAD, SubStateTime > 3.0*60.0, 63, MST_H1_LUNAR_ORBIT_POST_LANDING_7);
+	case MST_H1_LUNAR_ORBIT_POST_LANDING_6: //CSM SV update to rev 16 map update
+		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, SubStateTime > 3.0*60.0, 1, MST_H1_LUNAR_ORBIT_POST_LANDING_7);
 		break;
 	case MST_H1_LUNAR_ORBIT_POST_LANDING_7: //Rev 16 map update to DAP Load
 		UpdateMacro(UTP_PADONLY, PT_AP10MAPUPDATE, rtcc->GETEval2(rtcc->calcParams.PDI + 2.0*3600.0 + 10.0*60.0), 600, MST_H1_LUNAR_ORBIT_POST_LANDING_8);
