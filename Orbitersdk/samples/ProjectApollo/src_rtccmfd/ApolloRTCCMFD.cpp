@@ -1267,7 +1267,7 @@ void ApolloRTCCMFD::menuSetDebugPage()
 void ApolloRTCCMFD::menuSetAGOPPage()
 {
 	marker = 0;
-	markermax = 16;
+	markermax = 17;
 	SelectPage(128);
 }
 
@@ -1315,13 +1315,13 @@ void ApolloRTCCMFD::menuPerigeeAdjustHeight()
 
 void ApolloRTCCMFD::menuCycleAGOPPage()
 {
-	if (G->AGOP_Page == 1)
+	if (GC->AGOP_Page == 1)
 	{
-		G->AGOP_Page = 2;
+		GC->AGOP_Page = 2;
 	}
 	else
 	{
-		G->AGOP_Page = 1;
+		GC->AGOP_Page = 1;
 	}
 }
 
@@ -1330,117 +1330,240 @@ void ApolloRTCCMFD::menuSetAGOPInput()
 	switch (marker)
 	{
 	case 0: //Cycle option
-		G->AGOP_Mode = 1;
-		if (G->AGOP_Option < 6)
+		GC->AGOP_Mode = 1;
+		GC->AGOP_AdditionalOption = 0;
+		if (GC->AGOP_Option < 7)
 		{
-			G->AGOP_Option++;
+			GC->AGOP_Option++;
 		}
 		else
 		{
-			G->AGOP_Option = 1;
+			GC->AGOP_Option = 1;
 		}
 		break;
 	case 1: //Cycle mode
-		switch (G->AGOP_Option)
+		GC->AGOP_AdditionalOption = 0;
+		switch (GC->AGOP_Option)
 		{
 		case 1:
-			if (G->AGOP_Mode < 4)
+			if (GC->AGOP_Mode < 4)
 			{
-				G->AGOP_Mode++;
+				GC->AGOP_Mode++;
 			}
 			else
 			{
-				G->AGOP_Mode = 1;
+				GC->AGOP_Mode = 1;
 			}
 			break;
 		case 2:
 		case 4:
-			if (G->AGOP_Mode < 6)
+			if (GC->AGOP_Mode < 6)
 			{
-				G->AGOP_Mode++;
+				GC->AGOP_Mode++;
 			}
 			else
 			{
-				G->AGOP_Mode = 1;
+				GC->AGOP_Mode = 1;
 			}
 			break;
 		case 6:
-			if (G->AGOP_Mode < 2)
+			if (GC->AGOP_Mode < 2)
 			{
-				G->AGOP_Mode++;
+				GC->AGOP_Mode++;
 			}
 			else
 			{
-				G->AGOP_Mode = 1;
+				GC->AGOP_Mode = 1;
+			}
+			break;
+		case 7:
+			if (GC->AGOP_Mode < 6)
+			{
+				GC->AGOP_Mode++;
+			}
+			else
+			{
+				GC->AGOP_Mode = 1;
+			}
+			break;
+		case 8:
+			if (GC->AGOP_Mode < 5)
+			{
+				GC->AGOP_Mode++;
+			}
+			else
+			{
+				GC->AGOP_Mode = 1;
 			}
 			break;
 		}
 		break;
-	case 2: //Input start time
-		GenericGETInput(&G->AGOP_StartTime, "Enter desired start GET (Format: HH:MM:SS)");
+	case 2:
+		if (GC->AGOP_Option == 7 && (GC->AGOP_Mode == 3 || GC->AGOP_Mode == 4))
+		{
+			//Additional option
+			if (GC->AGOP_Mode == 3)
+			{
+				if (GC->AGOP_AdditionalOption < 1)
+				{
+					GC->AGOP_AdditionalOption++;
+				}
+				else
+				{
+					GC->AGOP_AdditionalOption = 0;
+				}
+			}
+			else
+			{
+				if (GC->AGOP_AdditionalOption < 3)
+				{
+					GC->AGOP_AdditionalOption++;
+				}
+				else
+				{
+					GC->AGOP_AdditionalOption = 0;
+				}
+			}
+		}
+		else
+		{
+			//Input start time
+			GenericGETInput(&GC->AGOP_StartTime, "Enter desired start GET (Format: HH:MM:SS)");
+		}
 		break;
-	case 3: //Input start time
-		GenericGETInput(&G->AGOP_StopTime, "Enter desired stop GET (Format: HH:MM:SS)");
+	case 3: //Input stop time
+		GenericGETInput(&GC->AGOP_StopTime, "Enter desired stop GET (Format: HH:MM:SS)");
 		break;
-	case 4: //Input start time
-		GenericDoubleInput(&G->AGOP_TimeStep, "Enter desired time step in minutes");
+	case 4: //Input time step
+		GenericDoubleInput(&GC->AGOP_TimeStep, "Enter desired time step in minutes");
 		break;
 	case 5: //CSM REFSMMAT
+		if (GC->AGOP_CSM_REFSMMAT < 11)
+		{
+			GC->AGOP_CSM_REFSMMAT++;
+		}
+		else
+		{
+			GC->AGOP_CSM_REFSMMAT = 1;
+		}
 		break;
 	case 6: //LM REFSMMAT
+		if (GC->AGOP_LM_REFSMMAT < 11)
+		{
+			GC->AGOP_LM_REFSMMAT++;
+		}
+		else
+		{
+			GC->AGOP_LM_REFSMMAT = 1;
+		}
 		break;
 	case 7: //Input star
-		if (G->AGOP_Option == 1 || G->AGOP_Option == 3)
+		if (GC->AGOP_Option == 1 || GC->AGOP_Option == 3 || (GC->AGOP_Option == 7 && GC->AGOP_Mode == 5))
 		{
-			GenericIntInput(&G->AGOP_Star, "Enter star ID in decimal format (1-400):", NULL, 1, 400);
+			GenericIntInput(&GC->AGOP_Stars[0], "Enter star ID in decimal format (1-400):", NULL, 1, 400);
 		}
-		else if (G->AGOP_Option == 6)
+		else if (GC->AGOP_Option == 6)
 		{
-			G->AGOP_HeadsUp = !G->AGOP_HeadsUp;
+			GC->AGOP_HeadsUp = !GC->AGOP_HeadsUp;
+		}
+		else if (GC->AGOP_Option == 7 && GC->AGOP_Mode == 3)
+		{
+			GenericInt2Input(&GC->AGOP_Stars[0], &GC->AGOP_Stars[1], "Enter two star IDs in decimal format (1-400):", 1, 400, 1, 400, NULL);
 		}
 		break;
 	case 8: //Landmark latitude
-		if ((G->AGOP_Option == 1 && (G->AGOP_Mode == 3 || G->AGOP_Mode == 4)) || G->AGOP_Option == 4)
+		if ((GC->AGOP_Option == 1 && (GC->AGOP_Mode == 3 || GC->AGOP_Mode == 4)) || GC->AGOP_Option == 4)
 		{
-			GenericDoubleInput(&G->AGOP_Lat, "Enter landmark latitude in degrees:", RAD);
+			GenericDoubleInput(&GC->AGOP_Lat, "Enter landmark latitude in degrees:", RAD);
 		}
 		break;
 	case 9: //Landmark longitude
-		if ((G->AGOP_Option == 1 && (G->AGOP_Mode == 3 || G->AGOP_Mode == 4)) || G->AGOP_Option == 4)
+		if ((GC->AGOP_Option == 1 && (GC->AGOP_Mode == 3 || GC->AGOP_Mode == 4)) || GC->AGOP_Option == 4)
 		{
-			GenericDoubleInput(&G->AGOP_Lng, "Enter landmark longitude in degrees:", RAD);
+			GenericDoubleInput(&GC->AGOP_Lng, "Enter landmark longitude in degrees:", RAD);
 		}
 		break;
 	case 10: //Landmark altitude
-		if ((G->AGOP_Option == 1 && (G->AGOP_Mode == 3 || G->AGOP_Mode == 4)) || G->AGOP_Option == 4)
+		if ((GC->AGOP_Option == 1 && (GC->AGOP_Mode == 3 || GC->AGOP_Mode == 4)) || GC->AGOP_Option == 4)
 		{
-			GenericDoubleInput(&G->AGOP_Alt, "Enter landmark height in nautical miles:", 1852.0);
+			GenericDoubleInput(&GC->AGOP_Alt, "Enter landmark height in nautical miles:", 1852.0);
 		}
 		break;
 	case 11: //CSM vs LM IMU
-		if (G->AGOP_Option == 4)
+		if (GC->AGOP_Option == 4 || GC->AGOP_Option == 7)
 		{
-			G->AGOP_AttIsCSM = !G->AGOP_AttIsCSM;
+			GC->AGOP_AttIsCSM = !GC->AGOP_AttIsCSM;
 		}
 		break;
 	case 12: //IMU Angles
-	case 13:
-	case 14:
-		GenericDoubleInput(&G->AGOP_Attitude.data[marker - 12], "Input IMU angle in degrees:", RAD);
+		GenericVectorInput(&GC->AGOP_Attitudes[0], "Input IMU angles in degrees:", RAD, NULL);
 		break;
-	case 15: //Antenna Pitch
-		GenericDoubleInput(&G->AGOP_AntennaPitch, "Input antenna pitch angle in degrees:", RAD);
+	case 13: //IMU Angles (second set for option 7, mode 3)
+		GenericVectorInput(&GC->AGOP_Attitudes[1], "Input IMU angles in degrees:", RAD, NULL);
 		break;
-	case 16: //Antenna Yaw
-		GenericDoubleInput(&G->AGOP_AntennaYaw, "Input antenna yaw angle in degrees:", RAD);
+	case 14: //Antenna Pitch
+		if (GC->AGOP_Option == 7 && GC->AGOP_Mode == 3)
+		{
+			GenericDouble2Input(&GC->AGOP_InstrumentAngles1[0], &GC->AGOP_InstrumentAngles1[1], "Input instrument angles:", RAD, RAD);
+		}
+		else
+		{
+			GenericDoubleInput(&GC->AGOP_AntennaPitch, "Input antenna pitch angle in degrees:", RAD);
+		}
+		break;
+	case 15: //Antenna Yaw
+		if (GC->AGOP_Option == 7 && GC->AGOP_Mode == 3)
+		{
+			GenericDouble2Input(&GC->AGOP_InstrumentAngles2[0], &GC->AGOP_InstrumentAngles2[1], "Input instrument angles:", RAD, RAD);
+		}
+		else
+		{
+			GenericDoubleInput(&GC->AGOP_AntennaYaw, "Input antenna yaw angle in degrees:", RAD);
+		}
+		break;
+	case 16: //Instrument
+		if (GC->AGOP_Instrument < 3)
+		{
+			GC->AGOP_Instrument++;
+		}
+		else
+		{
+			GC->AGOP_Instrument = 0;
+		}
+		break;
+	case 17: //LM COAS Axis
+		if (GC->AGOP_Instrument == 1)
+		{
+			GC->AGOP_LMCOASAxis = !GC->AGOP_LMCOASAxis;
+		}
+		else if (GC->AGOP_Instrument == 2)
+		{
+			if (GC->AGOP_LMAOTDetent < 6)
+			{
+				GC->AGOP_LMAOTDetent++;
+			}
+			else
+			{
+				GC->AGOP_LMAOTDetent = 1;
+			}
+		}
 		break;
 	}
 }
 
 void ApolloRTCCMFD::menuAGOPCalc()
 {
-	G->AGOP_Page = 2;
+	GC->AGOP_Page = 2;
 	G->startSubthread(51);
+}
+
+void ApolloRTCCMFD::menuAGOPSaveREFSMMAT()
+{
+	//If it is still zero then a REFSMMAT hasn't been saved yet
+	if (GC->AGOP_REFSMMAT_Vehicle == 0) return;
+
+	//Call RTCC function to save the REFSMMAT in the OST slot
+	GC->rtcc->EMGSTSTM(GC->AGOP_REFSMMAT_Vehicle, GC->AGOP_REFSMMAT, RTCC_REFSMMAT_TYPE_OST, GC->rtcc->RTCCPresentTimeGMT());
 }
 
 void ApolloRTCCMFD::menuLWPLiftoffTimeOption()
@@ -1657,6 +1780,34 @@ bool GenericDoubleInputBox(void *id, char *str, void *data)
 	if (sscanf(str, "%lf", &val) == 1)
 	{
 		*arr->dVal = val * arr->factor;
+		return true;
+	}
+	return false;
+}
+
+void ApolloRTCCMFD::GenericDouble2Input(double *val1, double *val2, char* message, double factor1, double factor2)
+{
+	void *data2;
+
+	tempData.dVal = val1;
+	tempData.dVal2 = val2;
+	tempData.factor = factor1;
+	tempData.factor2 = factor2;
+	data2 = &tempData;
+
+	bool GenericDouble2InputBox(void *id, char *str, void *data);
+	oapiOpenInputBox(message, GenericDouble2InputBox, 0, 30, data2);
+}
+
+bool GenericDouble2InputBox(void *id, char *str, void *data)
+{
+	RTCCMFDInputBoxData *arr = static_cast<RTCCMFDInputBoxData*>(data);
+	double val1, val2;
+
+	if (sscanf(str, "%lf %lf", &val1, &val2) == 2)
+	{
+		*arr->dVal = val1 * arr->factor;
+		*arr->dVal2 = val2 * arr->factor2;
 		return true;
 	}
 	return false;
