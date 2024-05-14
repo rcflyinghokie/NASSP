@@ -524,7 +524,7 @@ namespace mission {
 		{
 			dTEPHEM0 = 40038.;
 		}
-		else if (strCMCVersion == "Comanche055")
+		else if (strCMCVersion == "Comanche055" || strCMCVersion == "Comanche067")
 		{
 			dTEPHEM0 = 40403.;
 		}
