@@ -414,14 +414,14 @@ void MCC::MissionSequence_H1()
 	case MST_H1_LUNAR_ORBIT_NO_PLANE_CHANGE_1: //CMC CSM state vector update to Liftoff Times Update 2
 		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, SubStateTime > 5.0*60.0, 1, MST_H1_LUNAR_ORBIT_EVA_DAY_1);
 		break;
-	case MST_H1_LUNAR_ORBIT_EVA_DAY_1: //Liftoff Times Update 2 to Lunar Liftoff REFSMMAT Uplink
+	case MST_H1_LUNAR_ORBIT_EVA_DAY_1: //Liftoff Times Update 2 to rev 20 map update
 		UpdateMacro(UTP_PADONLY, PT_LIFTOFFTIMES, SubStateTime > 5.0*60.0, 86, MST_H1_LUNAR_ORBIT_EVA_DAY_2);
 		break;
-	case MST_H1_LUNAR_ORBIT_EVA_DAY_2: //Lunar Liftoff REFSMMAT Uplink to rev 20 map update
-		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, true, 96, MST_H1_LUNAR_ORBIT_EVA_DAY_3);
+	case MST_H1_LUNAR_ORBIT_EVA_DAY_2: //Rev 20 map update to Lunar Liftoff REFSMMAT Uplink
+		UpdateMacro(UTP_PADONLY, PT_AP10MAPUPDATE, true, 600, MST_H1_LUNAR_ORBIT_EVA_DAY_3);
 		break;
-	case MST_H1_LUNAR_ORBIT_EVA_DAY_3: //Rev 20 map update to LM Liftoff Times Update 3
-		UpdateMacro(UTP_PADONLY, PT_AP10MAPUPDATE, MoonRev >= 24 && MoonRevTime > 75.0*60.0, 600, MST_H1_LUNAR_ORBIT_EVA_DAY_4);
+	case MST_H1_LUNAR_ORBIT_EVA_DAY_3: //Lunar Liftoff REFSMMAT Uplink to LM Liftoff Times Update 3
+		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, MoonRev >= 24 && MoonRevTime > 75.0*60.0, 96, MST_H1_LUNAR_ORBIT_EVA_DAY_4);
 		break;
 	case MST_H1_LUNAR_ORBIT_EVA_DAY_4: //LM Liftoff Times Update 3 to CMC CSM state vector update
 		UpdateMacro(UTP_PADONLY, PT_LIFTOFFTIMES, MoonRev >= 25 && MoonRevTime > 60.0*60.0, 87, MST_H1_LUNAR_ORBIT_EVA_DAY_5);
