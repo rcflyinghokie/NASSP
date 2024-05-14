@@ -23616,6 +23616,78 @@ void RTCC::EMGLMRAT(VECTOR3 X_P, VECTOR3 Y_P, VECTOR3 Z_P, VECTOR3 X_B, VECTOR3 
 	}
 }
 
+VECTOR3 RTCC::EMMGFDAI(VECTOR3 Att, bool IsIMU) const
+{
+	double OGA, IGA, MGA, R, P, Y;
+
+	if (IsIMU)
+	{
+		//Input is OGA, IGA, MGA. Output is R, P, Y
+		OGA = Att.x;
+		IGA = Att.y;
+		MGA = Att.z;
+
+		Y = asin(-cos(MGA)*sin(OGA));
+		if (Y < 0)
+		{
+			Y = Y + PI2;
+		}
+		P = atan2(sin(IGA)*cos(OGA) + cos(IGA)*sin(MGA)*sin(OGA), cos(IGA)*cos(OGA) - sin(IGA)*sin(MGA)*sin(OGA));
+		if (P < 0)
+		{
+			P = P + PI2;
+		}
+		R = atan2(sin(MGA), cos(MGA)*cos(OGA));
+		if (R < 0)
+		{
+			R = R + PI2;
+		}
+
+		return _V(R, P, Y);
+	}
+	else
+	{
+		//Input is R,P,Y. Output is OG, IG, MG
+		VECTOR3 X_P, Y_P, Z_P, X_B, Y_B, Z_B;
+		double a, b;
+
+		R = Att.x;
+		P = Att.y;
+		Y = Att.z;
+
+		X_P = _V(1, 0, 0);
+		Y_P = _V(0, 1, 0);
+		Z_P = _V(0, 0, 1);
+
+		a = sin(R)*sin(Y);
+		b = cos(R)*sin(Y);
+
+		X_B = X_P * (cos(R)*cos(P) - a * sin(P)) + Y_P * sin(R)*cos(Y) + Z_P * (-cos(R)*sin(P) - a * cos(P));
+		Y_B = X_P * (-sin(R)*cos(P) - b * sin(P)) + Y_P * cos(R)*cos(Y) + Z_P * (sin(R)*sin(P) - b * cos(P));
+		Z_B = X_P * cos(Y)*sin(P) + Y_P * sin(Y) + Z_P * cos(Y)*cos(P);
+
+		MGA = asin(dotp(X_B, Y_P));
+
+		OGA = atan2(dotp(-Z_B, Y_P), dotp(Y_B, Y_P));
+		IGA = atan2(dotp(-X_B, Z_P), dotp(X_B, X_P));
+
+		if (OGA < 0)
+		{
+			OGA = OGA + PI2;
+		}
+		if (IGA < 0)
+		{
+			IGA = IGA + PI2;
+		}
+		if (MGA < 0)
+		{
+			MGA = MGA + PI2;
+		}
+
+		return _V(OGA, IGA, MGA);
+	}
+}
+
 int RTCC::RMMEACC(int L, int ref_frame, int ephem_type, int rev0)
 {
 	int rev, rev_max = 24;
@@ -23866,232 +23938,312 @@ int RTCC::RMMASCND(EphemerisDataTable2 &EPHEM, ManeuverTimesTable &MANTIMES, dou
 	return 0;
 }
 
-int RTCC::EMMENV(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, double GMT_begin, int option, SunriseSunsetTable &table, VECTOR3 *u_inter)
+void RTCC::EMMENV(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, LunarStayTimesTable *LUNRSTAY, const EMMENVInputTable &in, EMMENVOutputTable &out)
 {
-	//option 0: Sun, 1: Moon, 2: Plane intersection Earth, 3: Plane intersection Moon
-	ELVCTRInputTable interin;
-	ELVCTROutputTable2 interout;
-	SunriseSunsetData data;
-	EphemerisData2 sv_cur;
-	VECTOR3 R_EM, V_EM, R_ES, R_MS, s;
-	double R_E, cos_theta, cos_theta_old, GMT_old, GMT;
-	unsigned iter = 0, iter_start;
-	bool sight, sight_old, rise;
-	int dataset = 0;
-	int counter = 0;
-	int iter2 = 0;
+	double GMT, TL, TR;
+	int err, j;
+	unsigned i;
+	bool condition;
+
+	//Convergence limit in seconds
+	const double eps = 1.0;
+	//Interval halfing loop limit, just in case
+	const int limit = 1000;
+
+	//Clear output data table
+	out.err = 0;
+	out.IsActualChange = false;
+	out.T_Change = 0.0;
 
 	//Return error if no ephemeris is available
-	if (ephemeris.table.size() == 0) return 1;
+	if (ephemeris.table.size() == 0)
+	{
+		out.err = 5;
+		return;
+	}
 
 	//Return error if moonrise/moonset data is requested and the spacecraft is in lunar orbit
-	if (option == 1 && ephemeris.Header.CSI != 0)
+	if (in.option == 1 && ephemeris.Header.CSI != 0)
 	{
-		return 1;
+		out.err = 5;
+		return;
 	}
 
-	//Find vector at starting GMT
-	while (ephemeris.table[iter].GMT < GMT_begin)
+	//Set GMT from input
+	GMT = in.GMT;
+
+	//Is time to begin greater than ephemeris begin?
+	if (GMT > ephemeris.Header.TL)
 	{
-		iter++;
-	}
-
-	iter_start = iter;
-	table.num = 0;
-
-	//Find environment change
-	while (iter < ephemeris.table.size())
-	{
-		sv_cur = ephemeris.table[iter];
-
-		if (option >= 2)
+		//Is time to begin greater than ephemeris end?
+		if (GMT > ephemeris.Header.TR)
 		{
-			EphemerisData2 sv_out;
-			int out;
-			//0 = ECI, 1 = ECT, 2 = MCI, 3 = MCT, 4 = EMP
-			if (option == 2)
-			{
-				out = 0;
-			}
-			else
-			{
-				out = 2;
-			}
+			//Error return
+			out.err = 2;
+			return;
+		}
+	}
+	else
+	{
+		GMT = ephemeris.Header.TL;
+	}
 
-			ELVCNV(sv_cur, ephemeris.Header.CSI, out, sv_out);
-			cos_theta = dotp(sv_cur.R, *u_inter);
-			sight = (cos_theta >= 0.0);
+	//Check initial condition
+	condition = EMMENVCondition(ephemeris, MANTIMES, LUNRSTAY, GMT, in.option, in.terminator, in.u_vec, err);
+
+	if (err)
+	{
+		//Interpolation error
+		out.err = 4;
+		return;
+	}
+
+	//Is condition already present at input time?
+	if (condition == in.present)
+	{
+		out.T_Change = GMT;
+		out.IsActualChange = false;
+		return;
+	}
+
+	//Set input GMT as left limit for bracketing
+	TL = GMT;
+
+	//Condition does not exist at TL. Now find the first vector where the desired condition exists.
+
+	//Find first vector after input GMT
+	i = 0;
+	while (GMT >= ephemeris.table[i].GMT)
+	{
+		i++;
+
+		if (i >= ephemeris.table.size())
+		{
+			//Ran out of ephemeris
+			out.err = 3;
+			return;
+		}
+	}
+
+	//Check condition at new GMT
+	do
+	{
+		GMT = ephemeris.table[i].GMT;
+		condition = EMMENVCondition(ephemeris, MANTIMES, LUNRSTAY, GMT, in.option, in.terminator, in.u_vec, err);
+
+		if (err)
+		{
+			//Interpolation error
+			out.err = 4;
+			return;
+		}
+
+		if (condition == in.present)
+		{
+			//Condition was found, this time is the right limit. Stop search.
+			TR = GMT;
+			break;
 		}
 		else
 		{
-			PLEFEM(1, sv_cur.GMT / 3600.0, 0, &R_EM, &V_EM, &R_ES, NULL);
+			//Condition not found. This time is the new left limit. Continue search.
+			TL = GMT;
+		}
+		i++;
+	} while (i < ephemeris.table.size());
+
+	if (i == ephemeris.table.size())
+	{
+		//Ran out of ephemeris
+		out.err = 3;
+		return;
+	}
+
+	//Condition change is between TL and TR. Now do interval halfing.
+	j = 0;
+	while (TR - TL > eps)
+	{
+		//Try at midpoint
+		GMT = (TL + TR) / 2.0;
+		condition = EMMENVCondition(ephemeris, MANTIMES, LUNRSTAY, GMT, in.option, in.terminator, in.u_vec, err);
+
+		if (err)
+		{
+			//Interpolation error
+			out.err = 4;
+			return;
+		}
+
+		//Test condition
+		if (condition == in.present)
+		{
+			//Condition exists at GMT, set as new right limit
+			TR = GMT;
+		}
+		else
+		{
+			//Condition does not exist at GMT, new left limit
+			TL = GMT;
+		}
+
+		j++;
+		if (j > limit)
+		{
+			//Too many iterations
+			out.err = 5;
+			out.T_Change = GMT;
+			return;
+		}
+	}
+
+	//Set up output
+	out.T_Change = (TL + TR) / 2.0;
+	out.IsActualChange = true;
+}
+
+bool RTCC::EMMENVCondition(EphemerisDataTable2 &ephemeris, ManeuverTimesTable &MANTIMES, LunarStayTimesTable *LUNRSTAY, double GMT, int option, bool terminator, VECTOR3 u_vec, int &err)
+{
+	ELVCTRInputTable in;
+	ELVCTROutputTable2 out;
+
+	err = 0;
+
+	in.GMT = GMT;
+
+	ELVCTR(in, out, ephemeris, MANTIMES, LUNRSTAY);
+
+	if (out.ErrorCode > 4)
+	{
+		err = out.ErrorCode;
+		return false;
+	}
+
+	if (option == 0 || option == 1 || option == 2)
+	{
+		//Sun, Moon, star
+
+		VECTOR3 RS; //Vector pointing from main body to Sun/Moon/star
+		double R_E;
+
+		if (ephemeris.Header.CSI == 0)
+		{
+			R_E = OrbMech::R_Earth + 400000.0*0.3048;
+		}
+		else
+		{
+			R_E = BZLAND.rad[0];
+		}
+
+		if (option == 0 || option == 1)
+		{
+			//Sun, Moon
+			VECTOR3 R_EM, V_EM, R_ES;
+
+			PLEFEM(1, GMT / 3600.0, 0, &R_EM, &V_EM, &R_ES, NULL);
+
 			if (option == 0)
 			{
+				//Sun
 				if (ephemeris.Header.CSI == 0)
 				{
-					R_MS = R_ES;
-					R_E = OrbMech::R_Earth;
+					RS = R_ES;
 				}
 				else
 				{
-					R_MS = R_ES - R_EM;
-					R_E = OrbMech::R_Moon;
+					RS = R_ES - R_EM;
 				}
 			}
 			else
 			{
-				R_MS = R_EM;
-				R_E = OrbMech::R_Earth;
+				//Moon
+				RS = R_EM;
 			}
-
-			sight = OrbMech::sight(sv_cur.R, R_MS, R_E);
-			s = unit(R_MS);
-
-			cos_theta = length(sv_cur.R - s * dotp(sv_cur.R, s)) - R_E;
 		}
-
-		
-		if (iter == iter_start)
+		else
 		{
-			sight_old = sight;
+			//Star
+			RS = u_vec;
 		}
-		if (sight != sight_old)
+
+		double cos_theta;
+
+		cos_theta = dotp(unit(out.SV.R), unit(RS));
+
+		//Check condition
+		if (cos_theta > 0.0)
 		{
-			if (sight)
+			//In AOS
+			return true;
+		}
+		else
+		{
+			if (terminator)
 			{
-				//sunrise
-				rise = true;
+				//No additional checks required
+				return false;
+			}
+
+			double cos_beta;
+
+			cos_beta = sqrt(1.0 - pow(cos_theta, 2));
+			if (length(out.SV.R)*cos_beta >= R_E)
+			{
+				//In AOS
+				return true;
 			}
 			else
 			{
-				//sunset
-				rise = false;
-			}
-
-			//Environment change found
-
-			iter2 = 0;
-
-			while (abs(sv_cur.GMT - GMT_old) > 1.5)
-			{
-				GMT = sv_cur.GMT - cos_theta * (sv_cur.GMT - GMT_old) / (cos_theta - cos_theta_old);
-				cos_theta_old = cos_theta;
-				GMT_old = sv_cur.GMT;
-
-				interin.GMT = GMT;
-				ELVCTR(interin, interout, ephemeris, MANTIMES);
-				if (interout.ErrorCode)
-				{
-					return 4;
-				}
-				sv_cur = interout.SV;
-
-				cos_theta = length(sv_cur.R - s * dotp(sv_cur.R, s)) - R_E;
-				iter2++;
-				if (iter2 > 20)
-				{
-					return 2;
-				}
-			}
-
-			if (rise)
-			{
-				data.GETSR = GETfromGMT(GMT);
-			}
-			else
-			{
-				data.GETSS = GETfromGMT(GMT);
-			}
-
-			VECTOR3 R_scal = unit(sv_cur.R)*R_E;
-			cos_theta_old = length(R_scal - s * dotp(R_scal, s)) - R_E;
-			GMT_old = sv_cur.GMT;
-			GMT = GMT_old + 10.0;
-
-			interin.GMT = GMT;
-			ELVCTR(interin, interout, ephemeris, MANTIMES);
-			if (interout.ErrorCode)
-			{
-				return 4;
-			}
-			sv_cur = interout.SV;
-
-			R_scal = unit(sv_cur.R)*R_E;
-			cos_theta = length(R_scal - s * dotp(R_scal, s)) - R_E;
-			iter2 = 0;
-
-			while (abs(sv_cur.GMT - GMT_old) > 1.5)
-			{
-				GMT = sv_cur.GMT - cos_theta * (sv_cur.GMT - GMT_old) / (cos_theta - cos_theta_old);
-				cos_theta_old = cos_theta;
-				GMT_old = sv_cur.GMT;
-
-				interin.GMT = GMT;
-				ELVCTR(interin, interout, ephemeris, MANTIMES);
-				if (interout.ErrorCode)
-				{
-					return 4;
-				}
-				sv_cur = interout.SV;
-				R_scal = unit(sv_cur.R)*R_E;
-				cos_theta = length(R_scal - s * dotp(R_scal, s)) - R_E;
-				iter2++;
-				if (iter2 > 20)
-				{
-					return 2;
-				}
-			}
-
-			if (rise)
-			{
-				data.GETTR = GETfromGMT(GMT);
-			}
-			else
-			{
-				data.GETTS = GETfromGMT(GMT);
-			}
-			dataset++;
-			if (dataset >= 2)
-			{
-				dataset = 0;
-				table.data[counter] = data;
-				counter++;
-			}
-			if (counter >= 8)
-			{
-				break;
+				//Not AOS
+				return false;
 			}
 		}
+	}
+	else
+	{
+		//TBD: Crossing of a reference plane. Earth equator, lunar orbit etc.
 
-		sight_old = sight;
-		cos_theta_old = cos_theta;
-		GMT_old = sv_cur.GMT;
-		iter++;
 	}
 
-	table.num = counter;
-
-	return 0;
+	return false;
 }
 
-void RTCC::EMDSSEMD(int ind, double param)
+void RTCC::EMDSSMMD(bool sun, int ind, double param)
 {
-	EZSSTAB.errormessage = "";
+	//sun: true = sunrise table, false = moonrise table
+	//ind: 1 = param is input GMT, 2 = param is input revolution number
+	//param: GMT or rev number
+
+	SunriseSunsetTable *tab;
+	int i;
+
+	//Sun or Moon?
+	if (sun)
+	{
+		tab = &EZSSTAB;
+	}
+	else
+	{
+		tab = &EZMMTAB;
+	}
+
+	//Error checking
+	tab->errormessage = "";
 
 	if (PZMPTCSM.CommonBlock.TUP < 0)
 	{
-		EZSSTAB.errormessage = "TABLE BEING UPDATED";
+		tab->errormessage = "TABLE BEING UPDATED";
 		return;
 	}
 
 	if (PZMPTCSM.CommonBlock.TUP != EZCCSM.TUP)
 	{
-		EZSSTAB.errormessage = "INCONSISTENT TABLES";
+		tab->errormessage = "INCONSISTENT TABLES";
 		return;
 	}
 
-	double GMT_begin, get, Pitch, Yaw;
+	double GMT_begin;
 
+	//Get initial GMT
 	if (ind == 1)
 	{
 		GMT_begin = GMTfromGET(param);
@@ -24110,165 +24262,265 @@ void RTCC::EMDSSEMD(int ind, double param)
 		}
 	}
 
-	for (int i = 0;i < 8;i++)
+	//Null display table
+	for (i = 0; i < 8; i++)
 	{
-		EZSSTAB.data[i].REV = 0;
-		EZSSTAB.data[i].GETTR = 0.0;
-		EZSSTAB.data[i].GETSR = 0.0;
-		EZSSTAB.data[i].theta_SR = 0.0;
-		EZSSTAB.data[i].psi_SR = 0.0;
-		EZSSTAB.data[i].GETTS = 0.0;
-		EZSSTAB.data[i].GETSS = 0.0;
-		EZSSTAB.data[i].theta_SS = 0.0;
-		EZSSTAB.data[i].psi_SS = 0.0;
+		tab->data[i].REV = 0;
+		tab->data[i].GETTR = 0.0;
+		tab->data[i].GETSR = 0.0;
+		tab->data[i].theta_SR = 0.0;
+		tab->data[i].psi_SR = 0.0;
+		tab->data[i].GETTS = 0.0;
+		tab->data[i].GETSS = 0.0;
+		tab->data[i].theta_SS = 0.0;
+		tab->data[i].psi_SS = 0.0;
+		tab->data[i].BestAvailableGETSR = false;
+		tab->data[i].BestAvailableGETSS = false;
+		tab->data[i].BestAvailableGETTR = false;
+		tab->data[i].BestAvailableGETTS = false;
 	}
 
-	//Get entire ephemeris from GMT begin on
+	//Get entire CSM ephemeris from GMT begin on
 	EphemerisDataTable2 EPHEM;
 	ManeuverTimesTable MANTIMES;
 	LunarStayTimesTable LUNSTAY;
+
 	ELFECH(GMT_begin, 10000, 1, RTCC_MPT_CSM, EPHEM, MANTIMES, LUNSTAY);
+
+	//Not enough vectors?
 	if (EPHEM.Header.NumVec < 9)
 	{
-		EZSSTAB.errormessage = "DATA NOT AVAILABLE";
+		tab->errormessage = "DATA NOT AVAILABLE";
 		return;
 	}
-	//Convert first state vector to MCI
-	int out;
-	if (DetermineSVBody(EPHEM.table[0]) == BODY_EARTH)
+
+	//Check SOI of first state vector
+	bool conv = false;
+	if (DetermineSVBody(EPHEM.table[0]) == BODY_MOON)
 	{
-		out = 0;
+		conv = true;
 	}
-	else
+
+	//Check on Earth orbit for moonrise display
+	if (sun == false && conv)
 	{
-		out = 2;
+		tab->errormessage = "VEHICLE NOT IN EARTH ORBIT";
+		return;
 	}
+
+	//Convert ephemeris table to MCI, if required
 	EphemerisDataTable2 EPHEM2;
-	ELVCNV(EPHEM.table, 0, out, EPHEM2.table);
-	EPHEM2.Header = EPHEM.Header;
-	EPHEM2.Header.CSI = out;
-
-	if (EMMENV(EPHEM2, MANTIMES, GMT_begin, 0, EZSSTAB))
+	if (conv == false)
 	{
-		return;
-	}
-
-	if (EZSSTAB.num == 0) return;
-	if (EZSSTAB.num < 8)
-	{
-		EZSSTAB.errormessage = "END OF AVAILABLE DATA";
-	}
-
-	for (int i = 0;i < EZSSTAB.num;i++)
-	{
-		if (EZSSTAB.data[i].GETSR > EZSSTAB.data[i].GETSS)
-		{
-			get = EZSSTAB.data[i].GETSS;
-		}
-		else
-		{
-			get = EZSSTAB.data[i].GETSR;
-		}
-
-		EZSSTAB.data[i].REV = CapeCrossingRev(1, GMTfromGET(get));
-		ECMPAY(EPHEM2, MANTIMES, GMTfromGET(EZSSTAB.data[i].GETSR), true, Pitch, Yaw);
-		EZSSTAB.data[i].theta_SR = Pitch * DEG;
-		EZSSTAB.data[i].psi_SR = Yaw * DEG;
-		ECMPAY(EPHEM2, MANTIMES, GMTfromGET(EZSSTAB.data[i].GETSS), true, Pitch, Yaw);
-		EZSSTAB.data[i].theta_SS = Pitch * DEG;
-		EZSSTAB.data[i].psi_SS = Yaw * DEG;
-	}
-}
-
-void RTCC::EMDSSMMD(int ind, double param)
-{
-	EZMMTAB.errormessage = "";
-
-	if (PZMPTCSM.CommonBlock.TUP < 0)
-	{
-		EZMMTAB.errormessage = "TABLE BEING UPDATED";
-		return;
-	}
-
-	if (PZMPTCSM.CommonBlock.TUP != EZCCSM.TUP)
-	{
-		EZMMTAB.errormessage = "INCONSISTENT TABLES";
-		return;
-	}
-
-	double GMT_begin, get, Pitch, Yaw;
-
-	if (ind == 1)
-	{
-		GMT_begin = GMTfromGET(param);
+		EPHEM2 = EPHEM;
 	}
 	else
 	{
-		int rev = (int)param;
-		if (rev < EZCCSM.NumRevFirst || rev > EZCCSM.NumRevLast)
+		ELVCNV(EPHEM.table, RTCC_COORDINATES_ECI, RTCC_COORDINATES_MCI, EPHEM2.table);
+		EPHEM2.Header = EPHEM.Header;
+		EPHEM2.Header.CSI = RTCC_COORDINATES_MCI;
+	}
+
+	//Search for sunrises and sunsets
+	EMMENVInputTable in;
+	EMMENVOutputTable out;
+	double eps;
+
+	i = 0;
+	eps = 1.0; //Use same value as in EMMENV
+
+	in.GMT = GMT_begin;
+	in.option = sun ? 0 : 1;
+
+	do
+	{
+		//Search for sunrise
+		in.terminator = false;
+		in.present = true;
+
+		EMMENV(EPHEM2, MANTIMES, &LUNSTAY, in, out);
+
+		//Fatal error?
+		if (out.err > 1)
 		{
-			return;
+			//Fatal, stop processing
+			break;
 		}
-		GMT_begin = CapeCrossingGMT(1, rev);
-		if (GMT_begin < RTCCPresentTimeGMT())
+
+		//For first sunrise, check if it is an actual one
+		if (i == 0 && out.IsActualChange == false)
 		{
-			GMT_begin = RTCCPresentTimeGMT();
-		}
-	}
-
-	for (int i = 0;i < 8;i++)
-	{
-		EZMMTAB.data[i].REV = 0;
-		EZMMTAB.data[i].GETTR = 0.0;
-		EZMMTAB.data[i].GETSR = 0.0;
-		EZMMTAB.data[i].theta_SR = 0.0;
-		EZMMTAB.data[i].psi_SR = 0.0;
-		EZMMTAB.data[i].GETTS = 0.0;
-		EZMMTAB.data[i].GETSS = 0.0;
-		EZMMTAB.data[i].theta_SS = 0.0;
-		EZMMTAB.data[i].psi_SS = 0.0;
-	}
-
-	//Get entire ephemeris from GMT begin on
-	EphemerisDataTable2 EPHEM;
-	ManeuverTimesTable MANTIMES;
-	LunarStayTimesTable LUNSTAY;
-	ELFECH(GMT_begin, 10000, 1, RTCC_MPT_CSM, EPHEM, MANTIMES, LUNSTAY);
-	if (EPHEM.Header.NumVec < 9)
-	{
-		EZMMTAB.errormessage = "DATA NOT AVAILABLE";
-		return;
-	}
-
-	if (EMMENV(EPHEM, MANTIMES, GMT_begin, 1, EZMMTAB))
-	{
-		return;
-	}
-
-	if (EZMMTAB.num == 0) return;
-	if (EZMMTAB.num < 8)
-	{
-		EZMMTAB.errormessage = "END OF AVAILABLE DATA";
-	}
-
-	for (int i = 0;i < EZMMTAB.num;i++)
-	{
-		if (EZMMTAB.data[i].GETSR > EZMMTAB.data[i].GETSS)
-		{
-			get = EZMMTAB.data[i].GETSS;
+			//Search for sunset from the same GMT
 		}
 		else
 		{
-			get = EZMMTAB.data[i].GETSR;
+			//Non-fatal error, mark as best estimate
+			if (out.err == 1 || out.IsActualChange == false)
+			{
+				tab->data[i].BestAvailableGETSR = true;
+			}
+			else
+			{
+				tab->data[i].BestAvailableGETSR = false;
+			}
+			tab->data[i].GETSR = out.T_Change;
+			tab->num = i + 1; //This tells the later code that something was found for this line of the display
+
+			in.GMT = tab->data[i].GETSR + eps; //Search for sunset from sunrise time plus tolerance
 		}
 
-		EZMMTAB.data[i].REV = CapeCrossingRev(1, GMTfromGET(get));
-		ECMPAY(EPHEM, MANTIMES, GMTfromGET(EZMMTAB.data[i].GETSR), false, Pitch, Yaw);
-		EZMMTAB.data[i].theta_SR = Pitch * DEG;
-		EZMMTAB.data[i].psi_SR = Yaw * DEG;
-		ECMPAY(EPHEM, MANTIMES, GMTfromGET(EZMMTAB.data[i].GETSS), false, Pitch, Yaw);
-		EZMMTAB.data[i].theta_SS = Pitch * DEG;
-		EZMMTAB.data[i].psi_SS = Yaw * DEG;
+		//Search for sunset
+		in.terminator = false;
+		in.present = false;
+
+		EMMENV(EPHEM2, MANTIMES, &LUNSTAY, in, out);
+
+		//Fatal error?
+		if (out.err > 1)
+		{
+			//Fatal, stop processing
+			break;
+		}
+
+		//Non-fatal error, mark as best estimate
+		if (out.err == 1 || out.IsActualChange == false)
+		{
+			tab->data[i].BestAvailableGETSS = true;
+		}
+		else
+		{
+			tab->data[i].BestAvailableGETSS = false;
+		}
+		tab->data[i].GETSS = out.T_Change;
+		tab->num = i + 1; //This tells the later code that something was found for this line of the display
+
+		//Set up for next search
+		in.GMT = tab->data[i].GETSS + eps; //Search for sunrise from sunset time plus tolerance
+		i++;
+	} while (i < 8);
+
+	//Terminator rise and set search
+	for (i = 0; i < tab->num;i++)
+	{
+		if (tab->data[i].GETSR != 0.0)
+		{
+			//Search for terminator rise
+			in.terminator = true;
+			in.present = true;
+			in.GMT = tab->data[i].GETSR - eps; //Search for terminator rise from sunrise time minus tolerance
+
+			EMMENV(EPHEM2, MANTIMES, &LUNSTAY, in, out);
+
+			//Fatal error?
+			if (out.err <= 1)
+			{
+				//Found a solution
+				if (out.err == 1 || out.IsActualChange == false)
+				{
+					tab->data[i].BestAvailableGETTR = true;
+				}
+				else
+				{
+					tab->data[i].BestAvailableGETTR = false;
+				}
+				tab->data[i].GETTR = out.T_Change;
+
+				in.GMT = tab->data[i].GETTR + eps; //Search for terminator set from terminator rise time plus tolerance
+			}
+			else
+			{
+				//Error
+				in.GMT = tab->data[i].GETSR - eps; //Search for terminator set from sunrise time minus tolerance
+			}
+
+			//Search for terminator set
+			in.terminator = true;
+			in.present = false;
+
+			EMMENV(EPHEM2, MANTIMES, &LUNSTAY, in, out);
+
+			//Fatal error?
+			if (out.err <= 1)
+			{
+				//Save time
+				if (out.err == 1 || out.IsActualChange == false)
+				{
+					tab->data[i].BestAvailableGETTS = true;
+				}
+				else
+				{
+					tab->data[i].BestAvailableGETTS = false;
+				}
+				tab->data[i].GETTS = out.T_Change;
+			}
+		}
+	}
+
+	if (tab->num < 8)
+	{
+		tab->errormessage = "END OF AVAILABLE DATA";
+	}
+
+	//Find rev times and convert valid times from GMT to GET
+	double GMT, Pitch, Yaw;
+
+	for (i = 0; i < tab->num; i++)
+	{
+		//Use earliest valid time from line for rev number
+		GMT = 1e20;
+		if (tab->data[i].GETSR != 0.0 && tab->data[i].GETSR < GMT)
+		{
+			GMT = tab->data[i].GETSR;
+		}
+		if (tab->data[i].GETSS != 0.0 && tab->data[i].GETSS < GMT)
+		{
+			GMT = tab->data[i].GETSS;
+		}
+		if (tab->data[i].GETTR != 0.0 && tab->data[i].GETTR < GMT)
+		{
+			GMT = tab->data[i].GETTR;
+		}
+		if (tab->data[i].GETTS != 0.0 && tab->data[i].GETTS < GMT)
+		{
+			GMT = tab->data[i].GETTS;
+		}
+		if (GMT != 0.0 && GMT < 1e20)
+		{
+			EZSSTAB.data[i].REV = CapeCrossingRev(RTCC_MPT_CSM, GMT);
+		}
+
+		//Calculate pitch and yaw
+		if (tab->data[i].GETSR != 0.0)
+		{
+			ECMPAY(EPHEM2, MANTIMES, tab->data[i].GETSR, sun, Pitch, Yaw);
+			tab->data[i].theta_SR = Pitch * DEG;
+			tab->data[i].psi_SR = Yaw * DEG;
+		}
+		
+		if (tab->data[i].GETSS != 0.0)
+		{
+			ECMPAY(EPHEM2, MANTIMES, tab->data[i].GETSS, sun, Pitch, Yaw);
+			tab->data[i].theta_SS = Pitch * DEG;
+			tab->data[i].psi_SS = Yaw * DEG;
+		}
+		
+		//Convert to GET
+		if (tab->data[i].GETSR != 0.0)
+		{
+			tab->data[i].GETSR = GETfromGMT(tab->data[i].GETSR);
+		}
+		if (tab->data[i].GETSS != 0.0)
+		{
+			tab->data[i].GETSS = GETfromGMT(tab->data[i].GETSS);
+		}
+		if (tab->data[i].GETTR != 0.0)
+		{
+			tab->data[i].GETTR = GETfromGMT(tab->data[i].GETTR);
+		}
+		if (tab->data[i].GETTS != 0.0)
+		{
+			tab->data[i].GETTS = GETfromGMT(tab->data[i].GETTS);
+		}
 	}
 }
 
@@ -31630,7 +31882,7 @@ int RTCC::EMGTVMED(std::string med, std::vector<std::string> data)
 			}
 			param = (double)rev;
 		}
-		EMDSSMMD(ind, param);
+		EMDSSMMD(false, ind, param);
 	}
 	//Sunrise/Sunset Display
 	else if (med == "08")
@@ -31676,7 +31928,7 @@ int RTCC::EMGTVMED(std::string med, std::vector<std::string> data)
 			}
 			param = (double)rev;
 		}
-		EMDSSEMD(ind, param);
+		EMDSSMMD(true, ind, param);
 	}
 	//AGS Navigation Update
 	else if (med == "10")
