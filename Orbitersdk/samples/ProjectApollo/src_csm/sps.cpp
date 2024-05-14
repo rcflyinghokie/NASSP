@@ -814,7 +814,7 @@ void SPSEngine::SystemTimestep(double simdt) {
 	pitchGimbalActuator.SystemTimestep(simdt);
 	yawGimbalActuator.SystemTimestep(simdt);
 
-	spsThrustHeat->GenerateHeat(GetChamberPressurePSI()*2.5); //Heat proportional to chamber pressure, right now maximum 250 heat watts for safety but will likely need adjusting in the future
+	spsThrustHeat->GenerateHeat(GetChamberPressurePSI()*3.0); //Heat proportional to chamber pressure, right now maximum 300 heat watts for safety but will likely need adjusting in the future
 }
 
 double SPSEngine::GetChamberPressurePSI() {
