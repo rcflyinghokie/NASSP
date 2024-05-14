@@ -410,7 +410,7 @@ void LEM_CWEA::Timestep(double simdt) {
 
 		// LR Antenna < -15.0F or > 150.0F, cut and capped on LM-5 and subsequent
 		LRHeaterCautFF.Set((lem->pMission->GetLMCWEAVersion() < 4 && (lem->scera1.GetVoltage(20, 4) < 2.30 || lem->scera1.GetVoltage(20, 4) > 4.36)) ||
-			lem->pMission->GetLMCWEAVersion() > 3 && (cappedvoltage < 2.305 || cappedvoltage > 4.136));
+			(lem->pMission->GetLMCWEAVersion() > 3 && (cappedvoltage < 2.305 || cappedvoltage > 4.136)));
 		LRHeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 1);
 
 		// RR Antenna < -54.07F or > 147.69F
