@@ -1608,6 +1608,16 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 		if (deda.OprErrLit()) {
 			SetVCLighting(vcidx, DEDA_LightsFullLit,  MAT_LIGHT, 1, 1);
 		}
+
+/*		//Tapemeter Lights
+		if (WHAT_FOR_ALTALTRATE) {
+			SetVCLighting(vcidx, Tapemeter_AltAltRate, MAT_LIGHT, WHICH_VOLTAGE , 1);
+		}
+
+		if (WHAT_FOR_RANGERANGERATE) {
+			SetVCLighting(vcidx, Tapemeter_RangeRangeRate, MAT_LIGHT, WHICH_VOLTAGE , 1);
+		}
+*/
 		return true;
 	}
 

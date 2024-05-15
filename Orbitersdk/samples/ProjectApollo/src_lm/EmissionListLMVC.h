@@ -74,6 +74,7 @@ DWORD FloodLights_LMVC[] = {
 	VC_MAT_Panel_01_CW_Lights_CES_AC,
 	VC_MAT_Panel_01_CW_Lights_CES_DC,
 	VC_MAT_Panel_01_CW_Lights_DC_BUS,
+	VC_MAT_Panel_01_CW_Lights_DES_QTY,
 	VC_MAT_Panel_01_CW_Lights_DES_REG,
 	VC_MAT_Panel_01_CW_Lights_ISS,
 	VC_MAT_Panel_01_CW_Lights_LGC,
@@ -97,7 +98,11 @@ DWORD FloodLights_LMVC[] = {
 	VC_MAT_Panel_02_CW_Lights_RCS,
 	VC_MAT_Panel_02_CW_Lights_RNDZ_RDR,
 	VC_MAT_Panel_02_CW_Lights_SBD_RCVR,
-	VC_MAT_Panel_02_CW_Lights_WATER_QTY
+	VC_MAT_Panel_02_CW_Lights_WATER_QTY,
+
+	//Tapemeter Lights
+	VC_MAT_Panel1_Tapemeter_AltAltRate,
+	VC_MAT_Panel1_Tapemeter_RangeRangeRate
 
 };
 
@@ -182,7 +187,7 @@ DWORD LMVC_CW_Lights[5][8] = {
 	},
 
 	{
-		1000,
+		VC_MAT_Panel_01_CW_Lights_DES_QTY,
 		VC_MAT_Panel_01_CW_Lights_LGC,
 		VC_MAT_Panel_01_CW_Lights_DC_BUS,
 		1000,
@@ -202,6 +207,15 @@ DWORD LMVC_CW_Lights[5][8] = {
 		1000,
 		VC_MAT_Panel_02_CW_Lights_SBD_RCVR,
 	}
+};
+
+//Tapemeter Lights
+DWORD Tapemeter_AltAltRate[] = {
+	VC_MAT_Panel1_Tapemeter_AltAltRate
+};
+
+DWORD Tapemeter_RangeRangeRate[] = {
+	VC_MAT_Panel1_Tapemeter_RangeRangeRate
 };
 
 // External Meshes
