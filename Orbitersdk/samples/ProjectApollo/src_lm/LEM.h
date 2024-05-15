@@ -68,6 +68,7 @@
 #include "connector.h"
 #include "checklistController.h"
 #include "payload.h"
+#include "LMMalfunctionSimulation.h"
 
 enum LMRCSThrusters
 {
@@ -1747,6 +1748,12 @@ protected:
 	double vcFreeCamMaxOffset;
 
 	//
+	// Failures.
+	//
+
+	LMMalfunctionSimulation Failures;
+
+	//
 	// Ground Systems
 	//
 	MCC *pMCC;
@@ -2077,6 +2084,7 @@ protected:
 	friend class LEM_PFIRA;
 	friend class LEMCrewStatus;
 	friend class CDRCOASPowerSwitch;
+	friend class LMMalfunctionSimulation;
 
 	friend class ApolloRTCCMFD;
 	friend class ARCore;

@@ -1307,6 +1307,7 @@ void LEM::SystemsTimestep(double simt, double simdt)
 	}
 
 	SystemsInternalTimestep(simdt);
+	Failures.Timestep();
 
 	// After that come all other systems simesteps
 	agc.Timestep(MissionTime, simdt);						// Do work

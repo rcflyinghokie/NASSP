@@ -35,6 +35,9 @@ public:
 	void MPTMassUpdate();
 	int MPTTrajectoryUpdate(VESSEL *ves, bool csm);
 
+	bool AGOP_CSM_REFSMMAT_Required();
+	bool AGOP_LM_REFSMMAT_Required();
+
 	bool MissionPlanningActive;
 
 	VESSEL *pMPTVessel;
@@ -45,6 +48,32 @@ public:
 	double REFSMMAT_PTC_MJD;
 
 	RTCC* rtcc;
+
+	//APOLLO GENERALIZED OPTICS PROGRAM
+	int AGOP_Page;
+	int AGOP_Option;
+	int AGOP_Mode;
+	int AGOP_AdditionalOption;
+	double AGOP_StartTime;
+	double AGOP_StopTime;
+	double AGOP_TimeStep; //in minutes
+	int AGOP_CSM_REFSMMAT;
+	int AGOP_LM_REFSMMAT;
+	int AGOP_Stars[2];
+	double AGOP_Lat, AGOP_Lng, AGOP_Alt;
+	VECTOR3 AGOP_Attitudes[2];
+	bool AGOP_AttIsCSM;
+	bool AGOP_HeadsUp;
+	double AGOP_AntennaPitch, AGOP_AntennaYaw;
+	int AGOP_Instrument;
+	double AGOP_InstrumentAngles1[2];
+	double AGOP_InstrumentAngles2[2];
+	bool AGOP_LMCOASAxis;
+	int AGOP_LMAOTDetent;
+	std::vector<std::string> AGOP_Output;
+	std::string AGOP_Error;
+	MATRIX3 AGOP_REFSMMAT;
+	int AGOP_REFSMMAT_Vehicle;
 };
 
 class ARCore {
@@ -373,24 +402,6 @@ public:
 	double LUNTAR_yaw_guess;
 	double LUNTAR_TIG;
 	LunarTargetingProgramOutput LUNTAR_Output;
-
-	//APOLLO GENERALIZED OPTICS PROGRAM
-	int AGOP_Page;
-	int AGOP_Option;
-	int AGOP_Mode;
-	double AGOP_StartTime;
-	double AGOP_StopTime;
-	double AGOP_TimeStep; //in minutes
-	int AGOP_CSM_REFSMMAT;
-	int AGOP_LM_REFSMMAT;
-	int AGOP_Star;
-	double AGOP_Lat, AGOP_Lng, AGOP_Alt;
-	VECTOR3 AGOP_Attitude;
-	bool AGOP_AttIsCSM;
-	bool AGOP_HeadsUp;
-	double AGOP_AntennaPitch, AGOP_AntennaYaw;
-	std::vector<std::string> AGOP_Output;
-	std::string AGOP_Error;
 
 	//DEBUG
 	VECTOR3 DebugIMUTorquingAngles;

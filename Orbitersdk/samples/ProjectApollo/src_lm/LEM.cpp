@@ -210,7 +210,8 @@ LEM::LEM(OBJHANDLE hObj, int fmodel) : Payload (hObj, fmodel),
 	DescentECAMainFeeder("Descent-ECA-Main-Feeder", Panelsdk),
 	DescentECAContFeeder("Descent-ECA-Cont-Feeder", Panelsdk),
 	AscentECAMainFeeder("Ascent-ECA-Main-Feeder", Panelsdk),
-	AscentECAContFeeder("Ascent-ECA-Cont-Feeder", Panelsdk)
+	AscentECAContFeeder("Ascent-ECA-Cont-Feeder", Panelsdk),
+	Failures(this)
 {
 	dllhandle = g_Param.hDLL; // DS20060413 Save for later
 	InitLEMCalled = false;
@@ -1398,6 +1399,9 @@ void LEM::GetScenarioState(FILEHANDLE scn, void *vs)
 		else if (!strnicmp(line, "WINDOWSHADESENABLED", 19)) {
 			sscanf(line + 19, "%i", &LEMWindowShades);
 		}
+		else if (!strnicmp(line, FAILURES_START_STRING, sizeof(FAILURES_START_STRING))) {
+			Failures.LoadState(scn);
+		}
 		else if (!strnicmp(line, INERTIAL_DATA_START_STRING, sizeof(INERTIAL_DATA_START_STRING))) {
 			inertialData.LoadState(scn);
 		}
@@ -1936,6 +1940,7 @@ void LEM::clbkSaveState (FILEHANDLE scn)
 		}
 	}
 
+	Failures.SaveState(scn);
 	inertialData.SaveState(scn);
 	dsky.SaveState(scn, DSKY_START_STRING, DSKY_END_STRING);
 	agc.SaveState(scn);

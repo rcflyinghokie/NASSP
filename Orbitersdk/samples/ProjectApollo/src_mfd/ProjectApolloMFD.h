@@ -62,10 +62,8 @@ public:
 	bool SetImpactPitch(char *rstr);
 	bool SetImpactYaw(char *rstr);
 	bool SetGeneralizedManeuverAttitude(char *rstr);
-	bool SetSaturnSwitchFailure(int n);
-	bool SetIUPlatformFailure(double misst);
-	void SetSIEngineFailure(int n, double misst);
-	void SetSIIEngineFailure(int n, double misst);
+	bool SaturnSetFailureInput(unsigned n, int Condition, double ConditionValue);
+	bool SaturnResetFailureInput(unsigned n);
 	void SetRandomFailures(double FailureMultiplier);
 	void SetAEAACommands(int arm, int set);
 
@@ -107,11 +105,10 @@ public:
 	void menuSetIUUplinkInp4();
 	void menuIUUplink();
 	void menuCycleFailuresSubpage();
-	void menuSetSaturnSwitchFailure();
-	void menuSetIUPlatformFailure();
-	void menuSetSIEngineFailure();
-	void menuSetSIIEngineFailure();
+	void menuSetFailure();
+	void menuResetFailure();
 	void menuSetRandomFailures();
+	void menuClearAllFailures();
 	void menuAEAACommands();
 
 	void WriteStatus (FILEHANDLE scn) const;
@@ -135,7 +132,7 @@ protected:
 	int screen;
 	bool debug_frozen;
 	bool isSaturnV;
-	int FailureSubpage;
+	unsigned FailureSubpage;
 
 	static struct ScreenData {
 		int screen;

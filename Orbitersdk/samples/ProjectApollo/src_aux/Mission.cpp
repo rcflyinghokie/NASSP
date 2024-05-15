@@ -111,10 +111,9 @@ namespace mission {
 		iCMtoLMPowerConnectionVersion = 0;
 		EmptySMCG = _V(914.5916, -6.6712, 12.2940); //Includes: empty SM and SLA ring, but no SM RCS
 		bHasRateAidedOptics = false;
-		iLMCWEAVersion = 0;
 		bCrossPointerReversePolarity = false;
 		bCrossPointerShades = false;
-		iLMSystemsVersion = 5; //LM-5
+		iLMNumber = 5; //LM-5
 		strCDRName = "CDR";
 		strCMPName = "CMP";
 		strLMPName = "LMP";
@@ -265,9 +264,6 @@ namespace mission {
 				strncpy(buffer, line + 19, 255);
 				bHasRateAidedOptics = !_strnicmp(buffer, "TRUE", 4);
 			}
-			else if (!_strnicmp(line, "LMCWEAVersion=", 14)) {
-				sscanf(line + 14, "%d", &iLMCWEAVersion);
-			}
 			else if (!_strnicmp(line, "CrossPointerReversePolarity=", 28)) {
 				strncpy(buffer, line + 28, 255);
 				bCrossPointerReversePolarity = !_strnicmp(buffer, "TRUE", 4);
@@ -279,8 +275,8 @@ namespace mission {
 			else if (!_strnicmp(line, "TEPHEM0=", 8)) {
 				sscanf(line + 8, "%lf", &dTEPHEM0);
 			}
-			else if (!_strnicmp(line, "LMSystemsConfig=", 16)) {
-				sscanf(line + 16, "%d", &iLMSystemsVersion);
+			else if (!_strnicmp(line, "LMNumber=", 9)) {
+				sscanf(line + 9, "%d", &iLMNumber);
 			}
 			else if (!_strnicmp(line, "CDRVesselName=", 14)) {
 				strncpy(buffer, line + 14, 255);
@@ -428,11 +424,6 @@ namespace mission {
 		return bHasRateAidedOptics;
 	}
 
-	int Mission::GetLMCWEAVersion() const
-	{
-		return iLMCWEAVersion;
-	}
-
 	bool Mission::GetCrossPointerReversePolarity() const
 	{
 		return bCrossPointerReversePolarity;
@@ -448,9 +439,9 @@ namespace mission {
 		return dTEPHEM0;
 	}
 
-	int Mission::GetLMSystemsVersion() const
+	int Mission::GetLMNumber() const
 	{
-		return iLMSystemsVersion;
+		return iLMNumber;
 	}
 
 	void Mission::ReadCueCardLine(char *line, int vehicle)
@@ -524,7 +515,7 @@ namespace mission {
 		{
 			dTEPHEM0 = 40038.;
 		}
-		else if (strCMCVersion == "Comanche055")
+		else if (strCMCVersion == "Comanche055" || strCMCVersion == "Comanche067")
 		{
 			dTEPHEM0 = 40403.;
 		}
