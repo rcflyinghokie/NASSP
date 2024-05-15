@@ -422,7 +422,7 @@ void LEM_CWEA::Timestep(double simdt) {
 		// LM-4: < 113.0F or > 241.0F 
 		// Cut and capped on LM-5 and subsequent
 		//Quad 1
-		QD1HeaterCautFF.Set((lem->pMission->GetLMNumber() < 3 && (lem->scera1.GetVoltage(20, 4) < 2.750 || lem->scera1.GetVoltage(20, 4) > 4.723)) ||
+		QD1HeaterCautFF.Set((lem->pMission->GetLMNumber() < 4 && (lem->scera1.GetVoltage(20, 4) < 2.750 || lem->scera1.GetVoltage(20, 4) > 4.723)) ||
 			(lem->pMission->GetLMNumber() == 4 && (lem->scera1.GetVoltage(20, 4) < 2.703 || lem->scera1.GetVoltage(20, 4) > 4.703)) ||
 			(lem->pMission->GetLMNumber() > 4 && (cappedvoltage < 2.703 || cappedvoltage > 4.703)));
 		QD1HeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 2);
