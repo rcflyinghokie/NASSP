@@ -89,16 +89,14 @@ namespace mission
 		VECTOR3 GetCGOfEmptySM() const;
 		//false = Optics mode switch is not bypassed for CMC to optics commands, true = optics mode switch is bypassed for CMC to optics commands (ECP 792)
 		bool HasRateAidedOptics() const;
-		//0 = LM-7 and before (ASC PRESS LOW before staging, RCS for HEATER FAILURE CAUTION), 1 = LM-8 and after (both cut and capped)
-		int GetLMCWEAVersion() const;
 		//false = Normal polarity (Apollo 14 and earlier), Lateral axis for PGNS and LR input has switched polarity (Apollo 15 and later)
 		bool GetCrossPointerReversePolarity() const;
 		//false = No shades (Apollo 15 and earlier), Shades (Apollo 16 & 17)
 		bool GetCrossPointerShades() const;
 		//Get time reference of AGC for CMC clock initialization. The value is usually the MJD of midnight July 1st that preceeds the launch
 		double GetTEPHEM0() const;
-		//Get LM systems (EPS and ECS) version. In the future this will also decide which systems config file will be loaded
-		int GetLMSystemsVersion() const;
+		//Get LM number for mission specific EPS, ECS and CWEA versions. In the future this will also decide which systems config file will be loaded
+		int GetLMNumber() const;
 		//Get cue cards
 		bool GetCSMCueCards(unsigned &counter, unsigned &loc, std::string &meshname, VECTOR3 &ofs);
 		//Name of CDR
@@ -156,13 +154,12 @@ namespace mission
 		int iCMtoLMPowerConnectionVersion;
 		VECTOR3 EmptySMCG;
 		bool bHasRateAidedOptics;
-		int iLMCWEAVersion;
 		bool bCrossPointerReversePolarity;
 		bool bCrossPointerShades;
 		std::vector<CueCardConfig> CSMCueCards;
 		std::vector<CueCardConfig> LMCueCards;
 		double dTEPHEM0;
-		int iLMSystemsVersion;
+		int iLMNumber;
 
 		void SetDefaultValues();
 	};

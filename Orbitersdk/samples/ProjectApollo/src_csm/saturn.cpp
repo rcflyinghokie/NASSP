@@ -540,7 +540,8 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	WasteH2ODumpTempSensor("Waste-H2O-Dump-Temp-Sensor", 0.0, 100.0),
 	UrineDumpTempSensor("Urine-Dump-Temp-Sensor", 0.0, 100.0),
 	vesim(&cbCSMVesim, this),
-	CueCards(vcidx, this, 11)
+	CueCards(vcidx, this, 11),
+	Failures(this)
 #pragma warning ( pop ) // disable:4355
 
 {	
@@ -775,14 +776,6 @@ void Saturn::initSaturn()
 
 	NextFlashUpdate = MINUS_INFINITY;
 	PanelFlashOn = false;
-
-	//
-	// Failure modes.
-	//
-
-	LandFail.word = 0;
-	LaunchFail.word = 0;
-	SwitchFail.word = 0;
 
 	//
 	// Configure AGC and DSKY.
@@ -1739,15 +1732,6 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	if (AutoSlow) {
 		oapiWriteScenario_int (scn, "AUTOSLOW", 1);
 	}
-	if (LandFail.word) {
-		oapiWriteScenario_int(scn, "LANDFAIL", LandFail.word);
-	}
-	if (LaunchFail.word) {
-		oapiWriteScenario_int(scn, "LAUNCHFAIL", LaunchFail.word);
-	}
-	if (SwitchFail.word) {
-		oapiWriteScenario_int(scn, "SWITCHFAIL", SwitchFail.word);
-	}
 	if (ApolloNo == 1301) {
 		oapiWriteScenario_int (scn, "A13STATE", GetA13State());
 	}
@@ -1784,6 +1768,7 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 		}
 	}
 
+	Failures.SaveState(scn);
 	inertialData.SaveState(scn);
 	dsky.SaveState(scn, DSKY_START_STRING, DSKY_END_STRING);
 	dsky2.SaveState(scn, DSKY2_START_STRING, DSKY2_END_STRING);
@@ -2363,15 +2348,6 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 		sscanf(line + 6, "%f", &ftcp);
 		CM_EmptyMass = ftcp;
 	}
-	else if (!strnicmp(line, "LANDFAIL", 8)) {
-		sscanf(line + 8, "%d", &LandFail.word);
-	}
-	else if (!strnicmp(line, "LAUNCHFAIL", 10)) {
-		sscanf(line + 10, "%d", &LaunchFail.word);
-	}
-	else if (!strnicmp(line, "SWITCHCHFAIL", 10)) {
-		sscanf(line + 10, "%d", &SwitchFail.word);
-	}
 	else if (!strnicmp(line, "LANG", 4)) {
 		strncpy (AudioLanguage, line + 5, 64);
 	}
@@ -2383,6 +2359,9 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	}
 	else if (!strnicmp(line, "PAYN", 4)) {
 		strncpy (PayloadName, line + 5, 64);
+	}
+	else if (!strnicmp(line, FAILURES_START_STRING, sizeof(FAILURES_START_STRING))) {
+		Failures.LoadState(scn);
 	}
 	else if (!strnicmp(line, INERTIAL_DATA_START_STRING, sizeof(INERTIAL_DATA_START_STRING))) {
 		inertialData.LoadState(scn);
