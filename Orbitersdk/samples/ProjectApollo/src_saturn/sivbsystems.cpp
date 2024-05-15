@@ -242,6 +242,8 @@ BaseSIVBSystems::BaseSIVBSystems() :
 	IgnitionDetector = CC1Signal1 = IgnitionDetectionLockup = false;
 	CC2Signal1 = CC2Signal2 = CC2Signal3 = CutoffLockup = false;
 	EngineState = 0;
+	EngineFailed = false;
+	O2H2BurnerFailed = false;
 
 	LH2_NPV_Stream_Lvl = 0.0;
 	LH2_CVS_Stream_Lvl = 0.0;
@@ -553,7 +555,7 @@ void SIVBSystems::Timestep(double simdt)
 	SparksDeenergizedTimer.Timestep(simdt);
 
 	//Thrust OK switch
-	bool ThrustOK = vessel->GetThrusterLevel(j2engine) > 0.65;
+	bool ThrustOK = vessel->GetThrusterLevel(j2engine) > 0.65 && !EngineFailed;
 
 	//Engine Control Power Switch (EDS no. 1, range safety no. 1)
 	if (EDSEngineStop || RSSEngineStop)
@@ -1337,7 +1339,7 @@ void SIVBSystems::O2H2Burner(double simdt)
 	bool K76; //LH2 repressurization disabled if energized
 	bool K87; //Ambient repress mode if energized, otherwise cryo
 
-	TempBurnerChamberDomeF = -408.72; //TBD: Simulate
+	TempBurnerChamberDomeF = O2H2BurnerFailed ? -407.72 : -408.72; //TBD: Simulate
 
 	//Malfunction
 	if (TempBurnerChamberDomeF > -408.57 || TempBurnerChamberDomeF  < -408.87)
@@ -1614,6 +1616,16 @@ void SIVBSystems::GetJ2ISP(double ratio, double &isp, double &ThrustAdjust)
 			return;
 		}
 	}
+}
+
+void SIVBSystems::SetEngineFailed()
+{
+	EngineFailed = true;
+}
+
+void SIVBSystems::SetO2H2BurnerFailed(bool fail)
+{
+	O2H2BurnerFailed = fail;
 }
 
 SIVB200Systems::SIVB200Systems(VESSEL *v, THRUSTER_HANDLE &j2, PROPELLANT_HANDLE &j2prop, THRUSTER_HANDLE *aps, THRUSTER_HANDLE *ull, THGROUP_HANDLE &ver)

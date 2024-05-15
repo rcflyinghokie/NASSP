@@ -294,6 +294,7 @@
     </ClCompile>
     <ClCompile Include="..\..\src_lm\CWEA_FlipFlop.cpp" />
     <ClCompile Include="..\..\src_lm\lemconnector.cpp" />
+    <ClCompile Include="..\..\src_lm\LMMalfunctionSimulation.cpp" />
     <ClCompile Include="..\..\src_lm\lm_aca.cpp" />
     <ClCompile Include="..\..\src_lm\lm_aeaa.cpp" />
     <ClCompile Include="..\..\src_lm\lm_aps.cpp" />
@@ -466,6 +467,8 @@
     <ClCompile Include="..\..\src_lm\lmscs.cpp" />
     <ClCompile Include="..\..\src_mfd\MFDconnector.cpp" />
     <ClCompile Include="..\..\src_sys\inertial.cpp" />
+    <ClCompile Include="..\..\src_sys\Malfunction.cpp" />
+    <ClCompile Include="..\..\src_sys\MalfunctionSimulation.cpp" />
     <ClCompile Include="..\..\src_sys\MechanicalAccelerometer.cpp" />
     <ClCompile Include="..\..\src_sys\missiontimer.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -620,6 +623,7 @@
     <ClInclude Include="..\..\src_lm\CWEA_FlipFlop.h" />
     <ClInclude Include="..\..\src_lm\EmissionListLMVC.h" />
     <ClInclude Include="..\..\src_lm\lemconnector.h" />
+    <ClInclude Include="..\..\src_lm\LMMalfunctionSimulation.h" />
     <ClInclude Include="..\..\src_lm\lm_aeaa.h" />
     <ClInclude Include="..\..\src_lm\LM_AscentStageResource.h" />
     <ClInclude Include="..\..\src_lm\LM_DescentStageResource.h" />
@@ -662,6 +666,8 @@
     <ClInclude Include="..\..\src_lm\lm_telecom.h" />
     <ClInclude Include="..\..\src_lm\lmscs.h" />
     <ClInclude Include="..\..\src_mfd\MFDconnector.h" />
+    <ClInclude Include="..\..\src_sys\Malfunction.h" />
+    <ClInclude Include="..\..\src_sys\MalfunctionSimulation.h" />
     <ClInclude Include="..\..\src_sys\MechanicalAccelerometer.h" />
     <ClInclude Include="..\..\src_sys\missiontimer.h" />
     <ClInclude Include="..\..\src_sys\nasspdefs.h" />
