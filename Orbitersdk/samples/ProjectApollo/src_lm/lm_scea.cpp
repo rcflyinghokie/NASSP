@@ -551,15 +551,16 @@ void SCERA1::Timestep()
 	SA19.SetOutput(4, scale_data(lem->APSPropellant.GetOxidTrimOrificeOutletPressurePSI(), 0.0, 250.0));
 
 	//Different quad temperature scaling LM-4 and subs
-	if (lem->pMission->GetLMNumber() <= 3) 
-	{
-		min = 20.0;
-		max = 200.0;
-	}
-	else
+	if (lem->pMission->GetLMNumber() >= 4) 
 	{
 		min = -60.0;
 		max = 260.0;
+
+	}
+	else
+	{
+		min = 20.0;
+		max = 200.0;
 	}
 
 	//Quad 4 temperature (GR6001T)
