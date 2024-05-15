@@ -111,7 +111,7 @@ namespace mission {
 		iCMtoLMPowerConnectionVersion = 0;
 		EmptySMCG = _V(914.5916, -6.6712, 12.2940); //Includes: empty SM and SLA ring, but no SM RCS
 		bHasRateAidedOptics = false;
-		iLMCWEAVersion = 0;
+		iLMCWEAVersion = 5; //LM-5
 		bCrossPointerReversePolarity = false;
 		bCrossPointerShades = false;
 		iLMSystemsVersion = 5; //LM-5
@@ -524,7 +524,7 @@ namespace mission {
 		{
 			dTEPHEM0 = 40038.;
 		}
-		else if (strCMCVersion == "Comanche055")
+		else if (strCMCVersion == "Comanche055" || strCMCVersion == "Comanche067")
 		{
 			dTEPHEM0 = 40403.;
 		}
