@@ -188,8 +188,8 @@ ProjectApolloMFDButtons::ProjectApolloMFDButtons()
 
 
 	static const MFDBUTTONMENU mnuFailures[12] = {
-		{ "SECS failures",0,'S' },
-		{ 0,0,0 },
+		{ "Set failure",0,'S' },
+		{ "Clear failure",0,'D' },
 		{ 0,0,0 },
 		{ 0,0,0 },
 		{ 0,0,0 },
@@ -198,24 +198,24 @@ ProjectApolloMFDButtons::ProjectApolloMFDButtons()
 		{ "Cycle through pages",0,'P' },
 		{ 0,0,0 },
 		{ 0,0,0 },
-		{ 0,0,0 },
+		{ "Clear all failures",0,'C' },
 		{ "Randomize failures",0,'R' },
 		{ "Back",0,'B' }
 	};
 
 	page.Failures = RegisterPage(mnuFailures, sizeof(mnuFailures) / sizeof(MFDBUTTONMENU));
 
-	RegisterFunction("SEQ", OAPI_KEY_S, &ProjectApolloMFD::menuSetSaturnSwitchFailure);
-	RegisterFunction("PLAT", OAPI_KEY_D, &ProjectApolloMFD::menuSetIUPlatformFailure);
-	RegisterFunction("SI", OAPI_KEY_E, &ProjectApolloMFD::menuSetSIEngineFailure);
-	RegisterFunction("SII", OAPI_KEY_G, &ProjectApolloMFD::menuSetSIIEngineFailure);
+	RegisterFunction("SET", OAPI_KEY_S, &ProjectApolloMFD::menuSetFailure);
+	RegisterFunction("RES", OAPI_KEY_D, &ProjectApolloMFD::menuResetFailure);
+	RegisterFunction("", OAPI_KEY_E, &ProjectApolloMFD::menuVoid);
+	RegisterFunction("", OAPI_KEY_G, &ProjectApolloMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_H, &ProjectApolloMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_I, &ProjectApolloMFD::menuVoid);
 
 	RegisterFunction("PAG", OAPI_KEY_P, &ProjectApolloMFD::menuCycleFailuresSubpage);
 	RegisterFunction("", OAPI_KEY_J, &ProjectApolloMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_K, &ProjectApolloMFD::menuVoid);
-	RegisterFunction("", OAPI_KEY_C, &ProjectApolloMFD::menuVoid);
+	RegisterFunction("CLR", OAPI_KEY_C, &ProjectApolloMFD::menuClearAllFailures);
 	RegisterFunction("RAN", OAPI_KEY_R, &ProjectApolloMFD::menuSetRandomFailures);
 	RegisterFunction("BCK", OAPI_KEY_B, &ProjectApolloMFD::menuSetMainPage);
 }
