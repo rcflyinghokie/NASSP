@@ -195,14 +195,14 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 
 		//Get TEPHEM
 		TEPHEM0 = 40403.;
-		tephem_scal = GetTEPHEMFromAGC(&cm->agc.vagc);
+		tephem_scal = GetTEPHEMFromAGC(&cm->agc.vagc, true);
 		double LaunchMJD = (tephem_scal / 8640000.) + TEPHEM0;
 		LaunchMJD = (LaunchMJD - SystemParameters.GMTBASE)*24.0;
 
 		int hh, mm;
 		double ss;
 
-		OrbMech::SStoHHMMSS(LaunchMJD*3600.0, hh, mm, ss);
+		OrbMech::SStoHHMMSS(LaunchMJD*3600.0, hh, mm, ss, 0.01);
 
 		sprintf_s(Buff, "P10,CSM,%d:%d:%.2lf;", hh, mm, ss);
 		GMGMED(Buff);
@@ -224,7 +224,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		GMGMED("P15,AGS,,100:00:00;");
 
 		//P12: IU GRR and Azimuth
-		OrbMech::SStoHHMMSS(T_GRR, hh, mm, ss);
+		OrbMech::SStoHHMMSS(T_GRR, hh, mm, ss, 0.01);
 		sprintf_s(Buff, "P12,IU1,%d:%d:%.2lf,%.2lf;", hh, mm, ss, Azi);
 		GMGMED(Buff);
 
@@ -262,7 +262,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		sv0.LandingSiteIndicator = false;
 		sv0.VectorCode = "APIC001";
 
-		PMSVCT(4, RTCC_MPT_CSM, &sv0);
+		PMSVCT(4, RTCC_MPT_CSM, sv0);
 
 		//Add TLI to MPT
 		if (GETEval2(3.0*3600.0))
@@ -315,7 +315,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		TLIBase = calcParams.TLI;
 		TIG = TLIBase + 90.0*60.0;
 		entopt.ATPLine = 2; //AOL
-		entopt.r_rbias = 1250.0;
+		entopt.r_rbias = PZREAP.RRBIAS;
 
 		sv1.mass = PZMPTCSM.mantable[1].CommonBlock.CSMMass;
 		sv1.gravref = hEarth;
@@ -386,7 +386,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		entopt.enginetype = RTCC_ENGINETYPE_CSMSPS;
 		entopt.type = 1;
 		entopt.vessel = calcParams.src;
-		entopt.r_rbias = 1250.0;
+		entopt.r_rbias = PZREAP.RRBIAS;
 
 		entopt.TIGguess = form->GETI[0] = OrbMech::HHMMSSToSS(8, 0, 0);
 		entopt.t_Z = OrbMech::HHMMSSToSS(25.0, 43.0, 0.0);
@@ -461,7 +461,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		entopt.enginetype = RTCC_ENGINETYPE_CSMSPS;
 		entopt.type = 1;
 		entopt.vessel = calcParams.src;
-		entopt.r_rbias = 1250.0;
+		entopt.r_rbias = PZREAP.RRBIAS;
 
 		if (fcn == 16)
 		{
@@ -577,7 +577,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 			F23time = LOIFP - 11.0*60.0;
 			while (PZMCCDIS.data[0].GET_LOI < LOIFP - 5.0 || init)
 			{
-				OrbMech::SStoHHMMSS(F23time, hh, mm, ss);
+				OrbMech::SStoHHMMSS(F23time, hh, mm, ss, 0.01);
 				sprintf_s(Buff, "F23,%d:%d:%.2lf,%d:%d:%.2lf;", hh, mm, ss, hh, mm + 10, ss);
 				GMGMED(Buff);
 				TranslunarMidcourseCorrectionProcessor(sv, CSMmass, LMmass);
@@ -607,7 +607,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 					F23time = LOIFP - 11.0*60.0;
 					while (PZMCCDIS.data[0].GET_LOI < LOIFP - 5.0 || init)
 					{
-						OrbMech::SStoHHMMSS(F23time, hh, mm, ss);
+						OrbMech::SStoHHMMSS(F23time, hh, mm, ss, 0.01);
 						sprintf_s(Buff, "F23,%d:%d:%.2lf,%d:%d:%.2lf;", hh, mm, ss, hh, mm + 10, ss);
 						GMGMED(Buff);
 						TranslunarMidcourseCorrectionProcessor(sv, CSMmass, LMmass);
@@ -711,7 +711,6 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		entopt.RV_MCC = sv;
 		entopt.TIGguess = calcParams.LOI - 5.0*3600.0;
 		entopt.vessel = calcParams.src;
-		//PZREAP.RRBIAS = 1250.0;
 		entopt.t_zmin = 145.0*3600.0;
 		entopt.entrylongmanual = false;
 		entopt.ATPLine = 0; //MPL
@@ -988,7 +987,6 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		entopt.RV_MCC = sv1;
 		entopt.vessel = calcParams.src;
 		entopt.TIGguess = calcParams.LOI + 2.0*3600.0;
-		//PZREAP.RRBIAS = 1250.0;
 		PZREAP.VRMAX = 37500.0;
 		entopt.entrylongmanual = false;
 		entopt.ATPLine = 0; //MPL
@@ -2769,7 +2767,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 			SystemParameters.MCGZSS = SystemParameters.MCGZSL + KFactor / 3600.0;
 		}
 
-		OrbMech::SStoHHMMSS(GETfromGMT(GetAGSClockZero()), hh, mm, ss);
+		OrbMech::SStoHHMMSS(GETfromGMT(GetAGSClockZero()), hh, mm, ss, 0.01);
 
 		AP11LMASCPAD pad2;
 
@@ -2844,7 +2842,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 
 		AP11ManeuverPAD(&opt, *form);
 		sprintf(form->purpose, "SEP BURN");
-		OrbMech::SStoHHMMSS(form->GETI - 5.0*60.0, hh, mm, ss);
+		OrbMech::SStoHHMMSS(form->GETI - 5.0*60.0, hh, mm, ss, 0.01);
 		sprintf(form->remarks, "Jettison PAD: GET %d:%d:%.2lf R 219 P 358 Y 342\nSep burn is Z-axis, retrograde", hh, mm, ss);
 		form->type = 2;
 
@@ -3062,7 +3060,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		entopt.RV_MCC = sv;
 		entopt.TIGguess = MCCtime;
 		entopt.vessel = calcParams.src;
-		entopt.r_rbias = 1250.0;
+		entopt.r_rbias = PZREAP.RRBIAS;
 
 		if (calcParams.src->DockingStatus(0) == 1)
 		{
@@ -3127,7 +3125,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 				if (scrubbed)
 				{
 					//Entry prediction without maneuver
-					EntryUpdateCalc(sv, 1250.0, true, &res);
+					EntryUpdateCalc(sv, PZREAP.RRBIAS, true, &res);
 
 					res.dV_LVLH = _V(0, 0, 0);
 					res.P30TIG = entopt.TIGguess;

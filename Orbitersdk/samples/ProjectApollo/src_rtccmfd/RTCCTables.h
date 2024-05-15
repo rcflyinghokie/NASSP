@@ -622,8 +622,14 @@ struct RetrofireTransferTable
 
 struct SpacecraftSettingTable
 {
-	int Indicator = 1; //-1 = bad data, 0 = good data, 1 = no data
-	bool IsRTE = false; //true = RTE, false = TTF
+	SpacecraftSettingTable();
+	void SaveState(FILEHANDLE scn, char *start_str, char *end_str);
+	void LoadState(FILEHANDLE scn, char *end_str);
+
+	int Indicator; //-1 = bad data, 0 = good data, 1 = no data
+	bool IsRTE; //true = RTE, false = TTF
+	double lat_T; //Latitude of splashdown target
+	double lng_T; //Longitude of splashdown target
 };
 
 struct REFSMMATData
@@ -678,4 +684,48 @@ struct SLVTargetingParametersTable
 	double BIAS = 0.0;
 	double LATLS = 0.0;
 	double LONGLS = 0.0;
+};
+
+struct StationData
+{
+	std::string code;
+	//Geodetic longitude
+	double lng;
+	//Geodetic latitude
+	double lat_geod;
+	//Geocentric latitude
+	double lat_geoc;
+	//sin((lng))
+	double sin_lng;
+	//cos((lng))
+	double cos_lng;
+	//sin((lat_geod))
+	double sin_lat_geod;
+	//cos((lat_geod))
+	double cos_lat_geod;
+	//sin((lat_geoc))
+	double sin_lat_geoc;
+	//cos((lat_geoc))
+	double cos_lat_geoc;
+	//R_E*sin((lat_geod)-(lat_geoc))
+	double R_sin_dlat;
+	//R_E*cos((lat_geod)-(lat_geoc))
+	double R_cos_dlat;
+	//Inertial longitude at reference time
+	double lng_iner;
+	//Altitude above ellipsoid (H)
+	double H;
+	//Station radius R(S)
+	double R_S;
+	//Ellipsoid radius R(E)
+	double R_E;
+	//R(E)*cos((lat_geoc)) + H*cos(lat_geod))
+	double R_E_cos_lat;
+	//R(E)*sin((lat_geoc)) + H*sin(lat_geod))
+	double R_E_sin_lat;
+};
+
+struct StationTable
+{
+	std::vector<StationData> table;
 };

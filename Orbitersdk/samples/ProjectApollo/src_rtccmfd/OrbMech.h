@@ -233,7 +233,8 @@ namespace OrbMech {
 	double NSRsecant(int Epoch, VECTOR3 RA, VECTOR3 VA, VECTOR3 RP, VECTOR3 VP, double mjd0, double x, double DH, OBJHANDLE gravref);
 	void ra_and_dec_from_r(VECTOR3 R, double &ra, double &dec);
 	void rv_from_r0v0_ta(VECTOR3 R0, VECTOR3 V0, double dt, VECTOR3 &R1, VECTOR3 &V1, double mu);
-	double time_theta(VECTOR3 R, VECTOR3 V, double dtheta, double mu);
+	int time_theta(VECTOR3 R1, VECTOR3 V1, double dtheta, double mu, double &dt);
+	int time_theta(VECTOR3 R1, VECTOR3 V1, double dtheta, double mu, VECTOR3 &R2, VECTOR3 &V2, double &dt);
 	void f_and_g_ta(VECTOR3 R0, VECTOR3 V0, double dt, double &f, double &g, double mu);
 	void fDot_and_gDot_ta(VECTOR3 R0, VECTOR3 V0, double dt, double &fdot, double &gdot, double mu);
 	void local_to_equ(VECTOR3 R, double &r, double &phi, double &lambda);
@@ -247,7 +248,6 @@ namespace OrbMech {
 	double timetoperi_integ(int Epoch, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, OBJHANDLE ref_peri);
 	double timetoperi_integ(int Epoch, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, OBJHANDLE ref_peri, VECTOR3 &R2, VECTOR3 &V2);
 	double timetoapo(VECTOR3 R, VECTOR3 V, double mu, int s = 0);
-	double timetonode_integ(int Epoch, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, VECTOR3 u_node, VECTOR3 &R2, VECTOR3 &V2);
 	double time_radius(VECTOR3 R, VECTOR3 V, double r, double s, double mu);
 	double time_radius_integ(int Epoch, VECTOR3 R, VECTOR3 V, double mjd0, double r, double s, OBJHANDLE gravref, OBJHANDLE gravout);
 	double time_radius_integ(int Epoch, VECTOR3 R, VECTOR3 V, double mjd0, double r, double s, OBJHANDLE gravref, OBJHANDLE gravout, VECTOR3 &RPRE, VECTOR3 &VPRE);
@@ -263,6 +263,7 @@ namespace OrbMech {
 	double findelev_gs(int Epoch, MATRIX3 Rot_J_B, VECTOR3 R_A0, VECTOR3 V_A0, VECTOR3 R_gs, double mjd0, double E, OBJHANDLE gravref, double &range);
 	VECTOR3 ULOS(MATRIX3 REFSMMAT, MATRIX3 SMNB, double TA, double SA);
 	int FindNearestStar(const VECTOR3 *navstars, VECTOR3 U_LOS, VECTOR3 R_C, double R_E, double ang_max);
+	VECTOR3 AOTNavigationBase(double AZ, double EL);
 	VECTOR3 AOTULOS(MATRIX3 REFSMMAT, MATRIX3 SMNB, double AZ, double EL);
 	bool isnotocculted(VECTOR3 S_SM, VECTOR3 R_C, double R_E, double dist = 5.0*RAD);
 	MATRIX3 SBNBMatrix();
@@ -369,14 +370,13 @@ namespace OrbMech {
 	unsigned long long octal_binary(int oct);
 	unsigned long long BinToDec(unsigned long long num);
 	double DecToDouble(int dec1, int dec2);
+	int SingleToBuffer(double x, int SF, bool TwosComplement = false);
+	void DoubleToBuffer(double x, int SF, int &c1, int &c2);
+	void TripleToBuffer(double x, int SF, int &c1, int &c2, int &c3);
 	double round(double number);
 	double trunc(double d);
 	void normalizeAngle(double &a, bool positive = true);
 	double quadratic(double *T, double *DV);
-	double HHMMSSToSS(int H, int M, int S);
-	double HHMMSSToSS(double H, double M, double S);
-	void SStoHHMMSS(double time, int &hours, int &minutes, double &seconds);
-	void SStoHHMMSSTH(double time, int &hours, int &minutes, double &seconds);
 	void adbar_from_rv(double rmag, double vmag, double rtasc, double decl, double fpav, double az, VECTOR3 &R, VECTOR3 &V);
 	void rv_from_adbar(VECTOR3 R, VECTOR3 V, double &rmag, double &vmag, double &rtasc, double &decl, double &fpav, double &az);
 	VECTOR3 LMDockedCoarseAlignment(VECTOR3 csmang, bool samerefs);
@@ -436,6 +436,14 @@ namespace OrbMech {
 	double SumQuad(double *x, int N);
 	double QuadSum(double *x, int N);
 	void DROOTS(double A, double B, double C, double D, double E, int N, double *x, int &M, int &I);
+
+	//Time formatting functions
+	double HHMMSSToSS(int H, int M, int S);
+	double HHMMSSToSS(double H, double M, double S);
+	double round_to(double value, double precision = 1.0);
+	void SStoHHMMSS(double time, int &hours, int &minutes, double &seconds, double precision = 1.0);
+	void format_time(char *buf, double time);
+	void format_time_prec(char *buf, double time);
 }
 
 inline CELEMENTS operator+(const CELEMENTS &a, const CELEMENTS &b)

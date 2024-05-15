@@ -206,7 +206,7 @@ DSKY::~DSKY()
 	//
 }
 
-void DSKY::Init(e_object *statuslightpower, e_object *segmentlightpower, RotationalSwitch *dimmer)
+void DSKY::Init(e_object *statuslightpower, e_object *segmentlightpower, ContinuousRotationalSwitch *dimmer)
 
 {
 	StatusPower = statuslightpower;
@@ -220,7 +220,7 @@ bool DSKY::IsStatusPowered() {
 	if (StatusPower->Voltage() < 2){ return false; } //Used 2V for now as input voltage can be 0-5V AC or DC here
 
 	if (DimmerRotationalSwitch != NULL) {
-		if (DimmerRotationalSwitch->GetState() == 0) {
+		if (DimmerRotationalSwitch->GetOutput() < 0.00001) {
 			return false;
 		}
 	}
@@ -231,7 +231,7 @@ bool DSKY::IsSegmentPowered() {
 	if (SegmentPower->Voltage() < SP_MIN_DCVOLTAGE) { return false; }
 
 	if (DimmerRotationalSwitch != NULL) {
-		if (DimmerRotationalSwitch->GetState() == 0) {
+		if (DimmerRotationalSwitch->GetOutput() < 0.00001) {
 			return false;
 		}
 	}
@@ -310,7 +310,7 @@ void DSKY::SystemTimestep(double simdt)
 void DSKY::KeyClick()
 
 {
-	Sclick.play(NOLOOP, 255);
+	Sclick.play(NOLOOP);
 }
 
 void DSKY::SendKeyCode(int val)
@@ -370,7 +370,7 @@ void DSKY::MinusPressed()
 	SendKeyCode(27);
 }
 
-void DSKY::ProgPressed()
+void DSKY::ProceedPressed()
 
 {
 	KeyClick();
@@ -378,7 +378,7 @@ void DSKY::ProgPressed()
 	agc.SetInputChannelBit(032, Proceed, true);
 }
 
-void DSKY::ProgReleased()
+void DSKY::ProceedReleased()
 
 {
 	agc.SetInputChannelBit(032, Proceed, false);
@@ -591,7 +591,7 @@ void DSKY::ProcessKeyPress(int mx, int my)
 		}
 		if (my > 41 && my < 79) {
 			KeyDown_Prog = true;
-			ProgPressed();
+			ProceedPressed();
 		}
 		if (my > 81 && my < 119) {
 			KeyDown_KeyRel = true;
@@ -618,7 +618,7 @@ void DSKY::ProcessKeyRelease(int mx, int my)
 {
 	if (mx > 2+5*41 && mx < 39+5*41) {
 		if (my > 41 && my < 79) {
-			ProgReleased();
+			ProceedReleased();
 		}
 	}
 	else {
@@ -1262,16 +1262,16 @@ void DSKY::ResetCallback(PanelSwitchItem* s)
 		ResetKeyDown();
 	}
 }
-void DSKY::ProgCallback(PanelSwitchItem* s)
+void DSKY::ProceedCallback(PanelSwitchItem* s)
 {
 	if (s->GetState() == 1)
 	{
 		KeyDown_Prog = true;
-		ProgPressed();
+		ProceedPressed();
 	}
 	else
 	{
-		ProgReleased();
+		ProceedReleased();
 		ResetKeyDown();
 	}
 }

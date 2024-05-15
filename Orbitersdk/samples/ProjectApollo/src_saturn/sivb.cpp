@@ -576,7 +576,9 @@ void SIVB::SetS4b()
 		dockrot = _V(-1.0, 0.0, 0);
 		SetDockParams(dockpos, dockdir, dockrot);
 		hDock = GetDockHandle(0);
+		RegisterConnector(i, &payloadSeparationConnector);
 		CreatePayload();
+		i++;
 		break;
 	}
 
@@ -1522,6 +1524,16 @@ void SIVB::clbkFocusChanged(bool getfocus, OBJHANDLE hNewVessel, OBJHANDLE hOldV
 	else if (hOldVessel == hS4B) { //S-IVB loses focus
 		SetSize(visibilitySize);
 	}
+}
+
+void SIVB::clbkGetRadiationForce(const VECTOR3& mflux, VECTOR3& F, VECTOR3& pos)
+{
+	double size = 15;
+	double cs = size * size;  // simplified cross section
+	double albedo = 1.5;    // simplistic albedo (mixture of absorption, reflection)
+
+	F = mflux * (cs * albedo);
+	pos = _V(0, 0, 0);        // don't induce torque
 }
 
 void SIVB::SetState(SIVBSettings &state)

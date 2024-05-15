@@ -2998,6 +2998,7 @@ engineOffDelay(1.0)
 	int i = 0;
 	while (i < 20) {
 		ThrusterDemand[i] = false;
+		ThrusterDemandLockup[i] = false;
 		PoweredSwitch[i] = NULL;
 		i++;
 	}
@@ -3103,11 +3104,17 @@ void RJEC::TimeStep(double simdt){
 	*/
 
 	// Reset thruster power demand
-	bool td[20];
+	bool td[20], ThrusterDemand2[20];
 	int i;
 	for (i = 0; i < 17; i++) {
 		td[i] = false;
 		PoweredSwitch[i] = NULL;
+	}
+
+	//Get thruster demand
+	for (i = 0; i < 17; i++) {
+		ThrusterDemand2[i] = (ThrusterDemand[i] || ThrusterDemandLockup[i]); //ThrusterDemandLockup causes the thruster to fire on this timestep even if ThrusterDemand was already reset
+		ThrusterDemandLockup[i] = false; // Reset thruster demand lockup
 	}
 
 	//
@@ -3132,14 +3139,14 @@ void RJEC::TimeStep(double simdt){
 	}
 	else
 	{
-		td[9] = ThrusterDemand[9];
-		td[10] = ThrusterDemand[10];
-		td[11] = ThrusterDemand[11];
-		td[12] = ThrusterDemand[12];
-		td[13] = ThrusterDemand[13];
-		td[14] = ThrusterDemand[14];
-		td[15] = ThrusterDemand[15];
-		td[16] = ThrusterDemand[16];
+		td[9] = ThrusterDemand2[9];
+		td[10] = ThrusterDemand2[10];
+		td[11] = ThrusterDemand2[11];
+		td[12] = ThrusterDemand2[12];
+		td[13] = ThrusterDemand2[13];
+		td[14] = ThrusterDemand2[14];
+		td[15] = ThrusterDemand2[15];
+		td[16] = ThrusterDemand2[16];
 	}
 
 	// Pitch
@@ -3156,10 +3163,10 @@ void RJEC::TimeStep(double simdt){
 	}
 	else
 	{
-		td[1] = ThrusterDemand[1];
-		td[2] = ThrusterDemand[2];
-		td[3] = ThrusterDemand[3];
-		td[4] = ThrusterDemand[4];
+		td[1] = ThrusterDemand2[1];
+		td[2] = ThrusterDemand2[2];
+		td[3] = ThrusterDemand2[3];
+		td[4] = ThrusterDemand2[4];
 	}
 
 	// Yaw
@@ -3176,10 +3183,10 @@ void RJEC::TimeStep(double simdt){
 	}
 	else
 	{
-		td[5] = ThrusterDemand[5];
-		td[6] = ThrusterDemand[6];
-		td[7] = ThrusterDemand[7];
-		td[8] = ThrusterDemand[8];
+		td[5] = ThrusterDemand2[5];
+		td[6] = ThrusterDemand2[6];
+		td[7] = ThrusterDemand2[7];
+		td[8] = ThrusterDemand2[8];
 	}
 
 	//
@@ -3192,34 +3199,49 @@ void RJEC::TimeStep(double simdt){
 	bool CMTransferMotor2 = sat->secs.rcsc.GetCMTransferMotor2();
 	if (CMTransferMotor1 || CMTransferMotor2) sm_sep = true;
 
-	if ((S18_2 || thc_cw) && !sm_sep) {
-		if (sat->eca.thc_x < 16384) { // PLUS X
-			td[14] = true;
-			td[15] = true;
+	if (!sm_sep) {
+		//Pitch SCS-CMC Reaction Jet Control Logic
+		if (S18_2 || thc_cw || S8_1) {
+			if (sat->eca.thc_y > 49152) { // MINUS Y (FORWARD)
+				td[1] = true;
+				td[2] = true;
+			}
+			if (sat->eca.thc_y < 16384) { // PLUS Y (BACKWARD)
+				td[3] = true;
+				td[4] = true;
+			}
 		}
-		if (sat->eca.thc_x > 49152) { // MINUS X
-			td[16] = true;
-			td[13] = true;
+
+		//Yaw SCS-CMC Reaction Jet Control Logic
+		if (S18_2 || thc_cw || S9_1) {
+			if (sat->eca.thc_y > 49152) { // MINUS Y (FORWARD)
+				td[5] = true;
+				td[6] = true;
+			}
+			if (sat->eca.thc_y < 16384) { // PLUS Y (BACKWARD)
+				td[7] = true;
+				td[8] = true;
+			}
 		}
-		if (sat->eca.thc_y > 49152) { // MINUS Y (FORWARD)
-			td[1] = true;
-			td[2] = true;
-			td[5] = true;
-			td[6] = true;
-		}
-		if (sat->eca.thc_y < 16384) { // PLUS Y (BACKWARD)
-			td[3] = true;
-			td[4] = true;
-			td[7] = true;
-			td[8] = true;
-		}
-		if (sat->eca.thc_z > 49152) { // MINUS Z (UP)
-			td[11] = true;
-			td[12] = true;
-		}
-		if (sat->eca.thc_z < 16384) { // PLUS Z (DOWN)
-			td[9] = true;
-			td[10] = true;
+
+		//Roll SCS-CMC Reaction Jet Control Logic
+		if (S18_2 || thc_cw || S10_1) {
+			if (sat->eca.thc_x < 16384) { // PLUS X
+				td[14] = true;
+				td[15] = true;
+			}
+			if (sat->eca.thc_x > 49152) { // MINUS X
+				td[16] = true;
+				td[13] = true;
+			}
+			if (sat->eca.thc_z > 49152) { // MINUS Z (UP)
+				td[11] = true;
+				td[12] = true;
+			}
+			if (sat->eca.thc_z < 16384) { // PLUS Z (DOWN)
+				td[9] = true;
+				td[10] = true;
+			}
 		}
 	}
 
@@ -3317,8 +3339,17 @@ void RJEC::TimeStep(double simdt){
 }
 
 void RJEC::SetThruster(int thruster, bool Active) {
+
 	if (thruster > 0 && thruster < 20) {
-		ThrusterDemand[thruster] = Active; // Next timestep does the work
+		if (Active)
+		{
+			ThrusterDemand[thruster] = true; // Next timestep does the work
+			ThrusterDemandLockup[thruster] = true; //Ensures the thruster will fire on the next timestep even if ThrusterDemand was already reset
+		}
+		else
+		{
+			ThrusterDemand[thruster] = false;
+		}
 	}
 }
 
@@ -4529,16 +4560,16 @@ void TVSA::TimeStep(double simdt)
 	//Trim
 	if (acpower1)
 	{
-		pitchGimbalTrim1 = (sat->SPSGimbalPitchThumbwheel.GetPosition() - 40.0) / 10.0*RAD;
-		yawGimbalTrim1 = (sat->SPSGimbalYawThumbwheel.GetPosition() - 40.0) / 10.0*RAD;
+		pitchGimbalTrim1 = sat->SPSGimbalPitchThumbwheel.GetValue()*RAD;
+		yawGimbalTrim1 = sat->SPSGimbalYawThumbwheel.GetValue()*RAD;
 	}
 	else
 		pitchGimbalTrim1 = yawGimbalTrim1 = 0.0;
 
 	if (acpower2)
 	{
-		pitchGimbalTrim2 = (sat->SPSGimbalPitchThumbwheel.GetPosition() - 40.0) / 10.0*RAD;
-		yawGimbalTrim2 = (sat->SPSGimbalYawThumbwheel.GetPosition() - 40.0) / 10.0*RAD;
+		pitchGimbalTrim2 = sat->SPSGimbalPitchThumbwheel.GetValue()*RAD;
+		yawGimbalTrim2 = sat->SPSGimbalYawThumbwheel.GetValue()*RAD;
 	}
 	else
 		pitchGimbalTrim2 = yawGimbalTrim2 = 0.0;
@@ -4857,7 +4888,7 @@ EMS::~EMS()
 	if (rsirot) delete rsirot;
 }
 
-void EMS::Init(Saturn *vessel, e_object *a, e_object *b, RotationalSwitch *dimmer, e_object *c) {
+void EMS::Init(Saturn *vessel, e_object *a, e_object *b, ContinuousRotationalSwitch *dimmer, e_object *c) {
 	sat = vessel;
 	DCPower.WireToBuses(a, b);
 	WireTo(c);
