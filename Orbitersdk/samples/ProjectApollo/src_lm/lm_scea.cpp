@@ -294,8 +294,8 @@ void SCERA1::Timestep()
 
 	bool bval = false;
 	double dval = 0.0;
-	double min = 0;
-	double max = 0;
+	double min = 0.0;
+	double max = 0.0;
 
 	//Jet Driver B2U Output (GH1426V)
 	SA2.SetOutput(1, lem->atca.jet_driver[LMRCS_B2U] == 1);
