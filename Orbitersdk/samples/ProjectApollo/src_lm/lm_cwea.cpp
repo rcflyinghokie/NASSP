@@ -451,18 +451,22 @@ void LEM_CWEA::Timestep(double simdt) {
 		//Quad 1
 		voltage = lem->pMission->GetLMNumber() <= 4 ? lem->scera1.GetVoltage(20, 4) : 0.0;
 		QD1HeaterCautFF.Set(voltage < min || voltage > max);
+		QD1HeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 2);
 
 		//Quad 2
 		voltage = lem->pMission->GetLMNumber() <= 4 ? lem->scera1.GetVoltage(20, 3) : 0.0;
 		QD2HeaterCautFF.Set(voltage < min || voltage > max);
+		QD1HeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 3);
 
 		//Quad 3
 		voltage = lem->pMission->GetLMNumber() <= 4 ? lem->scera1.GetVoltage(20, 2) : 0.0;
 		QD3HeaterCautFF.Set(voltage < min || voltage > max);
+		QD1HeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 4);
 
 		//Quad 4
 		voltage = lem->pMission->GetLMNumber() <= 4 ? lem->scera1.GetVoltage(20, 1) : 0.0;
 		QD4HeaterCautFF.Set(voltage < min || voltage > max);
+		QD1HeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 5);
 
 		// S-Band Antenna Electronic Drive Assembly < -64.08F or > 152.63F
 		SBDHeaterCautFF.Set(lem->scera2.GetVoltage(21, 2) < 1.743 || lem->scera2.GetVoltage(21, 2) > 4.421);
