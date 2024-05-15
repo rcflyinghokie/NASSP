@@ -30,6 +30,7 @@
 #include "lmresource.h"
 
 #include "nasspdefs.h"
+#include "nassputils.h"
 
 #ifdef _OPENORBITER
 #include <gcCoreAPI.h>
@@ -137,6 +138,7 @@ const VECTOR3	P14_ROT_AXIS = { -sin((90 * RAD) - P14_TILT), cos((90 * RAD) - P14
 
 // Clickspot radius
 const double SWITCH = 0.015;
+const double ROT = 0.02;
 
 // Switch clickspot offset
 const VECTOR3	P1_CLICK = { 0, 0.0011, -0.0078 };
@@ -414,6 +416,9 @@ const VECTOR3 FwdHatchHandleLocation = { -0.3440, -0.5710, 1.5847 };
 const VECTOR3 FwdHatchReliefValveLocation = { 0.2370, -0.5113, 1.5987 };
 const VECTOR3 FwdHatchInnerLocation = { -0.0164, -0.5784, 1.6599 };
 
+// Window Shades
+const VECTOR3 WindowShadesLocation = { -0.48, 0.69, 1.8 };
+
 // Utility Lights
 const VECTOR3 UtilityLights_CDRLocation = { 0.0162, 1.0318, 0.8908 };
 const VECTOR3 UtilityLights_LMPLocation = { 0.1030, 1.0318, 0.8908 };
@@ -423,7 +428,6 @@ const VECTOR3 Sw_RRGyroLocation = { -0.1557, 0.7949, 1.3874 };
 const VECTOR3 AOT_ShaftSelectorLocation = { 0.0640, 0.8800, 1.4792 };
 
 // Subtracted from total material count to find L01 location.
-//const int mat_L01 = 44;
 
 void LEM::JostleViewpoint(double amount)
 
@@ -460,7 +464,7 @@ void LEM::VCFreeCam(VECTOR3 dir, bool slow)
 	//dir is always in Orbiter's vessel XYZ reference frame
 	//in SetView() the shift is adjusted to local viewpoint reference frame to make is seem 'natural' from the observer's viewpoint
 
-	double simdt = oapiGetSimStep();
+	double simdt = oapiGetSimStep() / oapiGetTimeAcceleration();
 
 	if (slow == false) {
 		vcFreeCamx += dir.x * vcFreeCamSpeed * simdt;
@@ -712,6 +716,10 @@ bool LEM::clbkLoadVC (int id)
 	//Reset Clip Radius settings
 	SetClipRadius(0.0);
 
+	// Init the 2D panel switches to fix XRSound not giving us switch clicks if we load directly into the VC.
+	// Calling InitPanel(LMPANEL_MAIN) also works, since that function calls SetSwitches() as well.
+	SetSwitches(LMPANEL_MAIN);	// Use main panel as a placeholder, it doesn't actually matter
+
 	//Reset VC free camera to default
 	vcFreeCamx = 0;
 	vcFreeCamy = 0;
@@ -961,8 +969,6 @@ void LEM::RegisterActiveAreas()
 	//
 	ReleaseSurfacesVC();
 
-//	SURFHANDLE MainPanelTex1 = oapiGetTextureHandle(hLMVC, 4);
-//	SURFHANDLE MainPanelTex2 = oapiGetTextureHandle(hLMVC, 3);
 
 	SURFHANDLE MainPanelTex1 = oapiGetTextureHandle(hLMVC, VC_TEX_LMVC_dds);
 	SURFHANDLE MainPanelTex2 = oapiGetTextureHandle(hLMVC, VC_TEX_LMVC_2_dds);
@@ -989,6 +995,7 @@ void LEM::RegisterActiveAreas()
 
 	oapiVCRegisterArea(AID_LMVC_INTEGRAL_LIGHT, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE);
 	oapiVCRegisterArea(AID_LMVC_FLOOD_LIGHT, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE);
+	oapiVCRegisterArea(AID_LMVC_NUMERICS_LIGHT, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE);
 
 	oapiVCRegisterArea(AID_VC_LM_CWS_LEFT, _R(238*TexMul, 27*TexMul, 559*TexMul, 153*TexMul), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE, PANEL_MAP_BACKGROUND, MainPanelTex1);
 	oapiVCRegisterArea(AID_VC_MISSION_CLOCK, _R(60*TexMul, 259*TexMul, 202*TexMul, 281*TexMul), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE, PANEL_MAP_BACKGROUND, MainPanelTex1);
@@ -1053,11 +1060,14 @@ void LEM::RegisterActiveAreas()
 		oapiVCSetAreaClickmode_Quadrilateral(AID_VC_SWITCH_P3_01 + i, P3_TOGGLE_POS[i] + _V(UL.x * SWITCH, UL.y * SWITCH, UL.z * SWITCH) + P3_CLICK + ofs, P3_TOGGLE_POS[i] + _V(UR.x * SWITCH, UR.y * SWITCH, UR.z * SWITCH) + P3_CLICK + ofs, P3_TOGGLE_POS[i] + _V(DL.x * SWITCH, DL.y * SWITCH, DL.z * SWITCH) + P3_CLICK + ofs, P3_TOGGLE_POS[i] + _V(DR.x * SWITCH, DR.y * SWITCH, DR.z * SWITCH) + P3_CLICK + ofs);
 	}
 
-	for (i = 0; i < P3_ROTCOUNT; i++)
+	for (i = 0; i < 4; i++)
 	{
 		oapiVCRegisterArea(AID_VC_ROT_P3_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN);
 		oapiVCSetAreaClickmode_Spherical(AID_VC_ROT_P3_01 + i, P3_ROT_POS[i] + ofs, 0.02);
 	}
+
+	oapiVCRegisterArea(AID_VC_ROT_P3_05, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN | PANEL_MOUSE_LBPRESSED | PANEL_MOUSE_UP);
+	oapiVCSetAreaClickmode_Quadrilateral(AID_VC_ROT_P3_05, P3_ROT_POS[4] + UL * ROT + P3_CLICK + ofs, P3_ROT_POS[4] + UR * ROT + P3_CLICK + ofs, P3_ROT_POS[4] + DL * ROT + P3_CLICK + ofs, P3_ROT_POS[4] + DR * ROT + P3_CLICK + ofs);
 
 	oapiVCRegisterArea(AID_VC_RR_NOTRACK, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE);
 	oapiVCRegisterArea(AID_VC_CONTACTLIGHT2, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE);
@@ -1101,8 +1111,8 @@ void LEM::RegisterActiveAreas()
 
 	for (i = 0; i < P5_ROTCOUNT; i++)
 	{
-		oapiVCRegisterArea(AID_VC_ROT_P5_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN);
-		oapiVCSetAreaClickmode_Spherical(AID_VC_ROT_P5_01 + i, P5_ROT_POS[i] + ofs, 0.02);
+		oapiVCRegisterArea(AID_VC_ROT_P5_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN | PANEL_MOUSE_LBPRESSED | PANEL_MOUSE_UP);
+		oapiVCSetAreaClickmode_Quadrilateral(AID_VC_ROT_P5_01 + i, P5_ROT_POS[i] + UL * ROT + P5_CLICK + ofs, P5_ROT_POS[i] + UR * ROT + P5_CLICK + ofs, P5_ROT_POS[i] + DL * ROT + P5_CLICK + ofs, P5_ROT_POS[i] + DR * ROT + P5_CLICK + ofs);
 	}
 
 	oapiVCRegisterArea(AID_VC_START_BUTTON, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN | PANEL_MOUSE_UP);
@@ -1205,7 +1215,13 @@ void LEM::RegisterActiveAreas()
 		oapiVCSetAreaClickmode_Quadrilateral(AID_VC_SWITCH_P12_01 + i, P12_TOGGLE_POS[i] + _V(UL.x * SWITCH, UL.y * SWITCH, UL.z * SWITCH) + P12_CLICK + ofs, P12_TOGGLE_POS[i] + _V(UR.x * SWITCH, UR.y * SWITCH, UR.z * SWITCH) + P12_CLICK + ofs, P12_TOGGLE_POS[i] + _V(DL.x * SWITCH, DL.y * SWITCH, DL.z * SWITCH) + P12_CLICK + ofs, P12_TOGGLE_POS[i] + _V(DR.x * SWITCH, DR.y * SWITCH, DR.z * SWITCH) + P12_CLICK + ofs);
 	}
 
-	for (i = 0; i < P12_ROTCOUNT; i++)
+	for (i = 0; i < 2; i++)
+	{
+		oapiVCRegisterArea(AID_VC_ROT_P12_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN | PANEL_MOUSE_LBPRESSED | PANEL_MOUSE_UP);
+		oapiVCSetAreaClickmode_Quadrilateral(AID_VC_ROT_P12_01 + i, P12_ROT_POS[i] + UL * ROT + P12_CLICK + ofs, P12_ROT_POS[i] + UR * ROT + P12_CLICK + ofs, P12_ROT_POS[i] + DL * ROT + P12_CLICK + ofs, P12_ROT_POS[i] + DR * ROT + P12_CLICK + ofs);
+	}
+
+	for (i = 2; i < P12_ROTCOUNT; i++)
 	{
 		oapiVCRegisterArea(AID_VC_ROT_P12_01 + i, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN);
 		oapiVCSetAreaClickmode_Spherical(AID_VC_ROT_P12_01 + i, P12_ROT_POS[i] + ofs, 0.02);
@@ -1374,6 +1390,10 @@ void LEM::RegisterActiveAreas()
 	oapiVCRegisterArea(AID_VC_ACTOVRDLMP, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN | PANEL_MOUSE_UP);
 	oapiVCSetAreaClickmode_Spherical(AID_VC_ACTOVRDLMP, _V(0.560577, 0.172482, 0.554511) + ofs, 0.008);
 
+	// Window Shades
+	oapiVCRegisterArea(AID_VC_WINDOWSHADES, PANEL_REDRAW_NEVER, PANEL_MOUSE_LBDOWN);
+	oapiVCSetAreaClickmode_Spherical(AID_VC_WINDOWSHADES, WindowShadesLocation + ofs, 0.05);
+
 	// Hatches
 	oapiVCRegisterArea(AID_VC_OVERHEADHATCH, PANEL_REDRAW_NEVER, PANEL_MOUSE_DOWN);
 	oapiVCSetAreaClickmode_Spherical(AID_VC_OVERHEADHATCH, UpperHatchLocation + ofs, 0.1);
@@ -1495,6 +1515,20 @@ bool LEM::clbkVCMouseEvent(int id, int event, VECTOR3 &p)
 			ForwardHatch.Toggle();
 			return true;
 
+		case AID_VC_WINDOWSHADES:
+			if (LEMWindowShades)
+			{
+				LEMWindowShades = false;
+			}
+			else
+			{
+				LEMWindowShades = true;
+			}
+			//Maybe define a custom sound to play here?
+			//SwitchClick();
+			SetWindowShades();
+			return true;
+
 		case AID_VC_COAS1:
 			if (LEMCoas1Enabled)
 			{
@@ -1533,29 +1567,39 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 
 #ifdef _OPENORBITER
 	case AID_LMVC_INTEGRAL_LIGHT:
-        SetLMVCIntegralLight(vcidx, IntegralLights_LMVC, MatProp::Emission, lca.GetIntegralVoltage() / 100.0, sizeof(IntegralLights_LMVC)/sizeof(IntegralLights_LMVC[0]));
+        SetLMVCIntegralLight(vcidx, IntegralLights_LMVC, MatProp::Emission, lca.GetIntegralVoltage() / 100.0, NUM_ELEMENTS(IntegralLights_LMVC));
+//		SetLMVCIntegralLight(vcidx, IntegralLights_LMVC_NoTex, MatProp::Light, lca.GetIntegralVoltage() / 100.0, NUM_ELEMENTS(IntegralLights_LMVC_NoTex)));
+		SetLMVCIntegralLight(vcidx, IntegralLights_LMVC_NoTex, MatProp::Light, ( (lca.GetIntegralVoltage() / 100.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0) )/2.0, NUM_ELEMENTS(IntegralLights_LMVC_NoTex));
+//		SetLMVCIntegralLight(vcidx, IntegralLights_LMVC_NoTex, MatProp::Emission, lca.GetIntegralVoltage() / 100.0, NUM_ELEMENTS(IntegralLights_LMVC_NoTex));
         return true;
 
 	case AID_LMVC_FLOOD_LIGHT:
-        SetLMVCIntegralLight(vcidx, FloodLights_LMVC, MatProp::Light, FloodLights.GetCDRRotaryVoltage() / 28.0, sizeof(FloodLights_LMVC)/sizeof(FloodLights_LMVC[0]));
+        SetLMVCIntegralLight(vcidx, FloodLights_LMVC, MatProp::Light, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_LMVC));
+        SetLMVCIntegralLight(xpointershadesidx, FloodLights_XPointer_Shades, MatProp::Light, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_XPointer_Shades));
         return true;
 
-//	case AID_LMVC_NUMERICS_LIGHT:
-//        SetCMVCIntegralLight(vcidx,NumericLights_P8, MatProp::Light, (double)(NumericRotarySwitch.GetState())/10.0, sizeof(NumericLights_P8)/sizeof(NumericLights_P8[0]));
-//        return true;
+	case AID_LMVC_NUMERICS_LIGHT:
+		SetLMVCIntegralLight(vcidx, NumericLights_LMVC, MatProp::Light, ( (lca.GetNumericVoltage() / 115.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0) )/2, NUM_ELEMENTS(NumericLights_LMVC));
+		return true;
 
 #else
 	case AID_LMVC_INTEGRAL_LIGHT:
-        SetLMVCIntegralLight(vcidx, IntegralLights_LMVC, MESHM_EMISSION2, lca.GetIntegralVoltage() / 100.0, sizeof(IntegralLights_LMVC)/sizeof(IntegralLights_LMVC[0]));
-        return true;
+        SetLMVCIntegralLight(vcidx, IntegralLights_LMVC, MESHM_EMISSION2, lca.GetIntegralVoltage() / 75.0, NUM_ELEMENTS(IntegralLights_LMVC));
+		SetLMVCIntegralLight(vcidx, IntegralLights_LMVC_NoTex, MESHM_EMISSION, lca.GetIntegralVoltage() / 75.0, NUM_ELEMENTS(IntegralLights_LMVC_NoTex));
+        SetLMVCIntegralLight(vcidx, IntegralLights_LMVC_NoTex, MESHM_EMISSION2, lca.GetIntegralVoltage() / 75.0, NUM_ELEMENTS(IntegralLights_LMVC_NoTex));
+		return true;
 
 	case AID_LMVC_FLOOD_LIGHT:
-        SetLMVCIntegralLight(vcidx, FloodLights_LMVC, MESHM_EMISSION, FloodLights.GetCDRRotaryVoltage() / 28.0, sizeof(FloodLights_LMVC)/sizeof(FloodLights_LMVC[0]));
+        SetLMVCIntegralLight(vcidx, FloodLights_LMVC, MESHM_EMISSION, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_LMVC));
+        SetLMVCIntegralLight(xpointershadesidx, FloodLights_XPointer_Shades, MESHM_EMISSION, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_XPointer_Shades));
         return true;
 
-//	case AID_LMVC_NUMERICS_LIGHT:
-//        SetLMVCIntegralLight(vcidx,NumericLights_P8, MESHM_EMISSION,(double)(NumericRotarySwitch.GetState())/10.0, sizeof(NumericLights_P8)/sizeof(NumericLights_P8[0]));
-//        return true;
+	case AID_LMVC_NUMERICS_LIGHT:
+		SetLMVCIntegralLight(vcidx, NumericLights_LMVC, MESHM_EMISSION, ( (lca.GetNumericVoltage() / 115.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0) )/2, NUM_ELEMENTS(NumericLights_LMVC));
+
+//		sprintf(oapiDebugString(), "Numerics Voltage = %lf", lca.GetNumericVoltage());
+		
+        return true;
 
 #endif
 
@@ -1925,7 +1969,6 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 		}
 		else {
 			SetPowerFailureLight(VC_MAT_L09_PwrFail_XpointerR, false); // Light Off
-//byKJ			SetPowerFailureLight(LM_VC_PWRFAIL_LIGHT_9, false); // Light Off
 		}
 		return true;
 
@@ -2429,6 +2472,7 @@ void LEM::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&FloodRotary, AID_VC_ROT_P3_05);
 	FloodRotary.SetReference(P3_ROT_POS[4], P3_ROT_AXIS);
 	FloodRotary.DefineMeshGroup(VC_GRP_Rot_P3_05);
+	FloodRotary.SetInitialAnimState(0.5);
 
 	NEEDLE_POS = {0,0.179865,1.699588};
 
@@ -2512,9 +2556,9 @@ void LEM::DefineVCAnimations()
 	DskySwitchClear.SetDirection(P4_PB_VECT);
 	DskySwitchClear.DefineMeshGroup(VC_GRP_PB_P4_15);
 
-	MainPanelVC.AddSwitch(&DskySwitchProg, AID_VC_PUSHB_P4_16);
-	DskySwitchProg.SetDirection(P4_PB_VECT);
-	DskySwitchProg.DefineMeshGroup(VC_GRP_PB_P4_16);
+	MainPanelVC.AddSwitch(&DskySwitchProceed, AID_VC_PUSHB_P4_16);
+	DskySwitchProceed.SetDirection(P4_PB_VECT);
+	DskySwitchProceed.DefineMeshGroup(VC_GRP_PB_P4_16);
 
 	MainPanelVC.AddSwitch(&DskySwitchKeyRel, AID_VC_PUSHB_P4_17);
 	DskySwitchKeyRel.SetDirection(P4_PB_VECT);
@@ -2581,14 +2625,17 @@ void LEM::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&LtgFloodOhdFwdKnob, AID_VC_ROT_P5_01);
 	LtgFloodOhdFwdKnob.SetReference(P5_ROT_POS[0], P5_ROT_AXIS);
 	LtgFloodOhdFwdKnob.DefineMeshGroup(VC_GRP_Rot_P5_01);
+	LtgFloodOhdFwdKnob.SetInitialAnimState(0.5);
 
 	MainPanelVC.AddSwitch(&LtgAnunNumKnob, AID_VC_ROT_P5_02);
 	LtgAnunNumKnob.SetReference(P5_ROT_POS[1], P5_ROT_AXIS);
 	LtgAnunNumKnob.DefineMeshGroup(VC_GRP_Rot_P5_02);
+	LtgAnunNumKnob.SetInitialAnimState(0.5);
 
 	MainPanelVC.AddSwitch(&LtgIntegralKnob, AID_VC_ROT_P5_03);
 	LtgIntegralKnob.SetReference(P5_ROT_POS[2], P5_ROT_AXIS);
 	LtgIntegralKnob.DefineMeshGroup(VC_GRP_Rot_P5_03);
+	LtgIntegralKnob.SetInitialAnimState(0.5);
 
 	MainPanelVC.AddSwitch(&ManualEngineStart, AID_VC_START_BUTTON);
 	ManualEngineStart.SetDirection(_V(0.00, -0.004*cos(P5_TILT - (90.0 * RAD)), -0.004*sin(P5_TILT - (90.0 * RAD))));
@@ -2867,10 +2914,12 @@ void LEM::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&Panel12AntPitchKnob, AID_VC_ROT_P12_01);
 	Panel12AntPitchKnob.SetReference(P12_ROT_POS[0], P12_ROT_AXIS);
 	Panel12AntPitchKnob.DefineMeshGroup(VC_GRP_Rot_P12_01);
+	Panel12AntPitchKnob.SetInitialAnimState(0.5);
 
 	MainPanelVC.AddSwitch(&Panel12AntYawKnob, AID_VC_ROT_P12_02);
 	Panel12AntYawKnob.SetReference(P12_ROT_POS[1], P12_ROT_AXIS);
 	Panel12AntYawKnob.DefineMeshGroup(VC_GRP_Rot_P12_02);
+	Panel12AntYawKnob.SetInitialAnimState(0.5);
 
 	MainPanelVC.AddSwitch(&Panel12SBandAntSelKnob, AID_VC_ROT_P12_03);
 	Panel12SBandAntSelKnob.SetReference(P12_ROT_POS[2], P12_ROT_AXIS);
@@ -3020,6 +3069,7 @@ void LEM::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&ORDEALAltSetRotary, AID_VC_ROT_ORDEAL_01);
 	ORDEALAltSetRotary.SetReference(ORDEAL_RotLocation, ORDEAL_ROT_AXIS);
 	ORDEALAltSetRotary.DefineMeshGroup(VC_GRP_ORDEAL_Rot);
+	ORDEALAltSetRotary.SetInitialAnimState(133.0 / 285.0); //133° from 10 NM to 150 NM, 285° total range
 
 	// ECS Panels
 	const VECTOR3 ECSRotAxisOCM = { -0.12642632210213, 0.0, 0.991976000253902 };
@@ -3391,10 +3441,9 @@ void LEM::SetLMVCIntegralLight(UINT meshidx, DWORD *matList, int EmissionMode, d
 #endif
 
 {
-	if (vis == NULL) return;
+	if (vis == NULL || meshidx == -1) return;
 	DEVMESHHANDLE hMesh = GetDevMesh(vis, meshidx);
 
-//    if (!vcmesh)
     if (!hMesh)
         return;
 

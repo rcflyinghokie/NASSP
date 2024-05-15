@@ -181,8 +181,8 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	CabinPressureReliefValve1(PostLandingVentSound),
 	CabinPressureReliefValve2(PostLandingVentSound),
 	CrewStatus(CrewDeadSound),
-	CSMDCVoltMeter(20.0, 45.0),
-	CSMACVoltMeter(90.0, 140.0),
+	CSMDCVoltMeter(19.0, 46.0),
+	CSMACVoltMeter(89.0, 131.0),
 	DCAmpMeter(0.0, 100.0),
 	SystemTestVoltMeter(0.0, 5.0),
 	EMSDvSetSwitch(Sclick),
@@ -234,7 +234,7 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	SuitTempSensor("Suit-Temp-Sensor", 20.0, 95.0),
 	ECSWastePotTransducerFeeder("ECS-Waste-Pot-Transducer-Feeder", Panelsdk),
 	WasteH2OQtySensor("Waste-H2O-Qty-Sensor", 0.0, 1.0, 25400.0),
-	PotH2OQtySensor("Pot-H2O-Qty-Sensor", 0.0, 1.0, 16300.0),
+	PotH2OQtySensor("Pot-H2O-Qty-Sensor", 0.0, 1.0, 16330.0),
 	SuitPressSensor("SuitPressSensor", 0.0, 17.0),
 	SuitCompressorDeltaPSensor("Suit-Compressor-DeltaP-Sensor", 0.0, 1.0),
 	GlycolPumpOutPressSensor("Glycol-Pump-Out-Press-Sensor", 0.0, 60.0),
@@ -264,7 +264,8 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	BatteryManifoldPressureSensor("Battery-Manifold-Pressure-Sensor", 0.0, 20.0),
 	WasteH2ODumpTempSensor("Waste-H2O-Dump-Temp-Sensor", 0.0, 100.0),
 	UrineDumpTempSensor("Urine-Dump-Temp-Sensor", 0.0, 100.0),
-	CueCards(vcidx, this, 11)
+	CueCards(vcidx, this, 11),
+	Failures(this)
 #pragma warning ( pop ) // disable:4355
 
 {	
@@ -388,7 +389,6 @@ void Saturn::initSaturn()
 	S1bPanel = false;
 
 	LEM_DISPLAY=false;
-	ASTPMission = false;
 
 	AutoSlow = false;
 	Crewed = true;
@@ -489,14 +489,6 @@ void Saturn::initSaturn()
 
 	NextFlashUpdate = MINUS_INFINITY;
 	PanelFlashOn = false;
-
-	//
-	// Failure modes.
-	//
-
-	LandFail.word = 0;
-	LaunchFail.word = 0;
-	SwitchFail.word = 0;
 
 	//
 	// Configure AGC and DSKY.
@@ -850,6 +842,9 @@ void Saturn::initSaturn()
 	coascdridx = -1;
 	coascdrreticleidx = -1;
 
+	vcmesh = NULL;
+	vis = NULL;
+
 	Scorrec = false;
 
 	//
@@ -976,22 +971,6 @@ void Saturn::clbkPostCreation()
 	LoadDefaultSounds();
 
 	//
-	// Disable cabin fans.
-	//
-
-	soundlib.SoundOptionOnOff(PLAYCABINAIRCONDITIONING, FALSE);
-
-	// Disable Rolling, landing, speedbrake, crash sound. This causes issues in Orbiter 2016.
-	soundlib.SoundOptionOnOff(PLAYLANDINGANDGROUNDSOUND, FALSE);
-
-	//
-	// We do our own countdown, so ignore the standard one.
-	//
-
-	if (!UseATC)
-		soundlib.SoundOptionOnOff(PLAYCOUNTDOWNWHENTAKEOFF, FALSE);
-
-	//
 	// Load mission-based sound files. Some of these are just being
 	// preloaded here for the CSM computer.
 	//
@@ -1029,32 +1008,11 @@ void Saturn::clbkPostCreation()
 	if (LESAttached)
 		soundlib.LoadMissionSound(SwindowS, WINDOW_SOUND, POST_TOWER_JET_SOUND);
 
-	//
-	// Only the CSM and LEM have translational thrusters, so disable the message
-	// telling us that they're being switched in other stages.
-	//
-
-	if (stage > CSM_LEM_STAGE || stage < PRELAUNCH_STAGE)
-	{
-		soundlib.SoundOptionOnOff(PLAYWHENATTITUDEMODECHANGE, FALSE);
-	}
-	else
-	{
-		soundlib.SoundOptionOnOff(PLAYWHENATTITUDEMODECHANGE, TRUE);
-	}
-
 	if (stage < LAUNCH_STAGE_TWO) {
 		soundlib.LoadMissionSound(SShutS, SI_CUTOFF_SOUND, SISHUTDOWN_SOUND);
 	}
 
 	if (stage < STAGE_ORBIT_SIVB) {
-
-		//
-		// We'll do our own radio playback during launch.
-		//
-
-		if (!UseATC)
-			soundlib.SoundOptionOnOff(PLAYRADIOATC, FALSE);
 
 		soundlib.LoadMissionSound(S2ShutS, SII_CUTOFF_SOUND, SIISHUTDOWN_SOUND);
 		soundlib.LoadMissionSound(S4CutS, GO_FOR_ORBIT_SOUND, SIVBSHUTDOWN_SOUND);
@@ -1106,18 +1064,6 @@ void Saturn::clbkPostCreation()
 		SApollo13.setFlags(SOUNDFLAG_1XORLESS | SOUNDFLAG_COMMS);
 		SExploded.setFlags(SOUNDFLAG_1XORLESS | SOUNDFLAG_COMMS);
 	}
-
-	//
-	// Turn off the timer display on launch.
-	//
-
-	soundlib.SoundOptionOnOff(DISPLAYTIMER, FALSE);
-
-	//
-	// Turn off docking sound
-	//
-
-	soundlib.SoundOptionOnOff(PLAYDOCKINGSOUND, FALSE);
 
 	//
 	// Check Saturn devices.
@@ -1394,7 +1340,19 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	oapiWriteScenario_int (scn, "NASSPVER", nasspver);
 	oapiWriteScenario_int (scn, "STAGE", stage);
 	oapiWriteScenario_int(scn, "VECHNO", VehicleNo);
-	oapiWriteScenario_int (scn, "APOLLONO", ApolloNo);
+
+	if (ApolloNo == 0)
+	{
+		//New system, save mission name
+		strcpy(str, pMission->GetMissionName().c_str());
+		oapiWriteScenario_string(scn, "MISSION", str);
+	}
+	else
+	{
+		//Old system, remove at some point
+		oapiWriteScenario_int(scn, "APOLLONO", ApolloNo);
+	}
+
 	oapiWriteScenario_int (scn, "SATTYPE", SaturnType);
 	oapiWriteScenario_int (scn, "PANEL_ID", PanelId);
 	oapiWriteScenario_int(scn, "VIEWPOS", viewpos);
@@ -1487,15 +1445,6 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	if (AutoSlow) {
 		oapiWriteScenario_int (scn, "AUTOSLOW", 1);
 	}
-	if (LandFail.word) {
-		oapiWriteScenario_int(scn, "LANDFAIL", LandFail.word);
-	}
-	if (LaunchFail.word) {
-		oapiWriteScenario_int(scn, "LAUNCHFAIL", LaunchFail.word);
-	}
-	if (SwitchFail.word) {
-		oapiWriteScenario_int(scn, "SWITCHFAIL", SwitchFail.word);
-	}
 	if (ApolloNo == 1301) {
 		oapiWriteScenario_int (scn, "A13STATE", GetA13State());
 	}
@@ -1532,6 +1481,7 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 		}
 	}
 
+	Failures.SaveState(scn);
 	inertialData.SaveState(scn);
 	dsky.SaveState(scn, DSKY_START_STRING, DSKY_END_STRING);
 	dsky2.SaveState(scn, DSKY2_START_STRING, DSKY2_END_STRING);
@@ -1842,6 +1792,7 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	int status = 0;
 	int DummyLoad, i;
 	bool found;
+	char tempBuffer[256];
 
 	found = true;
 
@@ -1972,21 +1923,23 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	}
 	else if (!strnicmp (line, "APOLLONO", 8)) {
 		
-		if (sscanf(line + 8, "%d", &ApolloNo) == 1)
-		{
-			pMission->LoadMission(ApolloNo);
-		}
-		else
-		{
-			char tempBuffer[64];
-			strncpy(tempBuffer, line + 9, 63);
-			pMission->LoadMission(tempBuffer);
-		}
+		//APOLLONO is going to be removed!
+
+		sscanf(line + 8, "%d", &ApolloNo);
+
+		pMission->LoadMission(ApolloNo);
 		
 		//Create mission specific systems
 		CreateMissionSpecificSystems();
-		//
-		secs.Realize();
+	}
+	else if (papiReadScenario_string(line,"MISSION", tempBuffer)) {
+
+		//New missions should load a mission name!
+		pMission->LoadMission(tempBuffer);
+
+		//Create mission specific systems
+		CreateMissionSpecificSystems();
+		
 	}
 	else if (!strnicmp (line, "SATTYPE", 7)) {
 		sscanf (line+7, "%d", &SaturnType);
@@ -2108,15 +2061,6 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 		sscanf(line + 6, "%f", &ftcp);
 		CM_EmptyMass = ftcp;
 	}
-	else if (!strnicmp(line, "LANDFAIL", 8)) {
-		sscanf(line + 8, "%d", &LandFail.word);
-	}
-	else if (!strnicmp(line, "LAUNCHFAIL", 10)) {
-		sscanf(line + 10, "%d", &LaunchFail.word);
-	}
-	else if (!strnicmp(line, "SWITCHCHFAIL", 10)) {
-		sscanf(line + 10, "%d", &SwitchFail.word);
-	}
 	else if (!strnicmp(line, "LANG", 4)) {
 		strncpy (AudioLanguage, line + 5, 64);
 	}
@@ -2128,6 +2072,9 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	}
 	else if (!strnicmp(line, "PAYN", 4)) {
 		strncpy (PayloadName, line + 5, 64);
+	}
+	else if (!strnicmp(line, FAILURES_START_STRING, sizeof(FAILURES_START_STRING))) {
+		Failures.LoadState(scn);
 	}
 	else if (!strnicmp(line, INERTIAL_DATA_START_STRING, sizeof(INERTIAL_DATA_START_STRING))) {
 		inertialData.LoadState(scn);
@@ -2770,7 +2717,6 @@ void Saturn::SetStage(int s)
 
 	if (stage >= CSM_LEM_STAGE) {
 
-		soundlib.SoundOptionOnOff(PLAYWHENATTITUDEMODECHANGE, TRUE);
 		ClearTLISounds();
 
 		iuCommandConnector.Disconnect();
@@ -3203,112 +3149,105 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 
 	if (KEYMOD_SHIFT(kstate)){
 		// Do DSKY stuff
-		if(down){
-			switch(key){
-				case OAPI_KEY_DECIMAL:
-					dsky.ClearPressed();
-					break;
-				case OAPI_KEY_PRIOR:
-					dsky.ResetPressed();
-					break;
-				case OAPI_KEY_HOME:
-					dsky.KeyRel();
-					break;
-				case OAPI_KEY_NUMPADENTER:
-					dsky.EnterPressed();
-					break;
-				case OAPI_KEY_DIVIDE:
-					dsky.VerbPressed();
-					break;
-				case OAPI_KEY_MULTIPLY:
-					dsky.NounPressed();
-					break;
-				case OAPI_KEY_ADD:
-					dsky.PlusPressed();
-					break;
-				case OAPI_KEY_SUBTRACT:
-					dsky.MinusPressed();
-					break;
-				case OAPI_KEY_END:
-					dsky.ProgPressed();
-					break;
-				case OAPI_KEY_NUMPAD1:
-					dsky.NumberPressed(1);
-					break;
-				case OAPI_KEY_NUMPAD2:
-					dsky.NumberPressed(2);
-					break;
-				case OAPI_KEY_NUMPAD3:
-					dsky.NumberPressed(3);
-					break;
-				case OAPI_KEY_NUMPAD4:
-					dsky.NumberPressed(4);
-					break;
-				case OAPI_KEY_NUMPAD5:
-					dsky.NumberPressed(5);
-					break;
-				case OAPI_KEY_NUMPAD6:
-					dsky.NumberPressed(6);
-					break;
-				case OAPI_KEY_NUMPAD7:
-					dsky.NumberPressed(7);
-					break;
-				case OAPI_KEY_NUMPAD8:
-					dsky.NumberPressed(8);
-					break;
-				case OAPI_KEY_NUMPAD9:
-					dsky.NumberPressed(9);
-					break;
-				case OAPI_KEY_NUMPAD0:
-					dsky.NumberPressed(0);
-					break;
-				case OAPI_KEY_W: // Minimum impulse controller, pitch down
-					agc.SetInputChannelBit(032, MinusPitchMinImpulse,1);
-					break;
-				case OAPI_KEY_S: // Minimum impulse controller, pitch up
-					agc.SetInputChannelBit(032, PlusPitchMinImpulse,1);
-					break;
-				case OAPI_KEY_A: // Minimum impulse controller, yaw left
-					agc.SetInputChannelBit(032, MinusYawMinimumImpulse,1);
-					break;
-				case OAPI_KEY_D: // Minimum impulse controller, yaw right
-					agc.SetInputChannelBit(032, PlusYawMinimumImpulse,1);
-					break;
-				case OAPI_KEY_Q: // Minimum impulse controller, roll left
-					agc.SetInputChannelBit(032, MinusRollMinimumImpulse,1);
-					break;
-				case OAPI_KEY_E: // Minimum impulse controller, roll right
-					agc.SetInputChannelBit(032, PlusRollMinimumImpulse,1);
-					break;
-				case OAPI_KEY_K:
-					//kill rotation
-					SetAngularVel(_V(0, 0, 0));
-					break;
+		DSKYPushSwitch* dskyKeyChanged = nullptr;
+		switch (key) {
+			case OAPI_KEY_DECIMAL:
+				dskyKeyChanged = &DskySwitchClear;
+				break;
+			case OAPI_KEY_PRIOR:
+				dskyKeyChanged = &DskySwitchReset;
+				break;
+			case OAPI_KEY_HOME:
+				dskyKeyChanged = &DskySwitchKeyRel;
+				break;
+			case OAPI_KEY_NUMPADENTER:
+				dskyKeyChanged = &DskySwitchEnter;
+				break;
+			case OAPI_KEY_DIVIDE:
+				dskyKeyChanged = &DskySwitchVerb;
+				break;
+			case OAPI_KEY_MULTIPLY:
+				dskyKeyChanged = &DskySwitchNoun;
+				break;
+			case OAPI_KEY_ADD:
+				dskyKeyChanged = &DskySwitchPlus;
+				break;
+			case OAPI_KEY_SUBTRACT:
+				dskyKeyChanged = &DskySwitchMinus;
+				break;
+			case OAPI_KEY_END:
+				dskyKeyChanged = &DskySwitchProceed;
+				break;
+			case OAPI_KEY_NUMPAD1:
+				dskyKeyChanged = &DskySwitchOne;
+				break;
+			case OAPI_KEY_NUMPAD2:
+				dskyKeyChanged = &DskySwitchTwo;
+				break;
+			case OAPI_KEY_NUMPAD3:
+				dskyKeyChanged = &DskySwitchThree;
+				break;
+			case OAPI_KEY_NUMPAD4:
+				dskyKeyChanged = &DskySwitchFour;
+				break;
+			case OAPI_KEY_NUMPAD5:
+				dskyKeyChanged = &DskySwitchFive;
+				break;
+			case OAPI_KEY_NUMPAD6:
+				dskyKeyChanged = &DskySwitchSix;
+				break;
+			case OAPI_KEY_NUMPAD7:
+				dskyKeyChanged = &DskySwitchSeven;
+				break;
+			case OAPI_KEY_NUMPAD8:
+				dskyKeyChanged = &DskySwitchEight;
+				break;
+			case OAPI_KEY_NUMPAD9:
+				dskyKeyChanged = &DskySwitchNine;
+				break;
+			case OAPI_KEY_NUMPAD0:
+				dskyKeyChanged = &DskySwitchZero;
+				break;
+			case OAPI_KEY_W: // Minimum impulse controller, pitch down
+				agc.SetInputChannelBit(032, MinusPitchMinImpulse, down ? 1 : 0);
+				break;
+			case OAPI_KEY_S: // Minimum impulse controller, pitch up
+				agc.SetInputChannelBit(032, PlusPitchMinImpulse, down ? 1 : 0);
+				break;
+			case OAPI_KEY_A: // Minimum impulse controller, yaw left
+				agc.SetInputChannelBit(032, MinusYawMinimumImpulse, down ? 1 : 0);
+				break;
+			case OAPI_KEY_D: // Minimum impulse controller, yaw right
+				agc.SetInputChannelBit(032, PlusYawMinimumImpulse, down ? 1 : 0);
+				break;
+			case OAPI_KEY_Q: // Minimum impulse controller, roll left
+				agc.SetInputChannelBit(032, MinusRollMinimumImpulse, down ? 1 : 0);
+				break;
+			case OAPI_KEY_E: // Minimum impulse controller, roll right
+				agc.SetInputChannelBit(032, PlusRollMinimumImpulse, down ? 1 : 0);
+				break;
+		}
+
+		// Direction-specific code, handle DSKY key presses if any.
+		if (down) {
+			// KEY DOWN
+			if (dskyKeyChanged != nullptr) {
+				dskyKeyChanged->SetHeld(true);
+				dskyKeyChanged->SetState(PUSHBUTTON_PUSHED);
 			}
-		}else{
+
+			switch (key) {
+			case OAPI_KEY_K:
+				//kill rotation
+				SetAngularVel(_V(0, 0, 0));
+				break;
+			}
+		} else {
 			// KEY UP
-			switch(key){
-				case OAPI_KEY_END:
-					dsky.ProgReleased();
-					break;
-				case OAPI_KEY_W: // Minimum impulse controller, pitch down
-					agc.SetInputChannelBit(032, MinusPitchMinImpulse, 0);
-					break;
-				case OAPI_KEY_S: // Minimum impulse controller, pitch up
-					agc.SetInputChannelBit(032, PlusPitchMinImpulse, 0);
-					break;
-				case OAPI_KEY_A: // Minimum impulse controller, yaw left
-					agc.SetInputChannelBit(032, MinusYawMinimumImpulse, 0);
-					break;
-				case OAPI_KEY_D: // Minimum impulse controller, yaw right
-					agc.SetInputChannelBit(032, PlusYawMinimumImpulse, 0);
-					break;
-				case OAPI_KEY_Q: // Minimum impulse controller, roll left
-					agc.SetInputChannelBit(032, MinusRollMinimumImpulse, 0);
-					break;
-				case OAPI_KEY_E: // Minimum impulse controller, roll right
-					agc.SetInputChannelBit(032, PlusRollMinimumImpulse, 0);
-					break;
+			if (dskyKeyChanged != nullptr) {
+				// Doing SwitchTo instead of SetState prevents a second click on key up.
+				dskyKeyChanged->SetHeld(false);
+				dskyKeyChanged->SwitchTo(PUSHBUTTON_UNPUSHED);
 			}
 		}
 		return 0;
@@ -3424,16 +3363,12 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 	//
 
 	if (key == OAPI_KEY_1 && down == true && InVC && stage < LAUNCH_STAGE_TWO && stage >= LAUNCH_STAGE_ONE) {
-		viewpos = SATVIEW_ENG1;
-		SetView();
-		oapiCameraAttach(GetHandle(), CAM_COCKPIT);
+		clbkLoadVC(SATVIEW_ENG1);
 		return 1;
 	}
 
 	if (key == OAPI_KEY_2 && down == true && InVC && stage < LAUNCH_STAGE_SIVB && stage >= LAUNCH_STAGE_ONE) {
-		viewpos = SATVIEW_ENG2;
-		oapiCameraAttach(GetHandle(), CAM_COCKPIT);
-		SetView();
+		clbkLoadVC(SATVIEW_ENG2);
 		return 1;
 	}
 
@@ -3464,8 +3399,13 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 			viewpos = SATVIEW_ENG3;
 			break;
 		}
-		oapiCameraAttach(GetHandle(), CAM_COCKPIT);
-		SetView();
+		clbkLoadVC(viewpos);
+		return 1;
+	}
+
+	//Load left seat
+	if (key == OAPI_KEY_4 && down == true && InVC) {
+		clbkLoadVC(SATVIEW_LEFTSEAT);
 		return 1;
 	}
 	return 0;
@@ -3897,7 +3837,7 @@ void Saturn::GenericTimestepStage(double simt, double simdt)
 
 	case CM_ENTRY_STAGE_SIX:	// Main chute is attached		
 		if (!SplashdownPlayed && GetAltitude(ALTMODE_GROUND) < 2.5) {
-			SplashS.play(NOLOOP, 180);
+			SplashS.play(NOLOOP, 180.0 / 255.0);
 			SplashS.done();
 
 			SplashdownPlayed = true;
@@ -4284,7 +4224,7 @@ void Saturn::LoadDefaultSounds()
 	soundlib.LoadSound(RCSSustainSound, RCSSUSTAIN_SOUND, INTERNAL_ONLY);
 	soundlib.LoadSound(HatchOpenSound, HATCHOPEN_SOUND, INTERNAL_ONLY);
 	soundlib.LoadSound(HatchCloseSound, HATCHCLOSE_SOUND, INTERNAL_ONLY);
-	soundlib.LoadDefaultSound(EngineS, MAIN_ENGINES_SOUND, INTERNAL_ONLY);
+	soundlib.LoadSound(EngineS, MAIN_ENGINES_SOUND, INTERNAL_ONLY);
 
 	Sctdw.setFlags(SOUNDFLAG_1XONLY|SOUNDFLAG_COMMS);
 }
@@ -4305,7 +4245,7 @@ void Saturn::StageSix(double simt){
 				oapiSetTimeAcceleration (1);
 			}
 
-			SApollo13.play(NOLOOP, 255);
+			SApollo13.play(NOLOOP);
 			CryoStir = true;
 
 		}
@@ -4324,7 +4264,7 @@ void Saturn::StageSix(double simt){
 				SApollo13.done();
 			}
 
-			SExploded.play(NOLOOP,255);
+			SExploded.play(NOLOOP);
 			SExploded.done();
 
 			//MasterAlarm();  Main B Undervolt due to power transient at the explosion should trigger this alarm
@@ -4418,7 +4358,7 @@ void Saturn::StageSix(double simt){
 				SExploded.done();
 			}
 
-			SKranz.play(NOLOOP, 150);
+			SKranz.play(NOLOOP, 150.0 / 255.0);
 			SKranz.done();
 
 			KranzPlayed = true;

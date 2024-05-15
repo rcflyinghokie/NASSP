@@ -74,11 +74,11 @@ bool SoundData::isValid()
 	return valid;
 }
 
-bool SoundData::play(int flags, int libflags, int volume, int playvolume, int frequency /*= NULL*/)
+bool SoundData::play(int flags, int libflags, double volume, double playvolume, int frequency /*= NULL*/)
 
 {
 	if (valid) {
-		if (!Soundlib->PlayWav(id, (bool) flags, playvolume/255.0f))
+		if (!Soundlib->PlayWav(id, (bool) flags, static_cast<float>(playvolume)))
 		{
 			return false;
 		}
@@ -177,6 +177,12 @@ void SoundLib::InitSoundLib(VESSEL *v, char *soundclass)
 
 	Soundlib = XRSound::CreateInstance(v);
 	XRSoundActive = Soundlib->IsPresent();
+
+	// Disable XRSound things while we're at it
+	Soundlib->SetDefaultSoundEnabled(XRSound::AudioGreeting, false);
+	Soundlib->SetDefaultSoundEnabled(XRSound::SubsonicCallout, false);
+	Soundlib->SetDefaultSoundEnabled(XRSound::MachCalloutsGroup, false);
+	Soundlib->SetDefaultSoundEnabled(XRSound::OneHundredKnots, false);
 }
 
 void SoundLib::SetSoundLibMissionPath(char *mission)
@@ -453,61 +459,6 @@ void SoundLib::LoadDefaultSound(Sound &s, char *soundname, EXTENDEDPLAY extended
 	s.SetSoundData(DoLoadSound(SoundPath, extended));
 }
 
-void SoundLib::SoundOptionOnOff(int option,BOOL status)
-
-{
-	// The right way to do this is to go through every vessel and modify
-	// the option to be the enum, but that would mean including XRSound.h
-	// to every vessel. I'll instead do a lookup here.
-	switch (option) {
-	case PLAYCOUNTDOWNWHENTAKEOFF:
-		Soundlib->SetDefaultSoundEnabled(XRSound::Liftoff, status);
-		break;
-	case PLAYWHENATTITUDEMODECHANGE:
-		Soundlib->SetDefaultSoundEnabled(XRSound::Rotation, status);
-		Soundlib->SetDefaultSoundEnabled(XRSound::Translation, status);
-		Soundlib->SetDefaultSoundEnabled(XRSound::Off, status);
-		break;
-	case PLAYDOCKINGSOUND:
-		Soundlib->SetDefaultSoundEnabled(XRSound::Docking, status);
-		Soundlib->SetDefaultSoundEnabled(XRSound::DockingCallout, status);
-		Soundlib->SetDefaultSoundEnabled(XRSound::Undocking, status);
-		Soundlib->SetDefaultSoundEnabled(XRSound::UndockingCallout, status);
-		Soundlib->SetDefaultSoundEnabled(XRSound::DockingDistanceCalloutsGroup, status);
-		break;
-	case PLAYRADARBIP:
-		Soundlib->SetDefaultSoundEnabled(XRSound::DockingRadarBeep, status);
-		break;
-	case PLAYLANDINGANDGROUNDSOUND:
-		Soundlib->SetDefaultSoundEnabled(XRSound::Crash, status);
-		Soundlib->SetDefaultSoundEnabled(XRSound::MetalCrunch, status);
-		Soundlib->SetDefaultSoundEnabled(XRSound::WheelChirp, status);
-		Soundlib->SetDefaultSoundEnabled(XRSound::Touchdown, status);
-		Soundlib->SetDefaultSoundEnabled(XRSound::WheelStop, status);
-		Soundlib->SetDefaultSoundEnabled(XRSound::TiresRolling, status);
-		Soundlib->SetDefaultSoundEnabled(XRSound::Wheekbrakes, status);
-		break;
-	case PLAYCABINAIRCONDITIONING:
-		Soundlib->SetDefaultSoundEnabled(XRSound::AirConditioning, status);
-		break;
-	case PLAYCABINRANDOMAMBIANCE:
-		Soundlib->SetDefaultSoundEnabled(XRSound::CabinAmbienceGroup, status);
-		break;
-	case PLAYRADIOATC:
-		Soundlib->SetDefaultSoundEnabled(XRSound::RadioATCGroup, status);
-		break;
-	case DISPLAYTIMER:
-		// XRSound doesn't have this
-		break;
-	}
-
-	// Disable XRSound things while we're at it
-	Soundlib->SetDefaultSoundEnabled(XRSound::AudioGreeting, false);
-	Soundlib->SetDefaultSoundEnabled(XRSound::SubsonicCallout, false);
-	Soundlib->SetDefaultSoundEnabled(XRSound::MachCalloutsGroup, false);
-	Soundlib->SetDefaultSoundEnabled(XRSound::OneHundredKnots, false);
-}
-
 void SoundLib::SetLanguage(char *language)
 
 {
@@ -518,7 +469,7 @@ void SoundLib::SetLanguage(char *language)
 // Adjust the volume passed in based on the master volume controls.
 //
 
-int SoundLib::GetSoundVolume(int flags, int volume)
+double SoundLib::GetSoundVolume(int flags, double volume)
 
 {
 	if (flags & SOUNDFLAG_COMMS) {
@@ -526,11 +477,11 @@ int SoundLib::GetSoundVolume(int flags, int volume)
 		// There are two master volume controls, so use the
 		// highest volume set.
 		//
-		int mv = MasterVolume[VOLUME_COMMS];
+		double mv = MasterVolume[VOLUME_COMMS];
 		if (MasterVolume[VOLUME_COMMS2] > mv)
 			mv = MasterVolume[VOLUME_COMMS2];
 
-		volume = (volume * mv) / 100;
+		volume = volume * mv;
 	}
 
 	return volume;
@@ -540,17 +491,17 @@ int SoundLib::GetSoundVolume(int flags, int volume)
 // Update volume.
 //
 
-void SoundLib::SetVolume(int type, int percent)
+void SoundLib::SetVolume(int type, double percent)
 
 {
 	//
 	// We'll be nice if the volume is invalid.
 	//
 
-	if (percent > 100)
-		percent = 100;
-	if (percent < 0)
-		percent = 0;
+	if (percent > 1.0)
+		percent = 1.0;
+	if (percent < 0.0)
+		percent = 0.0;
 
 	//
 	// Return if the type is invalid.
@@ -593,9 +544,9 @@ void SoundLib::SetVolume(int type, int percent)
 		if (sounds[i].isValid() && sounds[i].isPlaying()) {
 			int libflags = sounds[i].GetLibFlags();
 			if (libflags & match_flags) {
-				int base_vol = sounds[i].GetBaseVolume();
+				double base_vol = sounds[i].GetBaseVolume();
 				int playflags = sounds[i].GetPlayFlags();
-				int vol = GetSoundVolume(libflags, base_vol);
+				double vol = GetSoundVolume(libflags, base_vol);
 
 				sounds[i].play(playflags, libflags, base_vol, vol);
 			}
@@ -686,7 +637,7 @@ bool Sound::isPlaying()
 	return sd->isPlaying();
 }
 
-bool Sound::play(int flags, int volume, int frequency /*= NULL*/)
+bool Sound::play(int flags, double volume, int frequency /*= NULL*/)
 
 {
 	if (valid && sd && sd->isValid()) {
@@ -700,7 +651,7 @@ bool Sound::play(int flags, int volume, int frequency /*= NULL*/)
 				return false;
 		}
 
-		int vol = volume;
+		double vol = volume;
 
 		if (sl) {
 			vol = sl->GetSoundVolume(soundflags, volume);
@@ -745,32 +696,32 @@ void Sound::SetSoundData(SoundData *s)
 	}
 }
 
-bool FadeInOutSound::play(int volume /*= 255*/)
+bool FadeInOutSound::play(double volume)
 {
 	double dt; // [s]
 	int freq;  // [Hz] placed here for debug sprintf() to work
 
-	if (currentVolume == -1) { // initial call (first after scenario load) ?
+	if (currentVolume == -1.0) { // initial call (first after scenario load) ?
 		currentVolume = volume;
 	}
 
 	if (currentVolume < volume)
 	{
 		dt = oapiGetSimStep();
-		currentVolume += int(round(double(riseSlope) * dt));
+		currentVolume += riseSlope * dt;
 		if (currentVolume > volume) { currentVolume = volume; } // limit (upper)
 	}
 	else if (currentVolume > volume)
 	{
 		dt = oapiGetSimStep();
-		currentVolume -= int(round(double(fadeSlope) * dt));
-		if (currentVolume < 0) { currentVolume = 0; } // limit (lower)
+		currentVolume -= fadeSlope * dt;
+		if (currentVolume < 0.0) { currentVolume = 0.0; } // limit (lower)
 	}
 
-	if (currentVolume)
+	if (currentVolume != 0.0)
 	{
 		freq = hasFrequencyShift()
-			? fMin + (currentVolume * (fMax - fMin) / 255)
+			? static_cast<int>(fMin + (currentVolume * (fMax - fMin)))
 			: NULL;
 		Sound::play(LOOP, currentVolume, freq);
 	}
@@ -786,8 +737,8 @@ bool FadeInOutSound::play(int volume /*= 255*/)
 void FadeInOutSound::stop()
 {
 	// We stop the sound only once (will do no harm and it will save a bit of processor time)
-	if (currentVolume) {
-		play(0);
+	if (currentVolume != 0.0) {
+		play(0.0);
 	}
 }
 

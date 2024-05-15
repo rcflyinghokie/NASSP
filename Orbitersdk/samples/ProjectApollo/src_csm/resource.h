@@ -1680,6 +1680,9 @@
 #define AID_VC_FLOOD_LIGHT_P100     7018
 #define AID_VC_NUMERICS_LIGHT_P100  7019
 
+// Integral Lights Cue Card
+#define AID_VC_CUE_CARDS_LIGHTING  7020
+
 // Next default values for new objects
 //
 #ifdef APSTUDIO_INVOKED

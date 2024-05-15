@@ -345,7 +345,7 @@ void Saturn::SystemsInit() {
 	PrimECSTestHeater = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:PRIMECSTESTHEATER");
 	SecECSTestHeater = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:SECECSTESTHEATER");
 	
-	Crew = (h_crew *) Panelsdk.GetPointerByString("HYDRAULIC:CREW");	 
+	Crew = (h_crew *) Panelsdk.GetPointerByString("HYDRAULIC:CREW");
 
 	SuitCompressor1 = (AtmRegen *) Panelsdk.GetPointerByString("ELECTRIC:SUITCOMPRESSORCO2ABSORBER1");
 	SuitCompressor1->WireTo(&SuitCompressor1Switch);
@@ -424,7 +424,7 @@ void Saturn::SystemsInit() {
 	eca.Init(this);
 	tvsa.Init(this);
 	ems.Init(this, &EMSMnACircuitBraker, &EMSMnBCircuitBraker, &NumericRotarySwitch, &LightingNumIntLMDCCB);
-	ordeal.Init(&ORDEALEarthSwitch, &OrdealAc2CircuitBraker, &OrdealMnBCircuitBraker, &ORDEALAltSetRotary, &ORDEALModeSwitch, &ORDEALSlewSwitch, &ORDEALFDAI1Switch, &ORDEALFDAI2Switch);
+	ordeal.Init(&ORDEALEarthSwitch, &OrdealAc2CircuitBraker, &OrdealMnBCircuitBraker, &ORDEALAltSetRotary, &ORDEALModeSwitch, &ORDEALSlewSwitch, &ORDEALFDAI1Switch, &ORDEALFDAI2Switch, &ORDEALLightingSwitch);
 	mechanicalAccelerometer.Init(this);
 
 	qball.Init(this);
@@ -717,6 +717,7 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 		// Do the "normal" Orbiter timestep, some devices are done in clbkPostStep
 		//
 
+		Failures.Timestep();
 		dsky.Timestep(MissionTime);
 		dsky2.Timestep(MissionTime);
 		agc.Timestep(MissionTime, simdt);
@@ -779,7 +780,6 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 		omnic.TimeStep();
 		omnid.TimeStep();
 		if (pMission->CSMHasVHFRanging()) vhfranging.TimeStep(simdt);
-		agc.RadarRead();
 		vhftransceiver.Timestep();
 		sce.Timestep();
 		dataRecorder.TimeStep( MissionTime, simdt );
@@ -1109,6 +1109,26 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 //sprintf(oapiDebugString(), "Pwr %1f HX %.3f RadT %.3f Acc %.3f RadI %.3f RadO %.3f EvapI %.3f EvapO %.3f", *isonGSEchiller, *gseprimhxPower, KelvinToFahrenheit(*gseradTemp), KelvinToFahrenheit(*primaccumTemp), KelvinToFahrenheit(*primradinTemp), KelvinToFahrenheit(*primradoutTemp), KelvinToFahrenheit(*primevapinTemp), KelvinToFahrenheit(*primevapoutTemp));
 //sprintf(oapiDebugString(), "Acc %.3f RadI %.3f RadO %.3f EvapI %.3f EvapO %.3f", KelvinToFahrenheit(*primaccumTemp), KelvinToFahrenheit(*primradinTemp), KelvinToFahrenheit(*primradoutTemp), KelvinToFahrenheit(*primevapinTemp), KelvinToFahrenheit(*primevapoutTemp));
 
+//Water Tank Debug Lines
+
+	/*
+	double *PotH2OMass = (double *)Panelsdk.GetPointerByString("HYDRAULIC:POTABLEH2OTANK:MASS");
+	double *PotH2OVapMass = (double *)Panelsdk.GetPointerByString("HYDRAULIC:POTABLEH2OTANK:H2O_VAPORMASS");
+	double *PotH2OTemp = (double *)Panelsdk.GetPointerByString("HYDRAULIC:POTABLEH2OTANK:TEMP");
+	double *PotH2OPress = (double *)Panelsdk.GetPointerByString("HYDRAULIC:POTABLEH2OTANK:PRESS");
+	double *DrinkPipeFlow = (double *)Panelsdk.GetPointerByString("HYDRAULIC:DRINKPIPE:FLOW");
+	double *DrinkPipeFlowmax = (double *)Panelsdk.GetPointerByString("HYDRAULIC:DRINKPIPE:FLOWMAX");
+	int *PotH2OLeakVlv = (int *)Panelsdk.GetPointerByString("HYDRAULIC:POTABLEH2OTANK:LEAK:ISOPEN");
+
+	int *NumCrew = (int *)Panelsdk.GetPointerByString("HYDRAULIC:CREW:NUMBER");
+
+	double *WasteH2OMass = (double *)Panelsdk.GetPointerByString("HYDRAULIC:WASTEH2OTANK:MASS");
+	double *WasteH2OTemp = (double *)Panelsdk.GetPointerByString("HYDRAULIC:WASTEH2OTANK:TEMP");
+	double *WasteH2OPress = (double *)Panelsdk.GetPointerByString("HYDRAULIC:WASTEH2OTANK:PRESS");
+
+	sprintf(oapiDebugString(), "Mass: %lf VapMass: %.5f Temp: %.3f Press %.3f Flow %.5f Max %.5f PVlv %d Crew %d", *PotH2OMass, *PotH2OVapMass, KelvinToFahrenheit(*PotH2OTemp), *PotH2OPress *PSI, *DrinkPipeFlow, *DrinkPipeFlowmax, *PotH2OLeakVlv, *NumCrew);
+	*/
+
 //GSE Oxygen Purge Debug Lines	
 	
 	//double *CSMCabinO2 = (double*)Panelsdk.GetPointerByString("HYDRAULIC:CABIN:O2_PPRESS");
@@ -1189,9 +1209,12 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 	double* SteamDuctHtrB = (double*)Panelsdk.GetPointerByString("ELECTRIC:STEAMDUCTHEATERB:ISON");
 
 	sprintf(oapiDebugString(), "A: %.3f B: %.3f C: %.3f PA: %.3f PB: %.3f BM: %.3f Vent: %d H2OT: %.3f FRZ: %d UT: %.3f SDT %.3f", *BatCaseAPress* PSI, *BatCaseBPress* PSI, *BatCaseCPress* PSI, *BatCasePyroAPress* PSI, *BatCasePyroBPress* PSI, *BatManifoldPress* PSI, *BatVentValve, WasteH2ODumpHeater.GetTemperatureF(), WasteH2ODumpHeater.IsFrozen(), UrineDumpHeater.GetTemperatureF(), KelvinToFahrenheit(*SteamDuctNozzleTemp));
+	
 	//sprintf(oapiDebugString(), "WHA: %lf WSHA: %lf WHB: %lf WSHB: %lf H2OT: %.3f UDHA: %lf UDSTA: %lf UDHB: %lf UDSTB: %lf UT: %.3f SDHA %lf SDHB %lf SDT %.3f", *WaterHeaterA, *WaterStripHeaterA, *WaterHeaterB, *WaterStripHeaterB, WasteH2ODumpHeater.GetTemperatureF(), 
 		//*UrineHeaterA, *UrineStripHeaterA, *UrineHeaterB, *UrineStripHeaterB, UrineDumpHeater.GetTemperatureF(), 
 		//*SteamDuctHtrA, *SteamDuctHtrB, KelvinToFahrenheit(*SteamDuctNozzleTemp));
+
+	//sprintf(oapiDebugString(), "Main A Volts: %.4f Main A Current: %.4f AC 2 B Volts: %.4f", MainBusA->Voltage(), MainBusA->Current(), ACBus2PhaseB.Voltage());
 */
 
 #ifdef _DEBUG
@@ -2436,12 +2459,12 @@ void Saturn::CabinFansSystemTimestep()
 	// Suit Compressor sound
 	//
 
-	int vol = 0;
-	if (SuitCompressor1->IsOn()) vol += 32;
-	if (SuitCompressor2->IsOn()) vol += 32;
+	double vol = 0;
+	if (SuitCompressor1->IsOn()) vol += (32.0 / 255.0);
+	if (SuitCompressor2->IsOn()) vol += (32.0 / 255.0);
 
 	if (vol > 0)
-		SuitCompressorSound.play(vol + 191);
+		SuitCompressorSound.play(vol + (191.0 / 255.0));
 	else
 		SuitCompressorSound.stop();
 }
@@ -2586,6 +2609,12 @@ void Saturn::CheckSMSystemsState()
 		FCN2PressureSensor1.WireTo(NULL);
 		FCN2PressureSensor2.WireTo(NULL);
 		FCN2PressureSensor3.WireTo(NULL);
+		FCO2FlowSensor1.WireTo(NULL);
+		FCO2FlowSensor2.WireTo(NULL);
+		FCO2FlowSensor3.WireTo(NULL);
+		FCH2FlowSensor1.WireTo(NULL);
+		FCH2FlowSensor2.WireTo(NULL);
+		FCH2FlowSensor3.WireTo(NULL);
 
 		if (secs.SMJCA)
 		{
@@ -2641,6 +2670,7 @@ void Saturn::CreateMissionSpecificSystems()
 			secs.SMJCB = new SMJC_MOD1();
 		}
 	}
+	secs.Realize();
 
 	//Create cue cards. TBD: Load mission specific meshes
 	unsigned loc, counter = 0;
@@ -3685,10 +3715,26 @@ void Saturn::SetRCSState(int Quad, int Thruster, bool Active)
 		break;
 	}
 
-	double Level = Active ? 1.0 : 0.0;
+	if (th == NULL) return; // Sanity check
 
-	if (th)
-		SetThrusterLevel(th, Level);
+	double Level;
+
+	if (Active)
+	{
+		Level = GetThrusterLevel(th);
+
+		//On the first timestep when a RCS thruster is fired, cause a minimum impulse firing (0.0105 seconds worth of impulse)
+		Level += 0.0105 / oapiGetSimStep();
+		Level = min(1.0, Level);
+
+		//sprintf(oapiDebugString(), "Thruster %d Level %lf", Thruster, Level);
+	}
+	else
+	{
+		Level = 0.0;
+	}
+
+	SetThrusterLevel(th, Level);
 }
 
 void Saturn::SetCMRCSState(int Thruster, bool Active)
@@ -3783,7 +3829,7 @@ void Saturn::EnginesSoundTimestep() {
 		double lvl;
 		if (lvl = GetThrusterGroupLevel(thg))
 		{
-			EngineS.play(LOOP, static_cast<int>(lvl * 255));
+			EngineS.play(LOOP, lvl);
 		}
 		else
 		{

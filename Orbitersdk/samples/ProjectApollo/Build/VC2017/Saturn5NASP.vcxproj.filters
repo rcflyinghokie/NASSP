@@ -243,6 +243,15 @@
     <ClCompile Include="..\..\src_aux\CueCard.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src_sys\Malfunction.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src_sys\MalfunctionSimulation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src_csm\CSMMalfunctionSimulation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src_sys\apolloguidance.h">
@@ -475,6 +484,14 @@
     </ClInclude>
     <ClInclude Include="..\..\src_aux\nassputils.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src_sys\Malfunction.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src_sys\MalfunctionSimulation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src_csm\CSMMalfunctionSimulation.h">
     </ClInclude>
     <ClInclude Include="..\..\src_csm\CM-VC-SeatsFolded_Resource.h">
       <Filter>Header Files</Filter>

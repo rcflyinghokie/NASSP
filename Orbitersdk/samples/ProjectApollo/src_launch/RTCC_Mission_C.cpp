@@ -55,14 +55,14 @@ bool RTCC::CalculationMTP_C(int fcn, LPVOID &pad, char * upString, char * upDesc
 
 		//Get TEPHEM
 		TEPHEM0 = 40038.;
-		tephem_scal = GetTEPHEMFromAGC(&cm->agc.vagc);
+		tephem_scal = GetTEPHEMFromAGC(&cm->agc.vagc, true);
 		double LaunchMJD = (tephem_scal / 8640000.) + TEPHEM0;
 		LaunchMJD = (LaunchMJD - SystemParameters.GMTBASE)*24.0;
 
 		int hh, mm;
 		double ss;
 
-		OrbMech::SStoHHMMSS(LaunchMJD*3600.0, hh, mm, ss);
+		OrbMech::SStoHHMMSS(LaunchMJD*3600.0, hh, mm, ss, 0.01);
 
 		sprintf_s(Buff, "P10,CSM,%d:%d:%.2lf;", hh, mm, ss);
 		GMGMED(Buff);
@@ -81,7 +81,7 @@ bool RTCC::CalculationMTP_C(int fcn, LPVOID &pad, char * upString, char * upDesc
 		GMGMED(Buff);
 
 		//P12: IU GRR and Azimuth
-		OrbMech::SStoHHMMSS(T_GRR, hh, mm, ss);
+		OrbMech::SStoHHMMSS(T_GRR, hh, mm, ss, 0.01);
 		sprintf_s(Buff, "P12,IU1,%d:%d:%.2lf,%.2lf;", hh, mm, ss, Azi);
 		GMGMED(Buff);
 
@@ -1622,9 +1622,9 @@ bool RTCC::CalculationMTP_C(int fcn, LPVOID &pad, char * upString, char * upDesc
 
 		opt.navcheckGET = OrbMech::HHMMSSToSS(215, 44, 0);
 		opt.SVGET = OrbMech::HHMMSSToSS(216, 14, 0);
-		opt.vessel = calcParams.src;
+		opt.sv0 = StateVectorCalcEphem(calcParams.src);
 
-		P27PADCalc(&opt, *form);
+		P27PADCalc(opt, *form);
 	}
 	break;
 	case 37: //MISSION C BLOCK DATA 24
@@ -1944,9 +1944,9 @@ bool RTCC::CalculationMTP_C(int fcn, LPVOID &pad, char * upString, char * upDesc
 
 		opt.SVGET = GETfromGMT(RTCCPresentTimeGMT());
 		opt.navcheckGET = opt.SVGET + 30 * 60;
-		opt.vessel = calcParams.src;
+		opt.sv0 = StateVectorCalcEphem(calcParams.src);
 
-		P27PADCalc(&opt, *form);
+		P27PADCalc(opt, *form);
 	}
 	break;
 	case 61: //CSM STATE VECTOR UPDATE, W-MATRIX UPDATE AND NAV CHECK PAD

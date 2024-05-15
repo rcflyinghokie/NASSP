@@ -141,8 +141,15 @@ namespace OrbMech{
 		return H*3600.0 + M*60.0 + S;
 	}
 
-	void SStoHHMMSS(double time, int &hours, int &minutes, double &seconds)
+	double round_to(double value, double precision)
 	{
+		return round(value / precision) * precision;
+	}
+
+	void SStoHHMMSS(double time, int &hours, int &minutes, double &seconds, double precision)
+	{
+		time = round_to(time, precision);
+
 		double mins;
 		hours = (int)trunc(time / 3600.0);
 		mins = fmod(time / 60.0, 60.0);
@@ -150,12 +157,32 @@ namespace OrbMech{
 		seconds = (mins - minutes) * 60.0;
 	}
 
-	void SStoHHMMSSTH(double time, int &hours, int &minutes, double &seconds)
+	// Format time to HHH:MM:SS.
+	void format_time(char *buf, double time)
 	{
-		int cs = (int)(round(time*100.0));
-		hours = cs / 360000;
-		minutes = (cs - 360000 * hours) / 6000;
-		seconds = (double)(cs - 360000 * hours - 6000 * minutes) / 100.0;
+		buf[0] = 0; // Clobber
+		if (time < 0) { return; } // don't do that
+
+		int hours, minutes;
+		double seconds;
+
+		SStoHHMMSS(time, hours, minutes, seconds);
+
+		sprintf(buf, "%03d:%02d:%02.0lf", hours, minutes, seconds);
+	}
+
+	// Format precise time.
+	void format_time_prec(char *buf, double time)
+	{
+		buf[0] = 0; // Clobber
+		if (time < 0) { return; } // don't do that
+
+		int hours, minutes;
+		double seconds;
+
+		SStoHHMMSS(time, hours, minutes, seconds, 0.01);
+
+		sprintf(buf, "HRS XXX%03d\nMIN XXXX%02d\nSEC XX%05.2f", hours, minutes, seconds);
 	}
 
 	void adbar_from_rv(double rmag, double vmag, double rtasc, double decl, double fpav, double az, VECTOR3 &R, VECTOR3 &V)
@@ -251,54 +278,246 @@ void fDot_and_gDot_ta(VECTOR3 R0, VECTOR3 V0, double dt, double &fdot, double &g
 	gdot = 1 - mu*r0 / (h*h) * (1 - c);
 }
 
-double time_theta(VECTOR3 R, VECTOR3 V, double dtheta, double mu)
+int MarscherEquationInversion(double sin_theta, double cos_theta, double cot_gamma, double r1, double alpha_N, double p_N, double &x, double &xi, double &c1, double &c2)
 {
-	double r, v, alpha, a, f, g, fdot, gdot, sigma0, r1, dt, h, p;
+	// Marscher equation inversion
+	// INPUTS:
+	// sin_theta: sine of true anomaly difference
+	// cos_theta: cosine of true anomaly difference
+	// cot_gamma: cotangent of flight path angle (measured from local vertical)
+	// r1: Radius magnitude at initial position
+	// alpha_N: Ratio of magnitude of initial position vector to semi-major axis
+	// p_N: Ratio of semi-latus rectum to initial position vector magnitude
+	// OUTPUTS:
+	// x: Universal anomaly
+	// xi: Product of alpha_N and x squared
+	// c1 and c2: Intermediate variables
 
-	//double h, v_r, cotg, x, p;
+	double W[4], a;
+	int n;
+	bool W1MAX; //W[0] is near infinite
 
-	r = length(R);
-	v = length(V);
-	alpha = 2.0 / r - v*v / mu;
-	a = 1.0 / alpha;
-	f_and_g_ta(R, V, dtheta, f, g, mu);
-	fDot_and_gDot_ta(R, V, dtheta, fdot, gdot, mu);
-	sigma0 = dotp(R, V) / sqrt(mu);
+	const double C_A_MAX = 79.0;
+	const double C_TOL = 1e-7;
 
-	h = length(crossp(R, V));
-	p = h*h / mu;
+	//Divisor safety
+	W[0] = 1.0 - cos_theta;
 
-	r1 = r*p / (r + (p - r)*cos(dtheta) - sqrt(p)*sigma0*sin(dtheta));
-
-	if (alpha > 0)
+	W1MAX = false;
+	if (abs(W[0]) < 1e-10)
 	{
-		double dE, cos_dE, sin_dE;
-
-		cos_dE = 1.0 - r / a*(1.0 - f);
-		sin_dE = -r*r1*fdot / sqrt(mu*a);
-		dE = atan2(sin_dE, cos_dE);
-		
-		dt = g + sqrt(power(a, 3.0) / mu)*(dE - sin_dE);
-	}
-	else if (alpha == 0.0)
-	{
-		double c, s;
-
-		c = sqrt(r*r + r1*r1 - 2 * r*r1*cos(dtheta));
-		s = (r + r1 + c) / 2.0;
-
-		dt =  2.0 / 3.0*sqrt(power(s, 3.0) / 2.0 / mu)*(1.0 - power((s - c) / s, 3.0 / 2.0));
+		W1MAX = true;
+		if (sin_theta >= 0.0)
+		{
+			W[0] = 1e10;
+		}
+		else
+		{
+			W[0] = -1e10;
+		}
 	}
 	else
 	{
-		double dH;
-
-		dH = acosh(1.0 - r / a*(1.0 - f));
-
-		dt = g + sqrt(power(-a, 3.0) / mu)*(sinh(dH) - dH);
+		W[0] = sqrt(p_N) * (sin_theta / W[0] - cot_gamma);
 	}
 
-	return dt;
+	// Error checking for physically impossible solution
+	if (alpha_N < 0.0)
+	{
+		if (W[0] <= 0.0)
+		{
+			return 1;
+		}
+		if (!W1MAX && W[0] * W[0] + alpha_N <= 0.0)
+		{
+			return 2;
+		}
+	}
+
+	if (abs(W[0]) <= 1.0)
+	{
+		for (n = 0; n < 3; n++)
+		{
+			W[n + 1] = sqrt(W[n] * W[n] + alpha_N) + abs(W[n]);
+		}
+		a = 1.0 / W[3];
+	}
+	else
+	{
+		double V[4], W1inv;
+
+		W1inv = abs(sin_theta / (sqrt(p_N) * (1.0 + cos_theta - sin_theta * cot_gamma)));
+		V[0] = 1.0;
+
+		for (n = 0; n < 3; n++)
+		{
+			V[n + 1] = sqrt(V[n] * V[n] + alpha_N * W1inv * W1inv) + V[n];
+		}
+		a = W1inv / V[3];
+	}
+
+	double C_A, C_B, C_C, C_D, X_N;
+
+	C_A = C_B = X_N = 1.0;
+	C_C = alpha_N * a * a;
+	do
+	{
+		C_A += 2.0;
+		C_B = -C_B * C_C;
+		C_D = C_B / C_A;
+		X_N = X_N + C_D;
+		if (C_A >= C_A_MAX)
+		{
+			//Series nonconvergent
+			return 3;
+		}
+	} while (abs(C_D) >= C_TOL);
+
+	X_N = 16.0 * a * X_N;
+	if (W[0] <= 0.0)
+	{
+		X_N = PI2 / sqrt(alpha_N) - X_N;
+	}
+	xi = alpha_N * X_N * X_N;
+	x = sqrt(r1) * X_N;
+	c1 = sqrt(r1 * p_N) * cot_gamma;
+	c2 = 1.0 - alpha_N;
+
+	return 0;
+}
+
+int time_theta(VECTOR3 R1, VECTOR3 V1, double dtheta, double mu, double &dt)
+{
+	//Wrapper function in case the output state vector isn't needed
+	VECTOR3 R2, V2;
+
+	return time_theta(R1, V1, dtheta, mu, R2, V2, dt);
+}
+
+int time_theta(VECTOR3 R1, VECTOR3 V1, double dtheta, double mu, VECTOR3 &R2, VECTOR3 &V2, double &dt)
+{
+	// INPUTS:
+	// R1: Input position vector
+	// V1: Input velocity vector
+	// dtheta: Change in true anomaly
+	// mu: specific gravitation parameter
+	// OUTPUTS:
+	// return: 0 = no errors, 1 = multiple orbits requested for hyperbolic orbit, 2 = orbit too nearly rectilinear, 3 and 4 = no physically realizable solution (hyperbolic)
+	// R2: Output position vector
+	// V2: Output velocity vector
+	// dt: time equivalent to input angle dtheta
+
+	// Handle zero case first
+	if (dtheta == 0.0)
+	{
+		dt = 0.0;
+		R2 = R1;
+		V2 = V1;
+		return 0;
+	}
+
+	// Internally this function will only handle positive dtheta, so set a flag if the angle is negative
+	bool negative;
+
+	// Handle negative angle
+	if (dtheta < 0)
+	{
+		dtheta = -dtheta;
+		V1 = -V1;
+		negative = true;
+	}
+	else
+	{
+		negative = false;
+	}
+
+	int n;
+
+	// Number of orbits
+	n = (int)(dtheta / PI2);
+	dtheta = fmod(dtheta, PI2);
+
+	double r1, v1, alpha;
+
+	// Initial position magnitude
+	r1 = length(R1);
+	// Initial velocity magnitude
+	v1 = length(V1);
+	// Reciprocal of semi-major axis
+	alpha = 2.0 / r1 - v1*v1 / mu;
+
+	// Error check: Cannot request multiple orbits for hyperbolic orbit
+	if (n > 0 && alpha <= 0.0)
+	{
+		return 1;
+	}
+
+	//Geometric parameters
+	VECTOR3 I_R_1, I_V_1;
+	double sin_gamma, cos_gamma, cot_gamma, C3, alpha_N, p_N, x, xi, c1, c2, S, C, r2;
+	int err;
+
+	//Unit position vector
+	I_R_1 = R1 / r1;
+	//Unit velocity vector
+	I_V_1 = V1 / v1;
+
+	//Sine of flight path angle (measured from local vertical)
+	sin_gamma = length(crossp(I_R_1, I_V_1));
+
+	//Rectilinear orbit check
+	if (abs(sin_gamma) < 1e-12)
+	{
+		return 2;
+	}
+
+	//Cosine of flight path angle (measured from local vertical)
+	cos_gamma = dotp(I_R_1, I_V_1);
+	//Cotangent of flight path angle (measured from local vertical)
+	cot_gamma = cos_gamma / sin_gamma;
+	//Energy
+	C3 = r1*v1*v1 / mu;
+	//Ratio of magnitude of initial position vector to semi-major axis
+	alpha_N = 2.0 - C3;
+	//Ratio of semi-latus rectum to initial position vector magnitude
+	p_N = C3 * pow(sin_gamma, 2);
+
+	//Marscher equation inversion
+	err = MarscherEquationInversion(sin(dtheta), cos(dtheta), cot_gamma, r1, alpha_N, p_N, x, xi, c1, c2);
+	if (err)
+	{
+		//Error return. Plus 2 so that time_theta returns a unique error code for each error type
+		return err + 2;
+	}
+
+	//Stumpff functions. TBD: These Stumpff functions can run into numerical trouble very close to parabolic orbits
+	S = stumpS(xi);
+	C = stumpC(xi);
+	dt = (c1*x*x*C + x * (c2*x*x*S + r1)) / sqrt(mu);
+
+	//State vector
+	R2 = R1 * (1.0 - x*x / r1 * C) + V1 * (dt - x*x*x / sqrt(mu)*S);
+	r2 = length(R2);
+	V2 = R1 * (sqrt(mu) / (r1*r2)*x*(xi*S - 1.0)) + V1 * (1.0 - x * x / r2 * C);
+
+	//Multiple orbits
+	if (n > 0)
+	{
+		double P;
+
+		//Calculate orbital period
+		P = PI2 / (pow(alpha, 1.5) * sqrt(mu));
+		dt = dt + P * (double)n;
+	}
+
+	//If input angle was negative, reverse the output
+	if (negative)
+	{
+		dt = -dt;
+		V2 = -V2;
+	}
+
+	return 0;
 }
 
 void ra_and_dec_from_r(VECTOR3 R, double &ra, double &dec)
@@ -1671,38 +1890,6 @@ double timetoperi_integ(int Epoch, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE g
 	return dt_total;
 }
 
-double timetonode_integ(int Epoch, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, VECTOR3 u_node, VECTOR3 &R2, VECTOR3 &V2)
-{
-	VECTOR3 R1, V1;
-	double mu, dt, dt_total, theta;
-	int n, nmax;
-
-	mu = GGRAV*oapiGetMass(gravref);
-	dt_total = 0.0;
-	n = 0;
-	nmax = 10;
-
-	theta = OrbMech::sign(dotp(crossp(R, u_node), crossp(R, V)))*acos2(dotp(R / length(R), u_node));
-	dt = OrbMech::time_theta(R, V, theta, mu);
-
-	oneclickcoast(Epoch, R, V, MJD, dt, R1, V1, gravref, gravref);
-	dt_total += dt;
-
-	do
-	{
-		theta = OrbMech::sign(dotp(crossp(R1, u_node), crossp(R1, V1)))*acos2(dotp(unit(R1), u_node));
-		dt = OrbMech::time_theta(R1, V1, theta, mu);
-		oneclickcoast(Epoch, R1, V1, MJD + dt_total / 24.0 / 3600.0, dt, R1, V1, gravref, gravref);
-		dt_total += dt;
-		n++;
-	} while (abs(dt) > 0.1 && nmax >= n);
-
-	R2 = R1;
-	V2 = V1;
-
-	return dt_total;
-}
-
 double timetoperi(VECTOR3 R, VECTOR3 V, double mu)
 {
 	OELEMENTS coe;
@@ -2333,7 +2520,7 @@ double P29TimeOfLongitude(MATRIX3 Rot_J_B, VECTOR3 R0, VECTOR3 V0, double MJD, O
 	MATRIX3 Rot2;
 	VECTOR3 mu_N, mu_S, mu_Z, U_Z, mu_E, mu_C, R, V, mu_D, mu_E_apo;
 	double mu, F, dphi, t, phi, lambda, eps_phi, absphidminphi, phidminphi, phi_0, theta_P, theta, t_F;
-	int n, s_G, body;
+	int n, s_G, body, err;
 	OBJHANDLE hEarth;
 
 	n = 0;
@@ -2431,11 +2618,12 @@ double P29TimeOfLongitude(MATRIX3 Rot_J_B, VECTOR3 R0, VECTOR3 V0, double MJD, O
 		s_G = sign(dotp(mu_D, mu_S));
 		theta = PI*(1 - s_G) + s_G*acos(dotp(mu_D, R0) / length(R0)) + theta_P;
 
-		t_F = time_theta(R0, V0, theta, mu);
-		if (t_F < 0.0)
+		err = time_theta(R0, V0, theta, mu, t_F);
+		if (err)
 		{
-			t_F += period(R0, V0, mu);
+			return t;
 		}
+
 		t = MJD + t_F / 24.0 / 3600.0;
 		rv_from_r0v0(R0, V0, (t - MJD)*24.0*3600.0, R, V, mu);
 		n++;
@@ -2673,7 +2861,7 @@ double sunrise(MATRIX3 Rot_J_B, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE plan
 
 	OELEMENTS coe;
 	double h, e, theta0, a, dt, dt_old;
-	int i, imax;
+	int i, imax, err;
 
 	dt = 0;
 	dt_old = 1;
@@ -2749,7 +2937,12 @@ double sunrise(MATRIX3 Rot_J_B, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE plan
 			theta0 = coe.TA;
 
 			dt_old = dt;
-			ddt = time_theta(R1, V1, calculateDifferenceBetweenAngles(theta0, v1), mu);
+			err = time_theta(R1, V1, calculateDifferenceBetweenAngles(theta0, v1), mu, ddt);
+			//Error return with current best estimate
+			if (err)
+			{
+				return dt;
+			}
 			dt += ddt;
 		}
 		else
@@ -2760,8 +2953,12 @@ double sunrise(MATRIX3 Rot_J_B, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE plan
 			T = PI2 / sqrt(mu)*OrbMech::power(a, 3.0 / 2.0);
 
 			dt_old = dt;
-			dt = time_theta(R, V, calculateDifferenceBetweenAngles(theta0, v1), mu);
-
+			err = time_theta(R, V, calculateDifferenceBetweenAngles(theta0, v1), mu, dt);
+			//Error return with current best estimate
+			if (err)
+			{
+				return dt;
+			}
 			if (dt < 0 && future)
 			{
 				dt += T;
@@ -2787,11 +2984,16 @@ VECTOR3 ULOS(MATRIX3 REFSMMAT, MATRIX3 SMNB, double TA, double SA)
 	return U_LOS;
 }
 
+VECTOR3 AOTNavigationBase(double AZ, double EL)
+{
+	return _V(sin(EL), cos(EL)*sin(AZ), cos(EL)*cos(AZ));
+}
+
 VECTOR3 AOTULOS(MATRIX3 REFSMMAT, MATRIX3 SMNB, double AZ, double EL)
 {
 	VECTOR3 U_OAN, S_SM, U_LOS;
 
-	U_OAN = _V(sin(EL), cos(EL)*sin(AZ), cos(EL)*cos(AZ));
+	U_OAN = AOTNavigationBase(AZ, EL);
 	S_SM = mul(tmat(SMNB), U_OAN);
 	U_LOS = mul(tmat(REFSMMAT), S_SM);
 	return U_LOS;
@@ -3303,6 +3505,75 @@ unsigned long long BinToDec(unsigned long long num)
 		num = num / 10;
 	}
 	return dec;
+}
+
+int SingleToBuffer(double x, int SF, bool TwosComplement)
+{
+	double x2;
+	int c;
+
+	x2 = fabs(x) * pow(2, -SF + 14);
+
+	c = (unsigned)round(x2);
+
+	if (TwosComplement == false && c > 037777)
+	{
+		c = 037777;
+	}
+
+	if (x < 0.0)
+	{
+		// Polarity change
+		c = 0x7FFF & (~c);
+		if (TwosComplement)
+		{
+			c++;
+		}
+	}
+
+	return c;
+}
+
+void DoubleToBuffer(double x, int SF, int &c1, int &c2)
+{
+	double x2;
+
+	x2 = fabs(x) * pow(2, -SF + 14);
+
+	c1 = (unsigned)x2;
+	x2 = x2 - (double)c1;
+	x2 *= pow(2, 14);
+	c2 = (unsigned)round(x2);
+	if (c2 > 037777)
+	{
+		c2 = 037777;
+	}
+
+	if (x < 0.0) c1 = 0x7FFF & (~c1); // Polarity change
+	if (x < 0.0) c2 = 0x7FFF & (~c2); // Polarity change
+}
+
+void TripleToBuffer(double x, int SF, int &c1, int &c2, int &c3)
+{
+	double x2;
+
+	x2 = fabs(x) * pow(2, -SF + 14);
+
+	c1 = (unsigned)x2;
+	x2 = x2 - (double)c1;
+	x2 *= pow(2, 14);
+	c2 = (unsigned)x2;
+	x2 = x2 - (double)c2;
+	x2 *= pow(2, 14);
+	c3 = (unsigned)round(x2);
+	if (c3 > 037777)
+	{
+		c3 = 037777;
+	}
+
+	if (x < 0.0) c1 = 0x7FFF & (~c1); // Polarity change
+	if (x < 0.0) c2 = 0x7FFF & (~c2); // Polarity change
+	if (x < 0.0) c3 = 0x7FFF & (~c3); // Polarity change
 }
 
 double cot(double a)
@@ -4022,7 +4293,7 @@ void RADUP(VECTOR3 R_W, VECTOR3 V_W, VECTOR3 R_C, double mu, VECTOR3 &R_W1, VECT
 	double theta, dt;
 
 	theta = sign(dotp(crossp(R_W, R_C), crossp(R_W, V_W)))*acos(dotp(R_W / length(R_W), R_C / length(R_C)));
-	dt = time_theta(R_W, V_W, theta, mu);
+	time_theta(R_W, V_W, theta, mu, dt);
 	rv_from_r0v0(R_W, V_W, dt, R_W1, V_W1, mu);
 }
 
@@ -5085,6 +5356,10 @@ double CMCEMSRangeToGo(MATRIX3 Rot_J_B, VECTOR3 R05G, double MJD05G, double lat,
 
 void EMXINGElev(VECTOR3 R, VECTOR3 R_S, VECTOR3 &N, VECTOR3 &rho, double &sinang)
 {
+	//R: Position vector of the satellite in true coordinates (ECT or MCT)
+	//R_S: Position vector of ground station in true coordinates (ECT or MCT)
+	//sinang: sine of elevation angle
+
 	VECTOR3 rho_apo;
 
 	N = unit(R_S);
@@ -5265,11 +5540,11 @@ CELEMENTS LyddaneOsculatingToMean(CELEMENTS arr_osc, int body)
 CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 {
 	CELEMENTS out;
-	double ae, am, Em, fm, J2, J3, J4, J5, R_e, cn, cn2, theta, theta2, theta4, eccdp2, sinI, sinI2, cosI2, adr, adr2, adr3, a;
-	double sinta, costa, costa2, sn2gta, cs2gta, sinGD, cosGD, sin2gd, cs2gd, sin3gd, cs3gd, sn3fgd, snf2gd, csf2gd, cs3fgd;
-	double k2, k3, k4, k5, gamma2, gamma3, gamma4, gamma5, gamma2_apo, gamma3_apo, gamma4_apo, gamma5_apo, g3dg2, g4dg2, g5dg2;
-	double A1_apo, A1, A2_apo, A2, A3, A4, A5, A6, A7, A8p, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A20, A21, A25, A26;
-	double B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15;
+	double ae, am, Em, fm, J2, J3, J4, R_e, cn, cn2, theta, theta2, theta4, eccdp2, sinI, sinI2, cosI2, adr, adr2, adr3, a;
+	double sinta, costa, costa2, sn2gta, cs2gta, sinGD, cosGD, sin2gd, cs2gd, sn3fgd, snf2gd, csf2gd, cs3fgd;
+	double k2, k3, k4, gamma2, gamma3, gamma4, gamma2_apo, gamma3_apo, gamma4_apo, g3dg2, g4dg2;
+	double A1_apo, A1, A2_apo, A2, A6, A7, A10, A11, A12, A13, A14, A15, A16, A17, A18, A20, A21, A25, A26;
+	double B1, B2, B4, B5, B7, B8, B10, B11, B13, B14;
 	double delta1e, de, edl, di, sin_im2_dh, lagaha, lgh, sinMADP, cosMADP, sinraandp, cosraandp;
 	bool pseudostate = false;
 
@@ -5278,7 +5553,6 @@ CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 		J2 = J2_Earth;
 		J3 = J3_Earth;
 		J4 = J4_Earth;
-		J5 = 0.0;//J5_Earth;
 		R_e = R_Earth;
 	}
 	else
@@ -5286,7 +5560,6 @@ CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 		J2 = J2_Moon;
 		J3 = J3_Moon;
 		J4 = 0;
-		J5 = 0;
 		R_e = R_Moon;
 	}
 
@@ -5308,19 +5581,15 @@ CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 	k2 = J2 * pow(ae, 2) / 2.0;
 	k3 = -J3 * pow(ae, 3);
 	k4 = -3.0 * J4*pow(ae,4) / 8.0;
-	k5 = -J5 * pow(ae, 5);
 	gamma2 = k2 / pow(am, 2);
 	gamma3 = k3 / pow(am, 3);
 	gamma4 = k4 / pow(am, 4);
-	gamma5 = k5 / pow(am, 5);
 	gamma2_apo = gamma2 / pow(cn, 4);
 	gamma3_apo = gamma3 / pow(cn, 6);
 	gamma4_apo = gamma4 / pow(cn, 8);
-	gamma5_apo = gamma5 / pow(cn, 10);
 
 	g3dg2 = gamma3_apo / gamma2_apo;
 	g4dg2 = gamma4_apo / gamma2_apo;
-	g5dg2 = gamma5_apo / gamma2_apo;
 
 	Em = kepler_E(arr.e, arr.l, 1e-12);
 	fm = atan2(sqrt(1.0 - eccdp2)*sin(Em), cos(Em) - arr.e);
@@ -5346,8 +5615,6 @@ CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 	cosGD = cos(arr.g);
 	sin2gd = sin(2.0 * arr.g);
 	cs2gd = cos(2.0 * arr.g);
-	sin3gd = sin(3.0 * arr.g);
-	cs3gd = cos(3.0 * arr.g);
 	sn3fgd = sin(3.0*fm + 2.0*arr.g);
 	cs3fgd = cos(3.0*fm + 2.0*arr.g);
 	sinMADP = sin(arr.l);
@@ -5359,14 +5626,8 @@ CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 	A1 = 1.0 / 8.0 * gamma2_apo*cn2 * (1.0 - 11.0 * theta2 - 40.0 * theta4 * A1_apo);
 	A2_apo = 3.0 * theta2 + 8.0 * theta4 * A1_apo;
 	A2 = 5.0 / 12.0 * g4dg2 * cn2 * (1.0 - A2_apo);
-	A3 = g5dg2 * (3.0 * eccdp2 + 4.0);
-	A4 = g5dg2 * (1.0 - 3.0 * A2_apo);
-	A5 = A3 * (1.0 - 3.0 * A2_apo);
 	A6 = 1.0 / 4.0 * g3dg2;
 	A7 = A6 * cn2 * sinI;
-	A8p = g5dg2 * arr.e*(1.0 - 5.0 * theta2 - 16.0 * theta4 * A1_apo);
-	A8 = A8p * arr.e;
-	A9 = cn2 * sinI;
 	A10 = 2.0 + eccdp2;
 	A11 = 3.0 * eccdp2 + 2.0;
 	A12 = A11 * theta2;
@@ -5383,41 +5644,33 @@ CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 
 	B1 = cn * (A1 - A2) - (1.0 / 16.0 * (A10 - 400.0 * A14 - 40.0 * A13 - 11.0 * A12) + 1.0 / 8.0 * A21*(11.0 + 200.0 * A16 + 80.0 * A15))*gamma2_apo
 		+ 5.0 / 24.0 * (-80.0 * A14 - 8.0 * A13 - 3.0 * A12 + 2.0 * A25*A21 + A10)*g4dg2;
-	B2 = A6 * A18*(2.0 + cn - eccdp2) + 5.0 / 64.0 * A5*A18*cn2 - 15.0 / 32.0 * A4*A17*cn*cn2
-		+ A20 * tan(arr.i / 2.0)*(5.0 / 64.0 * A5 + A6) + 5.0 / 64.0 * A4*A17*(9.0 * eccdp2 + 26.0)
-		+ 15.0 / 32.0*A3*A20*A25*sinI*(1.0 - theta);
-	B3 = 35.0 / 576.0 * g5dg2 * arr.e*sinI*(theta - 1.0)*A21*(80.0 * A16 + 5.0 + 32.0 * A15)
-		- 35.0 / 1152.0 * A8p*(A21*tan(arr.i / 2.0) + (2.0 * eccdp2 + 3.0 * (1.0 - cn*cn2))*sinI);
+	B2 = A6 * A18*(2.0 + cn - eccdp2) + A20 * tan(arr.i / 2.0)*(A6);
 	B4 = cn * arr.e*(A1 - A2);
-	B5 = cn * (5.0 / 64.0 * A4*A9*(9.0 * eccdp2 + 4.0) + A7);
-	B6 = 35.0 / 384.0 * cn*cn2 * A8*sinI;
+	B5 = cn * A7;
 	B7 = cn2 * A17*A1_apo*(1.0 / 8.0 * gamma2_apo*(1.0 - 15.0 * theta2) - 5.0 / 12.0 * g4dg2 * (1.0 - 7.0 * theta2));
-	B8 = 5.0 / 64.0 * A3*cn2 * (1.0 - 9.0 * theta2 - 24.0 * theta4 * A1_apo) + cn2 * A6;
-	B9 = 35.0 / 384.0 * cn2 * A8;
+	B8 = cn2 * A6;
 	B10 = sinI*(5.0 / 12.0 * g4dg2 * A21*A25 - A26 * gamma2_apo);
-	B11 = A21 * (5.0 / 64.0 * A5 + A6 + 15.0 / 32.0 * A3*A25*pow(sinI, 2));
-	B12 = -((80.0 * A16 + 32.0 * A15 + 5.0)*(36.0 / 576.0 * g5dg2 * arr.e*pow(sinI, 2) * A21) + 35.0 / 1152.0 * A8*A20);
+	B11 = A21 * A6;
 	B13 = arr.e * (A1 - A2);
-	B14 = 5.0 / 64.0 * A5*cn2 * sinI + A7;
-	B15 = 35.0 / 384.0 * A8*cn2 * sinI;
+	B14 = A7;
 
 	a = am * (1.0 + gamma2 * ((3.0 * theta2 - 1.0)*arr.e / (cn2*cn2*cn2)*(arr.e*cn + arr.e / (1.0 + cn) + costa *(3.0 + 3.0 * arr.e*costa
 		+ eccdp2 * costa2)) + 3.0 * (1.0 - theta2)*adr3 * cs2gta));
 
-	delta1e = B13 * cs2gd + B14 * sinGD - B15 * sin3gd;
+	delta1e = B13 * cs2gd + B14 * sinGD;
 	de = delta1e - cn2 / 2.0 * (gamma2_apo*(1.0 - theta2)*(3.0 * csf2gd + cs3fgd)
 		- 3.0 * gamma2 * 1.0 / (cn2*cn2*cn2)*(1.0 - theta2)*cs2gta*(3.0 * arr.e*costa2
 			+ 3.0 * costa + eccdp2 * costa*costa2 + arr.e)
 		- gamma2 * 1.0 / (cn2*cn2*cn2)*(3.0 * theta2 - 1.0)*(arr.e*cn + arr.e / (1.0 + cn) + 3.0 * arr.e*costa2 + 3.0 * costa + eccdp2 * costa * costa2));
-	edl = B4 * sin2gd - B5 * cosGD + B6 * cs3gd
+	edl = B4 * sin2gd - B5 * cosGD
 		- 1.0 / 4.0 * cn*cn2 * gamma2_apo*(2.0 * (3.0 * theta2 - 1.0)*(cn2 * adr2 + adr + 1.0)*sinta
 			+ 3.0 * (1.0 - theta2)*((-cn2 * adr2 - adr + 1.0)*snf2gd
 				+ (cn2 * adr2 + adr + 1.0 / 3.0)*sn3fgd));
 	out.e = sqrt(pow(arr.e + de, 2) + pow(edl, 2));
 
 	di = 1.0 / 2.0 * theta*gamma2_apo*sinI*(arr.e*cs3fgd + 3.0 * (arr.e*csf2gd + cs2gta))
-		- A20 / cn2*(B7*cs2gd + B8 * sinGD - B9 * sin3gd);
-	sin_im2_dh = 1.0 / (2.0 * cosI2)*(B10*sin2gd + B11 * cosGD + B12 * cs3gd
+		- A20 / cn2*(B7*cs2gd + B8 * sinGD);
+	sin_im2_dh = 1.0 / (2.0 * cosI2)*(B10*sin2gd + B11 * cosGD
 		- 1.0 / 2.0 * gamma2_apo*theta*sinI*(6.0 * (arr.e*sinta - arr.l + fm)
 			- 3.0 * (sn2gta + arr.e * snf2gd) - arr.e * sn3fgd));
 	out.i = 2.0 * asin(sqrt(pow(sin_im2_dh, 2) + pow(1.0 / 2.0 * di*cosI2 + sinI2, 2)));
@@ -5448,7 +5701,7 @@ CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 		}
 	}
 
-	lagaha = arr.l + arr.g + arr.h + B3 * cs3gd + B1 * sin2gd + B2 * cosGD;
+	lagaha = arr.l + arr.g + arr.h + B1 * sin2gd + B2 * cosGD;
 	lgh = lagaha + (1.0 / 4.0 * (cn2 / (cn + 1.0))*arr.e*gamma2_apo*(3.0 * (1.0 - theta2)*(sn3fgd
 		*(1.0 / 3.0 + adr2 * cn2 + adr) + snf2gd *(1.0 - adr2 * cn2 - adr))
 		+ 2.0 * sinta*(3.0 * theta2 - 1.0)*(1.0 + adr2 * cn2 + adr)))
@@ -5541,7 +5794,7 @@ void BrouwerSecularRates(CELEMENTS coe_osc, CELEMENTS coe_mean, int body, double
 	sin_lat = sin(u)*sin(coe_osc.i);
 	R = coe_osc.a*(1.0 - coe_osc.e*coe_osc.e) / (1.0 + coe_osc.e*cos(f));
 	ainv = 1.0 / coe_osc.a + J2 * pow(R_e, 2) / pow(R, 3)*(1.0 - 3.0*pow(sin_lat, 2)) + J3 * pow(R_e, 3) / pow(R, 4)*(3.0*sin_lat - 5.0*pow(sin_lat, 3)) -
-		J4 * pow(R_e, 4) / pow(R, 5)*(1.0 - 10.0*pow(sin_lat, 2) + 35.0 / 3.0*pow(sin_lat, 4));
+		J4 * pow(R_e, 4) / (4.0*pow(R, 5))*(3.0 - 30.0*pow(sin_lat, 2) + 35.0*pow(sin_lat, 4));
 	l_dot = sqrt(mu*pow(ainv, 3));
 
 	//l_dot = n0 + n0 * cn*(gmp2*(3.0 / 2.0*(3.0*theta2 - 1.0) + 3.0 / 32.0*gmp2*(25.0*cn2 + 16.0*cn - 15.0 + (30.0 - 96.0*cn - 90.0*cn2)*theta2
