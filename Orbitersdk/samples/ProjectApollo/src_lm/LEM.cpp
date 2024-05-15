@@ -210,7 +210,8 @@ LEM::LEM(OBJHANDLE hObj, int fmodel) : Payload (hObj, fmodel),
 	DescentECAMainFeeder("Descent-ECA-Main-Feeder", Panelsdk),
 	DescentECAContFeeder("Descent-ECA-Cont-Feeder", Panelsdk),
 	AscentECAMainFeeder("Ascent-ECA-Main-Feeder", Panelsdk),
-	AscentECAContFeeder("Ascent-ECA-Cont-Feeder", Panelsdk)
+	AscentECAContFeeder("Ascent-ECA-Cont-Feeder", Panelsdk),
+	Failures(this)
 {
 	dllhandle = g_Param.hDLL; // DS20060413 Save for later
 	InitLEMCalled = false;
