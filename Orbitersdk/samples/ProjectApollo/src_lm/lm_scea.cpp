@@ -555,7 +555,6 @@ void SCERA1::Timestep()
 	{
 		min = -60.0;
 		max = 260.0;
-
 	}
 	else
 	{
