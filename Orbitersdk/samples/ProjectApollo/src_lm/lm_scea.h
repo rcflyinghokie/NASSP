@@ -190,8 +190,6 @@ protected:
 	h_HeatLoad *SCERAHeat;
 	e_object *dcpower;
 	bool Operate;
-	double min;
-	double max;
 };
 
 //Signal Conditioning Electronic Replaceable Assembly 1 (ERA-1)
