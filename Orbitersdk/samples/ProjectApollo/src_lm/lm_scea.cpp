@@ -27,6 +27,7 @@ See http://nassp.sourceforge.net/license/ for more details.
 #include "toggleswitch.h"
 #include "lm_channels.h"
 #include "LEM.h"
+#include "Mission.h"
 #include "lm_scea.h"
 
 SCEA_SolidStateSwitch::SCEA_SolidStateSwitch()
@@ -215,6 +216,8 @@ SCERA::SCERA()
 	dcpower = NULL;
 	SCERAHeat = 0;
 	Operate = false;
+	min = 0;
+	max = 0;
 }
 
 void SCERA::Init(LEM *l, e_object *dc, h_HeatLoad *hl)
@@ -547,14 +550,26 @@ void SCERA1::Timestep()
 	//APS oxidizer bipropellant valve inlet pressure (GP1503)
 	SA19.SetOutput(4, scale_data(lem->APSPropellant.GetOxidTrimOrificeOutletPressurePSI(), 0.0, 250.0));
 
+	//Different quad temperature scaling LM-4 and subs
+	if (lem->pMission->GetLMNumber() <= 3) 
+	{
+		min = 20.0;
+		max = 200.0;
+	}
+	else
+	{
+		min = -60.0;
+		max = 260.0;
+	}
+
 	//Quad 4 temperature (GR6001T)
-	SA20.SetOutput(1, scale_data(lem->GetRCSQuadTempF(3), -60.0, 260.0));
+	SA20.SetOutput(1, scale_data(lem->GetRCSQuadTempF(3), min, max));
 	//Quad 3 temperature (GR6002T)
-	SA20.SetOutput(2, scale_data(lem->GetRCSQuadTempF(2), -60.0, 260.0));
+	SA20.SetOutput(2, scale_data(lem->GetRCSQuadTempF(2), min, max));
 	//Quad 2 temperature (GR6003T)
-	SA20.SetOutput(3, scale_data(lem->GetRCSQuadTempF(1), -60.0, 260.0));
+	SA20.SetOutput(3, scale_data(lem->GetRCSQuadTempF(1), min, max));
 	//Quad 1 temperature (GR6004T)
-	SA20.SetOutput(4, scale_data(lem->GetRCSQuadTempF(0), -60.0, 260.0));
+	SA20.SetOutput(4, scale_data(lem->GetRCSQuadTempF(0), min, max));
 
 	//Suit inlet temperature (GF1281)
 	SA21.SetOutput(1, scale_data(lem->ecs.GetSuitTempF(), 20.0, 120.0));

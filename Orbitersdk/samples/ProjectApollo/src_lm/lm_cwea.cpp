@@ -408,34 +408,41 @@ void LEM_CWEA::Timestep(double simdt) {
 
 		double cappedvoltage = 0; //dummy for a cut/capped wire returning no voltage and triggering a low temperature condition
 
-		// LR Antenna < -15.0F or > 150.0F, cut and capped on LM-5 and subsequent
-		LRHeaterCautFF.Set((lem->pMission->GetLMNumber() < 5 && (lem->scera1.GetVoltage(20, 4) < 2.30 || lem->scera1.GetVoltage(20, 4) > 4.36)) ||
-			(lem->pMission->GetLMNumber() >= 5 && (cappedvoltage < 2.305 || cappedvoltage > 4.136)));
+		// LR Antenna < -15.0F or > 150.0F, cut and capped on LM-3 and subsequent
+		LRHeaterCautFF.Set((lem->pMission->GetLMNumber() < 3 && (lem->scera1.GetVoltage(21, 3) < 2.313 || lem->scera1.GetVoltage(21, 3) > 4.375)) ||
+			(lem->pMission->GetLMNumber() >= 3 && (cappedvoltage < 2.305 || cappedvoltage > 4.136)));
 		LRHeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 1);
 
 		// RR Antenna < -54.07F or > 147.69F
 		RRHeaterCautFF.Set(lem->scera1.GetVoltage(21, 4) < 1.869 || lem->scera1.GetVoltage(21, 4) > 4.361);
 		RRHeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 0);
 
-		// RCS Quads < 118.8F  or > 190.5F, cut and capped on LM-7 and subsequent
+		// RCS Quads
+		// LM-3: < 119.0F or > 190.0F 
+		// LM-4: < 113.0F or > 241.0F 
+		// Cut and capped on LM-5 and subsequent
 		//Quad 1
-		QD1HeaterCautFF.Set((lem->pMission->GetLMNumber() < 7 && (lem->scera1.GetVoltage(20, 4) < 2.79 || lem->scera1.GetVoltage(20, 4) > 4.725)) ||
-			(lem->pMission->GetLMNumber() >= 7 && (cappedvoltage < 2.79 || cappedvoltage > 4.725)));
+		QD1HeaterCautFF.Set((lem->pMission->GetLMNumber() < 3 && (lem->scera1.GetVoltage(20, 4) < 2.750 || lem->scera1.GetVoltage(20, 4) > 4.723)) ||
+			(lem->pMission->GetLMNumber() == 4 && (lem->scera1.GetVoltage(20, 4) < 2.703 || lem->scera1.GetVoltage(20, 4) > 4.703)) ||
+			(lem->pMission->GetLMNumber() > 4 && (cappedvoltage < 2.703 || cappedvoltage > 4.703)));
 		QD1HeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 2);
 
 		//Quad 2
-		QD2HeaterCautFF.Set((lem->pMission->GetLMNumber() < 7 && (lem->scera1.GetVoltage(20, 4) < 2.79 || lem->scera1.GetVoltage(20, 4) > 4.725)) ||
-			(lem->pMission->GetLMNumber() >= 7 && (cappedvoltage < 2.79 || cappedvoltage > 4.725)));
+		QD2HeaterCautFF.Set((lem->pMission->GetLMNumber() < 4 && (lem->scera1.GetVoltage(20, 3) < 2.750 || lem->scera1.GetVoltage(20, 3) > 4.723)) ||
+			(lem->pMission->GetLMNumber() == 4 && (lem->scera1.GetVoltage(20, 3) < 2.703 || lem->scera1.GetVoltage(20, 3) > 4.703)) ||
+			(lem->pMission->GetLMNumber() > 4 && (cappedvoltage < 2.703 || cappedvoltage > 4.703)));
 		QD2HeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 3);
 
 		//Quad 3
-		QD3HeaterCautFF.Set((lem->pMission->GetLMNumber() < 7 && (lem->scera1.GetVoltage(20, 4) < 2.79 || lem->scera1.GetVoltage(20, 4) > 4.725)) ||
-			(lem->pMission->GetLMNumber() >= 7 && (cappedvoltage < 2.79 || cappedvoltage > 4.725)));
+		QD3HeaterCautFF.Set((lem->pMission->GetLMNumber() < 4 && (lem->scera1.GetVoltage(20, 2) < 2.750 || lem->scera1.GetVoltage(20, 2) > 4.723)) ||
+			(lem->pMission->GetLMNumber() == 4 && (lem->scera1.GetVoltage(20, 2) < 2.703 || lem->scera1.GetVoltage(20, 2) > 4.703)) ||
+			(lem->pMission->GetLMNumber() > 4 && (cappedvoltage < 2.703 || cappedvoltage > 4.703)));
 		QD3HeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 4);
 
 		//Quad 4
-		QD4HeaterCautFF.Set((lem->pMission->GetLMNumber() < 7 && (lem->scera1.GetVoltage(20, 4) < 2.79 || lem->scera1.GetVoltage(20, 4) > 4.725)) ||
-			(lem->pMission->GetLMNumber() >= 7 && (cappedvoltage < 2.79 || cappedvoltage > 4.725)));
+		QD4HeaterCautFF.Set((lem->pMission->GetLMNumber() < 4 && (lem->scera1.GetVoltage(20, 1) < 2.750 || lem->scera1.GetVoltage(20, 1) > 4.723)) ||
+			(lem->pMission->GetLMNumber() == 4 && (lem->scera1.GetVoltage(20, 1) < 2.703 || lem->scera1.GetVoltage(20, 1) > 4.703)) ||
+			(lem->pMission->GetLMNumber() > 4 && (cappedvoltage < 2.703 || cappedvoltage > 4.703)));
 		QD4HeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 5);
 
 		// S-Band Antenna Electronic Drive Assembly < -64.08F or > 152.63F
