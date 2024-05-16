@@ -119,7 +119,6 @@ namespace mission {
 		LM_IMUDriftRates = _M(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 		LM_PIPABias = _V(0.0, 0.0, 0.0);;
 		LM_PIPAScale = _V(0.0, 0.0, 0.0);
-		iLMCWEAVersion = 0;
 		bCrossPointerReversePolarity = false;
 		bCrossPointerShades = false;
 		iLMNumber = 5; //LM-5
