@@ -1609,15 +1609,16 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 			SetVCLighting(vcidx, DEDA_LightsFullLit,  MAT_LIGHT, 1, 1);
 		}
 
-/*		//Tapemeter Lights
-		if (WHAT_FOR_ALTALTRATE) {
-			SetVCLighting(vcidx, Tapemeter_AltAltRate, MAT_LIGHT, WHICH_VOLTAGE , 1);
-		}
+        //Tapemeter Lights
+        if (AltRngMonSwitch.GetState() == TOGGLESWITCH_DOWN) {
+            SetVCLighting(vcidx, Tapemeter_AltAltRate, MAT_EMISSION, (lca.GetNumericVoltage() / 110.0), 1);
+            SetVCLighting(vcidx, Tapemeter_RangeRangeRate, MAT_EMISSION, 0, 1);
+        }
+        else {
+            SetVCLighting(vcidx, Tapemeter_RangeRangeRate, MAT_EMISSION, (lca.GetNumericVoltage() / 110.0), 1);
+            SetVCLighting(vcidx, Tapemeter_AltAltRate, MAT_EMISSION, 0, 1);
+        }
 
-		if (WHAT_FOR_RANGERANGERATE) {
-			SetVCLighting(vcidx, Tapemeter_RangeRangeRate, MAT_LIGHT, WHICH_VOLTAGE , 1);
-		}
-*/
 		return true;
 	}
 
@@ -1937,7 +1938,7 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 			SetPowerFailureLight(VC_MAT_L03_PwrFail_DPSpress, false); // Light Off
 		}
 
-		if (RadarTape.PowerSignalMonOn() == true) {
+		if (RadarTape.PowerSignalMonOn() == true && lca.GetAnnunVoltage() > 2.25) {
 			SetPowerFailureLight(VC_MAT_L21_PwrFail_RangeRate, true); // Light On
 		}
 		else {
