@@ -1619,6 +1619,14 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
             SetVCLighting(vcidx, Tapemeter_AltAltRate, MAT_EMISSION, 0, 1);
         }
 
+        if (TempPressMonRotary.GetState() == 0) {
+            SetVCLighting(vcidx, RCS_Helium_Press_x10, MAT_EMISSION, (lca.GetNumericVoltage() / 110.0), 1);
+        }
+        else {
+            SetVCLighting(vcidx, RCS_Helium_Press_x10, MAT_EMISSION, 0, 1);
+        }
+		
+
 		return true;
 	}
 
