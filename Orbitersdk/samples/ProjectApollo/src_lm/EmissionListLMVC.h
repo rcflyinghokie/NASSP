@@ -53,7 +53,7 @@ DWORD FloodLights_LMVC[] = {
 	VC_MAT_MasterAlarm2,
 	VC_MAT_DEDA_Display,
 	VC_MAT_DEDA_Light,
-
+	VC_MAT_Ordeal_Knob,
 
 	// DSKY Lights
 	VC_MAT_DSKY_LIGHTS_NO_ATT,
@@ -112,6 +112,7 @@ DWORD IntegralLights_LMVC[] = {
 	VC_MAT_LMVC_t,
 	VC_MAT_Rotary_LM_t,
 	VC_MAT_FDAI_LM_t,
+	VC_MAT_Ordeal_Knob
 //	VC_MAT_FDAI_ball_LM_t
 };
 
