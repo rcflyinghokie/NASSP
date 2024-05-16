@@ -147,7 +147,7 @@ void cbCSMVesim(int inputID, int eventType, int newValue, void *pdata) {
 			pSaturn->MoveTHC(0);
 			break;
 		case CSM_BUTTON_DSKY1_PRO:
-			pSaturn->dsky.ProgPressed();
+			pSaturn->dsky.ProceedPressed();
 			break;
 		case CSM_BUTTON_DSKY1_KEY_REL:
 			pSaturn->dsky.KeyRel();
@@ -204,7 +204,7 @@ void cbCSMVesim(int inputID, int eventType, int newValue, void *pdata) {
 			pSaturn->dsky.NumberPressed(9);
 			break;
 		case CSM_BUTTON_DSKY2_PRO:
-			pSaturn->dsky2.ProgPressed();
+			pSaturn->dsky2.ProceedPressed();
 			break;
 		case CSM_BUTTON_DSKY2_KEY_REL:
 			pSaturn->dsky2.KeyRel();
@@ -283,10 +283,10 @@ void cbCSMVesim(int inputID, int eventType, int newValue, void *pdata) {
 	else if (eventType == VESIM_EVTTYPE_BUTTON_OFF) {
 		switch (inputID) {		
 		case CSM_BUTTON_DSKY1_PRO:
-			pSaturn->dsky.ProgReleased();
+			pSaturn->dsky.ProceedReleased();
 			break;
 		case CSM_BUTTON_DSKY2_PRO:
-			pSaturn->dsky2.ProgReleased();
+			pSaturn->dsky2.ProceedReleased();
 			break;
 		case CSM_BUTTON_DIR_ULL:
 			pSaturn->DirectUllageButton.VesimSwitchTo(0);
@@ -540,7 +540,8 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	WasteH2ODumpTempSensor("Waste-H2O-Dump-Temp-Sensor", 0.0, 100.0),
 	UrineDumpTempSensor("Urine-Dump-Temp-Sensor", 0.0, 100.0),
 	vesim(&cbCSMVesim, this),
-	CueCards(vcidx, this, 11)
+	CueCards(vcidx, this, 11),
+	Failures(this)
 #pragma warning ( pop ) // disable:4355
 
 {	
@@ -775,14 +776,6 @@ void Saturn::initSaturn()
 
 	NextFlashUpdate = MINUS_INFINITY;
 	PanelFlashOn = false;
-
-	//
-	// Failure modes.
-	//
-
-	LandFail.word = 0;
-	LaunchFail.word = 0;
-	SwitchFail.word = 0;
 
 	//
 	// Configure AGC and DSKY.
@@ -1135,6 +1128,9 @@ void Saturn::initSaturn()
 	seatsunfoldedidx = -1;
 	coascdridx = -1;
 	coascdrreticleidx = -1;
+
+	vcmesh = NULL;
+	vis = NULL;
 
 	Scorrec = false;
 
@@ -1736,15 +1732,6 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	if (AutoSlow) {
 		oapiWriteScenario_int (scn, "AUTOSLOW", 1);
 	}
-	if (LandFail.word) {
-		oapiWriteScenario_int(scn, "LANDFAIL", LandFail.word);
-	}
-	if (LaunchFail.word) {
-		oapiWriteScenario_int(scn, "LAUNCHFAIL", LaunchFail.word);
-	}
-	if (SwitchFail.word) {
-		oapiWriteScenario_int(scn, "SWITCHFAIL", SwitchFail.word);
-	}
 	if (ApolloNo == 1301) {
 		oapiWriteScenario_int (scn, "A13STATE", GetA13State());
 	}
@@ -1781,6 +1768,7 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 		}
 	}
 
+	Failures.SaveState(scn);
 	inertialData.SaveState(scn);
 	dsky.SaveState(scn, DSKY_START_STRING, DSKY_END_STRING);
 	dsky2.SaveState(scn, DSKY2_START_STRING, DSKY2_END_STRING);
@@ -2360,15 +2348,6 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 		sscanf(line + 6, "%f", &ftcp);
 		CM_EmptyMass = ftcp;
 	}
-	else if (!strnicmp(line, "LANDFAIL", 8)) {
-		sscanf(line + 8, "%d", &LandFail.word);
-	}
-	else if (!strnicmp(line, "LAUNCHFAIL", 10)) {
-		sscanf(line + 10, "%d", &LaunchFail.word);
-	}
-	else if (!strnicmp(line, "SWITCHCHFAIL", 10)) {
-		sscanf(line + 10, "%d", &SwitchFail.word);
-	}
 	else if (!strnicmp(line, "LANG", 4)) {
 		strncpy (AudioLanguage, line + 5, 64);
 	}
@@ -2380,6 +2359,9 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	}
 	else if (!strnicmp(line, "PAYN", 4)) {
 		strncpy (PayloadName, line + 5, 64);
+	}
+	else if (!strnicmp(line, FAILURES_START_STRING, sizeof(FAILURES_START_STRING))) {
+		Failures.LoadState(scn);
 	}
 	else if (!strnicmp(line, INERTIAL_DATA_START_STRING, sizeof(INERTIAL_DATA_START_STRING))) {
 		inertialData.LoadState(scn);
@@ -3461,112 +3443,105 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 
 	if (KEYMOD_SHIFT(kstate)){
 		// Do DSKY stuff
-		if(down){
-			switch(key){
-				case OAPI_KEY_DECIMAL:
-					dsky.ClearPressed();
-					break;
-				case OAPI_KEY_PRIOR:
-					dsky.ResetPressed();
-					break;
-				case OAPI_KEY_HOME:
-					dsky.KeyRel();
-					break;
-				case OAPI_KEY_NUMPADENTER:
-					dsky.EnterPressed();
-					break;
-				case OAPI_KEY_DIVIDE:
-					dsky.VerbPressed();
-					break;
-				case OAPI_KEY_MULTIPLY:
-					dsky.NounPressed();
-					break;
-				case OAPI_KEY_ADD:
-					dsky.PlusPressed();
-					break;
-				case OAPI_KEY_SUBTRACT:
-					dsky.MinusPressed();
-					break;
-				case OAPI_KEY_END:
-					dsky.ProgPressed();
-					break;
-				case OAPI_KEY_NUMPAD1:
-					dsky.NumberPressed(1);
-					break;
-				case OAPI_KEY_NUMPAD2:
-					dsky.NumberPressed(2);
-					break;
-				case OAPI_KEY_NUMPAD3:
-					dsky.NumberPressed(3);
-					break;
-				case OAPI_KEY_NUMPAD4:
-					dsky.NumberPressed(4);
-					break;
-				case OAPI_KEY_NUMPAD5:
-					dsky.NumberPressed(5);
-					break;
-				case OAPI_KEY_NUMPAD6:
-					dsky.NumberPressed(6);
-					break;
-				case OAPI_KEY_NUMPAD7:
-					dsky.NumberPressed(7);
-					break;
-				case OAPI_KEY_NUMPAD8:
-					dsky.NumberPressed(8);
-					break;
-				case OAPI_KEY_NUMPAD9:
-					dsky.NumberPressed(9);
-					break;
-				case OAPI_KEY_NUMPAD0:
-					dsky.NumberPressed(0);
-					break;
-				case OAPI_KEY_W: // Minimum impulse controller, pitch down
-					agc.SetInputChannelBit(032, MinusPitchMinImpulse,1);
-					break;
-				case OAPI_KEY_S: // Minimum impulse controller, pitch up
-					agc.SetInputChannelBit(032, PlusPitchMinImpulse,1);
-					break;
-				case OAPI_KEY_A: // Minimum impulse controller, yaw left
-					agc.SetInputChannelBit(032, MinusYawMinimumImpulse,1);
-					break;
-				case OAPI_KEY_D: // Minimum impulse controller, yaw right
-					agc.SetInputChannelBit(032, PlusYawMinimumImpulse,1);
-					break;
-				case OAPI_KEY_Q: // Minimum impulse controller, roll left
-					agc.SetInputChannelBit(032, MinusRollMinimumImpulse,1);
-					break;
-				case OAPI_KEY_E: // Minimum impulse controller, roll right
-					agc.SetInputChannelBit(032, PlusRollMinimumImpulse,1);
-					break;
-				case OAPI_KEY_K:
-					//kill rotation
-					SetAngularVel(_V(0, 0, 0));
-					break;
+		DSKYPushSwitch* dskyKeyChanged = nullptr;
+		switch (key) {
+			case OAPI_KEY_DECIMAL:
+				dskyKeyChanged = &DskySwitchClear;
+				break;
+			case OAPI_KEY_PRIOR:
+				dskyKeyChanged = &DskySwitchReset;
+				break;
+			case OAPI_KEY_HOME:
+				dskyKeyChanged = &DskySwitchKeyRel;
+				break;
+			case OAPI_KEY_NUMPADENTER:
+				dskyKeyChanged = &DskySwitchEnter;
+				break;
+			case OAPI_KEY_DIVIDE:
+				dskyKeyChanged = &DskySwitchVerb;
+				break;
+			case OAPI_KEY_MULTIPLY:
+				dskyKeyChanged = &DskySwitchNoun;
+				break;
+			case OAPI_KEY_ADD:
+				dskyKeyChanged = &DskySwitchPlus;
+				break;
+			case OAPI_KEY_SUBTRACT:
+				dskyKeyChanged = &DskySwitchMinus;
+				break;
+			case OAPI_KEY_END:
+				dskyKeyChanged = &DskySwitchProceed;
+				break;
+			case OAPI_KEY_NUMPAD1:
+				dskyKeyChanged = &DskySwitchOne;
+				break;
+			case OAPI_KEY_NUMPAD2:
+				dskyKeyChanged = &DskySwitchTwo;
+				break;
+			case OAPI_KEY_NUMPAD3:
+				dskyKeyChanged = &DskySwitchThree;
+				break;
+			case OAPI_KEY_NUMPAD4:
+				dskyKeyChanged = &DskySwitchFour;
+				break;
+			case OAPI_KEY_NUMPAD5:
+				dskyKeyChanged = &DskySwitchFive;
+				break;
+			case OAPI_KEY_NUMPAD6:
+				dskyKeyChanged = &DskySwitchSix;
+				break;
+			case OAPI_KEY_NUMPAD7:
+				dskyKeyChanged = &DskySwitchSeven;
+				break;
+			case OAPI_KEY_NUMPAD8:
+				dskyKeyChanged = &DskySwitchEight;
+				break;
+			case OAPI_KEY_NUMPAD9:
+				dskyKeyChanged = &DskySwitchNine;
+				break;
+			case OAPI_KEY_NUMPAD0:
+				dskyKeyChanged = &DskySwitchZero;
+				break;
+			case OAPI_KEY_W: // Minimum impulse controller, pitch down
+				agc.SetInputChannelBit(032, MinusPitchMinImpulse, down ? 1 : 0);
+				break;
+			case OAPI_KEY_S: // Minimum impulse controller, pitch up
+				agc.SetInputChannelBit(032, PlusPitchMinImpulse, down ? 1 : 0);
+				break;
+			case OAPI_KEY_A: // Minimum impulse controller, yaw left
+				agc.SetInputChannelBit(032, MinusYawMinimumImpulse, down ? 1 : 0);
+				break;
+			case OAPI_KEY_D: // Minimum impulse controller, yaw right
+				agc.SetInputChannelBit(032, PlusYawMinimumImpulse, down ? 1 : 0);
+				break;
+			case OAPI_KEY_Q: // Minimum impulse controller, roll left
+				agc.SetInputChannelBit(032, MinusRollMinimumImpulse, down ? 1 : 0);
+				break;
+			case OAPI_KEY_E: // Minimum impulse controller, roll right
+				agc.SetInputChannelBit(032, PlusRollMinimumImpulse, down ? 1 : 0);
+				break;
+		}
+
+		// Direction-specific code, handle DSKY key presses if any.
+		if (down) {
+			// KEY DOWN
+			if (dskyKeyChanged != nullptr) {
+				dskyKeyChanged->SetHeld(true);
+				dskyKeyChanged->SetState(PUSHBUTTON_PUSHED);
 			}
-		}else{
+
+			switch (key) {
+			case OAPI_KEY_K:
+				//kill rotation
+				SetAngularVel(_V(0, 0, 0));
+				break;
+			}
+		} else {
 			// KEY UP
-			switch(key){
-				case OAPI_KEY_END:
-					dsky.ProgReleased();
-					break;
-				case OAPI_KEY_W: // Minimum impulse controller, pitch down
-					agc.SetInputChannelBit(032, MinusPitchMinImpulse, 0);
-					break;
-				case OAPI_KEY_S: // Minimum impulse controller, pitch up
-					agc.SetInputChannelBit(032, PlusPitchMinImpulse, 0);
-					break;
-				case OAPI_KEY_A: // Minimum impulse controller, yaw left
-					agc.SetInputChannelBit(032, MinusYawMinimumImpulse, 0);
-					break;
-				case OAPI_KEY_D: // Minimum impulse controller, yaw right
-					agc.SetInputChannelBit(032, PlusYawMinimumImpulse, 0);
-					break;
-				case OAPI_KEY_Q: // Minimum impulse controller, roll left
-					agc.SetInputChannelBit(032, MinusRollMinimumImpulse, 0);
-					break;
-				case OAPI_KEY_E: // Minimum impulse controller, roll right
-					agc.SetInputChannelBit(032, PlusRollMinimumImpulse, 0);
-					break;
+			if (dskyKeyChanged != nullptr) {
+				// Doing SwitchTo instead of SetState prevents a second click on key up.
+				dskyKeyChanged->SetHeld(false);
+				dskyKeyChanged->SwitchTo(PUSHBUTTON_UNPUSHED);
 			}
 		}
 		return 0;
@@ -3682,16 +3657,12 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 	//
 
 	if (key == OAPI_KEY_1 && down == true && InVC && stage < LAUNCH_STAGE_TWO && stage >= LAUNCH_STAGE_ONE) {
-		viewpos = SATVIEW_ENG1;
-		SetView();
-		oapiCameraAttach(GetHandle(), CAM_COCKPIT);
+		clbkLoadVC(SATVIEW_ENG1);
 		return 1;
 	}
 
 	if (key == OAPI_KEY_2 && down == true && InVC && stage < LAUNCH_STAGE_SIVB && stage >= LAUNCH_STAGE_ONE) {
-		viewpos = SATVIEW_ENG2;
-		oapiCameraAttach(GetHandle(), CAM_COCKPIT);
-		SetView();
+		clbkLoadVC(SATVIEW_ENG2);
 		return 1;
 	}
 
@@ -3722,8 +3693,13 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 			viewpos = SATVIEW_ENG3;
 			break;
 		}
-		oapiCameraAttach(GetHandle(), CAM_COCKPIT);
-		SetView();
+		clbkLoadVC(viewpos);
+		return 1;
+	}
+
+	//Load left seat
+	if (key == OAPI_KEY_4 && down == true && InVC) {
+		clbkLoadVC(SATVIEW_LEFTSEAT);
 		return 1;
 	}
 	return 0;

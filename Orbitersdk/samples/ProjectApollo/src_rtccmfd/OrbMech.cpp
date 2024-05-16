@@ -5356,6 +5356,10 @@ double CMCEMSRangeToGo(MATRIX3 Rot_J_B, VECTOR3 R05G, double MJD05G, double lat,
 
 void EMXINGElev(VECTOR3 R, VECTOR3 R_S, VECTOR3 &N, VECTOR3 &rho, double &sinang)
 {
+	//R: Position vector of the satellite in true coordinates (ECT or MCT)
+	//R_S: Position vector of ground station in true coordinates (ECT or MCT)
+	//sinang: sine of elevation angle
+
 	VECTOR3 rho_apo;
 
 	N = unit(R_S);

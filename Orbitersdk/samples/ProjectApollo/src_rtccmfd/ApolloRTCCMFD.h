@@ -28,11 +28,11 @@ class ApolloRTCCMFD;
 
 struct RTCCMFDInputBoxData
 {
-	double *dVal;
+	double *dVal, *dVal2;
 	int *iVal, *iVal2;
 	int min1, max1, min2, max2;
 	VECTOR3 *vVal;
-	double factor;
+	double factor, factor2;
 	std::string *sVal;
 	ApolloRTCCMFD *ptr = NULL;
 	void (ApolloRTCCMFD::*func)(void) = NULL;
@@ -820,9 +820,11 @@ public:
 	void menuCycleAGOPPage();
 	void menuSetAGOPInput();
 	void menuAGOPCalc();
+	void menuAGOPSaveREFSMMAT();
 	void menuSetRTACFPage();
 	void GenericGETInput(double *get, char *message);
 	void GenericDoubleInput(double *val, char* message, double factor = 1.0);
+	void GenericDouble2Input(double *val1, double *val2, char* message, double factor1 = 1.0, double factor2 = 1.0);
 	void GenericIntInput(int *val, char* message, void (ApolloRTCCMFD::*func)(void) = NULL, int min = 1, int max = 0);
 	void GenericInt2Input(int *val1, int *val2, char* message, int min1, int max1, int min2, int max2, void (ApolloRTCCMFD::*func)(void) = NULL);
 	void GenericVectorInput(VECTOR3 *val, char* message, double factor = 1.0, void (ApolloRTCCMFD::*func)(void) = NULL);
@@ -858,6 +860,18 @@ private:
 	ApolloRTCCMFDButtons coreButtons;
 
 	RTCCMFDInputBoxData tempData;
+
+	//Additional display functions
+	void AGOPDisplay(oapi::Sketchpad*skp);
+	void AGOPDisplayOption1(oapi::Sketchpad*skp);
+	void AGOPDisplayOption2(oapi::Sketchpad*skp);
+	void AGOPDisplayOption3(oapi::Sketchpad*skp);
+	void AGOPDisplayOption4(oapi::Sketchpad*skp);
+	void AGOPDisplayOption5(oapi::Sketchpad*skp);
+	void AGOPDisplayOption6(oapi::Sketchpad*skp);
+	void AGOPDisplayOption7(oapi::Sketchpad*skp);
+	void AGOPDisplayOption8(oapi::Sketchpad*skp);
+	void AGOPDisplayOption9(oapi::Sketchpad*skp);
 };
 
 #endif // !__ApolloRTCCMFD_H
