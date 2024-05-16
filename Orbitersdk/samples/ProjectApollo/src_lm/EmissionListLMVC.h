@@ -102,8 +102,9 @@ DWORD FloodLights_LMVC[] = {
 
 	//Tapemeter Lights
 	VC_MAT_Panel1_Tapemeter_AltAltRate,
-	VC_MAT_Panel1_Tapemeter_RangeRangeRate
+	VC_MAT_Panel1_Tapemeter_RangeRangeRate,
 
+	VC_MAT_RCS_HE_PRESS_x10
 };
 
 DWORD IntegralLights_LMVC[] = {
@@ -217,6 +218,11 @@ DWORD Tapemeter_AltAltRate[] = {
 DWORD Tapemeter_RangeRangeRate[] = {
 	VC_MAT_Panel1_Tapemeter_RangeRangeRate
 };
+
+DWORD RCS_Helium_Press_x10[] = {
+	VC_MAT_RCS_HE_PRESS_x10
+};
+
 
 // External Meshes
 DWORD FloodLights_XPointer_Shades[] = {
