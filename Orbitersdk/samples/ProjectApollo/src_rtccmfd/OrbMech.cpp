@@ -141,8 +141,15 @@ namespace OrbMech{
 		return H*3600.0 + M*60.0 + S;
 	}
 
-	void SStoHHMMSS(double time, int &hours, int &minutes, double &seconds)
+	double round_to(double value, double precision)
 	{
+		return round(value / precision) * precision;
+	}
+
+	void SStoHHMMSS(double time, int &hours, int &minutes, double &seconds, double precision)
+	{
+		time = round_to(time, precision);
+
 		double mins;
 		hours = (int)trunc(time / 3600.0);
 		mins = fmod(time / 60.0, 60.0);
@@ -150,12 +157,32 @@ namespace OrbMech{
 		seconds = (mins - minutes) * 60.0;
 	}
 
-	void SStoHHMMSSTH(double time, int &hours, int &minutes, double &seconds)
+	// Format time to HHH:MM:SS.
+	void format_time(char *buf, double time)
 	{
-		int cs = (int)(round(time*100.0));
-		hours = cs / 360000;
-		minutes = (cs - 360000 * hours) / 6000;
-		seconds = (double)(cs - 360000 * hours - 6000 * minutes) / 100.0;
+		buf[0] = 0; // Clobber
+		if (time < 0) { return; } // don't do that
+
+		int hours, minutes;
+		double seconds;
+
+		SStoHHMMSS(time, hours, minutes, seconds);
+
+		sprintf(buf, "%03d:%02d:%02.0lf", hours, minutes, seconds);
+	}
+
+	// Format precise time.
+	void format_time_prec(char *buf, double time)
+	{
+		buf[0] = 0; // Clobber
+		if (time < 0) { return; } // don't do that
+
+		int hours, minutes;
+		double seconds;
+
+		SStoHHMMSS(time, hours, minutes, seconds, 0.01);
+
+		sprintf(buf, "HRS XXX%03d\nMIN XXXX%02d\nSEC XX%05.2f", hours, minutes, seconds);
 	}
 
 	void adbar_from_rv(double rmag, double vmag, double rtasc, double decl, double fpav, double az, VECTOR3 &R, VECTOR3 &V)
@@ -251,54 +278,246 @@ void fDot_and_gDot_ta(VECTOR3 R0, VECTOR3 V0, double dt, double &fdot, double &g
 	gdot = 1 - mu*r0 / (h*h) * (1 - c);
 }
 
-double time_theta(VECTOR3 R, VECTOR3 V, double dtheta, double mu)
+int MarscherEquationInversion(double sin_theta, double cos_theta, double cot_gamma, double r1, double alpha_N, double p_N, double &x, double &xi, double &c1, double &c2)
 {
-	double r, v, alpha, a, f, g, fdot, gdot, sigma0, r1, dt, h, p;
+	// Marscher equation inversion
+	// INPUTS:
+	// sin_theta: sine of true anomaly difference
+	// cos_theta: cosine of true anomaly difference
+	// cot_gamma: cotangent of flight path angle (measured from local vertical)
+	// r1: Radius magnitude at initial position
+	// alpha_N: Ratio of magnitude of initial position vector to semi-major axis
+	// p_N: Ratio of semi-latus rectum to initial position vector magnitude
+	// OUTPUTS:
+	// x: Universal anomaly
+	// xi: Product of alpha_N and x squared
+	// c1 and c2: Intermediate variables
 
-	//double h, v_r, cotg, x, p;
+	double W[4], a;
+	int n;
+	bool W1MAX; //W[0] is near infinite
 
-	r = length(R);
-	v = length(V);
-	alpha = 2.0 / r - v*v / mu;
-	a = 1.0 / alpha;
-	f_and_g_ta(R, V, dtheta, f, g, mu);
-	fDot_and_gDot_ta(R, V, dtheta, fdot, gdot, mu);
-	sigma0 = dotp(R, V) / sqrt(mu);
+	const double C_A_MAX = 79.0;
+	const double C_TOL = 1e-7;
 
-	h = length(crossp(R, V));
-	p = h*h / mu;
+	//Divisor safety
+	W[0] = 1.0 - cos_theta;
 
-	r1 = r*p / (r + (p - r)*cos(dtheta) - sqrt(p)*sigma0*sin(dtheta));
-
-	if (alpha > 0)
+	W1MAX = false;
+	if (abs(W[0]) < 1e-10)
 	{
-		double dE, cos_dE, sin_dE;
-
-		cos_dE = 1.0 - r / a*(1.0 - f);
-		sin_dE = -r*r1*fdot / sqrt(mu*a);
-		dE = atan2(sin_dE, cos_dE);
-		
-		dt = g + sqrt(power(a, 3.0) / mu)*(dE - sin_dE);
-	}
-	else if (alpha == 0.0)
-	{
-		double c, s;
-
-		c = sqrt(r*r + r1*r1 - 2 * r*r1*cos(dtheta));
-		s = (r + r1 + c) / 2.0;
-
-		dt =  2.0 / 3.0*sqrt(power(s, 3.0) / 2.0 / mu)*(1.0 - power((s - c) / s, 3.0 / 2.0));
+		W1MAX = true;
+		if (sin_theta >= 0.0)
+		{
+			W[0] = 1e10;
+		}
+		else
+		{
+			W[0] = -1e10;
+		}
 	}
 	else
 	{
-		double dH;
-
-		dH = acosh(1.0 - r / a*(1.0 - f));
-
-		dt = g + sqrt(power(-a, 3.0) / mu)*(sinh(dH) - dH);
+		W[0] = sqrt(p_N) * (sin_theta / W[0] - cot_gamma);
 	}
 
-	return dt;
+	// Error checking for physically impossible solution
+	if (alpha_N < 0.0)
+	{
+		if (W[0] <= 0.0)
+		{
+			return 1;
+		}
+		if (!W1MAX && W[0] * W[0] + alpha_N <= 0.0)
+		{
+			return 2;
+		}
+	}
+
+	if (abs(W[0]) <= 1.0)
+	{
+		for (n = 0; n < 3; n++)
+		{
+			W[n + 1] = sqrt(W[n] * W[n] + alpha_N) + abs(W[n]);
+		}
+		a = 1.0 / W[3];
+	}
+	else
+	{
+		double V[4], W1inv;
+
+		W1inv = abs(sin_theta / (sqrt(p_N) * (1.0 + cos_theta - sin_theta * cot_gamma)));
+		V[0] = 1.0;
+
+		for (n = 0; n < 3; n++)
+		{
+			V[n + 1] = sqrt(V[n] * V[n] + alpha_N * W1inv * W1inv) + V[n];
+		}
+		a = W1inv / V[3];
+	}
+
+	double C_A, C_B, C_C, C_D, X_N;
+
+	C_A = C_B = X_N = 1.0;
+	C_C = alpha_N * a * a;
+	do
+	{
+		C_A += 2.0;
+		C_B = -C_B * C_C;
+		C_D = C_B / C_A;
+		X_N = X_N + C_D;
+		if (C_A >= C_A_MAX)
+		{
+			//Series nonconvergent
+			return 3;
+		}
+	} while (abs(C_D) >= C_TOL);
+
+	X_N = 16.0 * a * X_N;
+	if (W[0] <= 0.0)
+	{
+		X_N = PI2 / sqrt(alpha_N) - X_N;
+	}
+	xi = alpha_N * X_N * X_N;
+	x = sqrt(r1) * X_N;
+	c1 = sqrt(r1 * p_N) * cot_gamma;
+	c2 = 1.0 - alpha_N;
+
+	return 0;
+}
+
+int time_theta(VECTOR3 R1, VECTOR3 V1, double dtheta, double mu, double &dt)
+{
+	//Wrapper function in case the output state vector isn't needed
+	VECTOR3 R2, V2;
+
+	return time_theta(R1, V1, dtheta, mu, R2, V2, dt);
+}
+
+int time_theta(VECTOR3 R1, VECTOR3 V1, double dtheta, double mu, VECTOR3 &R2, VECTOR3 &V2, double &dt)
+{
+	// INPUTS:
+	// R1: Input position vector
+	// V1: Input velocity vector
+	// dtheta: Change in true anomaly
+	// mu: specific gravitation parameter
+	// OUTPUTS:
+	// return: 0 = no errors, 1 = multiple orbits requested for hyperbolic orbit, 2 = orbit too nearly rectilinear, 3 and 4 = no physically realizable solution (hyperbolic)
+	// R2: Output position vector
+	// V2: Output velocity vector
+	// dt: time equivalent to input angle dtheta
+
+	// Handle zero case first
+	if (dtheta == 0.0)
+	{
+		dt = 0.0;
+		R2 = R1;
+		V2 = V1;
+		return 0;
+	}
+
+	// Internally this function will only handle positive dtheta, so set a flag if the angle is negative
+	bool negative;
+
+	// Handle negative angle
+	if (dtheta < 0)
+	{
+		dtheta = -dtheta;
+		V1 = -V1;
+		negative = true;
+	}
+	else
+	{
+		negative = false;
+	}
+
+	int n;
+
+	// Number of orbits
+	n = (int)(dtheta / PI2);
+	dtheta = fmod(dtheta, PI2);
+
+	double r1, v1, alpha;
+
+	// Initial position magnitude
+	r1 = length(R1);
+	// Initial velocity magnitude
+	v1 = length(V1);
+	// Reciprocal of semi-major axis
+	alpha = 2.0 / r1 - v1*v1 / mu;
+
+	// Error check: Cannot request multiple orbits for hyperbolic orbit
+	if (n > 0 && alpha <= 0.0)
+	{
+		return 1;
+	}
+
+	//Geometric parameters
+	VECTOR3 I_R_1, I_V_1;
+	double sin_gamma, cos_gamma, cot_gamma, C3, alpha_N, p_N, x, xi, c1, c2, S, C, r2;
+	int err;
+
+	//Unit position vector
+	I_R_1 = R1 / r1;
+	//Unit velocity vector
+	I_V_1 = V1 / v1;
+
+	//Sine of flight path angle (measured from local vertical)
+	sin_gamma = length(crossp(I_R_1, I_V_1));
+
+	//Rectilinear orbit check
+	if (abs(sin_gamma) < 1e-12)
+	{
+		return 2;
+	}
+
+	//Cosine of flight path angle (measured from local vertical)
+	cos_gamma = dotp(I_R_1, I_V_1);
+	//Cotangent of flight path angle (measured from local vertical)
+	cot_gamma = cos_gamma / sin_gamma;
+	//Energy
+	C3 = r1*v1*v1 / mu;
+	//Ratio of magnitude of initial position vector to semi-major axis
+	alpha_N = 2.0 - C3;
+	//Ratio of semi-latus rectum to initial position vector magnitude
+	p_N = C3 * pow(sin_gamma, 2);
+
+	//Marscher equation inversion
+	err = MarscherEquationInversion(sin(dtheta), cos(dtheta), cot_gamma, r1, alpha_N, p_N, x, xi, c1, c2);
+	if (err)
+	{
+		//Error return. Plus 2 so that time_theta returns a unique error code for each error type
+		return err + 2;
+	}
+
+	//Stumpff functions. TBD: These Stumpff functions can run into numerical trouble very close to parabolic orbits
+	S = stumpS(xi);
+	C = stumpC(xi);
+	dt = (c1*x*x*C + x * (c2*x*x*S + r1)) / sqrt(mu);
+
+	//State vector
+	R2 = R1 * (1.0 - x*x / r1 * C) + V1 * (dt - x*x*x / sqrt(mu)*S);
+	r2 = length(R2);
+	V2 = R1 * (sqrt(mu) / (r1*r2)*x*(xi*S - 1.0)) + V1 * (1.0 - x * x / r2 * C);
+
+	//Multiple orbits
+	if (n > 0)
+	{
+		double P;
+
+		//Calculate orbital period
+		P = PI2 / (pow(alpha, 1.5) * sqrt(mu));
+		dt = dt + P * (double)n;
+	}
+
+	//If input angle was negative, reverse the output
+	if (negative)
+	{
+		dt = -dt;
+		V2 = -V2;
+	}
+
+	return 0;
 }
 
 void ra_and_dec_from_r(VECTOR3 R, double &ra, double &dec)
@@ -913,11 +1132,11 @@ VECTOR3 elegant_lambert(VECTOR3 R1, VECTOR3 V1, VECTOR3 R2, double dt, int N, bo
 	}
 }
 
-bool oneclickcoast(VECTOR3 R0, VECTOR3 V0, double mjd0, double dt, VECTOR3 &R1, VECTOR3 &V1, int gravref, int &gravout)
+bool oneclickcoast(int Epoch, VECTOR3 R0, VECTOR3 V0, double mjd0, double dt, VECTOR3 &R1, VECTOR3 &V1, int gravref, int &gravout)
 {
 	bool stop, soichange;
 	CoastIntegrator* coast;
-	coast = new CoastIntegrator(R0, V0, mjd0, dt, gravref, gravout);
+	coast = new CoastIntegrator(Epoch, R0, V0, mjd0, dt, gravref, gravout);
 	stop = false;
 	while (stop == false)
 	{
@@ -931,7 +1150,7 @@ bool oneclickcoast(VECTOR3 R0, VECTOR3 V0, double mjd0, double dt, VECTOR3 &R1, 
 	return soichange;
 }
 
-bool oneclickcoast(VECTOR3 R0, VECTOR3 V0, double mjd0, double dt, VECTOR3 &R1, VECTOR3 &V1, OBJHANDLE gravref, OBJHANDLE &gravout)
+bool oneclickcoast(int Epoch, VECTOR3 R0, VECTOR3 V0, double mjd0, double dt, VECTOR3 &R1, VECTOR3 &V1, OBJHANDLE gravref, OBJHANDLE &gravout)
 {
 	//Temporary
 	int gr, go;
@@ -956,7 +1175,7 @@ bool oneclickcoast(VECTOR3 R0, VECTOR3 V0, double mjd0, double dt, VECTOR3 &R1, 
 		go = BODY_MOON;
 	}
 
-	bool soichange = oneclickcoast(R0, V0, mjd0, dt, R1, V1, gr, go);
+	bool soichange = oneclickcoast(Epoch, R0, V0, mjd0, dt, R1, V1, gr, go);
 	if (go == BODY_EARTH)
 	{
 		gravout = oapiGetObjectByName("Earth");
@@ -969,7 +1188,7 @@ bool oneclickcoast(VECTOR3 R0, VECTOR3 V0, double mjd0, double dt, VECTOR3 &R1, 
 	return soichange;
 }
 
-SV coast(SV sv0, double dt)
+SV coast(int Epoch, SV sv0, double dt)
 {
 	if (dt == 0.0)
 	{
@@ -979,7 +1198,7 @@ SV coast(SV sv0, double dt)
 	SV sv1;
 	OBJHANDLE gravout = NULL;
 
-	OrbMech::oneclickcoast(sv0.R, sv0.V, sv0.MJD, dt, sv1.R, sv1.V, sv0.gravref, gravout);
+	OrbMech::oneclickcoast(Epoch, sv0.R, sv0.V, sv0.MJD, dt, sv1.R, sv1.V, sv0.gravref, gravout);
 	sv1.gravref = gravout;
 	sv1.mass = sv0.mass;
 	sv1.MJD = sv0.MJD + dt / 24.0 / 3600.0;
@@ -1109,7 +1328,7 @@ void SolveQuartic(double *A, double *R, int &N)
 	}
 }
 
-VECTOR3 Vinti(VECTOR3 R1, VECTOR3 V1, VECTOR3 R2, double mjd0, double dt, int N, bool prog, int gravref, int gravin, int gravout, VECTOR3 V_guess, double tol)
+VECTOR3 Vinti(int Epoch, VECTOR3 R1, VECTOR3 V1, VECTOR3 R2, double mjd0, double dt, int N, bool prog, int gravref, int gravin, int gravout, VECTOR3 V_guess, double tol)
 {
 	double h, rho, error3, mu, max_dr;
 	int nMax, nMax2, n;
@@ -1143,7 +1362,7 @@ VECTOR3 Vinti(VECTOR3 R1, VECTOR3 V1, VECTOR3 R2, double mjd0, double dt, int N,
 	{
 		if (gravref != gravin)
 		{
-			oneclickcoast(R1, V1, mjd0, 0.0, R1_ref, V1_ref, gravin, gravref);
+			oneclickcoast(Epoch, R1, V1, mjd0, 0.0, R1_ref, V1_ref, gravin, gravref);
 			R2_ref = R2;
 		}
 		else if (gravref != gravout)
@@ -1151,7 +1370,7 @@ VECTOR3 Vinti(VECTOR3 R1, VECTOR3 V1, VECTOR3 R2, double mjd0, double dt, int N,
 			VECTOR3 V2_ref;
 			R1_ref = R1;
 			V1_ref = V1;
-			oneclickcoast(R2, V1, mjd0 + dt / 24.0 / 3600.0, 0.0, R2_ref, V2_ref, gravout, gravref);
+			oneclickcoast(Epoch, R2, V1, mjd0 + dt / 24.0 / 3600.0, 0.0, R2_ref, V2_ref, gravout, gravref);
 		}
 		else
 		{
@@ -1171,7 +1390,7 @@ VECTOR3 Vinti(VECTOR3 R1, VECTOR3 V1, VECTOR3 R2, double mjd0, double dt, int N,
 		if (gravref != gravin)
 		{
 			VECTOR3 R1_unused;
-			oneclickcoast(R1_ref, Vt1, mjd0, 0.0, R1_unused, Vt1, gravref, gravin);
+			oneclickcoast(Epoch, R1_ref, Vt1, mjd0, 0.0, R1_unused, Vt1, gravref, gravin);
 		}
 		V1_star = Vt1*sign(dt);
 	}
@@ -1221,7 +1440,7 @@ VECTOR3 Vinti(VECTOR3 R1, VECTOR3 V1, VECTOR3 R2, double mjd0, double dt, int N,
 		n = 0;
 	}
 
-	oneclickcoast(R1, V1_star, mjd0, dt, R2_star, V2_star, gravin, gravout);
+	oneclickcoast(Epoch, R1, V1_star, mjd0, dt, R2_star, V2_star, gravin, gravout);
 	dr2 = R2 - R2_star;
 	max_dr = 0.5*length(R2_star);
 	if (length(dr2) > max_dr)
@@ -1242,7 +1461,7 @@ VECTOR3 Vinti(VECTOR3 R1, VECTOR3 V1, VECTOR3 R2, double mjd0, double dt, int N,
 		{
 			for (int j = 0; j < 4; j++)
 			{
-				oneclickcoast(R1, v_l[i][j], mjd0, dt, R2l[i][j], V2l[i][j], gravin, gravout);
+				oneclickcoast(Epoch, R1, v_l[i][j], mjd0, dt, R2l[i][j], V2l[i][j], gravin, gravout);
 			}
 		}
 		for (int i = 0; i < 3; i++)
@@ -1251,7 +1470,7 @@ VECTOR3 Vinti(VECTOR3 R1, VECTOR3 V1, VECTOR3 R2, double mjd0, double dt, int N,
 		}
 		T2 = _M(T[0].x, T[1].x, T[2].x, T[0].y, T[1].y, T[2].y, T[0].z, T[1].z, T[2].z);
 		V1_star = V1_star + mul(inverse(T2), dr2);
-		oneclickcoast(R1, V1_star, mjd0, dt, R2_star, V2_star, gravin, gravout);
+		oneclickcoast(Epoch, R1, V1_star, mjd0, dt, R2_star, V2_star, gravin, gravout);
 		dr2 = R2 - R2_star;
 		max_dr = 0.5*length(R2_star);
 		if (length(dr2) > max_dr)
@@ -1271,15 +1490,15 @@ void planeinter(VECTOR3 n1, double h1, VECTOR3 n2, double h2, VECTOR3 &m1, VECTO
 	m2 = crossp(n1, n2);
 }
 
-double NSRsecant(VECTOR3 RA, VECTOR3 VA, VECTOR3 RP, VECTOR3 VP, double mjd0, double x, double DH, OBJHANDLE gravref)
+double NSRsecant(int Epoch, VECTOR3 RA, VECTOR3 VA, VECTOR3 RP, VECTOR3 VP, double mjd0, double x, double DH, OBJHANDLE gravref)
 {
 	double theta, SW, dh_CDH, mu;
 	VECTOR3 RA2, VA2, RP2, VP2, u, RA2_alt, VA2_alt, RPC, VPC;
 
 	mu = GGRAV*oapiGetMass(gravref);
 
-	oneclickcoast(RA, VA, mjd0, x, RA2, VA2, gravref, gravref);
-	oneclickcoast(RP, VP, mjd0, x, RP2, VP2, gravref, gravref);
+	oneclickcoast(Epoch, RA, VA, mjd0, x, RA2, VA2, gravref, gravref);
+	oneclickcoast(Epoch, RP, VP, mjd0, x, RP2, VP2, gravref, gravref);
 
 	u = unit(crossp(RP2, VP2));
 	RA2_alt = RA2;
@@ -1412,7 +1631,7 @@ MATRIX3 Orbiter2PACSS13(double mjd, double lat, double lng, double azi)
 	return mul(tmat(Rot4), mul(Rot3, mul(Rot2, tmat(Rot1))));
 }
 
-double findelev(VECTOR3 R_A0, VECTOR3 V_A0, VECTOR3 R_P0, VECTOR3 V_P0, double mjd0, double E, OBJHANDLE gravref)
+double findelev(int Epoch, VECTOR3 R_A0, VECTOR3 V_A0, VECTOR3 R_P0, VECTOR3 V_P0, double mjd0, double E, OBJHANDLE gravref)
 {
 	double w_A, w_P, r_A, v_A, r_P, v_P, alpha, t, dt, E_err, E_A, mu;
 	VECTOR3 u, R_A, V_A, R_P, V_P, U_L, U_P;
@@ -1438,8 +1657,8 @@ double findelev(VECTOR3 R_A0, VECTOR3 V_A0, VECTOR3 R_P0, VECTOR3 V_P0, double m
 		w_P = dotp(V_P, unit(crossp(crossp(R_P, V_P), R_P)) / r_P);
 		alpha = E + sign(dotp(crossp(R_A, R_P), u))*acos(dotp(R_A / r_A, R_P / r_P));
 		dt = (alpha - PI + sign(r_P - r_A)*(PI - acos(r_A*cos(E) / r_P))) / (w_A - w_P);
-		oneclickcoast(R_A, V_A, mjd0 + t / 24.0 / 3600.0, dt, R_A, V_A, gravref, gravref);
-		oneclickcoast(R_P, V_P, mjd0 + t / 24.0 / 3600.0, dt, R_P, V_P, gravref, gravref);
+		oneclickcoast(Epoch, R_A, V_A, mjd0 + t / 24.0 / 3600.0, dt, R_A, V_A, gravref, gravref);
+		oneclickcoast(Epoch, R_P, V_P, mjd0 + t / 24.0 / 3600.0, dt, R_P, V_P, gravref, gravref);
 		t += dt;
 		r_A = length(R_A);
 		v_A = length(V_A);
@@ -1501,7 +1720,7 @@ double findelev_conic(VECTOR3 R_A0, VECTOR3 V_A0, VECTOR3 R_P0, VECTOR3 V_P0, do
 	return t;
 }
 
-double findelev_gs(MATRIX3 Rot_J_B, VECTOR3 R_A0, VECTOR3 V_A0, VECTOR3 R_gs, double mjd0, double E, OBJHANDLE gravref, double &range)
+double findelev_gs(int Epoch, MATRIX3 Rot_J_B, VECTOR3 R_A0, VECTOR3 V_A0, VECTOR3 R_gs, double mjd0, double E, OBJHANDLE gravref, double &range)
 {
 	double w_A, w_P, r_A, v_A, r_P, alpha, t, dt, E_err, E_A, dE, dE_0, dt_0, dt_max, t_S, theta_0;
 	VECTOR3 R_A, V_A, R_P, U_L, U_P, U_N, U_LL, R_proj;
@@ -1589,7 +1808,7 @@ double findelev_gs(MATRIX3 Rot_J_B, VECTOR3 R_A0, VECTOR3 V_A0, VECTOR3 R_gs, do
 			t += dt;
 			dt_0 = dt;
 		}
-		oneclickcoast(R_A, V_A, mjd0 + t_S / 24.0 / 3600.0, t - t_S, R_A, V_A, gravref, gravref);
+		oneclickcoast(Epoch, R_A, V_A, mjd0 + t_S / 24.0 / 3600.0, t - t_S, R_A, V_A, gravref, gravref);
 		Rot2 = OrbMech::GetRotationMatrix(body, mjd0 + t / 24.0 / 3600.0);
 		R_P = mul(Rot_J_B, rhmul(Rot2, R_gs));
 
@@ -1626,13 +1845,13 @@ double findelev_gs(MATRIX3 Rot_J_B, VECTOR3 R_A0, VECTOR3 V_A0, VECTOR3 R_gs, do
 	return t;
 }
 
-double timetoperi_integ(VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, OBJHANDLE ref_peri)
+double timetoperi_integ(int Epoch, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, OBJHANDLE ref_peri)
 {
 	VECTOR3 R2, V2;
-	return timetoperi_integ(R, V, MJD, gravref, ref_peri, R2, V2);
+	return timetoperi_integ(Epoch, R, V, MJD, gravref, ref_peri, R2, V2);
 }
 
-double timetoperi_integ(VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, OBJHANDLE ref_peri, VECTOR3 &R2, VECTOR3 &V2)
+double timetoperi_integ(int Epoch, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, OBJHANDLE ref_peri, VECTOR3 &R2, VECTOR3 &V2)
 {
 	VECTOR3 R0, V0, R1, V1;
 	double mu, dt, dt_total;
@@ -1645,7 +1864,7 @@ double timetoperi_integ(VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, OBJ
 
 	if (gravref != ref_peri)
 	{
-		oneclickcoast(R, V, MJD, 0.0, R0, V0, gravref, ref_peri);
+		oneclickcoast(Epoch, R, V, MJD, 0.0, R0, V0, gravref, ref_peri);
 	}
 	else
 	{
@@ -1654,48 +1873,16 @@ double timetoperi_integ(VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, OBJ
 	}
 
 	dt = timetoperi(R0, V0, mu);
-	oneclickcoast(R, V, MJD, dt, R1, V1, gravref, ref_peri);
+	oneclickcoast(Epoch, R, V, MJD, dt, R1, V1, gravref, ref_peri);
 	dt_total += dt;
 
 	do
 	{
 		dt = timetoperi(R1, V1, mu);
-		oneclickcoast(R1, V1, MJD + dt_total / 24.0 / 3600.0, dt, R1, V1, ref_peri, ref_peri);
+		oneclickcoast(Epoch, R1, V1, MJD + dt_total / 24.0 / 3600.0, dt, R1, V1, ref_peri, ref_peri);
 		dt_total += dt;
 		n++;
 	} while (abs(dt) > 0.01 && nmax >= n);
-
-	R2 = R1;
-	V2 = V1;
-
-	return dt_total;
-}
-
-double timetonode_integ(VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, VECTOR3 u_node, VECTOR3 &R2, VECTOR3 &V2)
-{
-	VECTOR3 R1, V1;
-	double mu, dt, dt_total, theta;
-	int n, nmax;
-
-	mu = GGRAV*oapiGetMass(gravref);
-	dt_total = 0.0;
-	n = 0;
-	nmax = 10;
-
-	theta = OrbMech::sign(dotp(crossp(R, u_node), crossp(R, V)))*acos2(dotp(R / length(R), u_node));
-	dt = OrbMech::time_theta(R, V, theta, mu);
-
-	oneclickcoast(R, V, MJD, dt, R1, V1, gravref, gravref);
-	dt_total += dt;
-
-	do
-	{
-		theta = OrbMech::sign(dotp(crossp(R1, u_node), crossp(R1, V1)))*acos2(dotp(unit(R1), u_node));
-		dt = OrbMech::time_theta(R1, V1, theta, mu);
-		oneclickcoast(R1, V1, MJD + dt_total / 24.0 / 3600.0, dt, R1, V1, gravref, gravref);
-		dt_total += dt;
-		n++;
-	} while (abs(dt) > 0.1 && nmax >= n);
 
 	R2 = R1;
 	V2 = V1;
@@ -1890,7 +2077,7 @@ double time_radius(VECTOR3 R, VECTOR3 V, double r, double s, double mu)
 	return dt;
 }
 
-void ReturnPerigee(VECTOR3 R, VECTOR3 V, double mjd0, OBJHANDLE hMoon, OBJHANDLE hEarth, double phi, double &MJD_peri, VECTOR3 &R_peri, VECTOR3 &V_peri)
+void ReturnPerigee(int Epoch, VECTOR3 R, VECTOR3 V, double mjd0, OBJHANDLE hMoon, OBJHANDLE hEarth, double phi, double &MJD_peri, VECTOR3 &R_peri, VECTOR3 &V_peri)
 {
 	//INPUT:
 	//R and V in Moon relative coordinates, e>1
@@ -1904,21 +2091,21 @@ void ReturnPerigee(VECTOR3 R, VECTOR3 V, double mjd0, OBJHANDLE hMoon, OBJHANDLE
 
 	//Assumption: reentry will never happen before 24 hours after leaving the lunar SOI
 	dt = time_radius(R, V*phi, r_SPH, 1.0, mu_Moon) + 24.0*3600.0;
-	oneclickcoast(R, V, mjd0, dt*phi, R_patch, V_patch, hMoon, hEarth);
+	oneclickcoast(Epoch, R, V, mjd0, dt*phi, R_patch, V_patch, hMoon, hEarth);
 	MJD_patch = mjd0 + dt*phi / 24.0 / 3600.0;
 
-	dt2 = timetoperi_integ(R_patch, V_patch, MJD_patch, hEarth, hEarth, R_peri, V_peri);
+	dt2 = timetoperi_integ(Epoch, R_patch, V_patch, MJD_patch, hEarth, hEarth, R_peri, V_peri);
 
 	MJD_peri = MJD_patch + dt2 / 24.0 / 3600.0;
 }
 
-double time_radius_integ(VECTOR3 R, VECTOR3 V, double mjd0, double r, double s, OBJHANDLE gravref, OBJHANDLE gravout)
+double time_radius_integ(int Epoch, VECTOR3 R, VECTOR3 V, double mjd0, double r, double s, OBJHANDLE gravref, OBJHANDLE gravout)
 {
 	VECTOR3 RPRE, VPRE;
-	return time_radius_integ(R, V, mjd0, r, s, gravref, gravout, RPRE, VPRE);
+	return time_radius_integ(Epoch, R, V, mjd0, r, s, gravref, gravout, RPRE, VPRE);
 }
 
-double time_radius_integ(VECTOR3 R, VECTOR3 V, double mjd0, double r, double s, OBJHANDLE gravref, OBJHANDLE gravout, VECTOR3 &RPRE, VECTOR3 &VPRE)
+double time_radius_integ(int Epoch, VECTOR3 R, VECTOR3 V, double mjd0, double r, double s, OBJHANDLE gravref, OBJHANDLE gravout, VECTOR3 &RPRE, VECTOR3 &VPRE)
 {
 	double dt1, sing, cosg, x2PRE, dt21, beta12, beta4, RF, phi4, dt21apo, beta13, dt2, beta14, mu;
 	VECTOR3 N, R0out, V0out;
@@ -1932,10 +2119,10 @@ double time_radius_integ(VECTOR3 R, VECTOR3 V, double mjd0, double r, double s, 
 	n = 0;
 	nmax = 15;
 
-	oneclickcoast(R, V, mjd0, 0.0, R0out, V0out, gravref, gravout);
+	oneclickcoast(Epoch, R, V, mjd0, 0.0, R0out, V0out, gravref, gravout);
 	dt1 = time_radius(R0out, V0out, r, s, mu);
 
-	oneclickcoast(R, V, mjd0, dt1, RPRE, VPRE, gravref, gravout);
+	oneclickcoast(Epoch, R, V, mjd0, dt1, RPRE, VPRE, gravref, gravout);
 
 	while (abs(beta12) > 0.000007 && abs(dt21)>0.01 && nmax >= n)
 	{
@@ -1977,7 +2164,7 @@ double time_radius_integ(VECTOR3 R, VECTOR3 V, double mjd0, double r, double s, 
 		dt21apo = dt21;
 		if (abs(dt21) != 0.0)
 		{
-			oneclickcoast(RPRE, VPRE, mjd0 + (dt1 + dt2) / 24.0 / 3600.0, dt21, RPRE, VPRE, gravout, gravout);
+			oneclickcoast(Epoch, RPRE, VPRE, mjd0 + (dt1 + dt2) / 24.0 / 3600.0, dt21, RPRE, VPRE, gravout, gravout);
 			dt2 += dt21;
 		}
 		n++;
@@ -2333,7 +2520,7 @@ double P29TimeOfLongitude(MATRIX3 Rot_J_B, VECTOR3 R0, VECTOR3 V0, double MJD, O
 	MATRIX3 Rot2;
 	VECTOR3 mu_N, mu_S, mu_Z, U_Z, mu_E, mu_C, R, V, mu_D, mu_E_apo;
 	double mu, F, dphi, t, phi, lambda, eps_phi, absphidminphi, phidminphi, phi_0, theta_P, theta, t_F;
-	int n, s_G, body;
+	int n, s_G, body, err;
 	OBJHANDLE hEarth;
 
 	n = 0;
@@ -2431,11 +2618,12 @@ double P29TimeOfLongitude(MATRIX3 Rot_J_B, VECTOR3 R0, VECTOR3 V0, double MJD, O
 		s_G = sign(dotp(mu_D, mu_S));
 		theta = PI*(1 - s_G) + s_G*acos(dotp(mu_D, R0) / length(R0)) + theta_P;
 
-		t_F = time_theta(R0, V0, theta, mu);
-		if (t_F < 0.0)
+		err = time_theta(R0, V0, theta, mu, t_F);
+		if (err)
 		{
-			t_F += period(R0, V0, mu);
+			return t;
 		}
+
 		t = MJD + t_F / 24.0 / 3600.0;
 		rv_from_r0v0(R0, V0, (t - MJD)*24.0*3600.0, R, V, mu);
 		n++;
@@ -2673,7 +2861,7 @@ double sunrise(MATRIX3 Rot_J_B, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE plan
 
 	OELEMENTS coe;
 	double h, e, theta0, a, dt, dt_old;
-	int i, imax;
+	int i, imax, err;
 
 	dt = 0;
 	dt_old = 1;
@@ -2749,7 +2937,12 @@ double sunrise(MATRIX3 Rot_J_B, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE plan
 			theta0 = coe.TA;
 
 			dt_old = dt;
-			ddt = time_theta(R1, V1, calculateDifferenceBetweenAngles(theta0, v1), mu);
+			err = time_theta(R1, V1, calculateDifferenceBetweenAngles(theta0, v1), mu, ddt);
+			//Error return with current best estimate
+			if (err)
+			{
+				return dt;
+			}
 			dt += ddt;
 		}
 		else
@@ -2760,8 +2953,12 @@ double sunrise(MATRIX3 Rot_J_B, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE plan
 			T = PI2 / sqrt(mu)*OrbMech::power(a, 3.0 / 2.0);
 
 			dt_old = dt;
-			dt = time_theta(R, V, calculateDifferenceBetweenAngles(theta0, v1), mu);
-
+			err = time_theta(R, V, calculateDifferenceBetweenAngles(theta0, v1), mu, dt);
+			//Error return with current best estimate
+			if (err)
+			{
+				return dt;
+			}
 			if (dt < 0 && future)
 			{
 				dt += T;
@@ -2787,17 +2984,22 @@ VECTOR3 ULOS(MATRIX3 REFSMMAT, MATRIX3 SMNB, double TA, double SA)
 	return U_LOS;
 }
 
+VECTOR3 AOTNavigationBase(double AZ, double EL)
+{
+	return _V(sin(EL), cos(EL)*sin(AZ), cos(EL)*cos(AZ));
+}
+
 VECTOR3 AOTULOS(MATRIX3 REFSMMAT, MATRIX3 SMNB, double AZ, double EL)
 {
 	VECTOR3 U_OAN, S_SM, U_LOS;
 
-	U_OAN = _V(sin(EL), cos(EL)*sin(AZ), cos(EL)*cos(AZ));
+	U_OAN = AOTNavigationBase(AZ, EL);
 	S_SM = mul(tmat(SMNB), U_OAN);
 	U_LOS = mul(tmat(REFSMMAT), S_SM);
 	return U_LOS;
 }
 
-int FindNearestStar(const std::vector<VECTOR3> &navstars, VECTOR3 U_LOS, VECTOR3 R_C, double R_E, double ang_max)
+int FindNearestStar(const VECTOR3 *navstars, VECTOR3 U_LOS, VECTOR3 R_C, double R_E, double ang_max)
 {
 	VECTOR3 ustar;
 	double dotpr, last;
@@ -2818,7 +3020,7 @@ int FindNearestStar(const std::vector<VECTOR3> &navstars, VECTOR3 U_LOS, VECTOR3
 	return star;
 }
 
-VECTOR3 backupgdcalignment(const std::vector<VECTOR3> &navstars, MATRIX3 REFS, VECTOR3 R_C, double R_E, int &set)
+VECTOR3 backupgdcalignment(const VECTOR3 *navstars, MATRIX3 REFS, VECTOR3 R_C, double R_E, int &set)
 {
 	int starset[3][2];
 	double a, SA, TA1, dTA, TA2;
@@ -2872,7 +3074,7 @@ VECTOR3 backupgdcalignment(const std::vector<VECTOR3> &navstars, MATRIX3 REFS, V
 	return _V(0, 0, 0);
 }
 
-MATRIX3 AGSStarAlignment(const std::vector<VECTOR3> &navstars, VECTOR3 Att1, VECTOR3 Att2, int star1, int star2, int axis, int detent, double AOTCounter)
+MATRIX3 AGSStarAlignment(const VECTOR3 *navstars, VECTOR3 Att1, VECTOR3 Att2, int star1, int star2, int axis, int detent, double AOTCounter)
 {
 	//Matrix that converts from stable member to navigation base coordinates
 	MATRIX3 SMNB1, SMNB2;
@@ -3303,6 +3505,75 @@ unsigned long long BinToDec(unsigned long long num)
 		num = num / 10;
 	}
 	return dec;
+}
+
+int SingleToBuffer(double x, int SF, bool TwosComplement)
+{
+	double x2;
+	int c;
+
+	x2 = fabs(x) * pow(2, -SF + 14);
+
+	c = (unsigned)round(x2);
+
+	if (TwosComplement == false && c > 037777)
+	{
+		c = 037777;
+	}
+
+	if (x < 0.0)
+	{
+		// Polarity change
+		c = 0x7FFF & (~c);
+		if (TwosComplement)
+		{
+			c++;
+		}
+	}
+
+	return c;
+}
+
+void DoubleToBuffer(double x, int SF, int &c1, int &c2)
+{
+	double x2;
+
+	x2 = fabs(x) * pow(2, -SF + 14);
+
+	c1 = (unsigned)x2;
+	x2 = x2 - (double)c1;
+	x2 *= pow(2, 14);
+	c2 = (unsigned)round(x2);
+	if (c2 > 037777)
+	{
+		c2 = 037777;
+	}
+
+	if (x < 0.0) c1 = 0x7FFF & (~c1); // Polarity change
+	if (x < 0.0) c2 = 0x7FFF & (~c2); // Polarity change
+}
+
+void TripleToBuffer(double x, int SF, int &c1, int &c2, int &c3)
+{
+	double x2;
+
+	x2 = fabs(x) * pow(2, -SF + 14);
+
+	c1 = (unsigned)x2;
+	x2 = x2 - (double)c1;
+	x2 *= pow(2, 14);
+	c2 = (unsigned)x2;
+	x2 = x2 - (double)c2;
+	x2 *= pow(2, 14);
+	c3 = (unsigned)round(x2);
+	if (c3 > 037777)
+	{
+		c3 = 037777;
+	}
+
+	if (x < 0.0) c1 = 0x7FFF & (~c1); // Polarity change
+	if (x < 0.0) c2 = 0x7FFF & (~c2); // Polarity change
+	if (x < 0.0) c3 = 0x7FFF & (~c3); // Polarity change
 }
 
 double cot(double a)
@@ -3826,6 +4097,23 @@ double atan3(double x, double y)
 	return ganzzahl;
 }*/
 
+MATRIX3 SBNBMatrix()
+{
+	double a = -0.5676353234;
+	return _M(cos(a), 0, -sin(a), 0, 1, 0, sin(a), 0, cos(a));
+}
+
+MATRIX3 NBSBMatrix()
+{
+	return tmat(SBNBMatrix());
+}
+
+VECTOR3 SXTNB(double TA, double SA)
+{
+	//To obtain a unit vector which specifies the direction of the line-of-sight of the sextant in navigation base coordinates
+	return mul(SBNBMatrix(), _V(sin(TA)*cos(SA), sin(TA)*sin(SA), cos(TA)));
+}
+
 VECTOR3 CALCGAR(MATRIX3 REFSM, MATRIX3 SMNB)
 {
 	//Input: REFSMMAT and stable member orientation
@@ -4005,7 +4293,7 @@ void RADUP(VECTOR3 R_W, VECTOR3 V_W, VECTOR3 R_C, double mu, VECTOR3 &R_W1, VECT
 	double theta, dt;
 
 	theta = sign(dotp(crossp(R_W, R_C), crossp(R_W, V_W)))*acos(dotp(R_W / length(R_W), R_C / length(R_C)));
-	dt = time_theta(R_W, V_W, theta, mu);
+	time_theta(R_W, V_W, theta, mu, dt);
 	rv_from_r0v0(R_W, V_W, dt, R_W1, V_W1, mu);
 }
 
@@ -4057,7 +4345,7 @@ void ITER(double &c, int &s, double e, double &p, double &x, double &eo, double 
 	}
 }
 
-bool QDRTPI(VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, double mu, double dh, double E_L, int s, VECTOR3 &R_J, VECTOR3 &V_J)
+bool QDRTPI(int Epoch, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, double mu, double dh, double E_L, int s, VECTOR3 &R_J, VECTOR3 &V_J)
 {
 	int s_F;
 	double c, t, e_T, e_To, to, eps1, p;
@@ -4077,7 +4365,7 @@ bool QDRTPI(VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, double mu, doub
 	{
 		if (s == 1)
 		{
-			oneclickcoast(R, V, MJD, t, R_J, V_J, gravref, gravref);
+			oneclickcoast(Epoch, R, V, MJD, t, R_J, V_J, gravref, gravref);
 		}
 		else
 		{
@@ -4324,7 +4612,7 @@ VECTOR3 gravityroutine(VECTOR3 R, OBJHANDLE gravref, double mjd0)
 	return g;
 }
 
-void impulsive(VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, double f_av, double isp, double m, VECTOR3 DV, VECTOR3 &Llambda, double &t_slip, VECTOR3 &R_cutoff, VECTOR3 &V_cutoff, double &MJD_cutoff, double &m_cutoff)
+void impulsive(int Epoch, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, double f_av, double isp, double m, VECTOR3 DV, VECTOR3 &Llambda, double &t_slip, VECTOR3 &R_cutoff, VECTOR3 &V_cutoff, double &MJD_cutoff, double &m_cutoff)
 {
 	VECTOR3 R_ig, V_ig, V_go, R_ref, V_ref, dV_go, R_d, V_d, R_p, V_p, i_z, i_y;
 	double t_slip_old, mu, t_go, v_goz, dr_z, dt_go, m_p;
@@ -4344,12 +4632,12 @@ void impulsive(VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, double f_av,
 	{
 		n = 0;
 		//rv_from_r0v0(R, V, t_slip, R_ig, V_ig, mu);
-		oneclickcoast(R, V, MJD, t_slip, R_ig, V_ig, gravref, gravref);
+		oneclickcoast(Epoch, R, V, MJD, t_slip, R_ig, V_ig, gravref, gravref);
 		while ((length(dV_go) > 0.01 || n < 2) && n <= nmax)
 		{
 			poweredflight(R_ig, V_ig, MJD, gravref, f_av, isp, m, V_go, R_p, V_p, m_p, t_go);
 			//rv_from_r0v0(R_ref, V_ref, t_go + t_slip, R_d, V_d, mu);
-			oneclickcoast(R_ref, V_ref, MJD, t_go + t_slip, R_d, V_d, gravref, gravref);
+			oneclickcoast(Epoch, R_ref, V_ref, MJD, t_go + t_slip, R_d, V_d, gravref, gravref);
 			i_z = unit(crossp(R_d, i_y));
 			dr_z = dotp(i_z, R_d - R_p);
 			v_goz = dotp(i_z, V_go);
@@ -4374,7 +4662,7 @@ void impulsive(VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, double f_av,
 	MJD_cutoff = MJD + (t_go + t_slip) / 24.0 / 3600.0;
 }
 
-void impulsive(VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, double f_av, double isp, double m, VECTOR3 R_ref, VECTOR3 V_ref, VECTOR3 &Llambda, double &t_slip, VECTOR3 &R_cutoff, VECTOR3 &V_cutoff, double &MJD_cutoff, double &m_cutoff)
+void impulsive(int Epoch, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, double f_av, double isp, double m, VECTOR3 R_ref, VECTOR3 V_ref, VECTOR3 &Llambda, double &t_slip, VECTOR3 &R_cutoff, VECTOR3 &V_cutoff, double &MJD_cutoff, double &m_cutoff)
 {
 	VECTOR3 R_ig, V_ig, V_go, dV_go, R_d, V_d, R_p, V_p, i_z, i_y;
 	double t_slip_old, mu, t_go, v_goz, dr_z, dt_go, m_p;
@@ -4392,12 +4680,12 @@ void impulsive(VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, double f_av,
 	{
 		n = 0;
 		//rv_from_r0v0(R, V, t_slip, R_ig, V_ig, mu);
-		oneclickcoast(R, V, MJD, t_slip, R_ig, V_ig, gravref, gravref);
+		oneclickcoast(Epoch, R, V, MJD, t_slip, R_ig, V_ig, gravref, gravref);
 		while ((length(dV_go) > 0.01 || n < 2) && n <= nmax)
 		{
 			poweredflight(R_ig, V_ig, MJD, gravref, f_av, isp, m, V_go, R_p, V_p, m_p, t_go);
 			//rv_from_r0v0(R_ref, V_ref, t_go + t_slip, R_d, V_d, mu);
-			oneclickcoast(R_ref, V_ref, MJD, t_go + t_slip, R_d, V_d, gravref, gravref);
+			oneclickcoast(Epoch, R_ref, V_ref, MJD, t_go + t_slip, R_d, V_d, gravref, gravref);
 			i_z = unit(crossp(R_d, i_y));
 			dr_z = dotp(i_z, R_d - R_p);
 			v_goz = dotp(i_z, V_go);
@@ -4422,7 +4710,7 @@ void impulsive(VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, double f_av,
 	MJD_cutoff = MJD + (t_go + t_slip) / 24.0 / 3600.0;
 }
 
-void impulsive2(VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, double f_T, double f_av, double isp, double m, VECTOR3 R_ref, VECTOR3 V_ref, VECTOR3 &Llambda, double &t_slip, VECTOR3 &R_cutoff, VECTOR3 &V_cutoff, double &MJD_cutoff, double &m_cutoff)
+void impulsive2(int Epoch, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, double f_T, double f_av, double isp, double m, VECTOR3 R_ref, VECTOR3 V_ref, VECTOR3 &Llambda, double &t_slip, VECTOR3 &R_cutoff, VECTOR3 &V_cutoff, double &MJD_cutoff, double &m_cutoff)
 {
 	VECTOR3 R_ig, V_ig, V_go, dV_go, R_d, V_d, R_p, V_p, i_z, i_y;
 	double t_slip_old, mu, t_go, v_goz, dr_z, dt_go, m_p;
@@ -4440,12 +4728,12 @@ void impulsive2(VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, double f_T,
 	{
 		n = 0;
 		//rv_from_r0v0(R, V, t_slip, R_ig, V_ig, mu);
-		oneclickcoast(R, V, MJD, t_slip, R_ig, V_ig, gravref, gravref);
+		oneclickcoast(Epoch, R, V, MJD, t_slip, R_ig, V_ig, gravref, gravref);
 		while ((length(dV_go) > 0.01 || n < 2) && n <= nmax)
 		{
 			poweredflight(R_ig, V_ig, MJD, gravref, f_av, isp, m, V_go, R_p, V_p, m_p, t_go);
 			//rv_from_r0v0(R_ref, V_ref, t_go + t_slip, R_d, V_d, mu);
-			oneclickcoast(R_ref, V_ref, MJD, t_go + t_slip, R_d, V_d, gravref, gravref);
+			oneclickcoast(Epoch, R_ref, V_ref, MJD, t_go + t_slip, R_d, V_d, gravref, gravref);
 			i_z = unit(crossp(R_d, i_y));
 			dr_z = dotp(i_z, R_d - R_p);
 			v_goz = dotp(i_z, V_go);
@@ -4510,7 +4798,7 @@ void format_time_MMSS(char *buf, double time) {
 	sprintf(buf, "%d:%02d", minutes, seconds);
 }
 
-void checkstar(const std::vector<VECTOR3> &navstars, MATRIX3 REFSMMAT, VECTOR3 IMU, VECTOR3 R_C, double R_E, int &staroct, double &trunnion, double &shaft)
+void checkstar(const VECTOR3 *navstars, MATRIX3 REFSMMAT, VECTOR3 IMU, VECTOR3 R_C, double R_E, int &staroct, double &trunnion, double &shaft)
 {
 	MATRIX3 SMNB, Q1, Q2, Q3;
 	double OGA, IGA, MGA, TA, SA;
@@ -4554,7 +4842,7 @@ void checkstar(const std::vector<VECTOR3> &navstars, MATRIX3 REFSMMAT, VECTOR3 I
 	//sprintf(oapiDebugString(), "%d, %f, %f", staroct, SA*DEG, TA*DEG);
 }
 
-void coascheckstar(const std::vector<VECTOR3> &navstars, MATRIX3 REFSMMAT, VECTOR3 IMU, VECTOR3 R_C, double R_E, int &staroct, double &spa, double &sxp)
+void coascheckstar(const VECTOR3 *navstars, MATRIX3 REFSMMAT, VECTOR3 IMU, VECTOR3 R_C, double R_E, int &staroct, double &spa, double &sxp)
 {
 	MATRIX3 SMNB, Q1, Q2, Q3;
 	double OGA, IGA, MGA;
@@ -4572,7 +4860,7 @@ void coascheckstar(const std::vector<VECTOR3> &navstars, MATRIX3 REFSMMAT, VECTO
 	SMNB = mul(Q3, mul(Q2, Q1));
 
 	U_LOS = ULOS(REFSMMAT, SMNB, 57.47*RAD, 0.0);
-	star = OrbMech::FindNearestStar(navstars, U_LOS, R_C, R_E, 10.0*RAD);//31.5*RAD);
+	star = FindNearestStar(navstars, U_LOS, R_C, R_E, 10.0*RAD);//31.5*RAD);
 
 	if (star == -1)
 	{
@@ -5068,6 +5356,10 @@ double CMCEMSRangeToGo(MATRIX3 Rot_J_B, VECTOR3 R05G, double MJD05G, double lat,
 
 void EMXINGElev(VECTOR3 R, VECTOR3 R_S, VECTOR3 &N, VECTOR3 &rho, double &sinang)
 {
+	//R: Position vector of the satellite in true coordinates (ECT or MCT)
+	//R_S: Position vector of ground station in true coordinates (ECT or MCT)
+	//sinang: sine of elevation angle
+
 	VECTOR3 rho_apo;
 
 	N = unit(R_S);
@@ -5248,11 +5540,11 @@ CELEMENTS LyddaneOsculatingToMean(CELEMENTS arr_osc, int body)
 CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 {
 	CELEMENTS out;
-	double ae, am, Em, fm, J2, J3, J4, J5, R_e, cn, cn2, theta, theta2, theta4, eccdp2, sinI, sinI2, cosI2, adr, adr2, adr3, a;
-	double sinta, costa, costa2, sn2gta, cs2gta, sinGD, cosGD, sin2gd, cs2gd, sin3gd, cs3gd, sn3fgd, snf2gd, csf2gd, cs3fgd;
-	double k2, k3, k4, k5, gamma2, gamma3, gamma4, gamma5, gamma2_apo, gamma3_apo, gamma4_apo, gamma5_apo, g3dg2, g4dg2, g5dg2;
-	double A1_apo, A1, A2_apo, A2, A3, A4, A5, A6, A7, A8p, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A20, A21, A25, A26;
-	double B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15;
+	double ae, am, Em, fm, J2, J3, J4, R_e, cn, cn2, theta, theta2, theta4, eccdp2, sinI, sinI2, cosI2, adr, adr2, adr3, a;
+	double sinta, costa, costa2, sn2gta, cs2gta, sinGD, cosGD, sin2gd, cs2gd, sn3fgd, snf2gd, csf2gd, cs3fgd;
+	double k2, k3, k4, gamma2, gamma3, gamma4, gamma2_apo, gamma3_apo, gamma4_apo, g3dg2, g4dg2;
+	double A1_apo, A1, A2_apo, A2, A6, A7, A10, A11, A12, A13, A14, A15, A16, A17, A18, A20, A21, A25, A26;
+	double B1, B2, B4, B5, B7, B8, B10, B11, B13, B14;
 	double delta1e, de, edl, di, sin_im2_dh, lagaha, lgh, sinMADP, cosMADP, sinraandp, cosraandp;
 	bool pseudostate = false;
 
@@ -5261,7 +5553,6 @@ CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 		J2 = J2_Earth;
 		J3 = J3_Earth;
 		J4 = J4_Earth;
-		J5 = 0.0;//J5_Earth;
 		R_e = R_Earth;
 	}
 	else
@@ -5269,7 +5560,6 @@ CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 		J2 = J2_Moon;
 		J3 = J3_Moon;
 		J4 = 0;
-		J5 = 0;
 		R_e = R_Moon;
 	}
 
@@ -5291,19 +5581,15 @@ CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 	k2 = J2 * pow(ae, 2) / 2.0;
 	k3 = -J3 * pow(ae, 3);
 	k4 = -3.0 * J4*pow(ae,4) / 8.0;
-	k5 = -J5 * pow(ae, 5);
 	gamma2 = k2 / pow(am, 2);
 	gamma3 = k3 / pow(am, 3);
 	gamma4 = k4 / pow(am, 4);
-	gamma5 = k5 / pow(am, 5);
 	gamma2_apo = gamma2 / pow(cn, 4);
 	gamma3_apo = gamma3 / pow(cn, 6);
 	gamma4_apo = gamma4 / pow(cn, 8);
-	gamma5_apo = gamma5 / pow(cn, 10);
 
 	g3dg2 = gamma3_apo / gamma2_apo;
 	g4dg2 = gamma4_apo / gamma2_apo;
-	g5dg2 = gamma5_apo / gamma2_apo;
 
 	Em = kepler_E(arr.e, arr.l, 1e-12);
 	fm = atan2(sqrt(1.0 - eccdp2)*sin(Em), cos(Em) - arr.e);
@@ -5329,8 +5615,6 @@ CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 	cosGD = cos(arr.g);
 	sin2gd = sin(2.0 * arr.g);
 	cs2gd = cos(2.0 * arr.g);
-	sin3gd = sin(3.0 * arr.g);
-	cs3gd = cos(3.0 * arr.g);
 	sn3fgd = sin(3.0*fm + 2.0*arr.g);
 	cs3fgd = cos(3.0*fm + 2.0*arr.g);
 	sinMADP = sin(arr.l);
@@ -5342,14 +5626,8 @@ CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 	A1 = 1.0 / 8.0 * gamma2_apo*cn2 * (1.0 - 11.0 * theta2 - 40.0 * theta4 * A1_apo);
 	A2_apo = 3.0 * theta2 + 8.0 * theta4 * A1_apo;
 	A2 = 5.0 / 12.0 * g4dg2 * cn2 * (1.0 - A2_apo);
-	A3 = g5dg2 * (3.0 * eccdp2 + 4.0);
-	A4 = g5dg2 * (1.0 - 3.0 * A2_apo);
-	A5 = A3 * (1.0 - 3.0 * A2_apo);
 	A6 = 1.0 / 4.0 * g3dg2;
 	A7 = A6 * cn2 * sinI;
-	A8p = g5dg2 * arr.e*(1.0 - 5.0 * theta2 - 16.0 * theta4 * A1_apo);
-	A8 = A8p * arr.e;
-	A9 = cn2 * sinI;
 	A10 = 2.0 + eccdp2;
 	A11 = 3.0 * eccdp2 + 2.0;
 	A12 = A11 * theta2;
@@ -5366,41 +5644,33 @@ CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 
 	B1 = cn * (A1 - A2) - (1.0 / 16.0 * (A10 - 400.0 * A14 - 40.0 * A13 - 11.0 * A12) + 1.0 / 8.0 * A21*(11.0 + 200.0 * A16 + 80.0 * A15))*gamma2_apo
 		+ 5.0 / 24.0 * (-80.0 * A14 - 8.0 * A13 - 3.0 * A12 + 2.0 * A25*A21 + A10)*g4dg2;
-	B2 = A6 * A18*(2.0 + cn - eccdp2) + 5.0 / 64.0 * A5*A18*cn2 - 15.0 / 32.0 * A4*A17*cn*cn2
-		+ A20 * tan(arr.i / 2.0)*(5.0 / 64.0 * A5 + A6) + 5.0 / 64.0 * A4*A17*(9.0 * eccdp2 + 26.0)
-		+ 15.0 / 32.0*A3*A20*A25*sinI*(1.0 - theta);
-	B3 = 35.0 / 576.0 * g5dg2 * arr.e*sinI*(theta - 1.0)*A21*(80.0 * A16 + 5.0 + 32.0 * A15)
-		- 35.0 / 1152.0 * A8p*(A21*tan(arr.i / 2.0) + (2.0 * eccdp2 + 3.0 * (1.0 - cn*cn2))*sinI);
+	B2 = A6 * A18*(2.0 + cn - eccdp2) + A20 * tan(arr.i / 2.0)*(A6);
 	B4 = cn * arr.e*(A1 - A2);
-	B5 = cn * (5.0 / 64.0 * A4*A9*(9.0 * eccdp2 + 4.0) + A7);
-	B6 = 35.0 / 384.0 * cn*cn2 * A8*sinI;
+	B5 = cn * A7;
 	B7 = cn2 * A17*A1_apo*(1.0 / 8.0 * gamma2_apo*(1.0 - 15.0 * theta2) - 5.0 / 12.0 * g4dg2 * (1.0 - 7.0 * theta2));
-	B8 = 5.0 / 64.0 * A3*cn2 * (1.0 - 9.0 * theta2 - 24.0 * theta4 * A1_apo) + cn2 * A6;
-	B9 = 35.0 / 384.0 * cn2 * A8;
+	B8 = cn2 * A6;
 	B10 = sinI*(5.0 / 12.0 * g4dg2 * A21*A25 - A26 * gamma2_apo);
-	B11 = A21 * (5.0 / 64.0 * A5 + A6 + 15.0 / 32.0 * A3*A25*pow(sinI, 2));
-	B12 = -((80.0 * A16 + 32.0 * A15 + 5.0)*(36.0 / 576.0 * g5dg2 * arr.e*pow(sinI, 2) * A21) + 35.0 / 1152.0 * A8*A20);
+	B11 = A21 * A6;
 	B13 = arr.e * (A1 - A2);
-	B14 = 5.0 / 64.0 * A5*cn2 * sinI + A7;
-	B15 = 35.0 / 384.0 * A8*cn2 * sinI;
+	B14 = A7;
 
 	a = am * (1.0 + gamma2 * ((3.0 * theta2 - 1.0)*arr.e / (cn2*cn2*cn2)*(arr.e*cn + arr.e / (1.0 + cn) + costa *(3.0 + 3.0 * arr.e*costa
 		+ eccdp2 * costa2)) + 3.0 * (1.0 - theta2)*adr3 * cs2gta));
 
-	delta1e = B13 * cs2gd + B14 * sinGD - B15 * sin3gd;
+	delta1e = B13 * cs2gd + B14 * sinGD;
 	de = delta1e - cn2 / 2.0 * (gamma2_apo*(1.0 - theta2)*(3.0 * csf2gd + cs3fgd)
 		- 3.0 * gamma2 * 1.0 / (cn2*cn2*cn2)*(1.0 - theta2)*cs2gta*(3.0 * arr.e*costa2
 			+ 3.0 * costa + eccdp2 * costa*costa2 + arr.e)
 		- gamma2 * 1.0 / (cn2*cn2*cn2)*(3.0 * theta2 - 1.0)*(arr.e*cn + arr.e / (1.0 + cn) + 3.0 * arr.e*costa2 + 3.0 * costa + eccdp2 * costa * costa2));
-	edl = B4 * sin2gd - B5 * cosGD + B6 * cs3gd
+	edl = B4 * sin2gd - B5 * cosGD
 		- 1.0 / 4.0 * cn*cn2 * gamma2_apo*(2.0 * (3.0 * theta2 - 1.0)*(cn2 * adr2 + adr + 1.0)*sinta
 			+ 3.0 * (1.0 - theta2)*((-cn2 * adr2 - adr + 1.0)*snf2gd
 				+ (cn2 * adr2 + adr + 1.0 / 3.0)*sn3fgd));
 	out.e = sqrt(pow(arr.e + de, 2) + pow(edl, 2));
 
 	di = 1.0 / 2.0 * theta*gamma2_apo*sinI*(arr.e*cs3fgd + 3.0 * (arr.e*csf2gd + cs2gta))
-		- A20 / cn2*(B7*cs2gd + B8 * sinGD - B9 * sin3gd);
-	sin_im2_dh = 1.0 / (2.0 * cosI2)*(B10*sin2gd + B11 * cosGD + B12 * cs3gd
+		- A20 / cn2*(B7*cs2gd + B8 * sinGD);
+	sin_im2_dh = 1.0 / (2.0 * cosI2)*(B10*sin2gd + B11 * cosGD
 		- 1.0 / 2.0 * gamma2_apo*theta*sinI*(6.0 * (arr.e*sinta - arr.l + fm)
 			- 3.0 * (sn2gta + arr.e * snf2gd) - arr.e * sn3fgd));
 	out.i = 2.0 * asin(sqrt(pow(sin_im2_dh, 2) + pow(1.0 / 2.0 * di*cosI2 + sinI2, 2)));
@@ -5431,7 +5701,7 @@ CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body)
 		}
 	}
 
-	lagaha = arr.l + arr.g + arr.h + B3 * cs3gd + B1 * sin2gd + B2 * cosGD;
+	lagaha = arr.l + arr.g + arr.h + B1 * sin2gd + B2 * cosGD;
 	lgh = lagaha + (1.0 / 4.0 * (cn2 / (cn + 1.0))*arr.e*gamma2_apo*(3.0 * (1.0 - theta2)*(sn3fgd
 		*(1.0 / 3.0 + adr2 * cn2 + adr) + snf2gd *(1.0 - adr2 * cn2 - adr))
 		+ 2.0 * sinta*(3.0 * theta2 - 1.0)*(1.0 + adr2 * cn2 + adr)))
@@ -5524,7 +5794,7 @@ void BrouwerSecularRates(CELEMENTS coe_osc, CELEMENTS coe_mean, int body, double
 	sin_lat = sin(u)*sin(coe_osc.i);
 	R = coe_osc.a*(1.0 - coe_osc.e*coe_osc.e) / (1.0 + coe_osc.e*cos(f));
 	ainv = 1.0 / coe_osc.a + J2 * pow(R_e, 2) / pow(R, 3)*(1.0 - 3.0*pow(sin_lat, 2)) + J3 * pow(R_e, 3) / pow(R, 4)*(3.0*sin_lat - 5.0*pow(sin_lat, 3)) -
-		J4 * pow(R_e, 4) / pow(R, 5)*(1.0 - 10.0*pow(sin_lat, 2) + 35.0 / 3.0*pow(sin_lat, 4));
+		J4 * pow(R_e, 4) / (4.0*pow(R, 5))*(3.0 - 30.0*pow(sin_lat, 2) + 35.0*pow(sin_lat, 4));
 	l_dot = sqrt(mu*pow(ainv, 3));
 
 	//l_dot = n0 + n0 * cn*(gmp2*(3.0 / 2.0*(3.0*theta2 - 1.0) + 3.0 / 32.0*gmp2*(25.0*cn2 + 16.0*cn - 15.0 + (30.0 - 96.0*cn - 90.0*cn2)*theta2
@@ -5536,19 +5806,19 @@ void BrouwerSecularRates(CELEMENTS coe_osc, CELEMENTS coe_mean, int body, double
 		+ 5.0 / 4.0*gmp4*theta*(5.0 - 3.0*cn2)*(3.0 - 7.0*theta2));
 }
 
-SV PMMAEGS(SV sv0, int opt, double param, bool &error, double DN)
+SV PMMAEGS(int Epoch, SV sv0, int opt, double param, bool &error, double DN)
 {
 	if (sv0.gravref == oapiGetObjectByName("Earth"))
 	{
-		return PMMAEG(sv0, opt, param, error, DN);
+		return PMMAEG(Epoch, sv0, opt, param, error, DN);
 	}
 	else
 	{
-		return PMMLAEG(sv0, opt, param, error, DN);
+		return PMMLAEG(Epoch, sv0, opt, param, error, DN);
 	}
 }
 
-SV PMMAEG(SV sv0, int opt, double param, bool &error, double DN)
+SV PMMAEG(int Epoch, SV sv0, int opt, double param, bool &error, double DN)
 {
 	error = false;
 
@@ -5559,7 +5829,7 @@ SV PMMAEG(SV sv0, int opt, double param, bool &error, double DN)
 
 		MJD1 = param;
 		dt = (MJD1 - sv0.MJD)*24.0*3600.0;
-		return coast(sv0, dt);
+		return coast(Epoch, sv0, dt);
 	}
 	else
 	{
@@ -5675,7 +5945,7 @@ SV PMMAEG(SV sv0, int opt, double param, bool &error, double DN)
 
 
 			dt += ddt;
-			sv1 = coast(sv1, ddt);
+			sv1 = coast(Epoch, sv1, ddt);
 			osc1 = OrbMech::GIMIKC(sv1.R, sv1.V, mu_Earth);
 
 			COUNT--;
@@ -5693,7 +5963,7 @@ SV PMMAEG(SV sv0, int opt, double param, bool &error, double DN)
 	return sv0;
 }
 
-SV PMMLAEG(SV sv0, int opt, double param, bool &error, double DN)
+SV PMMLAEG(int Epoch, SV sv0, int opt, double param, bool &error, double DN)
 {
 	error = false;
 
@@ -5704,7 +5974,7 @@ SV PMMLAEG(SV sv0, int opt, double param, bool &error, double DN)
 
 		MJD1 = param;
 		dt = (MJD1 - sv0.MJD)*24.0*3600.0;
-		return coast(sv0, dt);
+		return coast(Epoch, sv0, dt);
 	}
 	//Update to the given mean anomaly (opt=1), argument of latitude (opt=2) or maneuver counter line (opt=3)
 	else
@@ -5819,7 +6089,7 @@ SV PMMLAEG(SV sv0, int opt, double param, bool &error, double DN)
 
 
 			dt += ddt;
-			sv1 = coast(sv1, ddt);
+			sv1 = coast(Epoch, sv1, ddt);
 			osc1 = OrbMech::GIMIKC(sv1.R, sv1.V, mu_Moon);
 
 			COUNT--;
@@ -5931,7 +6201,7 @@ double MeanToTrueAnomaly(double meanAnom, double eccdp, double error2)
 	return ta;
 }
 
-SV PositionMatch(SV sv_A, SV sv_P, double mu)
+SV PositionMatch(int Epoch, SV sv_A, SV sv_P, double mu)
 {
 	SV sv_A1, sv_P1;
 	VECTOR3 u, R_A1, U_L;
@@ -5942,7 +6212,7 @@ SV PositionMatch(SV sv_A, SV sv_P, double mu)
 
 	u = unit(crossp(sv_P.R, sv_P.V));
 	U_L = unit(crossp(u, sv_P.R));
-	sv_A1 = PMMAEGS(sv_A, 0, sv_P.MJD, error);
+	sv_A1 = PMMAEGS(Epoch, sv_A, 0, sv_P.MJD, error);
 
 	do
 	{
@@ -5954,7 +6224,7 @@ SV PositionMatch(SV sv_A, SV sv_P, double mu)
 		}
 		n = OrbMech::GetMeanMotion(sv_A1.R, sv_A1.V, mu);
 		ddt = phase / n;
-		sv_A1 = coast(sv_A1, ddt);
+		sv_A1 = coast(Epoch, sv_A1, ddt);
 		dt += ddt;
 	} while (abs(ddt) > 0.01);
 
@@ -6202,7 +6472,7 @@ OrbMech_DROOTS_G:
 
 const double CoastIntegrator::r_SPH = 64373760.0;
 
-CoastIntegrator::CoastIntegrator(VECTOR3 R00, VECTOR3 V00, double mjd0, double deltat, int planet, int outplanet)
+CoastIntegrator::CoastIntegrator(int Epoch, VECTOR3 R00, VECTOR3 V00, double mjd0, double deltat, int planet, int outplanet)
 {
 	this->outplanet = outplanet;
 
@@ -6246,7 +6516,7 @@ CoastIntegrator::CoastIntegrator(VECTOR3 R00, VECTOR3 V00, double mjd0, double d
 		P = BODY_MOON;
 	}
 
-	Rot = OrbMech::J2000EclToBRCSMJD(mjd0);
+	Rot = OrbMech::J2000EclToBRCS(Epoch);
 	MATRIX3 Rot_M = OrbMech::GetRotationMatrix(BODY_MOON, mjd0);
 	U_Z_M = rhmul(Rot_M, _V(0, 0, 1));
 

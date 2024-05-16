@@ -341,6 +341,41 @@ double h_substance::VAPENTH() const
 
 }
 
+double h_substance::GET_LIQUID_DENSITY(const int SUBSTANCE_TYPE, const double temperature) const
+{
+	double density;
+	//see https://gist.github.com/n7275/8676c064fef5f48680b5ba815f24e2bf
+	switch (SUBSTANCE_TYPE) {
+		case SUBSTANCE_O2:
+			if (temperature < CRITICAL_T[SUBSTANCE_O2]) {
+				density = 1434.338998096669 + 30827.66466562366 / (temperature - 186.3966881148979);
+			}
+			else {
+				density = 44.24461555143480 + 7784.502442355128 / (temperature - 136.05498694800465);
+			}
+			break;
+		case SUBSTANCE_H2:
+			if (temperature < CRITICAL_T[SUBSTANCE_H2]) {
+				density = 136.4894046680936 + 3242.617524782929 / (temperature - 67.46034096292647);
+			}
+			else {
+				density = 0.741833633973125 + 642.4040759445162 / (temperature - 17.5701803944558);
+			}
+			break;
+		case SUBSTANCE_N2:
+			if (temperature < CRITICAL_T[SUBSTANCE_N2]) {
+				density = 734.3287921946625 + 9878.83146453045 / (temperature - 146.65628914669438);
+			}
+			else {
+				density = 17.85307222754917 + 4418.262547908501 / (temperature - 107.28230096889227);
+			}
+			break;
+		default:
+			density = L_DENSITY[SUBSTANCE_TYPE];	
+	}
+	return density;
+}
+
 double h_substance::Condense(double dt) {
 
 	double vapenth_temporary = VAPENTH();
@@ -493,13 +528,16 @@ void h_volume::ThermalComps(double dt) {
 			AvgC += ((composition[i].vapor_mass * SPECIFICC_GAS[composition[i].subst_type]) + ((composition[i].mass - composition[i].vapor_mass) * SPECIFICC_LIQ[composition[i].subst_type]));
 	}
 
-	if (GetMass()) {
+	if (GetMass() > 0.0) {
 		AvgC = AvgC / total_mass;	//weighted average heat capacity.. gives us averaged temp (ideal case)
 		Temp = Q / AvgC / total_mass; //average Temp of substances
 		for (i = 0; i < MAX_SUB; i++)
 			composition[i].SetTemp(Temp);	//redistribute the temps,re-computing the Qs... mathwise we are OK
-	} else
+	}
+	else {
 		Temp = 0;
+	}
+		
 
 	//2. Compute average Press
 	double m_i = 0;
@@ -512,32 +550,26 @@ void h_volume::ThermalComps(double dt) {
 		m_i += composition[i].vapor_mass / MMASS[composition[i].subst_type];	//Units of mol
 
 		// temperature dependency of the density is assumed 1 to 2 g/l
-		double density = L_DENSITY[composition[i].subst_type];
-		if (composition[i].subst_type == SUBSTANCE_O2) {
-			// Liquid density is temperature dependent because of cryo tank pressurization with a heater
-			// Correction term is 0 at O2 initial tank temperature (75K), the other factors are "empirical"
-			density += 0.56 * Temp * Temp - 134.0 * Temp + 6900.0;
+		double density = composition->GET_LIQUID_DENSITY(i, Temp);
 
-		} else if (composition[i].subst_type == SUBSTANCE_H2) {
-			// Liquid density is temperature dependent because of cryo tank pressurization with a heater
-			// Correction term is 0 at H2 boiling point (20K), the other factors are "empirical"
-			density += 0.03333 * Temp * Temp - 4.3333 * Temp + 73.3333;
-		}
 		tNV = (composition[i].mass - composition[i].vapor_mass) / density;	//Units of L
 		NV += tNV;	//Units of L
+		NV += VDW_B[i] * composition[i].vapor_mass;
 
-		PNV += tNV / BULK_MOD[composition[i].subst_type];;	//Units of L/Pa
+		PNV += tNV / BULK_MOD[composition[i].subst_type];	//Units of L/Pa
 	}
 
 	m_i = -m_i * R_CONST * Temp;	//Units of L*Pa
 	NV = Volume - NV;	//Units of L
 
 	double delta = (NV * NV) - (4.0 * m_i * PNV); //delta of quadric eq. P^2*PNV+ P*NV + m_i = 0
-	if (PNV)
+	if (PNV > 0.0 && delta > 0.0) {
 		Press = (-NV + sqrt(delta)) / (2.0 * PNV);	//Units of Pa **only first solution is always valid. why is there a second?
-	else
+	}	
+	else {
 		Press = 0;
-
+	}
+		
 	NV = Volume - NV;
 	double air_volume = Volume - NV + Press * PNV;
 
@@ -551,7 +583,8 @@ void h_volume::ThermalComps(double dt) {
 			vap_press = exp(ANTIONE_A[composition[i].subst_type] - (ANTIONE_B[composition[i].subst_type] / Temp))*1E5; //this is vapor pressure of current substance
 		}
 		//need to boil material if vapor pressure > pressure, otherwise condense
-		if (vap_press > Press)	
+		//supercritical fluids are treaded as liquids with variable density
+		if (vap_press > Press && Press < CRITICAL_P[i])
 			Q += composition[i].Boil(dt);
 		else
 			Q += composition[i].Condense(dt);
@@ -736,6 +769,11 @@ void h_Tank::refresh(double dt) {
 			fprintf(PanelsdkLogFile, "\t%i Q %f\n", i, space.composition[i].Q);
 	}*/
 
+	/*if (!strcmp(name, "O2TANK1"))
+	{
+		sprintf(oapiDebugString(), "%lf", this->space.Press);
+	}*/
+
 	space.ThermalComps(dt);	
 	Temp = space.Temp;
 	energy = space.Q;
@@ -820,7 +858,7 @@ void h_Tank::BoilAllAndSetTemp(double _t) {
 
 //------------------------------- PIPE CLASS ------------------------------------
 
-h_Pipe::h_Pipe(char *i_name, h_Valve *i_IN, h_Valve *i_OUT, int i_type, double max, double min, int is_two) { 
+h_Pipe::h_Pipe(char *i_name, h_Valve *i_IN, h_Valve *i_OUT, int i_type, double max, double min, int is_two, double maxFlow) { 
 
 	strcpy(name, i_name);
 	max_stage = 99;
@@ -832,7 +870,7 @@ h_Pipe::h_Pipe(char *i_name, h_Valve *i_IN, h_Valve *i_OUT, int i_type, double m
 	out = i_OUT;
 	open = 0;
 	flow = 0;
-	flowMax = 0;
+	flowMax = maxFlow;
 }
 
 void h_Pipe::BroadcastDemision(ship_object * gonner) {
@@ -1044,9 +1082,9 @@ void h_HeatExchanger::refresh(double dt) {
 	} else if (h_pump == 1) {
 		
 		// Only cooling at the moment, heating causes bugs during high time accelerations
-		//if (target->GetTemp() < tempMin && source->GetTemp() > target->GetTemp()) {
-		//	pump = true;
-		//}
+		if (target->GetTemp() < tempMin && source->GetTemp() > target->GetTemp()) {
+			pump = true;
+		}
 		if (target->GetTemp() > tempMax && source->GetTemp() < target->GetTemp()) {
 			pump = true;
 		}
@@ -1239,17 +1277,34 @@ void h_MixingPipe::Save(FILEHANDLE scn) {
 }
 
 
-h_crew::h_crew(char *i_name, int nr, h_Tank *i_src) {
+h_crew::h_crew(char *i_name, int nr, h_Tank *i_src, h_Pipe *i_pipe) {
 	
 	strcpy(name, i_name);
 	max_stage = 99;
 	number = nr;
 	SRC = i_src;
+	drinkpipe = i_pipe;
 }
 
 void h_crew::refresh(double dt) {
 
-	double oxygen = 0.00949 * number * dt; //grams of O2 (0.082 to 0.124 LB/Man Hour (37.19 to 56.25 g/Man Hour) per LM-8 Systems Handbook)	
+	double oxygen = 0.00949 * number * dt; //grams of O2 (0.082 to 0.124 LB/Man Hour (37.19 to 56.25 g/Man Hour) per LM-8 Systems Handbook)
+
+	if (drinkpipe && !(drinkpipe->in->pz)) {
+
+		if (number != 0)
+		{
+			drinkpipe->in->Open();
+			drinkpipe->flowMax = (0.0346494 * number); //grams of H2O consumed (6.6 lb/day or .275 lb/hr (18.8997 g/Man Hour))
+		}
+
+		else
+		{
+			drinkpipe->in->Close();
+			drinkpipe->flowMax = 0.0;
+		}
+	}
+
 	if (SRC) {
 		double srcTemp = SRC->GetTemp();
 		therm_obj *t = SRC->GetThermalInterface();
@@ -1265,7 +1320,8 @@ void h_crew::refresh(double dt) {
 		SRC->space.composition[SUBSTANCE_CO2].vapor_mass += co2;
 		SRC->space.composition[SUBSTANCE_CO2].SetTemp(srcTemp);
 
-		double h2o = 0.0264 * number * dt;  // grams of H2O water vapor (need a source for this)
+		double sweatRate = srcTemp < 310.2 ? 0.0685522320142486 + 1.99493308786737E-63 * exp(srcTemp * 0.4654878554362358) : 1.0;
+		double h2o = 1.1 * sweatRate * number * dt;  //grams of H2O water vapor (lung loss should be 2.64 lb/day and sweat should be 1.32 lb/day per crew)
 		SRC->space.composition[SUBSTANCE_H2O].mass += h2o;	
 		SRC->space.composition[SUBSTANCE_H2O].vapor_mass += h2o;	
 		SRC->space.composition[SUBSTANCE_H2O].SetTemp(srcTemp);
@@ -1273,7 +1329,7 @@ void h_crew::refresh(double dt) {
 		SRC->space.GetQ();
 		SRC->space.GetMass();
 			
-		double heat = 30.0 * number * dt;  //heat (400 to 760 BTU/Man Hour (117.23 to 222.73 Watts) per LM-8 Systems Handbook)
+		double heat = 1.77 * (310.2 - srcTemp) * number * dt;  //heat (400 to 760 BTU/Man Hour (117.23 to 222.73 Watts) per LM-8 Systems Handbook)
 		t->thermic(heat);
 	}
 }
@@ -1371,7 +1427,8 @@ void h_WaterSeparator::refresh(double dt) {
 		h_volume fanned = in->GetFlow(dt * delta_p, flowMax * dt);
 		flow = fanned.GetMass() / dt;
 
-		rpmcmd = flow * 4235.29;  //Gives max flow through water separator = 3600rpm
+		// At 5.7 g/s flow, RPM should be approximately 2050 per Hamilton Standard LM ECS subsystem book
+		rpmcmd = flow * 1062.18; // This value gives approsximately 2050 RPM at 1.93 g/s flow which is what our current simulation tops off at.
 
 		if (flow != 0) {
 			h2oremovalratio = (RPM / rpmcmd);
@@ -1403,7 +1460,7 @@ void h_WaterSeparator::refresh(double dt) {
 				fanned.composition[SUBSTANCE_H2O].Q = fanned.composition[SUBSTANCE_H2O].Q*factor;
 
 				//if (!strcmp(name, "WATERSEP1"))
-				//	sprintf(oapiDebugString(), "Rate %f Removed %f Remaining %f", h2oremovalratio, removedmass / dt, fanned.composition[SUBSTANCE_H2O].mass / dt);
+					//sprintf(oapiDebugString(), "RPM %f Rate %f Removed %f Remaining %f", RPM, h2oremovalratio, removedmass / dt, fanned.composition[SUBSTANCE_H2O].mass / dt);
 			}
 		}
 
@@ -1419,11 +1476,11 @@ void h_WaterSeparator::refresh(double dt) {
 	drpmcmd = rpmcmd - RPM;
 	if (drpmcmd >= 0.0)
 	{
-		delay = 7.0;	// Gives delay for WS spool up RPM/sec, approximately 2 minutes
+		delay = 7.0;	// Gives delay for WS spool up RPM/sec, approximately 2 minutes to clear sep light
 	}
 	else
 	{
-		delay = 30.0;	// Gives delay for WS spin down RPM/sec, approximately 1 minute
+		delay = 21.0;	// Gives delay for WS spin down RPM/sec, approximately 1 minute to light sep light
 	}
 	if (abs(drpmcmd) > delay*dt)
 	{
@@ -1494,4 +1551,75 @@ void h_Accumulator::refresh(double dt)
 	*/
 
 	//sprintf(oapiDebugString(), "Volume %lf Pressure %lf Original Volume %lf", space.Volume, space.Press*PSI, Original_volume);
+}
+
+
+
+h_ExteriorEnvironment::~h_ExteriorEnvironment()
+{
+}
+
+void h_ExteriorEnvironment::refresh(double dt)
+{
+	double exteriorDensity = parent->Vessel->GetAtmDensity();
+	double exteriorTemperature = parent->Vessel->GetAtmTemperature();
+	body externBody = body::None;
+	OBJHANDLE atmRef = parent->Vessel->GetAtmRef();
+
+	if (atmRef == oapiGetGbodyByName("Earth")) {
+		externBody = Earth;
+	}
+	else if (atmRef == oapiGetGbodyByName("Mars")) { //This is included as an example of how to expand functionality for other bodies. see the definition of compositionRatio[][]
+		externBody = Mars;
+	}
+
+	for (int n = 0; n < MAX_SUB; n++) {
+		h_Tank::space.composition[n].mass = exteriorDensity * h_Tank::space.Volume * compositionRatio[externBody][n];
+	}
+
+
+	h_Tank::BoilAllAndSetTemp(exteriorTemperature);
+	h_Tank::refresh(dt);
+}
+
+h_ExteriorVentPipe::h_ExteriorVentPipe(char* i_name, h_Valve* i_IN, h_Valve* i_OUT, int i_type, double max, double min, int is_two) :
+	h_Pipe(i_name, i_IN, i_OUT, i_type, max, min, is_two, 0.)
+{
+	v = NULL;
+	Num_Vents = 0;
+}
+
+h_ExteriorVentPipe::~h_ExteriorVentPipe()
+{
+}
+
+void h_ExteriorVentPipe::AddVent(VECTOR3 i_pos, VECTOR3 i_dir, double i_size)
+{
+	pos[Num_Vents] = i_pos;
+	dir[Num_Vents] = i_dir;
+	size[Num_Vents] = i_size;
+	Num_Vents++;
+}
+
+void h_ExteriorVentPipe::ProcessShip(VESSEL* vessel, PROPELLANT_HANDLE ph)
+{
+	ph_vent = ph;
+	v = vessel;
+	for (int i = 0; i < Num_Vents; i++)
+	{
+		thg[i] = v->CreateThruster(pos[i], dir[i], 50, ph, 50);
+		v->AddExhaust(thg[i], size[i] * 1000, size[i] * 50);
+		v->SetThrusterLevel(thg[i], 1.0);
+	};
+}
+
+int h_ExteriorVentPipe::Flow(h_volume block)
+{
+	/*	double mass=block.GetMass()/1000.0;//this we need to flow out in kg
+	v->SetEmptyMass(v->GetEmptyMass()-mass);
+	v->SetPropellantMass(ph_vent,v->GetPropellantMass(ph_vent)+mass);
+	for (int i=0;i<Num_Vents;i++)
+		v->SetThrusterLevel(thg[i],1.0);
+*/
+	return 1;
 }

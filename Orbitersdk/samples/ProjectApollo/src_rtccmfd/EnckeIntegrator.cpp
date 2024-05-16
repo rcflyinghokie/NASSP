@@ -60,6 +60,20 @@ void EnckeFreeFlightIntegrator::Propagate(EMMENIInputTable &in)
 	STOPVAE = in.EarthRelStopParam;
 	STOPVAM = in.MoonRelStopParam;
 	HMULT = in.IsForwardIntegration;
+	UseFixedStepLength = in.UseFixedStepLength;
+	FixedStepLength = in.FixedStepLength;
+	if (UseFixedStepLength)
+	{
+		//With integration fixed step length, turn off step size multiplier
+		if (HMULT >= 0.0)
+		{
+			HMULT = 1.0;
+		}
+		else
+		{
+			HMULT = -1.0;
+		}
+	}
 	DRAG = in.DensityMultiplier;
 	VENT = in.VentPerturbationFactor;
 	CSA = -0.5*in.Area*pRTCC->SystemParameters.MCADRG;
@@ -201,7 +215,14 @@ void EnckeFreeFlightIntegrator::Edit()
 EMMENI_Edit_3B:
 	TIME = abs(TRECT + tau);
 	rr = length(R);
-	dt_max = min(dt_lim, K*OrbMech::power(rr, 1.5) / sqrt(mu));
+	if (UseFixedStepLength)
+	{
+		dt_max = FixedStepLength;
+	}
+	else
+	{
+		dt_max = min(dt_lim, K*OrbMech::power(rr, 1.5) / sqrt(mu));
+	}
 
 	//Should we even check?
 	if (ISTOPS == 1)
@@ -329,6 +350,8 @@ EMMENI_Edit_4A:
 		{
 			RestoreVariables();
 		}
+		//Mark as bounding
+		INITE = 1;
 		//Go back to find new dt
 		goto EMMENI_Edit_3B;
 	}
@@ -552,14 +575,23 @@ void EnckeFreeFlightIntegrator::adfunc()
 			VECTOR3 VENTDIR = unit(crossp(unit(crossp(R, V)), R));
 			double TV = CurrentTime() - pRTCC->GetGMTLO()*3600.0 - pRTCC->SystemParameters.MCGVEN;
 
-			int i;
-			for (i = 0; i < 8 && pRTCC->SystemParameters.MDTVTV[1][i + 1] < TV; i++);
-			double f = (TV - pRTCC->SystemParameters.MDTVTV[1][i]) / (pRTCC->SystemParameters.MDTVTV[1][i + 1] - pRTCC->SystemParameters.MDTVTV[1][i]);
-			double F_vent = pRTCC->SystemParameters.MCTVEN*(pRTCC->SystemParameters.MDTVTV[0][i] + (pRTCC->SystemParameters.MDTVTV[0][i + 1] - pRTCC->SystemParameters.MDTVTV[0][i]) * f);
-			MDOT_vent = F_vent / pRTCC->SystemParameters.MCTVSP;
+			if (TV < 0.0)
+			{
+				//No venting before MCGVEN
+				a_vent = _V(0.0, 0.0, 0.0);
+				MDOT_vent = 0.0;
+			}
+			else
+			{
+				int i;
+				for (i = 0; i < 8 && pRTCC->SystemParameters.MDTVTV[1][i + 1] < TV; i++);
+				double f = (TV - pRTCC->SystemParameters.MDTVTV[1][i]) / (pRTCC->SystemParameters.MDTVTV[1][i + 1] - pRTCC->SystemParameters.MDTVTV[1][i]);
+				double F_vent = pRTCC->SystemParameters.MCTVEN*(pRTCC->SystemParameters.MDTVTV[0][i] + (pRTCC->SystemParameters.MDTVTV[0][i + 1] - pRTCC->SystemParameters.MDTVTV[0][i]) * f);
+				MDOT_vent = F_vent / pRTCC->SystemParameters.MCTVSP;
 
-			a_vent = VENTDIR * F_vent / WT*0.0; //TBD: Remove 0.0 when propulsive venting is implemented
-			a_d += a_vent;
+				a_vent = VENTDIR * F_vent / WT;
+				a_d += a_vent;
+			}
 		}
 	}
 	else

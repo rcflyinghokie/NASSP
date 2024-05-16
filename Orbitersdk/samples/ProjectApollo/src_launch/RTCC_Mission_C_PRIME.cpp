@@ -58,14 +58,14 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 
 		//Get TEPHEM
 		TEPHEM0 = 40038.;
-		tephem_scal = GetTEPHEMFromAGC(&cm->agc.vagc);
+		tephem_scal = GetTEPHEMFromAGC(&cm->agc.vagc, true);
 		double LaunchMJD = (tephem_scal / 8640000.) + TEPHEM0;
 		LaunchMJD = (LaunchMJD - SystemParameters.GMTBASE)*24.0;
 
 		int hh, mm;
 		double ss;
 
-		OrbMech::SStoHHMMSS(LaunchMJD*3600.0, hh, mm, ss);
+		OrbMech::SStoHHMMSS(LaunchMJD*3600.0, hh, mm, ss, 0.01);
 
 		sprintf_s(Buff, "P10,CSM,%d:%d:%.2lf;", hh, mm, ss);
 		GMGMED(Buff);
@@ -84,7 +84,7 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 		GMGMED(Buff);
 
 		//P12: IU GRR and Azimuth
-		OrbMech::SStoHHMMSS(T_GRR, hh, mm, ss);
+		OrbMech::SStoHHMMSS(T_GRR, hh, mm, ss, 0.01);
 		sprintf_s(Buff, "P12,IU1,%d:%d:%.2lf,%.2lf;", hh, mm, ss, Azi);
 		GMGMED(Buff);
 
@@ -94,6 +94,10 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 		EMSGSUPP(1, 1);
 		//Make telemetry matrix current
 		GMGMED("G00,CSM,TLM,CSM,CUR;");
+
+		//F62: Interpolate SFP
+		sprintf_s(Buff, "F62,,1,%.3lf;", Azi);
+		GMGMED(Buff);
 	}
 	break;
 	case 2: //TLI SIMULATION
@@ -118,7 +122,7 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 		sv0.LandingSiteIndicator = false;
 		sv0.VectorCode = "APIC001";
 
-		PMSVCT(4, RTCC_MPT_CSM, &sv0);
+		PMSVCT(4, RTCC_MPT_CSM, sv0);
 
 		//Add TLI to MPT
 		if (GETEval2(3.0*3600.0))
@@ -191,7 +195,7 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 		entopt.type = 1;
 		entopt.vessel = calcParams.src;
 		entopt.RV_MCC = sv2;
-		entopt.r_rbias = 1350.0;
+		entopt.r_rbias = PZREAP.RRBIAS;
 		entopt.dv_max = 7000.0*0.3048;
 
 		EntryTargeting(&entopt, &res); //Target Load for uplink
@@ -216,13 +220,19 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 
 		if (fcn == 3)
 		{
-			SV sv = StateVectorCalc(calcParams.src); //State vector for uplink
+			EphemerisData sv, sv_uplink;
+			double GMTSV;
+
+			GMTSV = PZMPTCSM.TimeToBeginManeuver[0] - 10.0*60.0; //10 minutes before TB6
+			
+			sv = StateVectorCalcEphem(calcParams.src);
+			sv_uplink = coast(sv, GMTSV - sv.GMT, RTCC_MPT_CSM); //Coast with venting and drag taken into account
 
 			char buffer1[1000];
 			char buffer2[1000];
 
-			AGCStateVectorUpdate(buffer1, sv, true);
-			AGCStateVectorUpdate(buffer2, sv, false);
+			AGCStateVectorUpdate(buffer1, 1, RTCC_MPT_CSM, sv_uplink);
+			AGCStateVectorUpdate(buffer2, 1, RTCC_MPT_LM, sv_uplink);
 
 			sprintf(form->purpose, "TLI+90");
 			sprintf(uplinkdata, "%s%s", buffer1, buffer2);
@@ -330,7 +340,7 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 		entopt.TIGguess = TLIplus;
 		entopt.type = 1;
 		entopt.vessel = calcParams.src;
-		entopt.r_rbias = 1350.0;
+		entopt.r_rbias = PZREAP.RRBIAS;
 		entopt.dv_max = 7000.0*0.3048;
 
 		EntryTargeting(&entopt, &res);//dV_LVLH, P30TIG, latitude, longitude, RET, RTGO, VIO, ReA, prec); //Target Load for uplink
@@ -701,7 +711,6 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 		entopt.TIGguess = calcParams.LOI - 8.0*3600.0;
 		entopt.vessel = calcParams.src;
 		entopt.SMODE = 14;
-		PZREAP.RRBIAS = 1350.0;
 
 		RTEMoonTargeting(&entopt, &res);
 
@@ -788,7 +797,6 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 		entopt.TIGguess = calcParams.LOI + 2.0*3600.0;
 		entopt.vessel = calcParams.src;
 		entopt.SMODE = 14;
-		PZREAP.RRBIAS = 1350.0;
 
 		RTEMoonTargeting(&entopt, &res);//dV_LVLH, P30TIG, latitude, longitude, RET, RTGO, VIO, EntryAng);
 
@@ -875,7 +883,6 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 		entopt.EntryLng = -165.0*RAD;
 		entopt.RV_MCC = sv1;
 		entopt.vessel = calcParams.src;
-		PZREAP.RRBIAS = 1350.0;
 
 		RTEMoonTargeting(&entopt, &res);//dV_LVLH, P30TIG, latitude, longitude, RET, RTGO, VIO, EntryAng);
 
@@ -1187,7 +1194,6 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 		entopt.vessel = calcParams.src;
 		entopt.returnspeed = 1;
 		entopt.RV_MCC = sv;
-		PZREAP.RRBIAS = 1350.0;
 
 		RTEMoonTargeting(&entopt, &res);
 
@@ -1337,7 +1343,7 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 		entopt.RV_MCC = sv;
 		entopt.TIGguess = MCCtime;
 		entopt.vessel = calcParams.src;
-		entopt.r_rbias = 1350.0;
+		entopt.r_rbias = PZREAP.RRBIAS;
 		entopt.type = 3;
 
 		//Calculate corridor control burn
@@ -1373,7 +1379,7 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 			sprintf(upMessage, "%s has been scrubbed.", manname);
 
 			//Entry prediction without maneuver
-			EntryUpdateCalc(sv, 1350.0, true, &res);
+			EntryUpdateCalc(sv, PZREAP.RRBIAS, true, &res);
 
 			res.dV_LVLH = _V(0, 0, 0);
 			res.P30TIG = entopt.TIGguess;

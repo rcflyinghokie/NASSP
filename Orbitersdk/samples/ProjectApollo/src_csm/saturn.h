@@ -67,6 +67,7 @@
 #include "rhc.h"
 #include "inertial.h"
 #include "CueCardManager.h"
+#include "CSMMalfunctionSimulation.h"
 
 #define DIRECTINPUT_VERSION 0x0800
 #include "dinput.h"
@@ -584,7 +585,7 @@ public:
 		// used.
 		//
 
-		// VC Sutfaces
+		// VC Surfaces
 		SRF_VC_DSKYDISP,
 		SRF_VC_DSKY_LIGHTS,
 		SRF_VC_DIGITALDISP,
@@ -610,64 +611,12 @@ public:
 		SRF_VC_CWS_GNLIGHTS,
 		SRF_VC_DIGITAL90,
 		SRF_VC_EVENT_TIMER_DIGITS90,
+		SRF_VC_ABORT,
 
 		//
 		// NSURF MUST BE THE LAST ENTRY HERE. PUT ANY NEW SURFACE IDS ABOVE THIS LINE
 		//
 		nsurfvc	///< nsurfvc gives the count of surfaces for the array size calculation.
-	};
-
-	//
-	// Random failure flags, copied into unions and extracted as ints (or vice-versa).
-	//
-
-	///
-	/// \ingroup FailFlags
-	/// \brief Landing failure flags.
-	///
-	union LandingFailures {
-		struct {
-			unsigned CoverFail:1;	///< Apex cover will fail to deploy automatically.
-			unsigned DrogueFail:1;	///< Drogue will fail to deploy automatically.
-			unsigned MainFail:1;	///< Main chutes will fail to deploy automatically.
-		};
-		int word;					///< Word holds the flags from the bitfield in one 32-bit value for scenarios.
-
-		LandingFailures() { word = 0; };
-	};
-
-	///
-	/// \ingroup FailFlags
-	/// \brief Launch failure flags.
-	///
-	union LaunchFailures {
-		struct {
-			unsigned LETAutoJetFail:1;			///< The LES auto jettison will fail.
-			unsigned LESJetMotorFail:1;			///< The LET jettison motor will fail.
-			unsigned SIIAutoSepFail:1;			///< Stage two will fail to seperate automatically from stage one.
-			unsigned AutoAbortEnableFail:1;		///< IU fails to enable the auto abort relays.
-		};
-		int word;								///< Word holds the flags from the bitfield in one 32-bit value for scenarios.
-
-		LaunchFailures() { word = 0; };
-	};
-
-	///
-	/// \ingroup FailFlags
-	/// \brief Flags specifying which control panel switches will fail.
-	///
-	/// \ingroup InternalInterface
-	///
-	union SwitchFailures {
-		struct {
-			unsigned TowerJett1Fail:1;		///< TWR JETT switch 1 will fail.
-			unsigned TowerJett2Fail:1;		///< TWR JETT switch 2 will fail.
-			unsigned SMJett1Fail:1;			///< SM JETT switch 1 will fail.
-			unsigned SMJett2Fail:1;			///< SM JETT switch 2 will fail
-		};
-		int word;							///< Word holds the flags from the bitfield in one 32-bit value for scenarios.
-
-		SwitchFailures() { word = 0; };
 	};
 
 	///
@@ -973,6 +922,8 @@ public:
 	bool clbkVCMouseEvent (int id, int event, VECTOR3 &p);
 	bool clbkVCRedrawEvent (int id, int event, SURFHANDLE surf);
 	void clbkPostCreation();
+	void clbkVisualCreated (VISHANDLE vis, int refcount);
+	void clbkVisualDestroyed (VISHANDLE vis, int refcount);
 
 	///
 	/// This function performs all actions required to update the spacecraft state as time
@@ -1376,12 +1327,6 @@ protected:
 	bool SIISepState;
 
 	///
-	/// Abort light. True if ABORT light is lit.
-	/// \brief Abort light.
-	///
-	bool ABORT_IND;
-
-	///
 	/// Interstage attached flag. True if interstage is attached.
 	/// \brief Interstage flag.
 	///
@@ -1573,9 +1518,7 @@ protected:
 	// Failures.
 	//
 
-	LandingFailures LandFail;
-	LaunchFailures LaunchFail;
-	SwitchFailures SwitchFail;
+	CSMMalfunctionSimulation Failures;
 
 	//
 	// Ground Systems
@@ -2248,10 +2191,10 @@ protected:
 	ToggleSwitch GHAServoElecSwitch;
 	
 	SwitchRow HighGainAntennaPitchPositionSwitchRow;
-	RotationalSwitch HighGainAntennaPitchPositionSwitch;
+	ContinuousRotationalSwitch HighGainAntennaPitchPositionSwitch;
 
 	SwitchRow HighGainAntennaYawPositionSwitchRow;
-	RotationalSwitch HighGainAntennaYawPositionSwitch;
+	ContinuousRotationalSwitch HighGainAntennaYawPositionSwitch;
 
 	SwitchRow HighGainAntennaMetersRow;
 	SaturnHighGainAntennaPitchMeter HighGainAntennaPitchMeter;
@@ -2534,8 +2477,8 @@ protected:
 	//////////////////////
 	
 	SwitchRow RightInteriorLightRotariesRow;
-	RotationalSwitch RightIntegralRotarySwitch;
-	RotationalSwitch RightFloodRotarySwitch;
+	ContinuousRotationalSwitch RightIntegralRotarySwitch;
+	ContinuousRotationalSwitch RightFloodRotarySwitch;
 
 	//////////////////////
 	// Panel 4 switches //
@@ -2625,9 +2568,9 @@ protected:
 	ThreePosSwitch Panel100RNDZXPDRSwitch;
 
 	SwitchRow Panel100LightingRoatariesRow;
-	RotationalSwitch Panel100NumericRotarySwitch;
-	RotationalSwitch Panel100FloodRotarySwitch;
-	RotationalSwitch Panel100IntegralRotarySwitch;
+	ContinuousRotationalSwitch Panel100NumericRotarySwitch;
+	ContinuousRotationalSwitch Panel100FloodRotarySwitch;
+	ContinuousRotationalSwitch Panel100IntegralRotarySwitch;
 	
 	///////////////
 	// Panel 101 //
@@ -2883,9 +2826,9 @@ protected:
 	//////////////////////
 
 	SwitchRow LeftInteriorLightRotariesRow;
-	RotationalSwitch NumericRotarySwitch;
-	RotationalSwitch FloodRotarySwitch;
-	RotationalSwitch IntegralRotarySwitch;
+	ContinuousRotationalSwitch NumericRotarySwitch;
+	ContinuousRotationalSwitch FloodRotarySwitch;
+	ContinuousRotationalSwitch IntegralRotarySwitch;
 
 	SwitchRow FDAIPowerRotaryRow;
 	FDAIPowerRotationalSwitch FDAIPowerRotarySwitch;
@@ -3295,7 +3238,7 @@ protected:
 	DSKYPushSwitch DskySwitchEight;
 	DSKYPushSwitch DskySwitchNine;
 	DSKYPushSwitch DskySwitchClear;
-	DSKYPushSwitch DskySwitchProg;
+	DSKYPushSwitch DskySwitchProceed;
 	DSKYPushSwitch DskySwitchKeyRel;
 	DSKYPushSwitch DskySwitchEnter;
 	DSKYPushSwitch DskySwitchReset;
@@ -3316,7 +3259,7 @@ protected:
 	DSKYPushSwitch Dsky2SwitchEight;
 	DSKYPushSwitch Dsky2SwitchNine;
 	DSKYPushSwitch Dsky2SwitchClear;
-	DSKYPushSwitch Dsky2SwitchProg;
+	DSKYPushSwitch Dsky2SwitchProceed;
 	DSKYPushSwitch Dsky2SwitchKeyRel;
 	DSKYPushSwitch Dsky2SwitchEnter;
 	DSKYPushSwitch Dsky2SwitchReset;
@@ -3636,6 +3579,18 @@ public:
 	TemperatureTransducer CMRCSEngine21TempSensor;
 	TemperatureTransducer CMRCSEngine24TempSensor;
 	TemperatureTransducer CMRCSEngine25TempSensor;
+	CSMTankPressTransducer FCN2PressureSensor1;
+	CSMTankPressTransducer FCN2PressureSensor2;
+	CSMTankPressTransducer FCN2PressureSensor3;
+	CSMPipeFlowTransducer FCO2FlowSensor1;
+	CSMPipeFlowTransducer FCO2FlowSensor2;
+	CSMPipeFlowTransducer FCO2FlowSensor3;
+	CSMPipeFlowTransducer FCH2FlowSensor1;
+	CSMPipeFlowTransducer FCH2FlowSensor2;
+	CSMPipeFlowTransducer FCH2FlowSensor3;
+	CSMTankPressTransducer BatteryManifoldPressureSensor;
+	TemperatureTransducer WasteH2ODumpTempSensor;
+	TemperatureTransducer UrineDumpTempSensor;
 protected:
 
 	// CM Optics
@@ -3647,6 +3602,8 @@ protected:
 	Cooling *FuelCellCooling[3];
 	h_Tank *FuelCellO2Manifold[3];
 	h_Tank *FuelCellH2Manifold[3];
+	h_Tank *FuelCellN2Blanket[3];
+
 	
 	// Electric Lights
 	ElectricLight* SpotLight;
@@ -3782,9 +3739,15 @@ protected:
 	SaturnForwardHatch ForwardHatch;
 	SaturnPressureEqualizationValve PressureEqualizationValve;
 	SaturnWasteStowageVentValve WasteStowageVentValve;
+	SaturnBatteryVent BatteryVent;
 	SaturnSuitFlowValves SaturnSuitFlowValve300;
 	SaturnSuitFlowValves SaturnSuitFlowValve301;
 	SaturnSuitFlowValves SaturnSuitFlowValve302;
+	SaturnDumpHeater WasteH2ODumpHeater;
+	SaturnDumpHeater UrineDumpHeater;
+	Boiler *SteamDuctHeaterA;
+	Boiler *SteamDuctHeaterB;
+
 
 	// RHC/THC 
 	PowerMerge RHCNormalPower;
@@ -3921,8 +3884,7 @@ protected:
 	int seatsunfoldedidx;
 	int coascdridx;
 	int coascdrreticleidx;
-
-	bool ASTPMission;
+	DEVMESHHANDLE vcmesh;
 
 	double DockAngle;
 
@@ -4064,6 +4026,13 @@ protected:
 	double THRUST_VAC_PCM;
 
 	//
+	// VISHANDLE
+	//
+
+	VISHANDLE vis;
+
+
+	//
 	// Generic functions shared between SaturnV and Saturn1B
 	//
 
@@ -4116,6 +4085,7 @@ protected:
 	void MoveTHC(bool dir);
 
 	void RenderS1bEngineLight(bool EngineOn, SURFHANDLE dest, SURFHANDLE src, int xoffs, int yoffs, int xTexMul = 1);
+	bool AbortLightLogic();
 
 	void ClearPropellants();
 	void ClearThrusters();
@@ -4136,6 +4106,15 @@ protected:
 	void InitFDAI(UINT mesh);
 
 	void VCFreeCam(VECTOR3 dir, bool slow);
+
+	//
+	// Integral Lights
+	//
+#ifdef _OPENORBITER
+	void SetCMVCIntegralLight(UINT meshidx, DWORD *matList, MatProp EmissionMode, double state, int cnt);
+#else
+	void SetCMVCIntegralLight(UINT meshidx, DWORD *matList, int EmissionMode, double state, int cnt);
+#endif
 
 	//
 	// Systems functions.
@@ -4186,8 +4165,8 @@ protected:
 	virtual void LoadSI(FILEHANDLE scn) = 0;
 	virtual void SaveSII(FILEHANDLE scn) {};
 	virtual void LoadSII(FILEHANDLE scn) {};
-	virtual void SetEngineFailure(int failstage, int faileng, double failtime, bool fail) = 0;
-	virtual void GetEngineFailure(int failstage, int faileng, bool &fail, double &failtime) = 0;
+
+	virtual void SetFailure(int failuretype, bool condition) = 0;
 
 	void GetScenarioState (FILEHANDLE scn, void *status);
 	bool ProcessConfigFileLine (FILEHANDLE scn, char *line);
@@ -4215,7 +4194,7 @@ protected:
 	void DestroyStages(double simt);
 	void FireSeperationThrusters(THRUSTER_HANDLE *pth);
 	void LoadDefaultSounds();
-	void RCSSoundTimestep();
+	void EnginesSoundTimestep();
 	void LoadVC();
 	void UpdateVC(VECTOR3 meshdir);
 	void DefineCMAttachments();
@@ -4268,6 +4247,7 @@ protected:
 	Sound RCSSustainSound;
 	Sound HatchOpenSound;
 	Sound HatchCloseSound;
+	Sound EngineS;
 
 	///
 	/// Drogue deployment message.
@@ -4338,7 +4318,6 @@ protected:
 	THGROUP_HANDLE thg_retro1, thg_retro2;
 
 	THRUSTER_HANDLE th_1st[8], th_2nd[5], th_3rd[1], th_sps[1];
-	THRUSTER_HANDLE th_3rd_lox, th_3rd_lh2;
 	THRUSTER_HANDLE th_ull[8], th_ver[3];                       // handles for orbiter main engines
 	THRUSTER_HANDLE th_lem[4], th_tjm[2], th_pcm;
 	THRUSTER_HANDLE th_att_rot[24], th_att_lin[24];
@@ -4578,6 +4557,10 @@ protected:
 	friend class DockingTargetSwitch;
 	friend class LeftCOASPowerSwitch;
 	friend class SCE;
+	friend class CSMMalfunctionSimulation;
+	friend class SaturnWaterController;
+	friend class SaturnBatteryVent;
+	friend class SaturnDumpHeater;
 	// Friend class the MFD too so it can steal our data
 	friend class ProjectApolloMFD;
 	friend class ARCore;

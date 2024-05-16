@@ -29,6 +29,7 @@
 #include "toggleswitch.h"
 #include "LEM.h"
 #include "lm_ecs.h"
+#include "Mission.h"
 
 LEMCrewStatus::LEMCrewStatus(Sound &crewdeadsound) : crewDeadSound(crewdeadsound) {
 
@@ -808,11 +809,15 @@ void LEMCabinRepressValve::SystemTimestep(double simdt)
 
 		bool repressinhibit = false;
 
-		//Both in EGRESS
-		if (pressRegulatorASwitch->GetState() == 0 && pressRegulatorBSwitch->GetState() == 0) repressinhibit = true;
-		//One in EGRESS, other in CLOSE
-		else if (pressRegulatorASwitch->GetState() == 0 && pressRegulatorBSwitch->GetState() == 3) repressinhibit = true;
-		else if (pressRegulatorASwitch->GetState() == 3 && pressRegulatorBSwitch->GetState() == 0) repressinhibit = true;
+		//LFM-516: LM-7 and later don't have the inhibit
+		if (lem->pMission->GetLMNumber() <= 6)
+		{
+			//Both in EGRESS
+			if (pressRegulatorASwitch->GetState() == 0 && pressRegulatorBSwitch->GetState() == 0) repressinhibit = true;
+			//One in EGRESS, other in CLOSE
+			else if (pressRegulatorASwitch->GetState() == 0 && pressRegulatorBSwitch->GetState() == 3) repressinhibit = true;
+			else if (pressRegulatorASwitch->GetState() == 3 && pressRegulatorBSwitch->GetState() == 0) repressinhibit = true;
+		}
 
 		if (cabinRepressCB->IsPowered() && repressinhibit == false)
 		{
@@ -1149,13 +1154,13 @@ void LEMCabinFan::SystemTimestep(double simdt)
 	}
 
 	if (cabinFan->pumping) {
-		cabinFanHeat->GenerateHeat(36.5);  //Not sure about this heat load, seems very high. Value from LM-8 Systems Handbook
+		cabinFanHeat->GenerateHeat(25.6);  //70% of 36.5 Value from LM-8 Systems Handbook
 	}
 }
 
 void LEMCabinFan::CabinFanSound()
 {
-	cabinfansound.play(200);
+	cabinfansound.play(200.0 / 255.0);
 }
 
 void LEMCabinFan::StopCabinFanSound()

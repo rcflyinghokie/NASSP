@@ -28,11 +28,12 @@ class ApolloRTCCMFD;
 
 struct RTCCMFDInputBoxData
 {
-	double *dVal;
+	double *dVal, *dVal2;
 	int *iVal, *iVal2;
 	int min1, max1, min2, max2;
 	VECTOR3 *vVal;
-	double factor;
+	double factor, factor2;
+	std::string *sVal;
 	ApolloRTCCMFD *ptr = NULL;
 	void (ApolloRTCCMFD::*func)(void) = NULL;
 };
@@ -106,8 +107,6 @@ public:
 	void menuCycleMarkerUp();
 	void menuCycleMarkerDown();
 	void menuSetGMPInput();
-	void menuMissionFile();
-	void LoadMissionConstantsFile(char *str);
 	void SPQcalc();
 	void lambertcalc();
 	void Angle_Display(char *Buff, double angle, bool DispPlus = true);
@@ -126,7 +125,6 @@ public:
 	void ThrusterName(char *Buff, int n);
 	bool ThrusterType(std::string name, int &id);
 	void MPTAttitudeName(char *Buff, int n);
-	void SStoHHMMSS(double time, int &hours, int &minutes, double &seconds);
 	void CycleREFSMMATopt();
 	void UploadREFSMMAT();
 	void menuSLVTLITargetingUplink();
@@ -152,6 +150,9 @@ public:
 	void set_RTEConstraintF86(std::string constr, double value);
 	void menuSetRTEConstraintF87();
 	void set_RTEConstraintF87(std::string constr, std::string value);
+	void menuAddRTESite();
+	void menuReplaceRTESite();
+	void menuDeleteRTESite();
 	void CycleRTECalcMode();
 	void menuSetRTEManeuverCode();
 	void set_RTEManeuverCode(char *code);
@@ -278,6 +279,7 @@ public:
 	void menuSetLmkTime();
 	void menuSetLmkLat();
 	void menuSetLmkLng();
+	void menuLmkUseLandingSite();
 	void menuLmkPADCalc();
 	void menuSetTargetingMenu();
 	void menuSetPADMenu();
@@ -285,7 +287,6 @@ public:
 	void menuSetVECPOINTPage();
 	void menuMidcoursePage();
 	void menuSetLunarLiftoffPage();
-	void menuSetEMPPage();
 	void menuSetNavCheckPADPage();
 	void menuSetDeorbitPage();
 	void menuSetRTEDigitalsInputPage();
@@ -293,6 +294,13 @@ public:
 	void menuSetRTEDigitalsPage();
 	void menuSetRTEConstraintsPage();
 	void menuSetEntryUpdatePage();
+	void menuSetRTCCFilesPage();
+	void menuLoadSystemParametersFile();
+	void LoadSystemParametersFile(char *file);
+	void menuLoadTLIFile();
+	void LoadTLIFile(char *file);
+	void menuLoadSFPFile();
+	void LoadSFPFile(char *file);
 	void menuSetRendezvousPage();
 	void menuSetDKIPage();
 	void menuSetDKIOptionsPage();
@@ -338,9 +346,17 @@ public:
 	void menuLunarLiftoffVHorInput();
 	void menuLunarLiftoffVVertInput();
 	void menuLunarLiftoffSaveInsertionSV();
-	void menuSetEMPUplinkP99();
-	void menuEMPUplink();
+	void menuSetEMPFileName();
+	void ErasableMemoryFileRead();
 	void menuSetEMPUplinkNumber();
+	void menuInitializeEMP();
+	void set_EMPInit(char *str);
+	void menuEditEMPOctal();
+	void set_EMPOctal(int line, int value);
+	void menuDeleteEMPLine();
+	void set_EMPDelete(int line);
+	void menuLoadEMP();
+	void menuUplinkEMP();
 	void menuTMLat();
 	void menuTMLng();
 	void menuTMAzi();
@@ -547,7 +563,6 @@ public:
 	bool set_ChooseMPTDirectInputThruster(std::string th);
 	void menuMPTDirectInputTransfer();
 	void menuMPTDirectInputTIG();
-	void set_MPTDirectInputTIG(double tig);
 	void menuMPTDirectInputDock();
 	void menuMPTDirectInputFinalConfig();
 	void set_MPTDirectInputFinalConfig(char *cfg);
@@ -629,6 +644,7 @@ public:
 	void menuCycleSFPDisplay();
 	void menuAlterationSFPData();
 	void menuTransferMCCPlanToSFP();
+	void menuInterpolateSFP();
 	void menuDeleteMidcourseColumn();
 	void menuSetNodalTargetConversionPage();
 	void menuCycleNodeConvOption();
@@ -668,6 +684,8 @@ public:
 	void menuGOSTSXTCalc();
 	void menuGOSTShowStarVector();
 	void menuGOSTShowLandmarkVector();
+	void menuGOSTEnterStarInCatalog();
+	void menuSaveOSTREFSMMAT();
 	void menuSetLMOpticsSupportTablePage();
 	void menuLOSTMode();
 	void set_LOSTMode(int mode);
@@ -687,6 +705,8 @@ public:
 	void set_LOSTCheckMode(double get,int Detent, int COASAxis);
 	void UpdateLOSTDisplay();
 	void CalculateLOSTDOKOption();
+	void menuSetDebugPage();
+	void menuCalculateIMUComparison();
 	void menuSLVNavigationUpdateCalc();
 	void menuSLVNavigationUpdateUplink();
 	void menuVectorPanelSummaryPage();
@@ -796,11 +816,19 @@ public:
 	void menuPerigeeAdjustThresholdTime();
 	void menuPerigeeAdjustTimeIncrement();
 	void menuPerigeeAdjustHeight();
+	void menuSetAGOPPage();
+	void menuCycleAGOPPage();
+	void menuSetAGOPInput();
+	void menuAGOPCalc();
+	void menuAGOPSaveREFSMMAT();
+	void menuSetRTACFPage();
 	void GenericGETInput(double *get, char *message);
 	void GenericDoubleInput(double *val, char* message, double factor = 1.0);
-	void GenericIntInput(int *val, char* message, void (ApolloRTCCMFD::*func)(void) = NULL);
+	void GenericDouble2Input(double *val1, double *val2, char* message, double factor1 = 1.0, double factor2 = 1.0);
+	void GenericIntInput(int *val, char* message, void (ApolloRTCCMFD::*func)(void) = NULL, int min = 1, int max = 0);
 	void GenericInt2Input(int *val1, int *val2, char* message, int min1, int max1, int min2, int max2, void (ApolloRTCCMFD::*func)(void) = NULL);
 	void GenericVectorInput(VECTOR3 *val, char* message, double factor = 1.0, void (ApolloRTCCMFD::*func)(void) = NULL);
+	void GenericStringInput(std::string *val, char* message, void (ApolloRTCCMFD::*func)(void) = NULL);
 	void Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax = 1024, int ymax = 1024);
 protected:
 	oapi::Font *font;
@@ -809,17 +837,21 @@ protected:
 	oapi::Font *fonttest;
 	oapi::Font *font3;
 	oapi::Font *font4;
+	oapi::Font *font5;
 	oapi::Pen *pen;
 	oapi::Pen *pen2;
 	Saturn *saturn;
 	LEM *lem;
 	int screen;
+	int subscreen;
 	int marker;
 	int markermax;
-	int RTETradeoffScreen;
+	int status; //Page dependent status, reset to 0 when new page is entered
 	static struct ScreenData {
 		int screen;
-		int RTETradeoffScreen;
+		int subscreen;
+		int marker;
+		int markermax;
 	} screenData;
 private:
 
@@ -828,6 +860,18 @@ private:
 	ApolloRTCCMFDButtons coreButtons;
 
 	RTCCMFDInputBoxData tempData;
+
+	//Additional display functions
+	void AGOPDisplay(oapi::Sketchpad*skp);
+	void AGOPDisplayOption1(oapi::Sketchpad*skp);
+	void AGOPDisplayOption2(oapi::Sketchpad*skp);
+	void AGOPDisplayOption3(oapi::Sketchpad*skp);
+	void AGOPDisplayOption4(oapi::Sketchpad*skp);
+	void AGOPDisplayOption5(oapi::Sketchpad*skp);
+	void AGOPDisplayOption6(oapi::Sketchpad*skp);
+	void AGOPDisplayOption7(oapi::Sketchpad*skp);
+	void AGOPDisplayOption8(oapi::Sketchpad*skp);
+	void AGOPDisplayOption9(oapi::Sketchpad*skp);
 };
 
 #endif // !__ApolloRTCCMFD_H

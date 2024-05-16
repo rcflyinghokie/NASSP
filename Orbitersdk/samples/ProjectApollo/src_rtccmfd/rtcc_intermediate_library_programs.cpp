@@ -40,13 +40,6 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 		return;
 	}
 
-	//DPS engine gimbal plane
-	static const double K1 = 154.0*0.0254;
-	//SPS engine gimbal plane
-	static const double K2 = 833.2*0.0254;
-	//Distance between SPS and DPS gimbal planes
-	static const double K3 = 435.55*0.0254;
-
 	int IND;
 	double R, W[3], K;
 	VECTOR3 XCG[2], XI;
@@ -82,7 +75,7 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 			goto RTCC_GIMGBL_LABEL_3_5;
 		}
 		IND = 2;
-		K = K1;
+		K = SystemParameters.MGVDGD;
 		//Use LM DSC CG Table
 		XI = GIMGB2(SystemParameters.MHVLCG.Weight, SystemParameters.MHVLCG.CG, SystemParameters.MHVLCG.N, W[1]);
 	}
@@ -100,7 +93,7 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 		{
 			IND = 1;
 		}
-		K = K2;
+		K = SystemParameters.MGVSGD;
 		//Use CSM CG Table
 		XI = GIMGB2(SystemParameters.MHVCCG.Weight, SystemParameters.MHVCCG.CG, SystemParameters.MHVCCG.N, W[0]);
 	}
@@ -119,7 +112,7 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 		//Use CSM CG Table
 		XI = GIMGB2(SystemParameters.MHVCCG.Weight, SystemParameters.MHVCCG.CG, SystemParameters.MHVCCG.N, W[0]);
 		IND = 1;
-		K = K2 + K3;
+		K = SystemParameters.MGVSGD + SystemParameters.MGVSTD;
 	}
 	else
 	{
@@ -134,7 +127,7 @@ void RTCC::GIMGBL(double CSMWT, double LMWT, double &RY, double &RZ, double &T, 
 			XI = GIMGB2(SystemParameters.MHVLCG.Weight, SystemParameters.MHVLCG.CG, SystemParameters.MHVLCG.N, W[1]);
 		}
 		IND = 2;
-		K = K1 + K3;
+		K = SystemParameters.MGVDGD + SystemParameters.MGVSTD;
 	}
 
 	XI.x = XI.x - K;
@@ -549,7 +542,7 @@ void RTCC::PIFAAP(double a, double e, double i, double f, double u, double r, do
 {
 	double a_ref, e_ref, p_ref, p, K1, K2, df, r1, r2;
 
-	a_ref = r + OrbMech::J2_Earth / OrbMech::R_Earth*(1.0 - 3.0 / 2.0*pow(sin(i), 2) + 5.0 / 6.0*pow(sin(i), 2)*cos(2.0*u));
+	a_ref = r + 1.5*OrbMech::J2_Earth * OrbMech::R_Earth*(1.0 - 3.0 / 2.0*pow(sin(i), 2) + 5.0 / 6.0*pow(sin(i), 2)*cos(2.0*u));
 	e_ref = 1.0 - r / a_ref;
 	p_ref = a_ref * (1.0 - e_ref * e_ref);
 	p = a * (1.0 - e * e);

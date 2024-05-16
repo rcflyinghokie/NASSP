@@ -151,21 +151,6 @@ static PARTICLESTREAMSPEC stagingvent_spec = {
 	PARTICLESTREAMSPEC::ATM_FLAT, 0.1, 0.1
 };
 
-// "fuel venting" particle streams
-static PARTICLESTREAMSPEC fuel_venting_spec = {
-	0,		// flag
-	0.8,	// size
-	30,		// rate
-	2,	    // velocity
-	0.5,    // velocity distribution
-	20,		// lifetime
-	0.15,	// growthrate
-	0.5,    // atmslowdown 
-	PARTICLESTREAMSPEC::DIFFUSE,
-	PARTICLESTREAMSPEC::LVL_FLAT, 0.6, 0.6,
-	PARTICLESTREAMSPEC::ATM_FLAT, 1.0, 1.0
-};
-
 // "prelaunch tank venting" particle streams
 static PARTICLESTREAMSPEC prelaunchvent_spec = {
 	0,		// flag
@@ -592,14 +577,8 @@ void Saturn1b::SetSecondStageEngines (double offset)
 	// Set the actual stats.
 	//
 
+	sivb->CreateParticleEffects(1645.1*0.0254); //Approx. CG location in Saturn IB coordinates
 	sivb->RecalculateEngineParameters(THRUST_SECOND_VAC);
-
-	// Thrust "calibrated" for apoapsis after venting is about 167.5 nmi
-	// To match the predicted dV of about 25 ft/s (21.7 ft/s actual / 25.6 predicted), use about 320 N thrust, but apoapsis is too high then (> 170 nmi)
-	th_3rd_lox = CreateThruster(m_exhaust_pos1, _V(0, 0, 1), 220., ph_3rd, 300., 300.);
-
-	fuel_venting_spec.tex = oapiRegisterParticleTexture("ProjectApollo/Contrail_SaturnVenting");
-	AddExhaustStream(th_3rd_lox, &fuel_venting_spec);
 
 	//
 	//  Ullage rockets (3)
@@ -623,7 +602,7 @@ void Saturn1b::SetSecondStageEngines (double offset)
 		AddExhaust(th_ver[i], 7.0, 0.2, exhaust_tex);
 		AddExhaustStream(th_ver[i], &solid_exhaust);
 	}
-	thg_ver = CreateThrusterGroup (th_ver, 3,THGROUP_USER);
+	thg_ver = CreateThrusterGroup (th_ver, 3, (THGROUP_TYPE)(THGROUP_USER + 1));
 }
 
 void Saturn1b::SeparateStage (int new_stage)

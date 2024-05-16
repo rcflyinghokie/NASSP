@@ -209,21 +209,6 @@ static PARTICLESTREAMSPEC stagingvent_spec = {
 	PARTICLESTREAMSPEC::ATM_FLAT, 0.1, 0.1
 };
 
-// "fuel venting" particle streams
-static PARTICLESTREAMSPEC fuel_venting_spec = {
-	0,		// flag
-	0.8,	// size
-	30,		// rate
-	2,	    // velocity
-	0.5,    // velocity distribution
-	20,		// lifetime
-	0.15,	// growthrate
-	0.5,    // atmslowdown 
-	PARTICLESTREAMSPEC::DIFFUSE,
-	PARTICLESTREAMSPEC::LVL_FLAT, 0.6, 0.6,
-	PARTICLESTREAMSPEC::ATM_FLAT, 1.0, 1.0
-};
-
 static MESHHANDLE hsat5stg1;
 static MESHHANDLE hsat5intstg;
 static MESHHANDLE hsat5intstg4;
@@ -803,7 +788,7 @@ void SaturnV::SetSecondStageEngines(double offset)
 			AddExhaustStream (th_ull[i], &solid_exhaust);
 		}
 
-		thg_ull = CreateThrusterGroup (th_ull, SII_UllageNum, THGROUP_USER);
+		thg_ull = CreateThrusterGroup (th_ull, SII_UllageNum, (THGROUP_TYPE)(THGROUP_USER + 1));
 	}
 
 	sii->RecalculateEngineParameters(THRUST_SECOND_VAC);
@@ -1046,16 +1031,10 @@ void SaturnV::SetThirdStageEngines (double offset)
 	for (int i = 0; i < 2; i++)
 		AddExhaust (th_ver[i], 5.0, 0.25, exhaust_tex);
 
-	thg_ver = CreateThrusterGroup (th_ver, 2, THGROUP_USER);
+	thg_ver = CreateThrusterGroup (th_ver, 2, (THGROUP_TYPE)(THGROUP_USER + 1));
 
+	sivb->CreateParticleEffects(1645.1*0.0254); //Approx. CG location in Saturn IB coordinates
 	sivb->RecalculateEngineParameters(THRUST_THIRD_VAC);
-
-	// LOX venting thruster
-
-	th_3rd_lox = CreateThruster(m_exhaust_pos1, _V(0, 0, 1), 3300.0, ph_3rd, 157.0, 157.0);
-
-	fuel_venting_spec.tex = oapiRegisterParticleTexture("ProjectApollo/Contrail_SaturnVenting");
-	AddExhaustStream(th_3rd_lox, &fuel_venting_spec);
 }
 
 void SaturnV::SeparateStage (int new_stage)
@@ -1165,7 +1144,7 @@ void SaturnV::SeparateStage (int new_stage)
 		vs2.vrot.y = 0.0;
 		vs2.vrot.z = 0.0;
 
-		StageS.play(NOLOOP, 255);
+		StageS.play(NOLOOP);
 
 		CreateStageOne();
 
@@ -1348,7 +1327,7 @@ void SaturnV::SeparateStage (int new_stage)
 
 		CreateSIVBStage("ProjectApollo/sat5stg3", vs1, true);
 
-		SeparationS.play(NOLOOP,255);
+		SeparationS.play(NOLOOP);
 
 		// Store RCS Propellant 
 		double proptemp[6] = { -1,-1,-1,-1,-1,-1 };
@@ -1382,7 +1361,7 @@ void SaturnV::SeparateStage (int new_stage)
 
 		if (ApolloExploded) 
 		{
-			SSMSepExploded.play(NOLOOP, 200);
+			SSMSepExploded.play(NOLOOP, 200.0 / 255.0);
 		}
 		else
 		{

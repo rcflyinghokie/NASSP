@@ -443,6 +443,16 @@ void LM_PCM::Init(LEM *vessel, h_HeatLoad *pcmh)
 	uplink_state = 0; rx_offset = 0;
 }
 
+bool LM_PCM::TimingSignal() //Currently just looking for power from the PCM/TE cb, this needs to generate a 512 KHz timing signal
+{
+	if (lem->INST_PCMTEA_CB.Voltage() > 0)
+	{
+		return true;
+	}
+
+	return false;
+}
+
 void LM_PCM::SystemTimestep(double simdt)
 {
 	// PMP
@@ -2760,8 +2770,8 @@ void LEM_SteerableAnt::Timestep(double simdt){
 	//Slew Mode
 	if (lem->Panel12AntTrackModeSwitch.GetState() == THREEPOSSWITCH_DOWN)
 	{
-		PitchSlew = (lem->Panel12AntPitchKnob.GetState()*15.0 - 75.0)*RAD;
-		YawSlew = (lem->Panel12AntYawKnob.GetState()*15.0 - 90.0)*RAD;
+		PitchSlew = (lem->Panel12AntPitchKnob.GetValue()*15.0 - 75.0)*RAD;
+		YawSlew = (lem->Panel12AntYawKnob.GetValue()*15.0 - 90.0)*RAD;
 	}
 	//Auto Tracking
 	else if (lem->Panel12AntTrackModeSwitch.GetState() == THREEPOSSWITCH_UP)

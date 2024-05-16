@@ -211,7 +211,7 @@
 #define stricmp _stricmp
 #endif 
 
-#define NASSP_VERSION 80001		///< https://nassp.space/index.php/Scenario_File_Options#Scenario_information
+#define NASSP_VERSION 80002		///< https://nassp.space/index.php/Scenario_File_Options#Scenario_information
 
 ///
 /// We use this structure to store generic Windows information in one place, such as logical colors,
@@ -425,5 +425,11 @@ static inline void CSMToOrbiterCoordinates(VECTOR3 &vec)
 #define TEXTURES_8K 4
 
 const int TexMul = TEXTURES_4K;
+
+#ifdef OAPI_MSGTYPE
+#define _OPENORBITER
+#endif
+
+//#define _OPENORBITER
 
 #endif

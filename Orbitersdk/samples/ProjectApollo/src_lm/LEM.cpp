@@ -223,7 +223,7 @@ void cbLMVesim(int inputID, int eventType, int newValue, void *pdata) {
 			pLM->ButtonClick(); // guardClick is inaccesible
 			break;
 		case LM_BUTTON_DSKY_PRO:
-			pLM->dsky.ProgPressed();
+			pLM->dsky.ProceedPressed();
 			break;
 		case LM_BUTTON_DSKY_KEY_REL:
 			pLM->dsky.KeyRel();
@@ -310,7 +310,7 @@ void cbLMVesim(int inputID, int eventType, int newValue, void *pdata) {
 			pLM->Sclick.play();;
 			break;
 		case LM_BUTTON_DSKY_PRO:
-			pLM->dsky.ProgReleased();
+			pLM->dsky.ProceedReleased();
 			break;
 		}
 	}
@@ -457,7 +457,8 @@ LEM::LEM(OBJHANDLE hObj, int fmodel) : Payload (hObj, fmodel),
 	DescentECAContFeeder("Descent-ECA-Cont-Feeder", Panelsdk),
 	AscentECAMainFeeder("Ascent-ECA-Main-Feeder", Panelsdk),
 	AscentECAContFeeder("Ascent-ECA-Cont-Feeder", Panelsdk),
-	vesim(&cbLMVesim, this)
+	vesim(&cbLMVesim, this),
+	Failures(this)
 
 {
 	dllhandle = g_Param.hDLL; // DS20060413 Save for later
@@ -466,9 +467,6 @@ LEM::LEM(OBJHANDLE hObj, int fmodel) : Payload (hObj, fmodel),
 	//Mission File
 	InitMissionManagementMemory();
 	pMission = paGetDefaultMission();
-
-	// VESSELSOUND initialisation
-	soundlib.InitSoundLib(hObj, SOUND_DIRECTORY);
 
 	// Switch to compatible dock mode
 	SetDockMode(0);
@@ -549,6 +547,8 @@ void LEM::Init()
 	VcInfoActive = false;
 	VcInfoEnabled = false;
 
+	visibilitySize = 31.1; //Tuned so the LM disappears in the CSM optics at 400nm range
+
 	Crewed = true;
 	AutoSlow = false;
 
@@ -607,6 +607,8 @@ void LEM::Init()
 	ascidx = -1;
 	dscidx = -1;
 	vcidx = -1;
+	windowshadesidx = -1;
+	xpointershadesidx = -1;
 
 	drogue = NULL;
 	probes = NULL;
@@ -614,6 +616,8 @@ void LEM::Init()
 	cdrmesh = NULL;
 	lmpmesh = NULL;
 	vcmesh = NULL;
+
+	vis = NULL;
 
 	pMCC = NULL;
 
@@ -657,23 +661,7 @@ void LEM::Init()
 	NextFlashUpdate = MINUS_INFINITY;
 	PanelFlashOn = false;
 
-	//
-	// Initial sound setup
-	//
-
-	soundlib.SoundOptionOnOff(PLAYCOUNTDOWNWHENTAKEOFF, FALSE);
-	soundlib.SoundOptionOnOff(PLAYCABINAIRCONDITIONING, FALSE);
-	soundlib.SoundOptionOnOff(DISPLAYTIMER, FALSE);
-	/// \todo Disabled for now because of the LEVA and the descent stage vessel
-	///		  Enable before CSM docking
-	soundlib.SoundOptionOnOff(PLAYRADARBIP, FALSE);
-
-	// Disable Rolling, landing, speedbrake, crash sound. This causes issues in Orbiter 2016.
-	soundlib.SoundOptionOnOff(PLAYLANDINGANDGROUNDSOUND, FALSE);
-
 	strncpy(AudioLanguage, "English", 64);
-	soundlib.SetLanguage(AudioLanguage);
-	SoundsLoaded = false;
 
 	exhaustTex = oapiRegisterExhaustTexture("ProjectApollo/Exhaust_atrcs");
 
@@ -716,10 +704,6 @@ void LEM::Init()
 void LEM::DoFirstTimestep()
 {
 	checkControl.linktoVessel(this);
-	// Load sounds in case of dynamic creation, otherwise during clbkLoadStageEx
-	if (!SoundsLoaded) {
-		LoadDefaultSounds();
-	}
 
 #ifdef DIRECTSOUNDENABLED
 	NextEventTime = 0.0;
@@ -772,6 +756,7 @@ void LEM::LoadDefaultSounds()
 	soundlib.LoadSound(GlycolPumpSound, "GlycolPump.wav", INTERNAL_ONLY);
 	soundlib.LoadSound(SuitFanSound, "LMSuitFan.wav", INTERNAL_ONLY);
 	soundlib.LoadSound(CrewDeadSound, CREWDEAD_SOUND);
+	soundlib.LoadSound(EngineS, MAIN_ENGINES_SOUND, INTERNAL_ONLY);
 
 	// Configure sound options where needed
 	SuitFanSound.setFadeTime(5);
@@ -783,9 +768,8 @@ void LEM::LoadDefaultSounds()
 // MODIF X15 manage landing sound
 #ifdef DIRECTSOUNDENABLED
     sevent.LoadMissionLandingSoundArray(soundlib,"sound.csv");
-    sevent.InitDirectSound(soundlib);
+    sevent.InitDirectSound();
 #endif
-	SoundsLoaded = true;
 }
 
 int LEM::clbkConsumeDirectKey(char* kstate)
@@ -854,151 +838,164 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 	if (enableVESIM) vesim.clbkConsumeBufferedKey(key, down, keystate);
 
 	// DS20060404 Allow keys to control DSKY like in the CM
-	if (KEYMOD_SHIFT(keystate)){
+	if (KEYMOD_SHIFT(keystate)) {
 		// Do DSKY stuff
-		if(down){
-			switch(key){
-				case OAPI_KEY_DECIMAL:
-					dsky.ClearPressed();
-					break;
-				case OAPI_KEY_PRIOR:
-					dsky.ResetPressed();
-					break;
-				case OAPI_KEY_HOME:
-					dsky.KeyRel();
-					break;
-				case OAPI_KEY_NUMPADENTER:
-					dsky.EnterPressed();
-					break;
-				case OAPI_KEY_DIVIDE:
-					dsky.VerbPressed();
-					break;
-				case OAPI_KEY_MULTIPLY:
-					dsky.NounPressed();
-					break;
-				case OAPI_KEY_ADD:
-					dsky.PlusPressed();
-					break;
-				case OAPI_KEY_SUBTRACT:
-					dsky.MinusPressed();
-					break;
-				case OAPI_KEY_END:
-					dsky.ProgPressed();
-					break;
-				case OAPI_KEY_NUMPAD1:
-					dsky.NumberPressed(1);
-					break;
-				case OAPI_KEY_NUMPAD2:
-					dsky.NumberPressed(2);
-					break;
-				case OAPI_KEY_NUMPAD3:
-					dsky.NumberPressed(3);
-					break;
-				case OAPI_KEY_NUMPAD4:
-					dsky.NumberPressed(4);
-					break;
-				case OAPI_KEY_NUMPAD5:
-					dsky.NumberPressed(5);
-					break;
-				case OAPI_KEY_NUMPAD6:
-					dsky.NumberPressed(6);
-					break;
-				case OAPI_KEY_NUMPAD7:
-					dsky.NumberPressed(7);
-					break;
-				case OAPI_KEY_NUMPAD8:
-					dsky.NumberPressed(8);
-					break;
-				case OAPI_KEY_NUMPAD9:
-					dsky.NumberPressed(9);
-					break;
-				case OAPI_KEY_NUMPAD0:
-					dsky.NumberPressed(0);
-					break;
-				case OAPI_KEY_A:
-					AbortStageSwitch.SetState(0);
-					break;
-				case OAPI_KEY_K:
-					//kill rotation
-					SetAngularVel(_V(0, 0, 0));
-					break;
-			}
-		}else{
-			// KEY UP
-			switch(key){
-				case OAPI_KEY_END:
-					dsky.ProgReleased();
-					break;
+		DSKYPushSwitch* dskyKeyChanged = nullptr;
+		switch (key) {
+			case OAPI_KEY_DECIMAL:
+				dskyKeyChanged = &DskySwitchClear;
+				break;
+			case OAPI_KEY_PRIOR:
+				dskyKeyChanged = &DskySwitchReset;
+				break;
+			case OAPI_KEY_HOME:
+				dskyKeyChanged = &DskySwitchKeyRel;
+				break;
+			case OAPI_KEY_NUMPADENTER:
+				dskyKeyChanged = &DskySwitchEnter;
+				break;
+			case OAPI_KEY_DIVIDE:
+				dskyKeyChanged = &DskySwitchVerb;
+				break;
+			case OAPI_KEY_MULTIPLY:
+				dskyKeyChanged = &DskySwitchNoun;
+				break;
+			case OAPI_KEY_ADD:
+				dskyKeyChanged = &DskySwitchPlus;
+				break;
+			case OAPI_KEY_SUBTRACT:
+				dskyKeyChanged = &DskySwitchMinus;
+				break;
+			case OAPI_KEY_END:
+				dskyKeyChanged = &DskySwitchProceed;
+				break;
+			case OAPI_KEY_NUMPAD1:
+				dskyKeyChanged = &DskySwitchOne;
+				break;
+			case OAPI_KEY_NUMPAD2:
+				dskyKeyChanged = &DskySwitchTwo;
+				break;
+			case OAPI_KEY_NUMPAD3:
+				dskyKeyChanged = &DskySwitchThree;
+				break;
+			case OAPI_KEY_NUMPAD4:
+				dskyKeyChanged = &DskySwitchFour;
+				break;
+			case OAPI_KEY_NUMPAD5:
+				dskyKeyChanged = &DskySwitchFive;
+				break;
+			case OAPI_KEY_NUMPAD6:
+				dskyKeyChanged = &DskySwitchSix;
+				break;
+			case OAPI_KEY_NUMPAD7:
+				dskyKeyChanged = &DskySwitchSeven;
+				break;
+			case OAPI_KEY_NUMPAD8:
+				dskyKeyChanged = &DskySwitchEight;
+				break;
+			case OAPI_KEY_NUMPAD9:
+				dskyKeyChanged = &DskySwitchNine;
+				break;
+			case OAPI_KEY_NUMPAD0:
+				dskyKeyChanged = &DskySwitchZero;
+				break;
+		}
 
+		// Direction-specific code, handle DSKY key presses if any.
+		if (down) {
+			// KEY DOWN
+			if (dskyKeyChanged != nullptr) {
+				dskyKeyChanged->SetHeld(true);
+				dskyKeyChanged->SetState(PUSHBUTTON_PUSHED);
+			}
+
+			switch (key) {
+			case OAPI_KEY_K:
+				//kill rotation
+				SetAngularVel(_V(0, 0, 0));
+				break;
+			}
+		} else {
+			// KEY UP
+			if (dskyKeyChanged != nullptr) {
+				// Doing SwitchTo instead of SetState prevents a second click on key up.
+				dskyKeyChanged->SetHeld(false);
+				dskyKeyChanged->SwitchTo(PUSHBUTTON_UNPUSHED);
 			}
 		}
 		return 0;
 	}
 	else if (KEYMOD_CONTROL(keystate)) {
 		// Do DEDA stuff
-		if (down) {
-			switch (key) {
+		DEDAPushSwitch* dedaKeyChanged = nullptr;
+		switch (key) {
 			case OAPI_KEY_DECIMAL:
-				deda.ClearPressed();
+				dedaKeyChanged = &DedaSwitchClear;
 				break;
 			case OAPI_KEY_NUMPADENTER:
-				deda.EnterPressed();
+				dedaKeyChanged = &DedaSwitchEnter;
 				break;
-			case OAPI_KEY_DIVIDE:
-				deda.HoldPressed();
+			case OAPI_KEY_PRIOR:
+				dedaKeyChanged = &DedaSwitchHold;
 				break;
 			case OAPI_KEY_MULTIPLY:
-				deda.ReadOutPressed();
+				dedaKeyChanged = &DedaSwitchReadOut;
 				break;
 			case OAPI_KEY_ADD:
-				deda.PlusPressed();
+				dedaKeyChanged = &DedaSwitchPlus;
 				break;
 			case OAPI_KEY_SUBTRACT:
-				deda.MinusPressed();
+				dedaKeyChanged = &DedaSwitchMinus;
 				break;
 			case OAPI_KEY_NUMPAD1:
-				deda.NumberPressed(1);
+				dedaKeyChanged = &DedaSwitchOne;
 				break;
 			case OAPI_KEY_NUMPAD2:
-				deda.NumberPressed(2);
+				dedaKeyChanged = &DedaSwitchTwo;
 				break;
 			case OAPI_KEY_NUMPAD3:
-				deda.NumberPressed(3);
+				dedaKeyChanged = &DedaSwitchThree;
 				break;
 			case OAPI_KEY_NUMPAD4:
-				deda.NumberPressed(4);
+				dedaKeyChanged = &DedaSwitchFour;
 				break;
 			case OAPI_KEY_NUMPAD5:
-				deda.NumberPressed(5);
+				dedaKeyChanged = &DedaSwitchFive;
 				break;
 			case OAPI_KEY_NUMPAD6:
-				deda.NumberPressed(6);
+				dedaKeyChanged = &DedaSwitchSix;
 				break;
 			case OAPI_KEY_NUMPAD7:
-				deda.NumberPressed(7);
+				dedaKeyChanged = &DedaSwitchSeven;
 				break;
 			case OAPI_KEY_NUMPAD8:
-				deda.NumberPressed(8);
+				dedaKeyChanged = &DedaSwitchEight;
 				break;
 			case OAPI_KEY_NUMPAD9:
-				deda.NumberPressed(9);
+				dedaKeyChanged = &DedaSwitchNine;
 				break;
 			case OAPI_KEY_NUMPAD0:
-				deda.NumberPressed(0);
+				dedaKeyChanged = &DedaSwitchZero;
 				break;
 			case OAPI_KEY_D:
 				// Orbiter undocking messes with our undocking system. We consume the keybind here to block it.
 				// This won't work if the user has changed this keybind. Unfortunately Orbiter does not export the keymap through the API (yet). :(
 				return 1;
-			}
 		}
-		else {
-			// KEY UP
-			switch (key) {
-			case OAPI_KEY_DECIMAL:
-				deda.ResetKeyDown();
-				break;
 
+		// Direction-specific code, handle DEDA key presses if any.
+		if (down) {
+			// KEY DOWN
+			if (dedaKeyChanged != nullptr) {
+				dedaKeyChanged->SetHeld(true);
+				dedaKeyChanged->SetState(PUSHBUTTON_PUSHED);
+			}
+		} else {
+			// KEY UP
+			if (dedaKeyChanged != nullptr) {
+				// Doing SwitchTo instead of SetState prevents a second click on key up.
+				dedaKeyChanged->SetHeld(false);
+				dedaKeyChanged->SwitchTo(PUSHBUTTON_UNPUSHED);
 			}
 		}
 		return 0;
@@ -1405,10 +1402,10 @@ void LEM::clbkPostStep(double simt, double simdt, double mjd)
 	UpdateMassAndCoG();
 
 	//
-	// Play RCS sound in case of Orbiter's attitude control is disabled
+	// Play engine sound in case of Orbiter's attitude control is disabled
 	//
 
-	RCSSoundTimestep();
+	EngineSoundTimestep();
 
 	if (stage == 0 || pMission->LMHasLegs() == false)	{
 
@@ -1548,12 +1545,6 @@ void LEM::PostLoadSetup(bool define_anims)
 		checkControl.autoExecuteAllItemsAutomatic(false);
 
 	}
-
-	//
-	// Load sounds, this is mandatory if loading in cockpit view, 
-	// because OrbiterSound crashes when loading sounds during clbkLoadPanel
-	//
-	LoadDefaultSounds();
 
 	// Also cause the AC busses to wire up
 	switch (EPSInverterSwitch.GetState()) {
@@ -1704,6 +1695,12 @@ void LEM::GetScenarioState(FILEHANDLE scn, void *vs)
 		}
 		else if (!strnicmp(line, "COASRETICLEVISIBLE", 18)) {
 			sscanf(line + 18, "%i", &COASreticlevisible);
+		}
+		else if (!strnicmp(line, "WINDOWSHADESENABLED", 19)) {
+			sscanf(line + 19, "%i", &LEMWindowShades);
+		}
+		else if (!strnicmp(line, FAILURES_START_STRING, sizeof(FAILURES_START_STRING))) {
+			Failures.LoadState(scn);
 		}
 		else if (!strnicmp(line, INERTIAL_DATA_START_STRING, sizeof(INERTIAL_DATA_START_STRING))) {
 			inertialData.LoadState(scn);
@@ -1960,10 +1957,16 @@ void LEM::clbkPostCreation()
 	}
 
 	CreateAirfoils();
+
+	// VESSELSOUND initialisation
+	soundlib.InitSoundLib(this, SOUND_DIRECTORY);
+	LoadDefaultSounds();
+	this->CWEA.LoadSounds();
 }
 
 void LEM::clbkVisualCreated(VISHANDLE vis, int refcount)
 {
+	this->vis = vis;
 	if (ascidx != -1) {
 		drogue = GetDevMesh(vis, ascidx);
 		DrogueVis();
@@ -1987,6 +1990,7 @@ void LEM::clbkVisualCreated(VISHANDLE vis, int refcount)
 
 void LEM::clbkVisualDestroyed(VISHANDLE vis, int refcount)
 {
+	if (this->vis == vis) this->vis = NULL;
 	drogue = NULL;
 	probes = NULL;
 	cdrmesh = NULL;
@@ -2009,6 +2013,56 @@ void LEM::clbkDockEvent(int dock, OBJHANDLE connected)
 			CreateAirfoils();
 		}
 	}
+}
+
+void LEM::clbkFocusChanged(bool getfocus, OBJHANDLE hNewVessel, OBJHANDLE hOldVessel)
+{
+	OBJHANDLE hLM = GetHandle();
+	if (hNewVessel == hLM) { //LM gains focus
+
+		bool fixCamera = false;
+		if (oapiCameraInternal() == false) {
+			fixCamera = true;
+			oapiCameraAttach(hLM, 0);
+		}
+		
+		if (status == 0) { //Dock Stage
+			SetSize(6);
+		}
+		else if (status == 1) { //Hover Stage
+			SetSize(7);
+		}
+		else if (status == 2) { //Ascent Hover Stage
+			SetSize(5);
+		}
+
+		if (fixCamera == true) {
+			oapiCameraAttach(hLM, 1);
+		}
+	}
+	else if (hOldVessel == hLM) { //LM loses focus
+		SetSize(visibilitySize);
+	}
+}
+
+void LEM::clbkGetRadiationForce(const VECTOR3& mflux, VECTOR3& F, VECTOR3& pos)
+{
+	double size = 0;
+	if (status == 0) { //Dock Stage
+		size = 6;
+	}
+	else if (status == 1) { //Hover Stage
+		size = 7;
+	}
+	else if (status == 2) { //Ascent Hover Stage
+		size = 5;
+	}
+
+	double cs = size * size;  // simplified cross section
+	double albedo = 1.5;    // simplistic albedo (mixture of absorption, reflection)
+
+	F = mflux * (cs * albedo);
+	pos = _V(0, 0, 0);        // don't induce torque
 }
 
 void LEM::DefineAnimations()
@@ -2167,6 +2221,8 @@ void LEM::clbkSaveState (FILEHANDLE scn)
 	oapiWriteScenario_int(scn, "COAS2ENABLED", LEMCoas2Enabled);
 	oapiWriteScenario_int(scn, "COASRETICLEVISIBLE", COASreticlevisible);
 
+	oapiWriteScenario_int(scn, "WINDOWSHADESENABLED", LEMWindowShades);
+
 	oapiWriteScenario_float (scn, "DSCFUEL", DescentFuelMassKg);
 	oapiWriteScenario_float (scn, "ASCFUEL", AscentFuelMassKg);
 	oapiWriteScenario_float(scn, "DSCEMPTYMASS", DescentEmptyMassKg);
@@ -2184,6 +2240,7 @@ void LEM::clbkSaveState (FILEHANDLE scn)
 		}
 	}
 
+	Failures.SaveState(scn);
 	inertialData.SaveState(scn);
 	dsky.SaveState(scn, DSKY_START_STRING, DSKY_END_STRING);
 	agc.SaveState(scn);
@@ -2369,7 +2426,7 @@ void LEM::SetRCSJetLevelPrimary(int jet, double level) {
 	SetThrusterLevel(th_rcs[jet], level);
 }
 
-void LEM::RCSSoundTimestep() {
+void LEM::EngineSoundTimestep() {
 
 	// In case of disabled Orbiter attitude thruster groups OrbiterSound plays no
 	// engine sound, so this needs to be done manually
@@ -2393,6 +2450,20 @@ void LEM::RCSSoundTimestep() {
 	}
 	else {
 		RCSSustainSound.stop();
+	}
+
+	//APS/DPS sound
+	if (th_hover[0])
+	{
+		double lvl;
+		if (lvl = GetThrusterLevel(th_hover[0]))
+		{
+			EngineS.play(LOOP, lvl);
+		}
+		else
+		{
+			EngineS.stop();
+		}
 	}
 }
 
