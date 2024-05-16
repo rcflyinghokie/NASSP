@@ -1612,10 +1612,12 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 		//Tapemeter Lights
 		if (AltRngMonSwitch.GetState() == TOGGLESWITCH_DOWN) {
 			SetVCLighting(vcidx, Tapemeter_AltAltRate, MAT_EMISSION, (lca.GetNumericVoltage() / 110.0), 1);
+			SetVCLighting(vcidx, Tapemeter_RangeRangeRate, MAT_EMISSION, 0, 1);
 		}
 
 		else {
 			SetVCLighting(vcidx, Tapemeter_RangeRangeRate, MAT_EMISSION, (lca.GetNumericVoltage() / 110.0), 1);
+			SetVCLighting(vcidx, Tapemeter_AltAltRate, MAT_EMISSION, 0, 1);
 		}
 
 		return true;
