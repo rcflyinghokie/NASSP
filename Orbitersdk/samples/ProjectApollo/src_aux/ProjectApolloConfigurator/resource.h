@@ -42,7 +42,7 @@
 #define IDC_CHECK_VCINFOENABLED         1030
 #define IDC_BUTTON1                     1031
 #define IDC_BUTTON_CREATECONFIG         1032
-#define IDC_SLIDER1                     1033
+#define IDC_EDIT1                       1033
 
 // Next default values for new objects
 // 

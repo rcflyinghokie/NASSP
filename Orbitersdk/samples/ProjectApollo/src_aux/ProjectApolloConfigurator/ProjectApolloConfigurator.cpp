@@ -410,7 +410,14 @@ BOOL CALLBACK ProjectApolloConfigurator::DlgProcFrame (HWND hWnd, UINT uMsg, WPA
 				else {
 					gParams.Saturn_VcInfoEnabled = 0;
 				}
-				gParams.Saturn_VibrationVisualization = (int)SendDlgItemMessage(gParams.hDlgTabs[2], IDC_SLIDER1, TBM_GETPOS, 0, 0);
+
+				SendDlgItemMessage(gParams.hDlgTabs[2], IDC_EDIT1, WM_GETTEXT, 4, (LPARAM)(LPCTSTR)buffer);
+				if (sscanf(buffer, "%i", &i) == 1) {
+					gParams.Saturn_VibrationVisualization = i;
+				}
+				else {
+					gParams.Saturn_VibrationVisualization = 50;
+				}
 
 				EndDialog (hWnd, 0);
 				return 0;
@@ -512,7 +519,8 @@ BOOL CALLBACK ProjectApolloConfigurator::DlgProcControl (HWND hWnd, UINT uMsg, W
 
 		SendDlgItemMessage(hWnd, IDC_CHECK_VCINFOENABLED, BM_SETCHECK, gParams.Saturn_VcInfoEnabled ? BST_CHECKED : BST_UNCHECKED, 0);
 
-		SendDlgItemMessage(hWnd, IDC_SLIDER1, TBM_SETPOS, TRUE, (long)gParams.Saturn_VibrationVisualization);
+		sprintf(buffer, "%i", gParams.Saturn_VibrationVisualization);
+		SendDlgItemMessage(hWnd, IDC_EDIT1, WM_SETTEXT, 0, (LPARAM)(LPCTSTR)buffer);
 
 		UpdateControlState(hWnd);
 		return TRUE;
