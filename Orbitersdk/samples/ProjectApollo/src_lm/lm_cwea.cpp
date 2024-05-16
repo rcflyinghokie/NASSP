@@ -101,6 +101,9 @@ void LEM_CWEA::SetMasterAlarm(bool alarm) {
 
 void LEM_CWEA::Timestep(double simdt) {
 	bool lightlogic;
+	double max = 0.0;
+	double min = 0.0;
+	double voltage = 0.0;
 
 	if (MasterAlarm && IsMAPowered()) {
 		if (!MasterAlarmSound.isPlaying()) {
@@ -137,7 +140,7 @@ void LEM_CWEA::Timestep(double simdt) {
 			lightlogic = true;
 		}
 		// Fuel and oxidizer pressure < 119.8 psia prior to staging, cut and capped from the CWEA on LM-8 and subsequent
-		if ((lem->pMission->GetLMCWEAVersion() < 8 && lem->stage < 2) && (lem->APSPropellant.GetFuelTrimOrificeOutletPressurePSI() < 119.8 || lem->APSPropellant.GetOxidTrimOrificeOutletPressurePSI() < 119.8)) {
+		if ((lem->pMission->GetLMNumber() < 8 && lem->stage < 2) && (lem->APSPropellant.GetFuelTrimOrificeOutletPressurePSI() < 119.8 || lem->APSPropellant.GetOxidTrimOrificeOutletPressurePSI() < 119.8)) {
 			lightlogic = true;
 		}
 
@@ -406,36 +409,63 @@ void LEM_CWEA::Timestep(double simdt) {
 		// 6DS33 HEATER FAILURE CAUTION
 		// On when:
 
-		double cappedvoltage = 0; //dummy for a cut/capped wire returning no voltage and triggering a low temperature condition
+		// LR Antenna
+		// LM-3: < -15.0F or > 150.0F 
+		// LM-4 and subsequent: < 15.6F or > 148.9F, cut and capped
+		if (lem->pMission->GetLMNumber() < 3)
+		{
+			min = 2.313; // -15.0F
+			max = 4.375; // 150.0F
+			voltage = lem->scera1.GetVoltage(21, 3);
+		}
+		else
+		{
+			min = 2.305; // -15.6F
+			max = 4.361; // 148.9F
+			voltage = 0.0;
+		}
 
-		// LR Antenna < -15.0F or > 150.0F, cut and capped on LM-5 and subsequent
-		LRHeaterCautFF.Set((lem->pMission->GetLMCWEAVersion() < 4 && (lem->scera1.GetVoltage(20, 4) < 2.30 || lem->scera1.GetVoltage(20, 4) > 4.36)) ||
-			(lem->pMission->GetLMCWEAVersion() > 3 && (cappedvoltage < 2.305 || cappedvoltage > 4.136)));
+		LRHeaterCautFF.Set(voltage < min || voltage > max);
 		LRHeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 1);
 
 		// RR Antenna < -54.07F or > 147.69F
 		RRHeaterCautFF.Set(lem->scera1.GetVoltage(21, 4) < 1.869 || lem->scera1.GetVoltage(21, 4) > 4.361);
 		RRHeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 0);
 
-		// RCS Quads < 118.8F  or > 190.5F, cut and capped on LM-7 and subsequent
+		// RCS Quads
+		// LM-3: < 119.0F or > 190.0F 
+		// LM-4: < 113.0F or > 241.0F 
+		// Cut and capped on LM-5 and subsequent
+
+		if (lem->pMission->GetLMNumber() < 4)
+		{
+			min = 2.750; // 119.0F
+			max = 4.723; // 190.0F
+		}
+		else
+		{
+			min = 2.703; // 113.0F
+			max = 4.703; // 241.0F
+		}
+
 		//Quad 1
-		QD1HeaterCautFF.Set((lem->pMission->GetLMCWEAVersion() < 7 && (lem->scera1.GetVoltage(20, 4) < 2.79 || lem->scera1.GetVoltage(20, 4) > 4.725)) || 
-			(lem->pMission->GetLMCWEAVersion() > 6 && (cappedvoltage < 2.79 || cappedvoltage > 4.725)));
+		voltage = lem->pMission->GetLMNumber() <= 4 ? lem->scera1.GetVoltage(20, 4) : 0.0;
+		QD1HeaterCautFF.Set(voltage < min || voltage > max);
 		QD1HeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 2);
 
 		//Quad 2
-		QD2HeaterCautFF.Set((lem->pMission->GetLMCWEAVersion() < 7 && (lem->scera1.GetVoltage(20, 4) < 2.79 || lem->scera1.GetVoltage(20, 4) > 4.725)) ||
-			(lem->pMission->GetLMCWEAVersion() > 6 && (cappedvoltage < 2.79 || cappedvoltage > 4.725)));
+		voltage = lem->pMission->GetLMNumber() <= 4 ? lem->scera1.GetVoltage(20, 3) : 0.0;
+		QD2HeaterCautFF.Set(voltage < min || voltage > max);
 		QD2HeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 3);
 
 		//Quad 3
-		QD3HeaterCautFF.Set((lem->pMission->GetLMCWEAVersion() < 7 && (lem->scera1.GetVoltage(20, 4) < 2.79 || lem->scera1.GetVoltage(20, 4) > 4.725)) ||
-			(lem->pMission->GetLMCWEAVersion() > 6 && (cappedvoltage < 2.79 || cappedvoltage > 4.725)));
+		voltage = lem->pMission->GetLMNumber() <= 4 ? lem->scera1.GetVoltage(20, 2) : 0.0;
+		QD3HeaterCautFF.Set(voltage < min || voltage > max);
 		QD3HeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 4);
 
 		//Quad 4
-		QD4HeaterCautFF.Set((lem->pMission->GetLMCWEAVersion() < 7 && (lem->scera1.GetVoltage(20, 4) < 2.79 || lem->scera1.GetVoltage(20, 4) > 4.725)) ||
-			(lem->pMission->GetLMCWEAVersion() > 6 && (cappedvoltage < 2.79 || cappedvoltage > 4.725)));
+		voltage = lem->pMission->GetLMNumber() <= 4 ? lem->scera1.GetVoltage(20, 1) : 0.0;
+		QD4HeaterCautFF.Set(voltage < min || voltage > max);
 		QD4HeaterCautFF.Reset(lem->TempMonitorRotary.GetState() == 5);
 
 		// S-Band Antenna Electronic Drive Assembly < -64.08F or > 152.63F
