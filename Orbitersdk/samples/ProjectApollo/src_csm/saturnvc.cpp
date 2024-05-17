@@ -5174,5 +5174,32 @@ void Saturn::SetVCLighting(UINT meshidx, DWORD *matList, int EmissionMode, doubl
 #endif
 		}
 	}
-    //sprintf(oapiDebugString(), "%d %lf", m, state);
+}
+
+#ifdef _OPENORBITER
+void Saturn::SetVCLighting(UINT meshidx, int material, MatProp EmissionMode, double state, int cnt)
+#else
+void Saturn::SetVCLighting(UINT meshidx, int material, int EmissionMode, double state, int cnt)
+#endif
+
+{
+	if (vis == NULL || meshidx == -1) return;
+	DEVMESHHANDLE hMesh = GetDevMesh(vis, meshidx);
+
+    if (!hMesh)
+        return;
+
+	gcCore *pCore = gcGetCoreInterface();
+	if (pCore) {
+		FVECTOR4 value;
+		value.r = (float)state;
+		value.g = (float)state;
+		value.b = (float)state;
+		value.a = 1.0;
+#ifdef _OPENORBITER
+		pCore->SetMeshMaterial(hMesh, material, EmissionMode, &value);
+#else
+		pCore->MeshMaterial(hMesh, material, EmissionMode, &value, true);
+#endif
+	}
 }

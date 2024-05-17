@@ -1601,31 +1601,30 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 
 		SetVCLighting(vcidx, &DSKY_CW_Lights[0],  MAT_LIGHT, ((lca.GetIntegralVoltage() / 75.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0))/2.0, DSKY_CW_Lights.size());
 
-		//External Meshes
-		SetVCLighting(xpointershadesidx, FloodLights_XPointer_Shades, MAT_LIGHT, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_XPointer_Shades));
-		SetVCLighting(windowshadesidx,   FloodLights_WindowShades,    MAT_LIGHT, FloodLights.GetCDRRotaryVoltage() / 28.0, NUM_ELEMENTS(FloodLights_WindowShades));
+		//External Meshes ***If Second paremeter is 0 then the mesh contains only one Material***
+		SetVCLighting(xpointershadesidx, 0, MAT_LIGHT, FloodLights.GetCDRRotaryVoltage() / 28.0, 1); //FloodLights_XPointer_Shades
+		SetVCLighting(windowshadesidx,   0, MAT_LIGHT, FloodLights.GetCDRRotaryVoltage() / 28.0, 1); //FloodLights_WindowShades
 
 		if (deda.OprErrLit()) {
-			SetVCLighting(vcidx, DEDA_LightsFullLit,  MAT_LIGHT, 1, 1);
+			SetVCLighting(vcidx, VC_MAT_DEDA_Light,  MAT_LIGHT, 1, 1);
 		}
 
         //Tapemeter Lights
         if (AltRngMonSwitch.GetState() == TOGGLESWITCH_DOWN) {
-            SetVCLighting(vcidx, Tapemeter_AltAltRate, MAT_EMISSION, (lca.GetNumericVoltage() / 110.0), 1);
-            SetVCLighting(vcidx, Tapemeter_RangeRangeRate, MAT_EMISSION, 0, 1);
+            SetVCLighting(vcidx, VC_MAT_Panel1_Tapemeter_AltAltRate, MAT_EMISSION, (lca.GetNumericVoltage() / 110.0), 1);
+            SetVCLighting(vcidx, VC_MAT_Panel1_Tapemeter_RangeRangeRate, MAT_EMISSION, 0.25, 1);
         }
         else {
-            SetVCLighting(vcidx, Tapemeter_RangeRangeRate, MAT_EMISSION, (lca.GetNumericVoltage() / 110.0), 1);
-            SetVCLighting(vcidx, Tapemeter_AltAltRate, MAT_EMISSION, 0, 1);
+            SetVCLighting(vcidx, VC_MAT_Panel1_Tapemeter_RangeRangeRate, MAT_EMISSION, (lca.GetNumericVoltage() / 110.0), 1);
+            SetVCLighting(vcidx, VC_MAT_Panel1_Tapemeter_AltAltRate, MAT_EMISSION, 0.25, 1);
         }
 
         if (TempPressMonRotary.GetState() == 0) {
-            SetVCLighting(vcidx, RCS_Helium_Press_x10, MAT_EMISSION, (lca.GetNumericVoltage() / 110.0), 1);
+            SetVCLighting(vcidx, VC_MAT_RCS_HE_PRESS_x10, MAT_EMISSION, (lca.GetNumericVoltage() / 110.0), 1);
         }
         else {
-            SetVCLighting(vcidx, RCS_Helium_Press_x10, MAT_EMISSION, 0, 1);
+            SetVCLighting(vcidx, VC_MAT_RCS_HE_PRESS_x10, MAT_EMISSION, 0.25, 1);
         }
-		
 
 		return true;
 	}
@@ -3490,5 +3489,32 @@ void LEM::SetVCLighting(UINT meshidx, DWORD *matList, int EmissionMode, double s
 #endif
 		}
 	}
-    //sprintf(oapiDebugString(), "%d %lf", m, state);
+}
+
+#ifdef _OPENORBITER
+void LEM::SetVCLighting(UINT meshidx, int material, MatProp EmissionMode, double state, int cnt)
+#else
+void LEM::SetVCLighting(UINT meshidx, int material, int EmissionMode, double state, int cnt)
+#endif
+
+{
+	if (vis == NULL || meshidx == -1) return;
+	DEVMESHHANDLE hMesh = GetDevMesh(vis, meshidx);
+
+    if (!hMesh)
+        return;
+
+	gcCore *pCore = gcGetCoreInterface();
+	if (pCore) {
+		FVECTOR4 value;
+		value.r = (float)state;
+		value.g = (float)state;
+		value.b = (float)state;
+		value.a = 1.0;
+#ifdef _OPENORBITER
+		pCore->SetMeshMaterial(hMesh, material, EmissionMode, &value);
+#else
+		pCore->MeshMaterial(hMesh, material, EmissionMode, &value, true);
+#endif
+		}
 }
