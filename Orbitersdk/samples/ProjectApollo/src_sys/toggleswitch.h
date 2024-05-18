@@ -771,10 +771,10 @@ protected:
 /// \brief Two-position circuit breaker switch.
 /// \ingroup PanelItems
 ///
-class CircuitBrakerSwitch: public SimplePushSwitch {
+class CircuitBreakerSwitch: public SimplePushSwitch {
 
 public:
-	CircuitBrakerSwitch() { MaxAmps = 0.0; };
+	CircuitBreakerSwitch() { MaxAmps = 0.0; };
 
 	bool CheckMouseClick(int event, int mx, int my);
 	bool CheckMouseClickVC(int event, VECTOR3 &p);
@@ -1608,7 +1608,7 @@ protected:
 	friend class RotationalSwitch;
 	friend class IndicatorSwitch;
 	friend class ThumbwheelSwitch;
-	friend class CircuitBrakerSwitch;
+	friend class CircuitBreakerSwitch;
 	friend class HandcontrollerSwitch;
 	friend class MeterSwitch;
 	friend class ContinuousSwitch;
@@ -1680,7 +1680,7 @@ protected:
 	friend class RotationalSwitch;
 	friend class IndicatorSwitch;
 	friend class ThumbwheelSwitch;
-	friend class CircuitBrakerSwitch;
+	friend class CircuitBreakerSwitch;
 	friend class HandcontrollerSwitch;
 	friend class MeterSwitch;
 	friend class ContinuousSwitch;

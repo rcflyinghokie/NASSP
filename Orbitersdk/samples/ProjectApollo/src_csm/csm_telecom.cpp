@@ -1386,7 +1386,7 @@ VHFAMTransceiver::VHFAMTransceiver()
 	lem = NULL;
 }
 
-void VHFAMTransceiver::Init(Saturn *vessel, ThreePosSwitch *vhfASw, ThreePosSwitch *vhfBSw, ThreePosSwitch *rcvSw, CircuitBrakerSwitch *ctrpowcb, RotationalSwitch *antSelSw, VHFAntenna *lAnt, VHFAntenna *rAnt)
+void VHFAMTransceiver::Init(Saturn *vessel, ThreePosSwitch *vhfASw, ThreePosSwitch *vhfBSw, ThreePosSwitch *rcvSw, CircuitBreakerSwitch *ctrpowcb, RotationalSwitch *antSelSw, VHFAntenna *lAnt, VHFAntenna *rAnt)
 {
 	sat = vessel;
 	vhfASwitch = vhfASw;
@@ -1648,7 +1648,7 @@ VHFRangingSystem::VHFRangingSystem()
 	rangeTone = false;
 }
 
-void VHFRangingSystem::Init(Saturn *vessel, CircuitBrakerSwitch *cb, ToggleSwitch *powersw, ToggleSwitch *resetsw, VHFAMTransceiver *transc)
+void VHFRangingSystem::Init(Saturn *vessel, CircuitBreakerSwitch *cb, ToggleSwitch *powersw, ToggleSwitch *resetsw, VHFAMTransceiver *transc)
 {
 	sat = vessel;
 	powercb = cb;
@@ -5388,7 +5388,7 @@ RNDZXPDRSystem::~RNDZXPDRSystem()
 	sat->CSM_RRTto_LM_RRConnector.Disconnect();
 }
 
-void RNDZXPDRSystem::Init(Saturn *vessel, CircuitBrakerSwitch *PowerCB, ToggleSwitch *RNDZXPDRSwitch, ThreePosSwitch *Panel100RNDZXPDRSwitch, RotationalSwitch *LeftSystemTestRotarySwitch, RotationalSwitch *RightSystemTestRotarySwitch)
+void RNDZXPDRSystem::Init(Saturn *vessel, CircuitBreakerSwitch *PowerCB, ToggleSwitch *RNDZXPDRSwitch, ThreePosSwitch *Panel100RNDZXPDRSwitch, RotationalSwitch *LeftSystemTestRotarySwitch, RotationalSwitch *RightSystemTestRotarySwitch)
 {
 	sat = vessel;
 	if (!lem){

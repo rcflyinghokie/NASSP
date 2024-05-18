@@ -200,14 +200,14 @@ class LEMCabinRepressValve
 {
 public:
 	LEMCabinRepressValve();
-	void Init(LEM *l, h_Pipe *crv, CircuitBrakerSwitch *crcb, RotationalSwitch *crvs, RotationalSwitch* pras, RotationalSwitch *prbs);
+	void Init(LEM *l, h_Pipe *crv, CircuitBreakerSwitch *crcb, RotationalSwitch *crvs, RotationalSwitch* pras, RotationalSwitch *prbs);
 	void SystemTimestep(double simdt);
 
 	bool GetEmergencyCabinRepressRelay() { return EmergencyCabinRepressRelay; }
 protected:
 	LEM *lem;
 	h_Pipe *cabinRepressValve;
-	CircuitBrakerSwitch *cabinRepressCB;
+	CircuitBreakerSwitch *cabinRepressCB;
 	RotationalSwitch *cabinRepressValveSwitch;
 	RotationalSwitch *pressRegulatorASwitch;
 	RotationalSwitch *pressRegulatorBSwitch;
@@ -232,13 +232,13 @@ class LEMSuitGasDiverter
 {
 public:
 	LEMSuitGasDiverter();
-	void Init(h_Tank *sgdv, h_Tank *cab, CircuitBrakerSwitch *sgds, CircuitBrakerSwitch *dvcb, RotationalSwitch* pras, RotationalSwitch *prbs);
+	void Init(h_Tank *sgdv, h_Tank *cab, CircuitBreakerSwitch *sgds, CircuitBreakerSwitch *dvcb, RotationalSwitch* pras, RotationalSwitch *prbs);
 	void SystemTimestep(double simdt);
 protected:
 	h_Tank *suitGasDiverterValve;
 	h_Tank *cabin;
-	CircuitBrakerSwitch *suitGasDiverterSwitch;
-	CircuitBrakerSwitch *DivertVLVCB;
+	CircuitBreakerSwitch *suitGasDiverterSwitch;
+	CircuitBreakerSwitch *DivertVLVCB;
 	RotationalSwitch *pressRegulatorASwitch;
 	RotationalSwitch *pressRegulatorBSwitch;
 };
@@ -281,26 +281,26 @@ class LEMWaterSeparationSelector
 {
 public:
 	LEMWaterSeparationSelector();
-	void Init(h_Tank *wssv, CircuitBrakerSwitch* wsss);
+	void Init(h_Tank *wssv, CircuitBreakerSwitch* wsss);
 	void SystemTimestep(double simdt);
 protected:
 	h_Tank *WaterSeparationSelectorValve;
-	CircuitBrakerSwitch *WaterSeparationSelectorSwitch;
+	CircuitBreakerSwitch *WaterSeparationSelectorSwitch;
 };
 
 class LEMCabinFan
 {
 public:
 	LEMCabinFan(FadeInOutSound &cabinfanS);
-	void Init(CircuitBrakerSwitch *cf1cb, CircuitBrakerSwitch *cfccb, RotationalSwitch *pras, RotationalSwitch *prbs, Pump *cf, h_HeatLoad *cfh);
+	void Init(CircuitBreakerSwitch *cf1cb, CircuitBreakerSwitch *cfccb, RotationalSwitch *pras, RotationalSwitch *prbs, Pump *cf, h_HeatLoad *cfh);
 	void SystemTimestep(double simdt);
 protected:
 
 	void CabinFanSound();
 	void StopCabinFanSound();
 
-	CircuitBrakerSwitch *cabinFan1CB;
-	CircuitBrakerSwitch *cabinFanContCB;
+	CircuitBreakerSwitch *cabinFan1CB;
+	CircuitBreakerSwitch *cabinFanContCB;
 	RotationalSwitch *pressRegulatorASwitch;
 	RotationalSwitch *pressRegulatorBSwitch;
 	Pump *cabinFan;
@@ -324,7 +324,7 @@ class LEMPrimGlycolPumpController
 {
 public:
 	LEMPrimGlycolPumpController();
-	void Init(h_Tank *pgat, h_Tank *pgpmt, Pump *gp1, Pump *gp2, RotationalSwitch *gr, CircuitBrakerSwitch *gp1cb, CircuitBrakerSwitch *gp2cb, CircuitBrakerSwitch *gpatcb, h_HeatLoad *gp1h, h_HeatLoad *gp2h);
+	void Init(h_Tank *pgat, h_Tank *pgpmt, Pump *gp1, Pump *gp2, RotationalSwitch *gr, CircuitBreakerSwitch *gp1cb, CircuitBreakerSwitch *gp2cb, CircuitBreakerSwitch *gpatcb, h_HeatLoad *gp1h, h_HeatLoad *gp2h);
 	void SystemTimestep(double simdt);
 	void SaveState(FILEHANDLE scn);
 	void LoadState(char *line);
@@ -338,9 +338,9 @@ protected:
 	Pump *glycolPump1;
 	Pump *glycolPump2;
 	RotationalSwitch *glycolRotary;
-	CircuitBrakerSwitch *glycolPump1CB;
-	CircuitBrakerSwitch *glycolPump2CB;
-	CircuitBrakerSwitch *glycolPumpAutoTransferCB;
+	CircuitBreakerSwitch *glycolPump1CB;
+	CircuitBreakerSwitch *glycolPump2CB;
+	CircuitBreakerSwitch *glycolPumpAutoTransferCB;
 	h_HeatLoad *glycolPump1Heat;
 	h_HeatLoad *glycolPump2Heat;
 
@@ -357,7 +357,7 @@ class LEMSuitFanDPSensor
 {
 public:
 	LEMSuitFanDPSensor();
-	void Init(h_Tank *sfmint, h_Tank *sfmoutt, CircuitBrakerSwitch *sfdpcb);
+	void Init(h_Tank *sfmint, h_Tank *sfmoutt, CircuitBreakerSwitch *sfdpcb);
 	void SystemTimestep(double simdt);
 	void SaveState(FILEHANDLE scn);
 	void LoadState(char *line);
@@ -366,7 +366,7 @@ public:
 protected:
 	h_Tank *suitFanManifoldInTank;
 	h_Tank *suitFanManifoldOutTank;
-	CircuitBrakerSwitch *suitFanDPCB;
+	CircuitBreakerSwitch *suitFanDPCB;
 
 	//K12
 	bool SuitFanFailRelay;

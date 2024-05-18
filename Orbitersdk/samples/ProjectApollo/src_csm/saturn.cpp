@@ -796,10 +796,10 @@ void Saturn::initSaturn()
 	//
 	// Wire up timers.
 	//
-	MissionTimerDisplay.Init(&TimersMnACircuitBraker, &TimersMnBCircuitBraker, &NumericRotarySwitch, &LightingNumIntLMDCCB, NULL);
-	MissionTimer306Display.Init(&TimersMnACircuitBraker, &TimersMnBCircuitBraker, &Panel100NumericRotarySwitch, &LightingNumIntLEBCB, NULL);
-	EventTimerDisplay.Init(&TimersMnACircuitBraker, &TimersMnBCircuitBraker, &NumericRotarySwitch, &LightingNumIntLEBCB, NULL);
-	EventTimer306Display.Init(&TimersMnACircuitBraker, &TimersMnBCircuitBraker, &Panel100NumericRotarySwitch, &LightingNumIntLEBCB, NULL);
+	MissionTimerDisplay.Init(&TimersMnACircuitBreaker, &TimersMnBCircuitBreaker, &NumericRotarySwitch, &LightingNumIntLMDCCB, NULL);
+	MissionTimer306Display.Init(&TimersMnACircuitBreaker, &TimersMnBCircuitBreaker, &Panel100NumericRotarySwitch, &LightingNumIntLEBCB, NULL);
+	EventTimerDisplay.Init(&TimersMnACircuitBreaker, &TimersMnBCircuitBreaker, &NumericRotarySwitch, &LightingNumIntLEBCB, NULL);
+	EventTimer306Display.Init(&TimersMnACircuitBreaker, &TimersMnBCircuitBreaker, &Panel100NumericRotarySwitch, &LightingNumIntLEBCB, NULL);
 
 	//
 	// Configure connectors.
@@ -4781,15 +4781,15 @@ bool Saturn::IsEDSBusPowered(int eds)
 	{
 		if (eds == 1)
 		{
-			return EDS1BatACircuitBraker.IsPowered();
+			return EDS1BatACircuitBreaker.IsPowered();
 		}
 		else if (eds == 2)
 		{
-			return EDS2BatCCircuitBraker.IsPowered();
+			return EDS2BatCCircuitBreaker.IsPowered();
 		}
 		else if (eds == 3)
 		{
-			return EDS3BatBCircuitBraker.IsPowered();
+			return EDS3BatBCircuitBreaker.IsPowered();
 		}
 	}
 
@@ -4933,17 +4933,17 @@ h_Pipe* Saturn::GetCSMO2Hose()
 
 bool Saturn::GetLMDesBatLVOn()
 {
-	return LMPowerSwitch.IsDown() && MnbLMPWR2CircuitBraker.IsPowered();
+	return LMPowerSwitch.IsDown() && MnbLMPWR2CircuitBreaker.IsPowered();
 }
 
 bool Saturn::GetLMDesBatLVHVOffA()
 {
-	return LMPowerSwitch.IsUp() && MnbLMPWR1CircuitBraker.IsPowered();
+	return LMPowerSwitch.IsUp() && MnbLMPWR1CircuitBreaker.IsPowered();
 }
 
 bool Saturn::GetLMDesBatLVHVOffB()
 {
-	return LMPowerSwitch.IsUp() && MnbLMPWR2CircuitBraker.IsPowered();
+	return LMPowerSwitch.IsUp() && MnbLMPWR2CircuitBreaker.IsPowered();
 }
 
 void Saturn::SetContrailLevel(double level)

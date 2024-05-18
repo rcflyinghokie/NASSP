@@ -523,7 +523,7 @@ class VHFAMTransceiver
 public:
 	VHFAMTransceiver();
 	void Timestep();
-	void Init(Saturn *vessel, ThreePosSwitch *vhfASw, ThreePosSwitch *vhfBSw, ThreePosSwitch *rcvSw, CircuitBrakerSwitch *ctrpowcb, RotationalSwitch *antSelSw, VHFAntenna *lAnt, VHFAntenna *rAnt);
+	void Init(Saturn *vessel, ThreePosSwitch *vhfASw, ThreePosSwitch *vhfBSw, ThreePosSwitch *rcvSw, CircuitBreakerSwitch *ctrpowcb, RotationalSwitch *antSelSw, VHFAntenna *lAnt, VHFAntenna *rAnt);
 	void LoadState(char *line);
 	void SaveState(FILEHANDLE scn);
 	bool IsVHFRangingConfig() { return (receiveA && !receiveB && !transmitA && transmitB); }
@@ -578,7 +578,7 @@ protected:
 	ThreePosSwitch *vhfASwitch;
 	ThreePosSwitch *vhfBSwitch;
 	ThreePosSwitch *rcvSwitch;
-	CircuitBrakerSwitch *ctrPowerCB;
+	CircuitBreakerSwitch *ctrPowerCB;
 	RotationalSwitch *antSelectorSw;
 	VHFAntenna *leftAntenna;
 	VHFAntenna *rightAntenna;
@@ -592,7 +592,7 @@ class VHFRangingSystem
 {
 public:
 	VHFRangingSystem();
-	void Init(Saturn *vessel, CircuitBrakerSwitch *cb, ToggleSwitch *powersw, ToggleSwitch *resetsw, VHFAMTransceiver *transc);
+	void Init(Saturn *vessel, CircuitBreakerSwitch *cb, ToggleSwitch *powersw, ToggleSwitch *resetsw, VHFAMTransceiver *transc);
 	void TimeStep(double simdt);
 	void SystemTimestep(double simdt);
 	bool IsPowered();
@@ -618,7 +618,7 @@ protected:
 	Saturn *sat;
 	VESSEL *lem;
 	VHFAMTransceiver *transceiver;
-	CircuitBrakerSwitch *powercb;
+	CircuitBreakerSwitch *powercb;
 	ToggleSwitch *powerswitch;
 	ToggleSwitch *resetswitch;
 };
@@ -630,7 +630,7 @@ class RNDZXPDRSystem
 public:
 	RNDZXPDRSystem();
 	~RNDZXPDRSystem();
-	void Init(Saturn *vessel, CircuitBrakerSwitch *PowerCB, ToggleSwitch *RNDZXPDRSwitch, ThreePosSwitch *Panel100RNDZXPDRSwitch, RotationalSwitch *LeftSystemTestRotarySwitch, RotationalSwitch *RightSystemTestRotarySwitch);
+	void Init(Saturn *vessel, CircuitBreakerSwitch *PowerCB, ToggleSwitch *RNDZXPDRSwitch, ThreePosSwitch *Panel100RNDZXPDRSwitch, RotationalSwitch *LeftSystemTestRotarySwitch, RotationalSwitch *RightSystemTestRotarySwitch);
 	void TimeStep(double simdt);
 	void SystemTimestep(double simdt);
 	void LoadState(char *line);
@@ -684,7 +684,7 @@ protected:
 	//RRT_AGC_XDUCER AGC_XDUCER;
 	//RRT_FREQLOCK_XDUCER FREQLOCK_XDUCER;
 
-	CircuitBrakerSwitch *RRT_FLTBusCB;
+	CircuitBreakerSwitch *RRT_FLTBusCB;
 	ToggleSwitch *TestOperateSwitch; //test operate switch
 	ThreePosSwitch *HeaterPowerSwitch; //heater/power switch
 	RotationalSwitch *RRT_LeftSystemTestRotarySwitch;

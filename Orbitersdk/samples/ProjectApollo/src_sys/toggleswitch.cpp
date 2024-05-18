@@ -1001,10 +1001,10 @@ void PushSwitch::InitSound(SoundLib *s) {
 
 
 //
-// Circuit braker switch.  Special case of Toggle Switch
+// Circuit Breaker switch.  Special case of Toggle Switch
 //
 
-bool CircuitBrakerSwitch::CheckMouseClick(int event, int mx, int my) {
+bool CircuitBreakerSwitch::CheckMouseClick(int event, int mx, int my) {
 
 	int OldState = state;
 
@@ -1024,7 +1024,7 @@ bool CircuitBrakerSwitch::CheckMouseClick(int event, int mx, int my) {
 	return true;
 }
 
-bool CircuitBrakerSwitch::CheckMouseClickVC(int event, VECTOR3 &p)
+bool CircuitBreakerSwitch::CheckMouseClickVC(int event, VECTOR3 &p)
 {
 	int OldState = state;
 
@@ -1041,7 +1041,7 @@ bool CircuitBrakerSwitch::CheckMouseClickVC(int event, VECTOR3 &p)
 	return true;
 }
 
-double CircuitBrakerSwitch::Voltage()
+double CircuitBreakerSwitch::Voltage()
 {
 	if ((GetState() != 0) && SRC)
 		return SRC->Voltage();
@@ -1049,7 +1049,7 @@ double CircuitBrakerSwitch::Voltage()
 	return 0.0;
 }
 
-double CircuitBrakerSwitch::Current()
+double CircuitBreakerSwitch::Current()
 {	
 	if ((GetState() != 0) && SRC && SRC->IsEnabled()) {
 		Volts = SRC->Voltage();
@@ -1064,7 +1064,7 @@ double CircuitBrakerSwitch::Current()
 	return Amperes;
 }
 
-double CircuitBrakerSwitch::Frequency()
+double CircuitBreakerSwitch::Frequency()
 {
 	if ((GetState() != 0) && SRC)
 		return SRC->Frequency();
@@ -1072,13 +1072,13 @@ double CircuitBrakerSwitch::Frequency()
 	return 0.0;
 }
 
-void CircuitBrakerSwitch::InitSound(SoundLib *s) {
+void CircuitBreakerSwitch::InitSound(SoundLib *s) {
 
 	if (!Sclick.isValid())
 		s->LoadSound(Sclick, CIRCUITBREAKER_SOUND);
 }
 
-void CircuitBrakerSwitch::DrawPower(double watts)
+void CircuitBreakerSwitch::DrawPower(double watts)
 
 {
 	/// \todo Note that this will not work properly if more than one source draws from a CB.
@@ -1122,7 +1122,7 @@ void CircuitBrakerSwitch::DrawPower(double watts)
 	}
 }
 
-void CircuitBrakerSwitch::Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row, e_object *s, double amps)
+void CircuitBreakerSwitch::Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row, e_object *s, double amps)
 
 {
 	SimplePushSwitch::Init(xp, yp, w, h, surf, bsurf, row);
