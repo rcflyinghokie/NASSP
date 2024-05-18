@@ -103,8 +103,10 @@ DWORD FloodLights_LMVC[] = {
 	//Tapemeter Lights
 	VC_MAT_Panel1_Tapemeter_AltAltRate,
 	VC_MAT_Panel1_Tapemeter_RangeRangeRate,
+	VC_MAT_RCS_HE_PRESS_x10,
 
-	VC_MAT_RCS_HE_PRESS_x10
+// Caution & Warning Lights Frame
+	VC_MAT_CW_Frame
 };
 
 DWORD IntegralLights_LMVC[] = {

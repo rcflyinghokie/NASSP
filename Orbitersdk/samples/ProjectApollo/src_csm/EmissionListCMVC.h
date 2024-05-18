@@ -214,8 +214,14 @@ DWORD FloodLights_P8[] = {
 	VC_MAT_LiftVectorindicatorTop,
 
 	VC_MAT_Panel1_05G,
-	VC_MAT_Panel1_SPS_THRUST
+	VC_MAT_Panel1_SPS_THRUST,
 
+	// LEB Condition Lamps
+	VC_MAT_LEB_ConditionLamp_CMC,
+	VC_MAT_LEB_ConditionLamp_ISS,
+	VC_MAT_LEB_ConditionLamp_PGNS,
+
+	VC_MAT_MasterAlarm_LEB
 };
 
 //

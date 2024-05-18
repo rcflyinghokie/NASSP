@@ -1825,11 +1825,28 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 		}
 
 		if (cws.GetMasterAlarm() || cws.GetCWLightTest() == CWS_TEST_LIGHTS_LEFT) {
-			SetVCLighting(vcidx, FullLitMasterAlarm1, MAT_LIGHT, 1.0, 1);
+			SetVCLighting(vcidx, VC_MAT_MASTERALARM_PANEL1, MAT_LIGHT, 1.0, 1);
 		}
 		
 		if (cws.GetMasterAlarm() || cws.GetCWLightTest() == CWS_TEST_LIGHTS_RIGHT) {
-			SetVCLighting(vcidx, FullLitMasterAlarm2, MAT_LIGHT, 1.0, 1);
+			SetVCLighting(vcidx, VC_MAT_MASTERALARM_PANEL2, MAT_LIGHT, 1.0, 1);
+		}
+
+		if (cws.GetMasterAlarm() || cws.GetCWLightTest() == CWS_TEST_LIGHTS_RIGHT) {
+			SetVCLighting(vcidx, VC_MAT_MasterAlarm_LEB, MAT_LIGHT, 1.0, 1);
+		}
+
+		// LEB Conditional Lamps
+		if (cws.GetGNLampState() == 2 || cws.GetGNPGNSAlarm()) {
+			SetVCLighting(vcidx, VC_MAT_LEB_ConditionLamp_ISS, MAT_LIGHT, 1.0, 1);
+		}
+
+		if (cws.GetGNLampState() == 2 || LightStates[CSM_CWS_CMC_LIGHT+30 - CWS_LIGHTS_PER_PANEL]){
+			SetVCLighting(vcidx, VC_MAT_LEB_ConditionLamp_CMC, MAT_LIGHT, 1.0, 1);
+		}
+
+		if (cws.GetGNLampState() == 2 || LightStates[CSM_CWS_ISS_LIGHT+30 - CWS_LIGHTS_PER_PANEL]){
+			SetVCLighting(vcidx, VC_MAT_LEB_ConditionLamp_PGNS, MAT_LIGHT, 1.0, 1);
 		}
 
 		if (SI_EngineNum > 5){
