@@ -336,8 +336,8 @@ void Saturn::InitPanel (int panel)
 	srf[SRF_THUMBWHEEL_SMALLFONTS]					= oapiCreateSurface (LOADBMP (IDB_THUMBWHEEL_SMALLFONTS));
 	srf[SRF_THUMBWHEEL_SMALLFONTS_DIAGONAL]			= oapiCreateSurface (LOADBMP (IDB_THUMBWHEEL_SMALLFONTS_DIAGONAL));
 	srf[SRF_THUMBWHEEL_SMALLFONTS_DIAGONAL_LEFT]	= oapiCreateSurface (LOADBMP (IDB_THUMBWHEEL_SMALLFONTS_DIAGONAL_LEFT));
-	srf[SRF_CIRCUITBreaker]          				= oapiCreateSurface (LOADBMP (IDB_CIRCUITBreaker));
-	srf[SRF_CIRCUITBreaker_YELLOW]          			= oapiCreateSurface (LOADBMP (IDB_CIRCUITBreaker_YELLOW));
+	srf[SRF_CIRCUITBREAKER]          				= oapiCreateSurface (LOADBMP (IDB_CIRCUITBREAKER));
+	srf[SRF_CIRCUITBREAKER_YELLOW]          			= oapiCreateSurface (LOADBMP (IDB_CIRCUITBREAKER_YELLOW));
 	srf[SRF_THREEPOSSWITCH20]						= oapiCreateSurface (LOADBMP (IDB_THREEPOSSWITCH20));
 	srf[SRF_THREEPOSSWITCH30]						= oapiCreateSurface (LOADBMP (IDB_THREEPOSSWITCH30));
 	srf[SRF_THREEPOSSWITCH30LEFT]					= oapiCreateSurface (LOADBMP (IDB_THREEPOSSWITCH30LEFT));
@@ -530,8 +530,8 @@ void Saturn::InitPanel (int panel)
 	oapiSetSurfaceColourKey (srf[SRF_THUMBWHEEL_SMALLFONTS],				g_Param.col[4]);
 	oapiSetSurfaceColourKey (srf[SRF_THUMBWHEEL_SMALLFONTS_DIAGONAL],		g_Param.col[4]);
 	oapiSetSurfaceColourKey (srf[SRF_THUMBWHEEL_SMALLFONTS_DIAGONAL_LEFT],	g_Param.col[4]);
-	oapiSetSurfaceColourKey (srf[SRF_CIRCUITBreaker],						g_Param.col[4]);
-	oapiSetSurfaceColourKey (srf[SRF_CIRCUITBreaker_YELLOW],					g_Param.col[4]);
+	oapiSetSurfaceColourKey (srf[SRF_CIRCUITBREAKER],						g_Param.col[4]);
+	oapiSetSurfaceColourKey (srf[SRF_CIRCUITBREAKER_YELLOW],					g_Param.col[4]);
 	oapiSetSurfaceColourKey	(srf[SRF_FDAIPOWERROTARY],						g_Param.col[4]);
 	oapiSetSurfaceColourKey	(srf[SRF_DIRECTO2ROTARY],						g_Param.col[4]);
 	oapiSetSurfaceColourKey	(srf[SRF_ECSGLYCOLPUMPROTARY],					g_Param.col[4]);
@@ -994,31 +994,31 @@ bool Saturn::clbkLoadPanel (int id) {
 		oapiRegisterPanelArea (AID_TELCOMSWITCHES,								_R( 672, 1416,  762, 1527), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
 		oapiRegisterPanelArea (AID_SUITCOMPRESSORSWITCHES,      				_R( 825, 1428,  901, 1519), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
 		oapiRegisterPanelArea (AID_ECSGLYCOLPUMPSSWITCH,						_R( 734, 1525,  824, 1615), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_EPSSENSORSIGNALDCCIRCUITBreakerS,				_R( 856,  871,  923,  900), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_EPSSENSORSIGNALACCIRCUITBreakerS,				_R( 962,  871, 1092,  900), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_CWCIRCUITBreakerS,				            _R(1130,  871, 1197,  900), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_LMPWRCIRCUITBreakerS,				            _R(1206,  871, 1238,  978), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_INVERTERCONTROLCIRCUITBreakerS,				_R( 856,  949,  961,  978), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_EPSSENSORUNITCIRCUITBreakerS,					_R( 987,  949, 1127,  978), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_BATRLYBUSCIRCUITBreakerS,					    _R(1135,  949, 1201,  978), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_ECSRADIATORSCIRCUITBreakerS,					_R( 680, 1032,  955, 1061), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_BATTERYCHARGERCIRCUITBreakerS,				_R( 963, 1032, 1184, 1061), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_INSTRUMENTLIGHTINGCIRCUITBreakerS,			_R( 312, 1121,  588, 1150), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_ECSCIRCUITBreakerS,			                _R( 616, 1121, 1191, 1150), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_ECSLOWERROWCIRCUITBreakerS,			        _R( 358, 1206, 1158, 1235), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_GUIDANCENAVIGATIONCIRCUITBreakerS,			_R( 389, 1288,  780, 1317), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_SUITCOMPRESSORSAC1ACIRCUITBreaker,			_R( 821, 1634,  850, 1663), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_SUITCOMPRESSORSAC1BCIRCUITBreaker,			_R( 843, 1603,  872, 1632), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_SUITCOMPRESSORSAC1CCIRCUITBreaker,			_R( 865, 1572,  894, 1601), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_SUITCOMPRESSORSAC2ACIRCUITBreaker,			_R( 899, 1525,  928, 1554), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_SUITCOMPRESSORSAC2BCIRCUITBreaker,			_R( 921, 1494,  950, 1523), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_SUITCOMPRESSORSAC2CCIRCUITBreaker,			_R( 943, 1463,  972, 1492), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_ECSGLYCOLPUMPSAC1ACIRCUITBreaker,				_R( 889, 1658,  918, 1687), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_ECSGLYCOLPUMPSAC1BCIRCUITBreaker,				_R( 912, 1626,  941, 1655), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_ECSGLYCOLPUMPSAC1CCIRCUITBreaker,				_R( 935, 1594,  964, 1623), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_ECSGLYCOLPUMPSAC2ACIRCUITBreaker,				_R( 957, 1562,  986, 1591), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_ECSGLYCOLPUMPSAC2BCIRCUITBreaker,				_R( 980, 1531, 1009, 1560), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_ECSGLYCOLPUMPSAC2CCIRCUITBreaker,				_R(1003, 1499, 1032, 1528), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_EPSSENSORSIGNALDCCIRCUITBREAKERS,				_R( 856,  871,  923,  900), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_EPSSENSORSIGNALACCIRCUITBREAKERS,				_R( 962,  871, 1092,  900), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_CWCIRCUITBREAKERS,				            _R(1130,  871, 1197,  900), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_LMPWRCIRCUITBREAKERS,				            _R(1206,  871, 1238,  978), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_INVERTERCONTROLCIRCUITBREAKERS,				_R( 856,  949,  961,  978), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_EPSSENSORUNITCIRCUITBREAKERS,					_R( 987,  949, 1127,  978), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_BATRLYBUSCIRCUITBREAKERS,					    _R(1135,  949, 1201,  978), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_ECSRADIATORSCIRCUITBREAKERS,					_R( 680, 1032,  955, 1061), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_BATTERYCHARGERCIRCUITBREAKERS,				_R( 963, 1032, 1184, 1061), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_INSTRUMENTLIGHTINGCIRCUITBREAKERS,			_R( 312, 1121,  588, 1150), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_ECSCIRCUITBREAKERS,			                _R( 616, 1121, 1191, 1150), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_ECSLOWERROWCIRCUITBREAKERS,			        _R( 358, 1206, 1158, 1235), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_GUIDANCENAVIGATIONCIRCUITBREAKERS,			_R( 389, 1288,  780, 1317), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_SUITCOMPRESSORSAC1ACIRCUITBREAKER,			_R( 821, 1634,  850, 1663), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_SUITCOMPRESSORSAC1BCIRCUITBREAKER,			_R( 843, 1603,  872, 1632), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_SUITCOMPRESSORSAC1CCIRCUITBREAKER,			_R( 865, 1572,  894, 1601), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_SUITCOMPRESSORSAC2ACIRCUITBREAKER,			_R( 899, 1525,  928, 1554), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_SUITCOMPRESSORSAC2BCIRCUITBREAKER,			_R( 921, 1494,  950, 1523), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_SUITCOMPRESSORSAC2CCIRCUITBREAKER,			_R( 943, 1463,  972, 1492), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_ECSGLYCOLPUMPSAC1ACIRCUITBREAKER,				_R( 889, 1658,  918, 1687), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_ECSGLYCOLPUMPSAC1BCIRCUITBREAKER,				_R( 912, 1626,  941, 1655), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_ECSGLYCOLPUMPSAC1CCIRCUITBREAKER,				_R( 935, 1594,  964, 1623), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_ECSGLYCOLPUMPSAC2ACIRCUITBREAKER,				_R( 957, 1562,  986, 1591), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_ECSGLYCOLPUMPSAC2BCIRCUITBREAKER,				_R( 980, 1531, 1009, 1560), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_ECSGLYCOLPUMPSAC2CCIRCUITBREAKER,				_R(1003, 1499, 1032, 1528), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
 		oapiRegisterPanelArea (AID_RIGHTCOASSWITCH,								_R( 330,   63,  364,   94), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
 		oapiRegisterPanelArea (AID_MODEINTERCOMVOXSENSTHUMBWHEEL,				_R( 138,  280,  171,  323), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
 		oapiRegisterPanelArea (AID_POWERMASTERVOLUMETHUMBWHEEL,					_R( 262,  299,  295,  342), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
@@ -1043,12 +1043,12 @@ bool Saturn::clbkLoadPanel (int id) {
 		oapiRegisterPanelArea (AID_INTERIORLIGHTSFLOODSSWITCHES,				_R( 570, 1003,  649, 1032), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
 		oapiRegisterPanelArea (AID_SPSGAUGINGSWITCH,							_R( 626, 1401,  660, 1434), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
 		oapiRegisterPanelArea (AID_RIGHTINTERIORLIGHTROTARIES,					_R( 319,  974,  542, 1064), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN | PANEL_MOUSE_LBPRESSED | PANEL_MOUSE_UP,	PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_PANEL275CIRCUITBreakerS,				        _R(1467, 1092, 1496, 1464), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_PANEL275CIRCUITBreakerS_LOWER,				_R(1467, 1494, 1496, 1717), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_PANEL275CIRCUITBREAKERS,				        _R(1467, 1092, 1496, 1464), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_PANEL275CIRCUITBREAKERS_LOWER,				_R(1467, 1494, 1496, 1717), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
 		oapiRegisterPanelArea (AID_PANEL276,									_R(1399,  878, 1490,  996), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
 		oapiRegisterPanelArea (AID_PANEL278,									_R(1422,  549, 1527,  628), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
 		oapiRegisterPanelArea (AID_PANEL227,									_R(1237,  206, 1267,  236), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_PANEL229CIRCUITBreakerS,						_R( 288, 1550,  456, 1678), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_PANEL229CIRCUITBREAKERS,						_R( 288, 1550,  456, 1678), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
 
 		if (Panel277)
 		{
@@ -1368,11 +1368,11 @@ bool Saturn::clbkLoadPanel (int id) {
 		else
 			oapiSetPanelNeighbours(SATPANEL_TUNNEL, -1, SATPANEL_RIGHT, SATPANEL_GN);
 
-		oapiRegisterPanelArea (AID_PANEL225CIRCUITBreakerS,			_R(  77,  404,  370,  833), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_PANEL226CIRCUITBreakerS,			_R( 572, 1097,  994, 1437), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_PANEL229CIRCUITBreakerS,			_R(  64,   79,  582,  232), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_PANEL250CIRCUITBreakerS,			_R(1203, 1735, 1758, 1764), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
-		oapiRegisterPanelArea (AID_PANEL275CIRCUITBreakerS_LOWER,	_R(1232,   28, 1261,  251), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_PANEL225CIRCUITBREAKERS,			_R(  77,  404,  370,  833), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_PANEL226CIRCUITBREAKERS,			_R( 572, 1097,  994, 1437), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_PANEL229CIRCUITBREAKERS,			_R(  64,   79,  582,  232), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_PANEL250CIRCUITBREAKERS,			_R(1203, 1735, 1758, 1764), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
+		oapiRegisterPanelArea (AID_PANEL275CIRCUITBREAKERS_LOWER,	_R(1232,   28, 1261,  251), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
 		oapiRegisterPanelArea (AID_WASTE_MGMT_OVBD_DUMP,			_R(1521, 1483, 1637, 1599), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
 		oapiRegisterPanelArea (AID_WASTE_MGMT_BATT_VENT,			_R(1920, 1470, 2036, 1586), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
 		oapiRegisterPanelArea (AID_WASTE_MGMT_STOAGE_VENT,			_R(1920, 1304, 2036, 1420), PANEL_REDRAW_ALWAYS, PANEL_MOUSE_DOWN,					PANEL_MAP_BACKGROUND);
@@ -2551,136 +2551,136 @@ void Saturn::SetSwitches(int panel) {
 	RightCOASPowerSwitchRow.Init(AID_RIGHTCOASSWITCH, MainPanel);
 	RightCOASPowerSwitch.Init( 0, 0, 34, 31, srf[SRF_SWITCH20], srf[SRF_BORDER_34x31], RightCOASPowerSwitchRow);
 
-	EpsSensorSignalDcCircuitBreakersRow.Init(AID_EPSSENSORSIGNALDCCIRCUITBreakerS, MainPanel);
-	EpsSensorSignalDcMnaCircuitBreaker.Init( 0, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], EpsSensorSignalDcCircuitBreakersRow);
-	EpsSensorSignalDcMnbCircuitBreaker.Init(38, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], EpsSensorSignalDcCircuitBreakersRow);
+	EpsSensorSignalDcCircuitBreakersRow.Init(AID_EPSSENSORSIGNALDCCIRCUITBREAKERS, MainPanel);
+	EpsSensorSignalDcMnaCircuitBreaker.Init( 0, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], EpsSensorSignalDcCircuitBreakersRow);
+	EpsSensorSignalDcMnbCircuitBreaker.Init(38, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], EpsSensorSignalDcCircuitBreakersRow);
 
-	EpsSensorSignalAcCircuitBreakersRow.Init(AID_EPSSENSORSIGNALACCIRCUITBreakerS, MainPanel);
-	EpsSensorSignalAc1CircuitBreaker.Init(  0, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], EpsSensorSignalAcCircuitBreakersRow);
-	EpsSensorSignalAc2CircuitBreaker.Init(101, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], EpsSensorSignalAcCircuitBreakersRow);
+	EpsSensorSignalAcCircuitBreakersRow.Init(AID_EPSSENSORSIGNALACCIRCUITBREAKERS, MainPanel);
+	EpsSensorSignalAc1CircuitBreaker.Init(  0, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], EpsSensorSignalAcCircuitBreakersRow);
+	EpsSensorSignalAc2CircuitBreaker.Init(101, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], EpsSensorSignalAcCircuitBreakersRow);
 
-	CWCircuitBreakersRow.Init(AID_CWCIRCUITBreakerS, MainPanel);
-	CWMnaCircuitBreaker.Init( 0, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], CWCircuitBreakersRow, MainBusA, 5.0);
-	CWMnbCircuitBreaker.Init(38, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], CWCircuitBreakersRow, MainBusB, 5.0);
+	CWCircuitBreakersRow.Init(AID_CWCIRCUITBREAKERS, MainPanel);
+	CWMnaCircuitBreaker.Init( 0, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], CWCircuitBreakersRow, MainBusA, 5.0);
+	CWMnbCircuitBreaker.Init(38, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], CWCircuitBreakersRow, MainBusB, 5.0);
 
-	LMPWRCircuitBreakersRow.Init(AID_LMPWRCIRCUITBreakerS, MainPanel);
-	MnbLMPWR1CircuitBreaker.Init(0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], LMPWRCircuitBreakersRow, MainBusB, 7.5);
-	MnbLMPWR2CircuitBreaker.Init(3, 78, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], LMPWRCircuitBreakersRow, MainBusB, 7.5);
+	LMPWRCircuitBreakersRow.Init(AID_LMPWRCIRCUITBREAKERS, MainPanel);
+	MnbLMPWR1CircuitBreaker.Init(0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], LMPWRCircuitBreakersRow, MainBusB, 7.5);
+	MnbLMPWR2CircuitBreaker.Init(3, 78, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], LMPWRCircuitBreakersRow, MainBusB, 7.5);
 
-	InverterControlCircuitBreakersRow.Init(AID_INVERTERCONTROLCIRCUITBreakerS, MainPanel);
-	InverterControl1CircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], InverterControlCircuitBreakersRow, &MnA1Switch, 70.0);
-	InverterControl2CircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], InverterControlCircuitBreakersRow, &MnB2Switch, 70.0);
-	InverterControl3CircuitBreaker.Init(76,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], InverterControlCircuitBreakersRow, &MnA3Switch, 70.0);
+	InverterControlCircuitBreakersRow.Init(AID_INVERTERCONTROLCIRCUITBREAKERS, MainPanel);
+	InverterControl1CircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], InverterControlCircuitBreakersRow, &MnA1Switch, 70.0);
+	InverterControl2CircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], InverterControlCircuitBreakersRow, &MnB2Switch, 70.0);
+	InverterControl3CircuitBreaker.Init(76,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], InverterControlCircuitBreakersRow, &MnA3Switch, 70.0);
 
-	EPSSensorUnitCircuitBreakersRow.Init(AID_EPSSENSORUNITCIRCUITBreakerS, MainPanel);
-	EPSSensorUnitDcBusACircuitBreaker.Init(  0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], EPSSensorUnitCircuitBreakersRow, &BatteryRelayBus, 5.0);
-	EPSSensorUnitDcBusBCircuitBreaker.Init( 37,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], EPSSensorUnitCircuitBreakersRow, &BatteryRelayBus, 5.0);
-	EPSSensorUnitAcBus1CircuitBreaker.Init( 74,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], EPSSensorUnitCircuitBreakersRow, &BatteryRelayBus, 5.0);
-	EPSSensorUnitAcBus2CircuitBreaker.Init(111,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], EPSSensorUnitCircuitBreakersRow, &BatteryRelayBus, 5.0);
+	EPSSensorUnitCircuitBreakersRow.Init(AID_EPSSENSORUNITCIRCUITBREAKERS, MainPanel);
+	EPSSensorUnitDcBusACircuitBreaker.Init(  0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], EPSSensorUnitCircuitBreakersRow, &BatteryRelayBus, 5.0);
+	EPSSensorUnitDcBusBCircuitBreaker.Init( 37,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], EPSSensorUnitCircuitBreakersRow, &BatteryRelayBus, 5.0);
+	EPSSensorUnitAcBus1CircuitBreaker.Init( 74,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], EPSSensorUnitCircuitBreakersRow, &BatteryRelayBus, 5.0);
+	EPSSensorUnitAcBus2CircuitBreaker.Init(111,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], EPSSensorUnitCircuitBreakersRow, &BatteryRelayBus, 5.0);
 
-	BATRLYBusCircuitBreakersRow.Init(AID_BATRLYBUSCIRCUITBreakerS, MainPanel);
-	BATRLYBusBatACircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], BATRLYBusCircuitBreakersRow, &BatteryBusA, 15.0);
-	BATRLYBusBatBCircuitBreaker.Init(37,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], BATRLYBusCircuitBreakersRow, &BatteryBusB, 15.0);
+	BATRLYBusCircuitBreakersRow.Init(AID_BATRLYBUSCIRCUITBREAKERS, MainPanel);
+	BATRLYBusBatACircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], BATRLYBusCircuitBreakersRow, &BatteryBusA, 15.0);
+	BATRLYBusBatBCircuitBreaker.Init(37,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], BATRLYBusCircuitBreakersRow, &BatteryBusB, 15.0);
 
-	ECSRadiatorsCircuitBreakersRow.Init(AID_ECSRADIATORSCIRCUITBreakerS, MainPanel);
-	ControllerAc1CircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSRadiatorsCircuitBreakersRow);
-	ControllerAc2CircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSRadiatorsCircuitBreakersRow);
-	CONTHTRSMnACircuitBreaker.Init( 76,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSRadiatorsCircuitBreakersRow, MainBusA, 5.0);
-	CONTHTRSMnBCircuitBreaker.Init(172,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSRadiatorsCircuitBreakersRow, MainBusB, 5.0);
-	HTRSOVLDBatACircuitBreaker.Init(209,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSRadiatorsCircuitBreakersRow);
-	HTRSOVLDBatBCircuitBreaker.Init(246,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSRadiatorsCircuitBreakersRow);
+	ECSRadiatorsCircuitBreakersRow.Init(AID_ECSRADIATORSCIRCUITBREAKERS, MainPanel);
+	ControllerAc1CircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSRadiatorsCircuitBreakersRow);
+	ControllerAc2CircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSRadiatorsCircuitBreakersRow);
+	CONTHTRSMnACircuitBreaker.Init( 76,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSRadiatorsCircuitBreakersRow, MainBusA, 5.0);
+	CONTHTRSMnBCircuitBreaker.Init(172,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSRadiatorsCircuitBreakersRow, MainBusB, 5.0);
+	HTRSOVLDBatACircuitBreaker.Init(209,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSRadiatorsCircuitBreakersRow);
+	HTRSOVLDBatBCircuitBreaker.Init(246,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSRadiatorsCircuitBreakersRow);
 
-	BatteryChargerCircuitBreakersRow.Init(AID_BATTERYCHARGERCIRCUITBreakerS, MainPanel);
-	BatteryChargerBatACircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], BatteryChargerCircuitBreakersRow);
-	BatteryChargerBatBCircuitBreaker.Init(37,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], BatteryChargerCircuitBreakersRow);
-	BatteryChargerMnACircuitBreaker.Init( 74,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], BatteryChargerCircuitBreakersRow, MainBusA);
-	BatteryChargerMnBCircuitBreaker.Init(111,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], BatteryChargerCircuitBreakersRow, MainBusB);
-	BatteryChargerAcPwrCircuitBreaker.Init(192,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], BatteryChargerCircuitBreakersRow, &BatCHGRSwitch);
+	BatteryChargerCircuitBreakersRow.Init(AID_BATTERYCHARGERCIRCUITBREAKERS, MainPanel);
+	BatteryChargerBatACircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], BatteryChargerCircuitBreakersRow);
+	BatteryChargerBatBCircuitBreaker.Init(37,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], BatteryChargerCircuitBreakersRow);
+	BatteryChargerMnACircuitBreaker.Init( 74,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], BatteryChargerCircuitBreakersRow, MainBusA);
+	BatteryChargerMnBCircuitBreaker.Init(111,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], BatteryChargerCircuitBreakersRow, MainBusB);
+	BatteryChargerAcPwrCircuitBreaker.Init(192,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], BatteryChargerCircuitBreakersRow, &BatCHGRSwitch);
 
-	InstrumentLightingCircuitBreakersRow.Init(AID_INSTRUMENTLIGHTINGCIRCUITBreakerS, MainPanel);
-	InstrumentLightingESSMnACircuitBreaker.Init(  0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], InstrumentLightingCircuitBreakersRow, MainBusA, 15.0);
-	InstrumentLightingESSMnBCircuitBreaker.Init( 38,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], InstrumentLightingCircuitBreakersRow, MainBusB, 15.0);
-	InstrumentLightingNonESSCircuitBreaker.Init(133,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], InstrumentLightingCircuitBreakersRow);
-	InstrumentLightingSCIEquipSEP1CircuitBreaker.Init(171,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], InstrumentLightingCircuitBreakersRow);
-	InstrumentLightingSCIEquipSEP2CircuitBreaker.Init(209,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], InstrumentLightingCircuitBreakersRow);
-	InstrumentLightingSCIEquipHatchCircuitBreaker.Init(247,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], InstrumentLightingCircuitBreakersRow);
+	InstrumentLightingCircuitBreakersRow.Init(AID_INSTRUMENTLIGHTINGCIRCUITBREAKERS, MainPanel);
+	InstrumentLightingESSMnACircuitBreaker.Init(  0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], InstrumentLightingCircuitBreakersRow, MainBusA, 15.0);
+	InstrumentLightingESSMnBCircuitBreaker.Init( 38,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], InstrumentLightingCircuitBreakersRow, MainBusB, 15.0);
+	InstrumentLightingNonESSCircuitBreaker.Init(133,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], InstrumentLightingCircuitBreakersRow);
+	InstrumentLightingSCIEquipSEP1CircuitBreaker.Init(171,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], InstrumentLightingCircuitBreakersRow);
+	InstrumentLightingSCIEquipSEP2CircuitBreaker.Init(209,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], InstrumentLightingCircuitBreakersRow);
+	InstrumentLightingSCIEquipHatchCircuitBreaker.Init(247,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], InstrumentLightingCircuitBreakersRow);
 
-	ECSCircuitBreakersRow.Init(AID_ECSCIRCUITBreakerS, MainPanel);
-	ECSPOTH2OHTRMnACircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusA, 5.0);
-	ECSPOTH2OHTRMnBCircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusB, 5.0);
-	ECSH2OAccumMnACircuitBreaker.Init( 76,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow);
-	ECSH2OAccumMnBCircuitBreaker.Init(114,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow);
-	ECSTransducerWastePOTH2OMnACircuitBreaker.Init(262,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusA, 5.0);
-	ECSTransducerWastePOTH2OMnBCircuitBreaker.Init(300,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusB, 5.0);
-	ECSTransducerPressGroup1MnACircuitBreaker.Init(338,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusA, 5.0);
-	ECSTransducerPressGroup1MnBCircuitBreaker.Init(376,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusB, 5.0);
-	ECSTransducerPressGroup2MnACircuitBreaker.Init(432,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusA, 5.0);
-	ECSTransducerPressGroup2MnBCircuitBreaker.Init(470,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusB, 5.0);
-	ECSTransducerTempMnACircuitBreaker.Init(508,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusB, 5.0);
-	ECSTransducerTempMnBCircuitBreaker.Init(546,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusB, 5.0);
+	ECSCircuitBreakersRow.Init(AID_ECSCIRCUITBREAKERS, MainPanel);
+	ECSPOTH2OHTRMnACircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusA, 5.0);
+	ECSPOTH2OHTRMnBCircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusB, 5.0);
+	ECSH2OAccumMnACircuitBreaker.Init( 76,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow);
+	ECSH2OAccumMnBCircuitBreaker.Init(114,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow);
+	ECSTransducerWastePOTH2OMnACircuitBreaker.Init(262,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusA, 5.0);
+	ECSTransducerWastePOTH2OMnBCircuitBreaker.Init(300,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusB, 5.0);
+	ECSTransducerPressGroup1MnACircuitBreaker.Init(338,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusA, 5.0);
+	ECSTransducerPressGroup1MnBCircuitBreaker.Init(376,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusB, 5.0);
+	ECSTransducerPressGroup2MnACircuitBreaker.Init(432,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusA, 5.0);
+	ECSTransducerPressGroup2MnBCircuitBreaker.Init(470,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusB, 5.0);
+	ECSTransducerTempMnACircuitBreaker.Init(508,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusB, 5.0);
+	ECSTransducerTempMnBCircuitBreaker.Init(546,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSCircuitBreakersRow, MainBusB, 5.0);
 
-	ECSLowerRowCircuitBreakersRow.Init(AID_ECSLOWERROWCIRCUITBreakerS, MainPanel);
-	ECSSecCoolLoopAc1CircuitBreaker.Init(  0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, &ACBus1);
-	ECSSecCoolLoopAc2CircuitBreaker.Init(102,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, &ACBus2);
-	ECSSecCoolLoopRADHTRMnACircuitBreaker.Init(186,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, MainBusA, 5.0);
-	ECSSecCoolLoopXducersMnACircuitBreaker.Init(224,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, MainBusA, 5.0);
-	ECSSecCoolLoopXducersMnBCircuitBreaker.Init(262,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, MainBusB, 5.0);
-	ECSWasteH2OUrineDumpHTRMnACircuitBreaker.Init(355,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, MainBusA, 5.0);
-	ECSWasteH2OUrineDumpHTRMnBCircuitBreaker.Init(393,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, MainBusB, 5.0);
-	ECSCabinFanAC1ACircuitBreaker.Init(585,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, &ACBus1PhaseA, 2.0);
-	ECSCabinFanAC1BCircuitBreaker.Init(622,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, &ACBus1PhaseB, 2.0);
-	ECSCabinFanAC1CCircuitBreaker.Init(659,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, &ACBus1PhaseC, 2.0);
-	ECSCabinFanAC2ACircuitBreaker.Init(696,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, &ACBus2PhaseA, 2.0);
-	ECSCabinFanAC2BCircuitBreaker.Init(733,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, &ACBus2PhaseB, 2.0);
-	ECSCabinFanAC2CCircuitBreaker.Init(771,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, &ACBus2PhaseC, 2.0);
+	ECSLowerRowCircuitBreakersRow.Init(AID_ECSLOWERROWCIRCUITBREAKERS, MainPanel);
+	ECSSecCoolLoopAc1CircuitBreaker.Init(  0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, &ACBus1);
+	ECSSecCoolLoopAc2CircuitBreaker.Init(102,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, &ACBus2);
+	ECSSecCoolLoopRADHTRMnACircuitBreaker.Init(186,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, MainBusA, 5.0);
+	ECSSecCoolLoopXducersMnACircuitBreaker.Init(224,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, MainBusA, 5.0);
+	ECSSecCoolLoopXducersMnBCircuitBreaker.Init(262,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, MainBusB, 5.0);
+	ECSWasteH2OUrineDumpHTRMnACircuitBreaker.Init(355,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, MainBusA, 5.0);
+	ECSWasteH2OUrineDumpHTRMnBCircuitBreaker.Init(393,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, MainBusB, 5.0);
+	ECSCabinFanAC1ACircuitBreaker.Init(585,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, &ACBus1PhaseA, 2.0);
+	ECSCabinFanAC1BCircuitBreaker.Init(622,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, &ACBus1PhaseB, 2.0);
+	ECSCabinFanAC1CCircuitBreaker.Init(659,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, &ACBus1PhaseC, 2.0);
+	ECSCabinFanAC2ACircuitBreaker.Init(696,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, &ACBus2PhaseA, 2.0);
+	ECSCabinFanAC2BCircuitBreaker.Init(733,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, &ACBus2PhaseB, 2.0);
+	ECSCabinFanAC2CCircuitBreaker.Init(771,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSLowerRowCircuitBreakersRow, &ACBus2PhaseC, 2.0);
 
-	GNCircuitBreakersRow.Init(AID_GUIDANCENAVIGATIONCIRCUITBreakerS, MainPanel);
-	GNPowerAc1CircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, &ACBus1, 2.0);
-	GNPowerAc2CircuitBreaker.Init(57,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, &ACBus2, 2.0);
-	GNIMUMnACircuitBreaker.Init(103,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, MainBusA, 25.0);
-	GNIMUMnBCircuitBreaker.Init(140,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, MainBusB, 25.0);
-	GNIMUHTRMnACircuitBreaker.Init(177,  0, 29, 29, srf[SRF_CIRCUITBreaker_YELLOW], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, MainBusA, 7.5);
-	GNIMUHTRMnBCircuitBreaker.Init(214,  0, 29, 29, srf[SRF_CIRCUITBreaker_YELLOW], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, MainBusB, 7.5);
-	GNComputerMnACircuitBreaker.Init(251,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, MainBusA, 5.0);
-	GNComputerMnBCircuitBreaker.Init(288,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, MainBusB, 5.0);
-	GNOpticsMnACircuitBreaker.Init(325,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, MainBusA, 10.0);
-	GNOpticsMnBCircuitBreaker.Init(362,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, MainBusB, 10.0);
+	GNCircuitBreakersRow.Init(AID_GUIDANCENAVIGATIONCIRCUITBREAKERS, MainPanel);
+	GNPowerAc1CircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, &ACBus1, 2.0);
+	GNPowerAc2CircuitBreaker.Init(57,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, &ACBus2, 2.0);
+	GNIMUMnACircuitBreaker.Init(103,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, MainBusA, 25.0);
+	GNIMUMnBCircuitBreaker.Init(140,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, MainBusB, 25.0);
+	GNIMUHTRMnACircuitBreaker.Init(177,  0, 29, 29, srf[SRF_CIRCUITBREAKER_YELLOW], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, MainBusA, 7.5);
+	GNIMUHTRMnBCircuitBreaker.Init(214,  0, 29, 29, srf[SRF_CIRCUITBREAKER_YELLOW], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, MainBusB, 7.5);
+	GNComputerMnACircuitBreaker.Init(251,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, MainBusA, 5.0);
+	GNComputerMnBCircuitBreaker.Init(288,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, MainBusB, 5.0);
+	GNOpticsMnACircuitBreaker.Init(325,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, MainBusA, 10.0);
+	GNOpticsMnBCircuitBreaker.Init(362,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], GNCircuitBreakersRow, MainBusB, 10.0);
 
-	SuitCompressorsAc1ACircuitBreakerRow.Init(AID_SUITCOMPRESSORSAC1ACIRCUITBreaker, MainPanel);
-	SuitCompressorsAc1ACircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], SuitCompressorsAc1ACircuitBreakerRow, &ACBus1PhaseA, 2.0);
+	SuitCompressorsAc1ACircuitBreakerRow.Init(AID_SUITCOMPRESSORSAC1ACIRCUITBREAKER, MainPanel);
+	SuitCompressorsAc1ACircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], SuitCompressorsAc1ACircuitBreakerRow, &ACBus1PhaseA, 2.0);
 
-	SuitCompressorsAc1BCircuitBreakerRow.Init(AID_SUITCOMPRESSORSAC1BCIRCUITBreaker, MainPanel);
-	SuitCompressorsAc1BCircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], SuitCompressorsAc1BCircuitBreakerRow, &ACBus1PhaseB, 2.0);
+	SuitCompressorsAc1BCircuitBreakerRow.Init(AID_SUITCOMPRESSORSAC1BCIRCUITBREAKER, MainPanel);
+	SuitCompressorsAc1BCircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], SuitCompressorsAc1BCircuitBreakerRow, &ACBus1PhaseB, 2.0);
 
-	SuitCompressorsAc1CCircuitBreakerRow.Init(AID_SUITCOMPRESSORSAC1CCIRCUITBreaker, MainPanel);
-	SuitCompressorsAc1CCircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], SuitCompressorsAc1CCircuitBreakerRow, &ACBus1PhaseC, 2.0);
+	SuitCompressorsAc1CCircuitBreakerRow.Init(AID_SUITCOMPRESSORSAC1CCIRCUITBREAKER, MainPanel);
+	SuitCompressorsAc1CCircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], SuitCompressorsAc1CCircuitBreakerRow, &ACBus1PhaseC, 2.0);
 
-	SuitCompressorsAc2ACircuitBreakerRow.Init(AID_SUITCOMPRESSORSAC2ACIRCUITBreaker, MainPanel);
-	SuitCompressorsAc2ACircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], SuitCompressorsAc2ACircuitBreakerRow, &ACBus2PhaseA, 2.0);
+	SuitCompressorsAc2ACircuitBreakerRow.Init(AID_SUITCOMPRESSORSAC2ACIRCUITBREAKER, MainPanel);
+	SuitCompressorsAc2ACircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], SuitCompressorsAc2ACircuitBreakerRow, &ACBus2PhaseA, 2.0);
 
-	SuitCompressorsAc2BCircuitBreakerRow.Init(AID_SUITCOMPRESSORSAC2BCIRCUITBreaker, MainPanel);
-	SuitCompressorsAc2BCircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], SuitCompressorsAc2BCircuitBreakerRow, &ACBus2PhaseB, 2.0);
+	SuitCompressorsAc2BCircuitBreakerRow.Init(AID_SUITCOMPRESSORSAC2BCIRCUITBREAKER, MainPanel);
+	SuitCompressorsAc2BCircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], SuitCompressorsAc2BCircuitBreakerRow, &ACBus2PhaseB, 2.0);
 
-	SuitCompressorsAc2CCircuitBreakerRow.Init(AID_SUITCOMPRESSORSAC2CCIRCUITBreaker, MainPanel);
-	SuitCompressorsAc2CCircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], SuitCompressorsAc2CCircuitBreakerRow, &ACBus2PhaseC, 2.0);
+	SuitCompressorsAc2CCircuitBreakerRow.Init(AID_SUITCOMPRESSORSAC2CCIRCUITBREAKER, MainPanel);
+	SuitCompressorsAc2CCircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], SuitCompressorsAc2CCircuitBreakerRow, &ACBus2PhaseC, 2.0);
 
-	ECSGlycolPumpsAc1ACircuitBreakerRow.Init(AID_ECSGLYCOLPUMPSAC1ACIRCUITBreaker, MainPanel);
-	ECSGlycolPumpsAc1ACircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSGlycolPumpsAc1ACircuitBreakerRow, &ACBus1PhaseA, 2.0);
+	ECSGlycolPumpsAc1ACircuitBreakerRow.Init(AID_ECSGLYCOLPUMPSAC1ACIRCUITBREAKER, MainPanel);
+	ECSGlycolPumpsAc1ACircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSGlycolPumpsAc1ACircuitBreakerRow, &ACBus1PhaseA, 2.0);
 
-	ECSGlycolPumpsAc1BCircuitBreakerRow.Init(AID_ECSGLYCOLPUMPSAC1BCIRCUITBreaker, MainPanel);
-	ECSGlycolPumpsAc1BCircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSGlycolPumpsAc1BCircuitBreakerRow, &ACBus1PhaseB, 2.0);
+	ECSGlycolPumpsAc1BCircuitBreakerRow.Init(AID_ECSGLYCOLPUMPSAC1BCIRCUITBREAKER, MainPanel);
+	ECSGlycolPumpsAc1BCircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSGlycolPumpsAc1BCircuitBreakerRow, &ACBus1PhaseB, 2.0);
 
-	ECSGlycolPumpsAc1CCircuitBreakerRow.Init(AID_ECSGLYCOLPUMPSAC1CCIRCUITBreaker, MainPanel);
-	ECSGlycolPumpsAc1CCircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSGlycolPumpsAc1CCircuitBreakerRow, &ACBus1PhaseC, 2.0);
+	ECSGlycolPumpsAc1CCircuitBreakerRow.Init(AID_ECSGLYCOLPUMPSAC1CCIRCUITBREAKER, MainPanel);
+	ECSGlycolPumpsAc1CCircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSGlycolPumpsAc1CCircuitBreakerRow, &ACBus1PhaseC, 2.0);
 
-	ECSGlycolPumpsAc2ACircuitBreakerRow.Init(AID_ECSGLYCOLPUMPSAC2ACIRCUITBreaker, MainPanel);
-	ECSGlycolPumpsAc2ACircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSGlycolPumpsAc2ACircuitBreakerRow, &ACBus2PhaseA, 2.0);
+	ECSGlycolPumpsAc2ACircuitBreakerRow.Init(AID_ECSGLYCOLPUMPSAC2ACIRCUITBREAKER, MainPanel);
+	ECSGlycolPumpsAc2ACircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSGlycolPumpsAc2ACircuitBreakerRow, &ACBus2PhaseA, 2.0);
 
-	ECSGlycolPumpsAc2BCircuitBreakerRow.Init(AID_ECSGLYCOLPUMPSAC2BCIRCUITBreaker, MainPanel);
-	ECSGlycolPumpsAc2BCircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSGlycolPumpsAc2BCircuitBreakerRow, &ACBus2PhaseB, 2.0);
+	ECSGlycolPumpsAc2BCircuitBreakerRow.Init(AID_ECSGLYCOLPUMPSAC2BCIRCUITBREAKER, MainPanel);
+	ECSGlycolPumpsAc2BCircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSGlycolPumpsAc2BCircuitBreakerRow, &ACBus2PhaseB, 2.0);
 	
-	ECSGlycolPumpsAc2CCircuitBreakerRow.Init(AID_ECSGLYCOLPUMPSAC2CCIRCUITBreaker, MainPanel);
-	ECSGlycolPumpsAc2CCircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ECSGlycolPumpsAc2CCircuitBreakerRow, &ACBus2PhaseC, 2.0);
+	ECSGlycolPumpsAc2CCircuitBreakerRow.Init(AID_ECSGLYCOLPUMPSAC2CCIRCUITBREAKER, MainPanel);
+	ECSGlycolPumpsAc2CCircuitBreaker.Init(0, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ECSGlycolPumpsAc2CCircuitBreakerRow, &ACBus2PhaseC, 2.0);
 
 	ModeIntercomVOXSensThumbwheelSwitchRow.Init(AID_MODEINTERCOMVOXSENSTHUMBWHEEL, MainPanel);
 	ModeIntercomVOXSensThumbwheelSwitch.Init(0, 0, 33, 43, srf[SRF_THUMBWHEEL_SMALLFONTS_DIAGONAL], srf[SRF_BORDER_33x43], ModeIntercomVOXSensThumbwheelSwitchRow);
@@ -2796,111 +2796,111 @@ void Saturn::SetSwitches(int panel) {
 	// Panel 225/226/229/250/251/252
 	//
 
-	Panel225CircuitBreakersRow.Init(AID_PANEL225CIRCUITBreakerS, MainPanel);
-	PCMTLMGroup1CB.Init			(  0, 100, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow);
-	PCMTLMGroup2CB.Init			(  0,   0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow);
-	FLTBusMNACB.Init			( 77, 228, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, MainBusA);
-	FLTBusMNBCB.Init			( 77, 157, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, MainBusB);
-	PMPPowerPrimCB.Init			( 77,  86, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightBus, 5.0);
-	PMPPowerAuxCB.Init			( 77,  15, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightBus, 5.0);
-	VHFStationAudioLCB.Init		(170, 395, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightPostLandingBus, 5.0);
-	VHFStationAudioCTRCB.Init	(170, 354, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightPostLandingBus, 5.0);
-	VHFStationAudioRCB.Init		(170, 313, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightPostLandingBus, 5.0);
-	UDLCB.Init					(170, 272, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightBus, 5.0);
-	HGAFLTBus1CB.Init			(170, 231, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightBus, 5.0);
-	HGAGroup2CB.Init			(171, 157, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &TelcomGroup2Switch, 2.0);
-	SBandFMXMTRFLTBusCB.Init	(171,  85, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightBus, 5.0);
-	SBandFMXMTRGroup1CB.Init	(171,  15, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &TelcomGroup1Switch, 2.0);
-	CentralTimingEquipMNACB.Init(264, 400, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow);
-	CentralTimingEquipMNBCB.Init(264, 357, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow);
-	RNDZXPNDRFLTBusCB.Init		(264, 314, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightBus, 10.0);
-	SIGCondrFLTBusCB.Init		(264, 271, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightBus, 5.0);
-	SBandPWRAmpl1FLTBusCB.Init	(264, 228, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightBus, 5.0);
-	SBandPWRAmpl1Group1CB.Init	(264, 157, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &TelcomGroup1Switch, 2.0);
-	SBandPWRAmpl2FLTBusCB.Init	(264,  86, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightBus, 5.0);
-	SBandPWRAmpl2Group1CB.Init	(264,  15, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &TelcomGroup2Switch, 2.0);
+	Panel225CircuitBreakersRow.Init(AID_PANEL225CIRCUITBREAKERS, MainPanel);
+	PCMTLMGroup1CB.Init			(  0, 100, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow);
+	PCMTLMGroup2CB.Init			(  0,   0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow);
+	FLTBusMNACB.Init			( 77, 228, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, MainBusA);
+	FLTBusMNBCB.Init			( 77, 157, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, MainBusB);
+	PMPPowerPrimCB.Init			( 77,  86, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightBus, 5.0);
+	PMPPowerAuxCB.Init			( 77,  15, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightBus, 5.0);
+	VHFStationAudioLCB.Init		(170, 395, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightPostLandingBus, 5.0);
+	VHFStationAudioCTRCB.Init	(170, 354, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightPostLandingBus, 5.0);
+	VHFStationAudioRCB.Init		(170, 313, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightPostLandingBus, 5.0);
+	UDLCB.Init					(170, 272, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightBus, 5.0);
+	HGAFLTBus1CB.Init			(170, 231, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightBus, 5.0);
+	HGAGroup2CB.Init			(171, 157, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &TelcomGroup2Switch, 2.0);
+	SBandFMXMTRFLTBusCB.Init	(171,  85, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightBus, 5.0);
+	SBandFMXMTRGroup1CB.Init	(171,  15, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &TelcomGroup1Switch, 2.0);
+	CentralTimingEquipMNACB.Init(264, 400, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow);
+	CentralTimingEquipMNBCB.Init(264, 357, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow);
+	RNDZXPNDRFLTBusCB.Init		(264, 314, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightBus, 10.0);
+	SIGCondrFLTBusCB.Init		(264, 271, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightBus, 5.0);
+	SBandPWRAmpl1FLTBusCB.Init	(264, 228, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightBus, 5.0);
+	SBandPWRAmpl1Group1CB.Init	(264, 157, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &TelcomGroup1Switch, 2.0);
+	SBandPWRAmpl2FLTBusCB.Init	(264,  86, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &FlightBus, 5.0);
+	SBandPWRAmpl2Group1CB.Init	(264,  15, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel225CircuitBreakersRow, &TelcomGroup2Switch, 2.0);
 	
-	Panel226CircuitBreakersRow.Init(AID_PANEL226CIRCUITBreakerS, MainPanel);
-	FuelCell1PumpsACCB.Init		 (  0, 292, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &FuelCellPumps1Switch);
-	FuelCell1ReacsCB.Init		 (  0, 222, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 10.);
-	FuelCell1BusContCB.Init		 (  0, 182, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 10.);
-	FuelCell1PurgeCB.Init		 (  0, 121, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusA);
-	FuelCell1RadCB.Init			 (  0,  82, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 5.);
-	CryogenicH2HTR1CB.Init		 (  0,  43, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusA, 15);
-	CryogenicH2HTR2CB.Init		 (  0,   4, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusB, 15);
-	FuelCell2PumpsACCB.Init		 (102, 292, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &FuelCellPumps2Switch);
-	FuelCell2ReacsCB.Init		 (102, 222, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 10.);
-	FuelCell2BusContCB.Init		 (102, 182, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 10.);
-	FuelCell2PurgeCB.Init		 (102, 121, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusB);
-	FuelCell2RadCB.Init			 (102,  82, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 5.);
-	CryogenicO2HTR1CB.Init		 (102,  43, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusA, 15);
-	CryogenicO2HTR2CB.Init		 (102,   4, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusB, 15);
-	FuelCell3PumpsACCB.Init		 (205, 292, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &FuelCellPumps3Switch);
-	FuelCell3ReacsCB.Init		 (205, 222, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 10.);
-	FuelCell3BusContCB.Init		 (205, 182, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 10.);
-	FuelCell3PurgeCB.Init		 (205, 121, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusB);
-	FuelCell3RadCB.Init			 (205,  82, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 5.);
-	CryogenicQTYAmpl1CB.Init	 (205,  43, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus1, 2.);
-	CryogenicQTYAmpl2CB.Init	 (205,   4, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus2, 2.);
-	CryogenicFanMotorsAC1ACB.Init(297, 305, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	CryogenicFanMotorsAC1BCB.Init(297, 266, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	CryogenicFanMotorsAC1CCB.Init(297, 227, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	CryogenicFanMotorsAC2ACB.Init(297, 188, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	CryogenicFanMotorsAC2BCB.Init(297, 121, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	CryogenicFanMotorsAC2CCB.Init(297,  82, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	LightingRndzMNACB.Init		 (297,  43, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusA, 5.);
-	LightingRndzMNBCB.Init		 (297,   4, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	LightingFloodMNACB.Init		 (393, 311, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	LightingFloodMNBCB.Init		 (393, 268, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	LightingFloodFLTPLCB.Init	 (393, 225, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	LightingNumIntLEBCB.Init	 (393, 182, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus2);
-	LightingNumIntLMDCCB.Init	 (393, 129, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus1);
-	LightingNumIntRMDCCB.Init	 (393,  86, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	RunEVATRGTAC1CB.Init		 (393,  43, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus1PhaseA, 2.0);
-	RunEVATRGTAC2CB.Init		 (393,   0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus2PhaseB, 2.0);
+	Panel226CircuitBreakersRow.Init(AID_PANEL226CIRCUITBREAKERS, MainPanel);
+	FuelCell1PumpsACCB.Init		 (  0, 292, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &FuelCellPumps1Switch);
+	FuelCell1ReacsCB.Init		 (  0, 222, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 10.);
+	FuelCell1BusContCB.Init		 (  0, 182, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 10.);
+	FuelCell1PurgeCB.Init		 (  0, 121, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusA);
+	FuelCell1RadCB.Init			 (  0,  82, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 5.);
+	CryogenicH2HTR1CB.Init		 (  0,  43, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusA, 15);
+	CryogenicH2HTR2CB.Init		 (  0,   4, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusB, 15);
+	FuelCell2PumpsACCB.Init		 (102, 292, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &FuelCellPumps2Switch);
+	FuelCell2ReacsCB.Init		 (102, 222, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 10.);
+	FuelCell2BusContCB.Init		 (102, 182, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 10.);
+	FuelCell2PurgeCB.Init		 (102, 121, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusB);
+	FuelCell2RadCB.Init			 (102,  82, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 5.);
+	CryogenicO2HTR1CB.Init		 (102,  43, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusA, 15);
+	CryogenicO2HTR2CB.Init		 (102,   4, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusB, 15);
+	FuelCell3PumpsACCB.Init		 (205, 292, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &FuelCellPumps3Switch);
+	FuelCell3ReacsCB.Init		 (205, 222, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 10.);
+	FuelCell3BusContCB.Init		 (205, 182, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 10.);
+	FuelCell3PurgeCB.Init		 (205, 121, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusB);
+	FuelCell3RadCB.Init			 (205,  82, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 5.);
+	CryogenicQTYAmpl1CB.Init	 (205,  43, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus1, 2.);
+	CryogenicQTYAmpl2CB.Init	 (205,   4, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus2, 2.);
+	CryogenicFanMotorsAC1ACB.Init(297, 305, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
+	CryogenicFanMotorsAC1BCB.Init(297, 266, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
+	CryogenicFanMotorsAC1CCB.Init(297, 227, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
+	CryogenicFanMotorsAC2ACB.Init(297, 188, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
+	CryogenicFanMotorsAC2BCB.Init(297, 121, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
+	CryogenicFanMotorsAC2CCB.Init(297,  82, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
+	LightingRndzMNACB.Init		 (297,  43, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusA, 5.);
+	LightingRndzMNBCB.Init		 (297,   4, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
+	LightingFloodMNACB.Init		 (393, 311, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
+	LightingFloodMNBCB.Init		 (393, 268, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
+	LightingFloodFLTPLCB.Init	 (393, 225, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
+	LightingNumIntLEBCB.Init	 (393, 182, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus2);
+	LightingNumIntLMDCCB.Init	 (393, 129, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus1);
+	LightingNumIntRMDCCB.Init	 (393,  86, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
+	RunEVATRGTAC1CB.Init		 (393,  43, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus1PhaseA, 2.0);
+	RunEVATRGTAC2CB.Init		 (393,   0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus2PhaseB, 2.0);
 	
-	Panel229CircuitBreakersRow.Init(AID_PANEL229CIRCUITBreakerS, MainPanel);
+	Panel229CircuitBreakersRow.Init(AID_PANEL229CIRCUITBREAKERS, MainPanel);
 	if (panel == SATPANEL_RIGHT) {
-		UtilityCB1.Init             (  0, 33, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow);
-		UtilityCB2.Init             ( 18,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow);
-		EPSBatBusACircuitBreaker.Init(121, 99, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, &BatteryBusA, 20.0);
-		EPSBatBusBCircuitBreaker.Init(139, 65, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, &BatteryBusB, 20.0);
+		UtilityCB1.Init             (  0, 33, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow);
+		UtilityCB2.Init             ( 18,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow);
+		EPSBatBusACircuitBreaker.Init(121, 99, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, &BatteryBusA, 20.0);
+		EPSBatBusBCircuitBreaker.Init(139, 65, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, &BatteryBusB, 20.0);
 	} else {
-		TimersMnACircuitBreaker.Init       (  0,  41, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusA, 5.0);
-		TimersMnBCircuitBreaker.Init       (  0,   0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusB, 5.0);
-		EPSMnBGroup1CircuitBreaker.Init    (  0,  82, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusB);
-		EPSMnAGroup1CircuitBreaker.Init    (  0, 123, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusA);
-		SPSLineHtrsMnBCircuitBreaker.Init  ( 71,   9, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow);
-		SPSLineHtrsMnACircuitBreaker.Init  ( 71,  47, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow);
-		EPSMnBGroup2CircuitBreaker.Init    ( 71,  85, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusB);
-		EPSMnAGroup2CircuitBreaker.Init    ( 71, 123, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusA);
-		O2VacIonPumpsMnBCircuitBreaker.Init(140,   9, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow);
-		O2VacIonPumpsMnACircuitBreaker.Init(140,  47, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow);
-		EPSMnBGroup3CircuitBreaker.Init    (140,  85, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusB);
-		EPSMnAGroup3CircuitBreaker.Init    (140, 123, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusA);
-		MainReleasePyroBCircuitBreaker.Init(210,   9, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, &PyroBusB, 5.0);
-		MainReleasePyroACircuitBreaker.Init(210,  47, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, &PyroBusA, 5.0);
-		EPSMnBGroup4CircuitBreaker.Init    (210,  85, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusB);
-		EPSMnAGroup4CircuitBreaker.Init    (210, 123, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusA);
-		EPSMnBGroup5CircuitBreaker.Init    (281,  85, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusB);
-		EPSMnAGroup5CircuitBreaker.Init    (281, 123, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusA);
-		UtilityCB2.Init                   (352,  85, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow);
-		UtilityCB1.Init                   (352, 123, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow);
-		EPSBatBusBCircuitBreaker.Init      (489,  85, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, &BatteryBusB, 20.0);
-		EPSBatBusACircuitBreaker.Init      (489, 123, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, &BatteryBusA, 20.0);
+		TimersMnACircuitBreaker.Init       (  0,  41, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusA, 5.0);
+		TimersMnBCircuitBreaker.Init       (  0,   0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusB, 5.0);
+		EPSMnBGroup1CircuitBreaker.Init    (  0,  82, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusB);
+		EPSMnAGroup1CircuitBreaker.Init    (  0, 123, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusA);
+		SPSLineHtrsMnBCircuitBreaker.Init  ( 71,   9, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow);
+		SPSLineHtrsMnACircuitBreaker.Init  ( 71,  47, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow);
+		EPSMnBGroup2CircuitBreaker.Init    ( 71,  85, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusB);
+		EPSMnAGroup2CircuitBreaker.Init    ( 71, 123, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusA);
+		O2VacIonPumpsMnBCircuitBreaker.Init(140,   9, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow);
+		O2VacIonPumpsMnACircuitBreaker.Init(140,  47, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow);
+		EPSMnBGroup3CircuitBreaker.Init    (140,  85, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusB);
+		EPSMnAGroup3CircuitBreaker.Init    (140, 123, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusA);
+		MainReleasePyroBCircuitBreaker.Init(210,   9, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, &PyroBusB, 5.0);
+		MainReleasePyroACircuitBreaker.Init(210,  47, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, &PyroBusA, 5.0);
+		EPSMnBGroup4CircuitBreaker.Init    (210,  85, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusB);
+		EPSMnAGroup4CircuitBreaker.Init    (210, 123, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusA);
+		EPSMnBGroup5CircuitBreaker.Init    (281,  85, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusB);
+		EPSMnAGroup5CircuitBreaker.Init    (281, 123, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, MainBusA);
+		UtilityCB2.Init                   (352,  85, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow);
+		UtilityCB1.Init                   (352, 123, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow);
+		EPSBatBusBCircuitBreaker.Init      (489,  85, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, &BatteryBusB, 20.0);
+		EPSBatBusACircuitBreaker.Init      (489, 123, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel229CircuitBreakersRow, &BatteryBusA, 20.0);
 	}
 
-	Panel250CircuitBreakersRow.Init(AID_PANEL250CIRCUITBreakerS, MainPanel);
-	BatBusAToPyroBusTieCircuitBreaker.Init	(  0, 0, 29, 29, srf[SRF_CIRCUITBreaker_YELLOW], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, &BatteryBusA, 20.0);
-	PyroASeqACircuitBreaker.Init				( 55, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, PyroBatteryA, 20.0);
-	BatBusBToPyroBusTieCircuitBreaker.Init	(115, 0, 29, 29, srf[SRF_CIRCUITBreaker_YELLOW], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, &BatteryBusB, 20.0);
-	PyroBSeqBCircuitBreaker.Init				(170, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, PyroBatteryB, 20.0);
-	BatAPWRCircuitBreaker.Init				(246, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, DiodeBatA, 80.0);
-	BatBPWRCircuitBreaker.Init				(304, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, DiodeBatB, 80.0);
-	BatCPWRCircuitBreaker.Init				(362, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, DiodeBatC, 80.0);
-	BatCtoBatBusACircuitBreaker.Init			(420, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, &BatCPWRCircuitBreaker, 80.0);
-	BatCtoBatBusBCircuitBreaker.Init			(478, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, &BatCPWRCircuitBreaker, 80.0);
-	BatCCHRGCircuitBreaker.Init				(526, 0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, &BatCPWRCircuitBreaker, 10.0);
+	Panel250CircuitBreakersRow.Init(AID_PANEL250CIRCUITBREAKERS, MainPanel);
+	BatBusAToPyroBusTieCircuitBreaker.Init	(  0, 0, 29, 29, srf[SRF_CIRCUITBREAKER_YELLOW], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, &BatteryBusA, 20.0);
+	PyroASeqACircuitBreaker.Init				( 55, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, PyroBatteryA, 20.0);
+	BatBusBToPyroBusTieCircuitBreaker.Init	(115, 0, 29, 29, srf[SRF_CIRCUITBREAKER_YELLOW], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, &BatteryBusB, 20.0);
+	PyroBSeqBCircuitBreaker.Init				(170, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, PyroBatteryB, 20.0);
+	BatAPWRCircuitBreaker.Init				(246, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, DiodeBatA, 80.0);
+	BatBPWRCircuitBreaker.Init				(304, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, DiodeBatB, 80.0);
+	BatCPWRCircuitBreaker.Init				(362, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, DiodeBatC, 80.0);
+	BatCtoBatBusACircuitBreaker.Init			(420, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, &BatCPWRCircuitBreaker, 80.0);
+	BatCtoBatBusBCircuitBreaker.Init			(478, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, &BatCPWRCircuitBreaker, 80.0);
+	BatCCHRGCircuitBreaker.Init				(526, 0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel250CircuitBreakersRow, &BatCPWRCircuitBreaker, 10.0);
 	
 	WasteMGMTOvbdDrainDumpRotaryRow.Init(AID_WASTE_MGMT_OVBD_DUMP, MainPanel);	
 	WasteMGMTOvbdDrainDumpRotary.Init( 0, 0, 116, 116, srf[SRF_CSM_WASTE_MGMT_ROTARY], srf[SRF_BORDER_116x116], WasteMGMTOvbdDrainDumpRotaryRow);
@@ -2918,32 +2918,32 @@ void Saturn::SetSwitches(int panel) {
 	// Panel 275
 	//
 	
-	Panel275CircuitBreakersRow.Init(AID_PANEL275CIRCUITBreakerS, MainPanel);
-	InverterPower3MainBCircuitBreaker.Init     (  0,   0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel275CircuitBreakersRow, MainBusB, 70.0);
-	InverterPower3MainACircuitBreaker.Init     (  0,  59, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel275CircuitBreakersRow, MainBusA, 70.0);
-	InverterPower2MainBCircuitBreaker.Init     (  0, 104, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel275CircuitBreakersRow, MainBusB, 70.0);
-	InverterPower1MainACircuitBreaker.Init     (  0, 149, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel275CircuitBreakersRow, MainBusA, 70.0);
-	FlightPostLandingMainBCircuitBreaker.Init  (  0, 194, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel275CircuitBreakersRow, MainBusB, 10.0);
-	FlightPostLandingMainACircuitBreaker.Init  (  0, 253, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel275CircuitBreakersRow, MainBusA, 10.0);
-	FlightPostLandingBatCCircuitBreaker.Init   (  0, 298, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel275CircuitBreakersRow, &BatCPWRCircuitBreaker,  7.5);
-	FlightPostLandingBatBusBCircuitBreaker.Init(  0, 343, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel275CircuitBreakersRow, &BatteryBusB,   7.5);
+	Panel275CircuitBreakersRow.Init(AID_PANEL275CIRCUITBREAKERS, MainPanel);
+	InverterPower3MainBCircuitBreaker.Init     (  0,   0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel275CircuitBreakersRow, MainBusB, 70.0);
+	InverterPower3MainACircuitBreaker.Init     (  0,  59, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel275CircuitBreakersRow, MainBusA, 70.0);
+	InverterPower2MainBCircuitBreaker.Init     (  0, 104, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel275CircuitBreakersRow, MainBusB, 70.0);
+	InverterPower1MainACircuitBreaker.Init     (  0, 149, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel275CircuitBreakersRow, MainBusA, 70.0);
+	FlightPostLandingMainBCircuitBreaker.Init  (  0, 194, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel275CircuitBreakersRow, MainBusB, 10.0);
+	FlightPostLandingMainACircuitBreaker.Init  (  0, 253, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel275CircuitBreakersRow, MainBusA, 10.0);
+	FlightPostLandingBatCCircuitBreaker.Init   (  0, 298, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel275CircuitBreakersRow, &BatCPWRCircuitBreaker,  7.5);
+	FlightPostLandingBatBusBCircuitBreaker.Init(  0, 343, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel275CircuitBreakersRow, &BatteryBusB,   7.5);
 	
-	Panel275CircuitBreakersLowerRow.Init(AID_PANEL275CIRCUITBreakerS_LOWER, MainPanel);
-	FlightPostLandingBatBusACircuitBreaker.Init(  0,   0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel275CircuitBreakersLowerRow, &BatteryBusA,   7.5);
-	MainBBatBusBCircuitBreaker.Init            (  0,  45, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel275CircuitBreakersLowerRow, &BatteryBusB,  80.0);
-	MainBBatCCircuitBreaker.Init               (  0,  90, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel275CircuitBreakersLowerRow, &BatCPWRCircuitBreaker, 80.0);
-	MainABatCCircuitBreaker.Init               (  0, 135, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel275CircuitBreakersLowerRow, &BatCPWRCircuitBreaker, 80.0);
-	MainABatBusACircuitBreaker.Init            (  0, 194, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel275CircuitBreakersLowerRow, &BatteryBusA,  80.0);
+	Panel275CircuitBreakersLowerRow.Init(AID_PANEL275CIRCUITBREAKERS_LOWER, MainPanel);
+	FlightPostLandingBatBusACircuitBreaker.Init(  0,   0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel275CircuitBreakersLowerRow, &BatteryBusA,   7.5);
+	MainBBatBusBCircuitBreaker.Init            (  0,  45, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel275CircuitBreakersLowerRow, &BatteryBusB,  80.0);
+	MainBBatCCircuitBreaker.Init               (  0,  90, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel275CircuitBreakersLowerRow, &BatCPWRCircuitBreaker, 80.0);
+	MainABatCCircuitBreaker.Init               (  0, 135, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel275CircuitBreakersLowerRow, &BatCPWRCircuitBreaker, 80.0);
+	MainABatBusACircuitBreaker.Init            (  0, 194, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel275CircuitBreakersLowerRow, &BatteryBusA,  80.0);
 	
 	//
 	// Panel 276
 	//
 	
 	Panel276CBRow.Init(AID_PANEL276, MainPanel);
-	Panel276CB1.Init( 0, 89, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel276CBRow, &InstrumentationPowerFeeder, 5.0);
-	Panel276CB2.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel276CBRow, &InstrumentationPowerFeeder, 5.0);
-	Panel276CB3.Init(62, 89, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel276CBRow, &InstrumentationPowerFeeder, 5.0);
-	Panel276CB4.Init(62,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel276CBRow, &InstrumentationPowerFeeder, 5.0);
+	Panel276CB1.Init( 0, 89, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel276CBRow, &InstrumentationPowerFeeder, 5.0);
+	Panel276CB2.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel276CBRow, &InstrumentationPowerFeeder, 5.0);
+	Panel276CB3.Init(62, 89, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel276CBRow, &InstrumentationPowerFeeder, 5.0);
+	Panel276CB4.Init(62,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel276CBRow, &InstrumentationPowerFeeder, 5.0);
 
 	//
 	// Panel 277 (Apollo 15 and later)
@@ -2954,8 +2954,8 @@ void Saturn::SetSwitches(int panel) {
 		Panel277->Panel277SwitchesRow.Init(AID_CSM_PANEL_277, MainPanel);
 		Panel277->SPSPressIndFuelSwitch.Init(43, 33, 29, 30, srf[SRF_SWITCH90], srf[SRF_BORDER_29x30], Panel277->Panel277SwitchesRow);
 		Panel277->SPSPressIndOxidSwitch.Init(110, 33, 29, 30, srf[SRF_SWITCH90], srf[SRF_BORDER_29x30], Panel277->Panel277SwitchesRow);
-		Panel277->CSMLMFinalSepABatABreaker.Init(71, 147, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel277->Panel277SwitchesRow);
-		Panel277->CSMLMFinalSepBBatBBreaker.Init(71, 97, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel277->Panel277SwitchesRow);
+		Panel277->CSMLMFinalSepABatABreaker.Init(71, 147, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel277->Panel277SwitchesRow);
+		Panel277->CSMLMFinalSepBBatBBreaker.Init(71, 97, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel277->Panel277SwitchesRow);
 	}
 
 	//
@@ -2963,10 +2963,10 @@ void Saturn::SetSwitches(int panel) {
 	//
 	
 	Panel278CBRow.Init(AID_PANEL278, MainPanel);
-	UprightingSystemCompressor1CircuitBreaker.Init( 0, 50, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel278CBRow, &BatteryBusA, 25.0);
-	UprightingSystemCompressor2CircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel278CBRow, &BatteryBusB, 25.0);
-	SIVBLMSepPyroACircuitBreaker.Init(76, 50, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel278CBRow, &PyroBusA, 7.5);
-	SIVBLMSepPyroBCircuitBreaker.Init(76,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel278CBRow, &PyroBusB, 7.5);
+	UprightingSystemCompressor1CircuitBreaker.Init( 0, 50, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel278CBRow, &BatteryBusA, 25.0);
+	UprightingSystemCompressor2CircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel278CBRow, &BatteryBusB, 25.0);
+	SIVBLMSepPyroACircuitBreaker.Init(76, 50, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel278CBRow, &PyroBusA, 7.5);
+	SIVBLMSepPyroBCircuitBreaker.Init(76,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel278CBRow, &PyroBusB, 7.5);
 
 	// Panel 278 Mission-Specific Additions
 
@@ -2981,7 +2981,7 @@ void Saturn::SetSwitches(int panel) {
 		Panel278J->ExperimentCovers1Indicator.Init(36, 341, 23, 23, srf[SRF_INDICATOR90], Panel278J->Panel278JSwitchesRow);
 		Panel278J->ExperimentCovers2Indicator.Init(36, 297, 23, 23, srf[SRF_INDICATOR90], Panel278J->Panel278JSwitchesRow);
 		Panel278J->O2Tank3IsolIndicator.Init(37, 57, 23, 23, srf[SRF_INDICATOR90], Panel278J->Panel278JSwitchesRow);
-		Panel278J->ExperimentCoversDeployBreaker.Init(124, 395, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel278J->Panel278JSwitchesRow);
+		Panel278J->ExperimentCoversDeployBreaker.Init(124, 395, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel278J->Panel278JSwitchesRow);
 	}
 
 	SCIInstSwitchRow.Init(AID_PANEL227, MainPanel);
@@ -3053,9 +3053,9 @@ void Saturn::SetSwitches(int panel) {
 	VHFRNGSwitch.Init(0, 0, 34, 34, srf[SRF_SWITCH30LEFT], srf[SRF_BORDER_34x34], VHFRNGSwitchRow);
 
 	StabContSystemCircuitBreakerRow.Init(AID_STABCONTCIRCUITBREAKERS, MainPanel);
-	StabContSystemTVCAc1CircuitBreaker.Init(0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabContSystemCircuitBreakerRow, &ACBus1PhaseA);
-	StabContSystemAc1CircuitBreaker.Init( 52,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabContSystemCircuitBreakerRow, &ACBus1);
-	StabContSystemAc2CircuitBreaker.Init(135,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabContSystemCircuitBreakerRow, &ACBus2);
+	StabContSystemTVCAc1CircuitBreaker.Init(0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabContSystemCircuitBreakerRow, &ACBus1PhaseA);
+	StabContSystemAc1CircuitBreaker.Init( 52,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabContSystemCircuitBreakerRow, &ACBus1);
+	StabContSystemAc2CircuitBreaker.Init(135,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabContSystemCircuitBreakerRow, &ACBus2);
 
 	AutoRCSSelectSwitchesRow.Init(AID_AUTORCSSELECTSWITCHES, MainPanel);
 	AcRollA1Switch.Init(  0, 0, 34, 29, srf[SRF_THREEPOSSWITCH], srf[SRF_BORDER_34x29], AutoRCSSelectSwitchesRow, &ACRollMnACircuitBreaker, 0, &ACRollMnBCircuitBreaker);
@@ -3076,33 +3076,33 @@ void Saturn::SetSwitches(int panel) {
 	YawD4Switch.Init(675, 0, 34, 29, srf[SRF_THREEPOSSWITCH], srf[SRF_BORDER_34x29], AutoRCSSelectSwitchesRow, &YawMnACircuitBreaker, 0, &YawMnBCircuitBreaker);
 
 	StabilizationControlSystemCircuitBreakerRow.Init(AID_STABILIZATIONCONTROLSYSTEMCIRCUITBREAKERS, MainPanel);
-	ECATVCAc2CircuitBreaker.Init(0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &ACBus2PhaseA);
-	DirectUllMnACircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnAGroup5CircuitBreaker);
-	DirectUllMnBCircuitBreaker.Init(76,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnBGroup5CircuitBreaker);
-	ContrDirectMnA1CircuitBreaker.Init(114,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnAGroup5CircuitBreaker);
-	ContrDirectMnB1CircuitBreaker.Init(152,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnBGroup5CircuitBreaker);
-	ContrDirectMnA2CircuitBreaker.Init(190,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnAGroup5CircuitBreaker);
-	ContrDirectMnB2CircuitBreaker.Init(228,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnBGroup5CircuitBreaker);
-	ACRollMnACircuitBreaker.Init(266,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnAGroup2CircuitBreaker, 15);
-	ACRollMnBCircuitBreaker.Init(304,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnBGroup2CircuitBreaker, 15);
-	BDRollMnACircuitBreaker.Init(342,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnAGroup4CircuitBreaker, 15);
-	BDRollMnBCircuitBreaker.Init(380,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnBGroup4CircuitBreaker, 15);
-	PitchMnACircuitBreaker.Init(418,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnAGroup1CircuitBreaker, 15);
-	PitchMnBCircuitBreaker.Init(456,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnBGroup1CircuitBreaker, 15);
-	YawMnACircuitBreaker.Init(494,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnAGroup3CircuitBreaker, 15);
-	YawMnBCircuitBreaker.Init(532,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnBGroup3CircuitBreaker, 15);
+	ECATVCAc2CircuitBreaker.Init(0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &ACBus2PhaseA);
+	DirectUllMnACircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnAGroup5CircuitBreaker);
+	DirectUllMnBCircuitBreaker.Init(76,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnBGroup5CircuitBreaker);
+	ContrDirectMnA1CircuitBreaker.Init(114,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnAGroup5CircuitBreaker);
+	ContrDirectMnB1CircuitBreaker.Init(152,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnBGroup5CircuitBreaker);
+	ContrDirectMnA2CircuitBreaker.Init(190,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnAGroup5CircuitBreaker);
+	ContrDirectMnB2CircuitBreaker.Init(228,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnBGroup5CircuitBreaker);
+	ACRollMnACircuitBreaker.Init(266,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnAGroup2CircuitBreaker, 15);
+	ACRollMnBCircuitBreaker.Init(304,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnBGroup2CircuitBreaker, 15);
+	BDRollMnACircuitBreaker.Init(342,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnAGroup4CircuitBreaker, 15);
+	BDRollMnBCircuitBreaker.Init(380,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnBGroup4CircuitBreaker, 15);
+	PitchMnACircuitBreaker.Init(418,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnAGroup1CircuitBreaker, 15);
+	PitchMnBCircuitBreaker.Init(456,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnBGroup1CircuitBreaker, 15);
+	YawMnACircuitBreaker.Init(494,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnAGroup3CircuitBreaker, 15);
+	YawMnBCircuitBreaker.Init(532,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystemCircuitBreakerRow, &EPSMnBGroup3CircuitBreaker, 15);
 
 	StabilizationControlSystem2CircuitBreakerRow.Init(AID_STABILIZATIONCONTROLSYSTEMCIRCUITBREAKERS2, MainPanel);
-	OrdealAc2CircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &ACBus2);
-	OrdealMnBCircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &EPSMnBGroup3CircuitBreaker);
-	ContrAutoMnACircuitBreaker.Init( 76,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &EPSMnAGroup1CircuitBreaker);
-	ContrAutoMnBCircuitBreaker.Init(114,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &EPSMnBGroup1CircuitBreaker);
-	LogicBus12MnACircuitBreaker.Init(152,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &EPSMnAGroup3CircuitBreaker, 3.0);
-	LogicBus34MnACircuitBreaker.Init(190,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &EPSMnAGroup1CircuitBreaker, 3.0);
-	LogicBus14MnBCircuitBreaker.Init(228,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &EPSMnBGroup3CircuitBreaker, 3.0);
-	LogicBus23MnBCircuitBreaker.Init(266,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &EPSMnBGroup1CircuitBreaker, 3.0);
-	SystemMnACircuitBreaker.Init(304,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &EPSMnAGroup2CircuitBreaker, 15.0);
-	SystemMnBCircuitBreaker.Init(342,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &EPSMnBGroup2CircuitBreaker, 15.0);
+	OrdealAc2CircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &ACBus2);
+	OrdealMnBCircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &EPSMnBGroup3CircuitBreaker);
+	ContrAutoMnACircuitBreaker.Init( 76,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &EPSMnAGroup1CircuitBreaker);
+	ContrAutoMnBCircuitBreaker.Init(114,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &EPSMnBGroup1CircuitBreaker);
+	LogicBus12MnACircuitBreaker.Init(152,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &EPSMnAGroup3CircuitBreaker, 3.0);
+	LogicBus34MnACircuitBreaker.Init(190,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &EPSMnAGroup1CircuitBreaker, 3.0);
+	LogicBus14MnBCircuitBreaker.Init(228,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &EPSMnBGroup3CircuitBreaker, 3.0);
+	LogicBus23MnBCircuitBreaker.Init(266,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &EPSMnBGroup1CircuitBreaker, 3.0);
+	SystemMnACircuitBreaker.Init(304,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &EPSMnAGroup2CircuitBreaker, 15.0);
+	SystemMnBCircuitBreaker.Init(342,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], StabilizationControlSystem2CircuitBreakerRow, &EPSMnBGroup2CircuitBreaker, 15.0);
 
 	FloodDimSwitchRow.Init(AID_FLOODDIMSWITCH, MainPanel);
 	FloodDimSwitch.Init(0, 0, 34, 29, srf[SRF_SWITCHUP], srf[SRF_BORDER_34x29], FloodDimSwitchRow);
@@ -3111,20 +3111,20 @@ void Saturn::SetSwitches(int panel) {
 	FloodFixedSwitch.Init(0, 0, 34, 29, srf[SRF_THREEPOSSWITCH], srf[SRF_BORDER_34x29], FloodFixedSwitchRow);
 
 	ReactionControlSystemCircuitBreakerRow.Init(AID_REACTIONCONTROLSYSTEMCIRCUITBREAKERS, MainPanel);
-	CMHeater1MnACircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnAGroup5CircuitBreaker, 20.0);
-	CMHeater2MnBCircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnBGroup5CircuitBreaker, 20.0);
-	SMHeatersAMnBCircuitBreaker.Init( 76,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnBGroup3CircuitBreaker, 7.5);
-	SMHeatersCMnBCircuitBreaker.Init(114,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnBGroup1CircuitBreaker, 7.5);
-	SMHeatersBMnACircuitBreaker.Init(152,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnAGroup3CircuitBreaker, 7.5);
-	SMHeatersDMnACircuitBreaker.Init(190,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnAGroup1CircuitBreaker, 7.5);
-	PrplntIsolMnACircuitBreaker.Init(228,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnAGroup1CircuitBreaker, 10.0);
-	PrplntIsolMnBCircuitBreaker.Init(266,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnBGroup1CircuitBreaker, 10.0);
-	RCSLogicMnACircuitBreaker.Init(304,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnAGroup5CircuitBreaker);
-	RCSLogicMnBCircuitBreaker.Init(342,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnBGroup5CircuitBreaker);
-	EMSMnACircuitBreaker.Init(380,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnAGroup4CircuitBreaker);
-	EMSMnBCircuitBreaker.Init(418,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnBGroup4CircuitBreaker);
-	DockProbeMnACircuitBreaker.Init(456,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnAGroup4CircuitBreaker);
-	DockProbeMnBCircuitBreaker.Init(494,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnBGroup4CircuitBreaker);
+	CMHeater1MnACircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnAGroup5CircuitBreaker, 20.0);
+	CMHeater2MnBCircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnBGroup5CircuitBreaker, 20.0);
+	SMHeatersAMnBCircuitBreaker.Init( 76,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnBGroup3CircuitBreaker, 7.5);
+	SMHeatersCMnBCircuitBreaker.Init(114,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnBGroup1CircuitBreaker, 7.5);
+	SMHeatersBMnACircuitBreaker.Init(152,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnAGroup3CircuitBreaker, 7.5);
+	SMHeatersDMnACircuitBreaker.Init(190,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnAGroup1CircuitBreaker, 7.5);
+	PrplntIsolMnACircuitBreaker.Init(228,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnAGroup1CircuitBreaker, 10.0);
+	PrplntIsolMnBCircuitBreaker.Init(266,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnBGroup1CircuitBreaker, 10.0);
+	RCSLogicMnACircuitBreaker.Init(304,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnAGroup5CircuitBreaker);
+	RCSLogicMnBCircuitBreaker.Init(342,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnBGroup5CircuitBreaker);
+	EMSMnACircuitBreaker.Init(380,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnAGroup4CircuitBreaker);
+	EMSMnBCircuitBreaker.Init(418,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnBGroup4CircuitBreaker);
+	DockProbeMnACircuitBreaker.Init(456,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnAGroup4CircuitBreaker);
+	DockProbeMnBCircuitBreaker.Init(494,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ReactionControlSystemCircuitBreakerRow, &EPSMnBGroup4CircuitBreaker);
 
 	FloatBagSwitchRow.Init(AID_FLOATBAGSWITCHES, MainPanel);
 	FloatBagSwitch1.Init(  0, 0, 38, 52, srf[SRF_SWLEVERTHREEPOS], srf[SRF_BORDER_38x52], FloatBagSwitchRow);
@@ -3176,41 +3176,41 @@ void Saturn::SetSwitches(int panel) {
 	DirectO2RotarySwitch.Init(0,  0, 70, 70, srf[SRF_DIRECTO2ROTARY], srf[SRF_BORDER_70x70], DirectO2RotaryRow, (h_Pipe *) Panelsdk.GetPointerByString("HYDRAULIC:DIRECTO2VALVE"));
 
 	ServicePropulsionSysCircuitBreakerRow.Init(AID_SERVICEPROPULSIONSYSCIRCUITBREAKERS, MainPanel);
-	GaugingMnACircuitBreaker.Init(0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &EPSMnAGroup4CircuitBreaker);
-	GaugingMnBCircuitBreaker.Init( 38,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &EPSMnBGroup4CircuitBreaker);
-	GaugingAc1CircuitBreaker.Init( 76,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &ACBus1);
-	GaugingAc2CircuitBreaker.Init(114,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &ACBus2);
-	HeValveMnACircuitBreaker.Init(152,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &EPSMnAGroup4CircuitBreaker);
-	HeValveMnBCircuitBreaker.Init(190,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &EPSMnBGroup4CircuitBreaker);
-	PitchBatACircuitBreaker.Init(228,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &BatteryBusA);
-	PitchBatBCircuitBreaker.Init(266,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &BatteryBusB);
-	YawBatACircuitBreaker.Init(304,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &BatteryBusA);
-	YawBatBCircuitBreaker.Init(342,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &BatteryBusB);
-	PilotValveMnACircuitBreaker.Init(380,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &EPSMnAGroup5CircuitBreaker);
-	PilotValveMnBCircuitBreaker.Init(418,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &EPSMnBGroup5CircuitBreaker);
+	GaugingMnACircuitBreaker.Init(0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &EPSMnAGroup4CircuitBreaker);
+	GaugingMnBCircuitBreaker.Init( 38,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &EPSMnBGroup4CircuitBreaker);
+	GaugingAc1CircuitBreaker.Init( 76,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &ACBus1);
+	GaugingAc2CircuitBreaker.Init(114,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &ACBus2);
+	HeValveMnACircuitBreaker.Init(152,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &EPSMnAGroup4CircuitBreaker);
+	HeValveMnBCircuitBreaker.Init(190,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &EPSMnBGroup4CircuitBreaker);
+	PitchBatACircuitBreaker.Init(228,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &BatteryBusA);
+	PitchBatBCircuitBreaker.Init(266,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &BatteryBusB);
+	YawBatACircuitBreaker.Init(304,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &BatteryBusA);
+	YawBatBCircuitBreaker.Init(342,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &BatteryBusB);
+	PilotValveMnACircuitBreaker.Init(380,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &EPSMnAGroup5CircuitBreaker);
+	PilotValveMnBCircuitBreaker.Init(418,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ServicePropulsionSysCircuitBreakerRow, &EPSMnBGroup5CircuitBreaker);
 
 	FloatBagCircuitBreakerRow.Init(AID_FLOATBAGCIRCUITBREAKERS, MainPanel);
-	FloatBag1BatACircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], FloatBagCircuitBreakerRow, &EPSBatBusACircuitBreaker, 5.0);
-	FloatBag2BatBCircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], FloatBagCircuitBreakerRow, &EPSBatBusBCircuitBreaker, 5.0);
-	FloatBag3FLTPLCircuitBreaker.Init(76,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], FloatBagCircuitBreakerRow, &FlightPostLandingBus, 5.0);
+	FloatBag1BatACircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], FloatBagCircuitBreakerRow, &EPSBatBusACircuitBreaker, 5.0);
+	FloatBag2BatBCircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], FloatBagCircuitBreakerRow, &EPSBatBusBCircuitBreaker, 5.0);
+	FloatBag3FLTPLCircuitBreaker.Init(76,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], FloatBagCircuitBreakerRow, &FlightPostLandingBus, 5.0);
 
 	SeqEventsContSysCircuitBreakerRow.Init(AID_SEQEVENTSCONTSYSCIRCUITBREAKERS, MainPanel);
-	SECSLogicBatACircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], SeqEventsContSysCircuitBreakerRow, &EPSBatBusACircuitBreaker, 15.0);
-	SECSLogicBatBCircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], SeqEventsContSysCircuitBreakerRow, &EPSBatBusBCircuitBreaker, 15.0);
-	SECSArmBatACircuitBreaker.Init(  76,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], SeqEventsContSysCircuitBreakerRow, &EPSBatBusACircuitBreaker, 5.0); 
-	SECSArmBatBCircuitBreaker.Init( 114,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], SeqEventsContSysCircuitBreakerRow, &EPSBatBusBCircuitBreaker, 5.0); 
+	SECSLogicBatACircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], SeqEventsContSysCircuitBreakerRow, &EPSBatBusACircuitBreaker, 15.0);
+	SECSLogicBatBCircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], SeqEventsContSysCircuitBreakerRow, &EPSBatBusBCircuitBreaker, 15.0);
+	SECSArmBatACircuitBreaker.Init(  76,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], SeqEventsContSysCircuitBreakerRow, &EPSBatBusACircuitBreaker, 5.0); 
+	SECSArmBatBCircuitBreaker.Init( 114,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], SeqEventsContSysCircuitBreakerRow, &EPSBatBusBCircuitBreaker, 5.0); 
 	
 	EDSCircuitBreakerRow.Init(AID_EDSCIRCUITBREAKERS, MainPanel);
-	EDS1BatACircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], EDSCircuitBreakerRow, &EPSBatBusACircuitBreaker, 5.0);
-	EDS2BatCCircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], EDSCircuitBreakerRow, &BatCCHRGCircuitBreaker, 5.0);
-	EDS3BatBCircuitBreaker.Init(76,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], EDSCircuitBreakerRow, &EPSBatBusACircuitBreaker, 5.0);
+	EDS1BatACircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], EDSCircuitBreakerRow, &EPSBatBusACircuitBreaker, 5.0);
+	EDS2BatCCircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], EDSCircuitBreakerRow, &BatCCHRGCircuitBreaker, 5.0);
+	EDS3BatBCircuitBreaker.Init(76,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], EDSCircuitBreakerRow, &EPSBatBusACircuitBreaker, 5.0);
 
 	ELSCircuitBreakerRow.Init(AID_ELSCIRCUITBREAKERS, MainPanel);
-	ELSBatACircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ELSCircuitBreakerRow, &EPSBatBusACircuitBreaker, 5.0);
-	ELSBatBCircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], ELSCircuitBreakerRow, &EPSBatBusBCircuitBreaker, 5.0);
+	ELSBatACircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ELSCircuitBreakerRow, &EPSBatBusACircuitBreaker, 5.0);
+	ELSBatBCircuitBreaker.Init(38,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], ELSCircuitBreakerRow, &EPSBatBusBCircuitBreaker, 5.0);
 
 	PLVentCircuitBreakerRow.Init(AID_PLVENTCIRCUITBREAKER, MainPanel);
-	FLTPLCircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], PLVentCircuitBreakerRow, &FlightPostLandingBus);
+	FLTPLCircuitBreaker.Init( 0,  0, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], PLVentCircuitBreakerRow, &FlightPostLandingBus);
 
 	//RightWindowCoverRow.Init(AID_RIGHTWINDOWCOVER, MainPanel);
 	//RightWindowCoverSwitch.Init(0, 0, 525, 496, srf[SRF_CSMRIGHTWINDOWCOVER], RightWindowCoverRow);
@@ -3272,11 +3272,11 @@ void Saturn::SetSwitches(int panel) {
 		Panel181->SMSector1LogicPower2Switch.Init(188, 155, 34, 29, srf[SRF_THREEPOSSWITCH], srf[SRF_BORDER_34x29], Panel181->SMSector1SwitchesRow);
 		Panel181->SMSector1Cryo3ACPowerSwitch.Init(82, 70, 34, 29, srf[SRF_SWITCHUP], srf[SRF_BORDER_34x29], Panel181->SMSector1SwitchesRow);
 		Panel181->SMSector1SMACPowerSwitch.Init(188, 70, 34, 29, srf[SRF_SWITCHUP], srf[SRF_BORDER_34x29], Panel181->SMSector1SwitchesRow);
-		Panel181->SMSector1AC2ASystemBreaker.Init(264, 70, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel181->SMSector1SwitchesRow);
-		Panel181->SMSector1AC2BSystemBreaker.Init(302, 70, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel181->SMSector1SwitchesRow);
-		Panel181->SMSector1AC2CSystemBreaker.Init(340, 70, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel181->SMSector1SwitchesRow);
-		Panel181->SMSector1LogicPowerMNABreaker.Init(264, 155, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel181->SMSector1SwitchesRow);
-		Panel181->SMSector1LogicPowerMNBBreaker.Init(302, 155, 29, 29, srf[SRF_CIRCUITBreaker], srf[SRF_BORDER_29x29], Panel181->SMSector1SwitchesRow);
+		Panel181->SMSector1AC2ASystemBreaker.Init(264, 70, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel181->SMSector1SwitchesRow);
+		Panel181->SMSector1AC2BSystemBreaker.Init(302, 70, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel181->SMSector1SwitchesRow);
+		Panel181->SMSector1AC2CSystemBreaker.Init(340, 70, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel181->SMSector1SwitchesRow);
+		Panel181->SMSector1LogicPowerMNABreaker.Init(264, 155, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel181->SMSector1SwitchesRow);
+		Panel181->SMSector1LogicPowerMNBBreaker.Init(302, 155, 29, 29, srf[SRF_CIRCUITBREAKER], srf[SRF_BORDER_29x29], Panel181->SMSector1SwitchesRow);
 	}
 
 	///////////////////////////////////
