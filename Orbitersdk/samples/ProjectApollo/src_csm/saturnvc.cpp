@@ -2484,9 +2484,9 @@ void Saturn::SetView(double offset, bool update_direction)
 			oapiCameraSetCockpitDir(0,0);
 		}
 
-		v.x += ViewOffsetx;
-		v.y += ViewOffsety;
-		v.z += ViewOffsetz;
+		v.x += ViewOffsetx * VibrationVisualizationMultiplier;
+		v.y += ViewOffsety * VibrationVisualizationMultiplier;
+		v.z += ViewOffsetz * VibrationVisualizationMultiplier;
 	}
 
 	SetCameraOffset(v - _V(currentCoG.x, currentCoG.y, 0.0)); //We already use the mesh offset in the z-axis
