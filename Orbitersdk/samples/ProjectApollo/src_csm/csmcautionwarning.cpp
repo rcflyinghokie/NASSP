@@ -784,3 +784,6 @@ bool CSMCautionWarningSystem::GetGNPGNSAlarm() {
 	return GNPGNSAlarm;
 }
 
+int CSMCautionWarningSystem::GetSource() {
+	return Source;
+}

@@ -106,6 +106,8 @@ public:
 
 	bool GetGNPGNSAlarm();
 
+	int GetSource();
+
 protected:
 
 	//

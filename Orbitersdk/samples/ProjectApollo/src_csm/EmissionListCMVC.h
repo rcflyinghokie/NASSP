@@ -458,6 +458,72 @@ DWORD IntegralLights_CW_Lights[] = {
 };
 
 //
+// Caution & Warning Lights 
+//
+DWORD IntegralLights_CW_Lights_CM[] = {
+	VC_MAT_CW_Lights_P2_BMAG1_TEMP,
+	VC_MAT_CW_Lights_P2_BMAG2_TEMP,
+	1000,
+	VC_MAT_CW_Lights_P2_CO2_PPHI,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000,
+	VC_MAT_CW_Lights_P2_CM_RCS1,
+	VC_MAT_CW_Lights_P2_CM_RCS2,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000,
+	VC_MAT_CW_Lights_P2_SPS_FLANGE_TEMP_HI,
+	1000,
+	1000,
+	1000,
+	1000,
+	VC_MAT_CW_Lights_P2_INV1_TEMP_HI,
+	VC_MAT_CW_Lights_P2_INV2_TEMP_HI,
+	VC_MAT_CW_Lights_P2_INV3_TEMP_HI,
+	1000,
+	1000,
+	VC_MAT_CW_Lights_P2_AC_BUS1,
+	VC_MAT_CW_Lights_P2_AC_BUS2,
+	1000,
+	1000,
+	VC_MAT_CW_Lights_P2_AC_BUS1_OVERLOAD,
+	VC_MAT_CW_Lights_P2_AC_BUS2_OVERLOAD,
+	VC_MAT_CW_Lights_P2_CMC,
+	VC_MAT_CW_Lights_P2_CREW_ALERT,
+	VC_MAT_CW_Lights_P2_MN_BUS_A_UNDERVOLT,
+	VC_MAT_CW_Lights_P2_MN_BUS_B_UNDERVOLT,
+	VC_MAT_CW_Lights_P2_ISS,
+	VC_MAT_CW_Lights_P2_CW,
+	VC_MAT_CW_Lights_P2_O2_FLOW_HI,
+	VC_MAT_CW_Lights_P2_SUIT_COMPRESSOR,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000,
+	1000
+};
+
+//
 // EMS .05G Light
 //
 
