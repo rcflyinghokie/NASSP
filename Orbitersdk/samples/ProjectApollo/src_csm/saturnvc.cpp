@@ -1774,7 +1774,7 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 
 		bool LightStates[CWS_LIGHTS_PER_PANEL * 2];
 
-		// Clear Lights list...
+		// Clear Lightstate list...
 		for (int i = 0; i < CWS_LIGHTS_PER_PANEL * 2; i++) {
 			LightStates[i] = false;
 		}
@@ -1820,11 +1820,11 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 
 		if (secs.LiftoffLightPower()) {
 			if (!secs.NoAutoAbortLightPower()){
-				SetVCLighting(vcidx, FullLitLiftOffNoAutoAbort, MAT_LIGHT, 1, 1);
+				SetVCLighting(vcidx, VC_MAT_CMVC_LIFT_OFF_NO_ABORT, MAT_LIGHT, 1, 1);
 			}
 		}
 
-		if (cws.GetMasterAlarm() || cws.GetCWLightTest() == CWS_TEST_LIGHTS_LEFT) {
+		if ((cws.GetMasterAlarm() || cws.GetCWLightTest() == CWS_TEST_LIGHTS_LEFT) && cws.GetMode() != CWS_MODE_BOOST) {
 			SetVCLighting(vcidx, VC_MAT_MASTERALARM_PANEL1, MAT_LIGHT, 1.0, 1);
 		}
 		
@@ -1868,6 +1868,20 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 			if (ENGIND[2]) SetVCLighting(vcidx, LVEngine_5_3, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_3));
 			if (ENGIND[3]) SetVCLighting(vcidx, LVEngine_5_4, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_4));
 			if (ENGIND[4]) SetVCLighting(vcidx, LVEngine_5_5, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_5));
+		}
+
+		if (LVRateLight) {
+			SetVCLighting(vcidx, VC_MAT_LV_ENG_LV_RATE, MAT_LIGHT, 1.0, 1);
+		}
+
+		if (LVGuidLight) {
+			SetVCLighting(vcidx, VC_MAT_LV_ENG_LV_GUID, MAT_LIGHT, 1.0, 1);
+		}
+
+		if (SaturnType == SAT_SATURNV) {
+			if (SIISepState) {
+				SetVCLighting(vcidx, VC_MAT_LV_ENG_SII_SEP, MAT_LIGHT, 1.0, 1);
+			}
 		}
 
 		switch (ems.LiftVectLight()) {

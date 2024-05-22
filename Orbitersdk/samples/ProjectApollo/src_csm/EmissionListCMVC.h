@@ -210,6 +210,10 @@ DWORD FloodLights_P8[] = {
 	VC_MAT_LVEngine_8_7,
 	VC_MAT_LVEngine_8_8,
 
+	VC_MAT_LV_ENG_LV_GUID,
+	VC_MAT_LV_ENG_LV_RATE,
+	VC_MAT_LV_ENG_SII_SEP,
+
 	VC_MAT_LiftVectorindicatorBottom,
 	VC_MAT_LiftVectorindicatorTop,
 
