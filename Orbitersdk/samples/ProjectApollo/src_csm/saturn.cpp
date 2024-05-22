@@ -2383,6 +2383,10 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 			sscanf(line + 12, "%i", &i);
 			rhc_thctoggle = (i != 0);
 		}
+		else if (!strnicmp(line, "VIBRATIONVISUALIZED", 19)) {
+			sscanf(line + 19, "%i", &i);
+			VibrationVisualizationMultiplier = 0.01*(double)i;
+		}
 		else if (papiReadScenario_double(line, "LMDSCFUEL", LMDescentFuelMassKg)); 
 		else if (papiReadScenario_double(line, "LMASCFUEL", LMAscentFuelMassKg));
 		else if (papiReadScenario_double(line, "LMDSCEMPTY", LMDescentEmptyMassKg));
