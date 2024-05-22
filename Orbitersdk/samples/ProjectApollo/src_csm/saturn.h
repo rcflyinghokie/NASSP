@@ -3413,6 +3413,7 @@ protected:
 
 	boolean StageUnloadState = 0;
 	double LastVPAccelTime = -10000.0, StageUnloadTime = -1.0;
+	double VibrationVisualizationMultiplier = 1.0;
 
 	///
 	/// Mesh offset for BPC and LET.

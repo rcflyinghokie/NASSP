@@ -489,8 +489,8 @@ void MCC::MissionSequence_H1()
 	case MST_H1_LUNAR_ORBIT_ASCENT_DAY_7: //LM Liftoff Evaluation to CMC LM State Vector update
 		UpdateMacro(UTP_NONE, PT_NONE, rtcc->GETEval2(rtcc->calcParams.Insertion + 120.0), 107, MST_H1_LUNAR_ORBIT_ASCENT_DAY_8, scrubbed, SubStateTime > 15.0*60.0, MST_H1_LUNAR_ORBIT_ASCENT_DAY_1);
 		break;
-	case MST_H1_LUNAR_ORBIT_ASCENT_DAY_8: //CMC LM State Vector update to rev 33 map update
-		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, (rtcc->calcParams.src->DockingStatus(0) == 1) && rtcc->GETEval2(rtcc->calcParams.LunarLiftoff + 3.7*3600.0), 2, MST_H1_LUNAR_ORBIT_ASCENT_DAY_9);
+	case MST_H1_LUNAR_ORBIT_ASCENT_DAY_8: //CMC LM State Vector update to DAP PAD
+		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, (rtcc->calcParams.src->DockingStatus(0) == 1) && rtcc->GETEval2(rtcc->calcParams.LunarLiftoff + 3.65*3600.0), 2, MST_H1_LUNAR_ORBIT_ASCENT_DAY_9);
 		break;
 	case MST_H1_LUNAR_ORBIT_ASCENT_DAY_9: //DAP PAD to rev 33 map update
 		UpdateMacro(UTP_PADONLY, PT_AP10DAPDATA, rtcc->GETEval2(rtcc->calcParams.LunarLiftoff + 4.0*3600.0), 700, MST_H1_LUNAR_ORBIT_ASCENT_DAY_10);
@@ -525,8 +525,11 @@ void MCC::MissionSequence_H1()
 	case MST_H1_LUNAR_ORBIT_ASCENT_DAY_19: //TEI-39 PAD to LM command ullage off
 		UpdateMacro(UTP_PADONLY, PT_AP11MNV, rtcc->GETEval2(rtcc->calcParams.TIGSTORE1), 45, MST_H1_LUNAR_ORBIT_ASCENT_DAY_20);
 		break;
-	case MST_H1_LUNAR_ORBIT_ASCENT_DAY_20: //LM command ullage off to PC-2 Update
-		UpdateMacro(UTP_LGCUPLINKDIRECT, PT_NONE, MoonRev >= 38 && MoonRevTime > 50.0*60.0, 123, MST_H1_LUNAR_ORBIT_PC2_DAY_1);
+	case MST_H1_LUNAR_ORBIT_ASCENT_DAY_20: //LM command ullage off to LM impact prediction
+		UpdateMacro(UTP_LGCUPLINKDIRECT, PT_NONE, rtcc->GETEval2(rtcc->calcParams.TIGSTORE1 + 5.0*60.0), 123, MST_H1_LUNAR_ORBIT_ASCENT_DAY_21);
+		break;
+	case MST_H1_LUNAR_ORBIT_ASCENT_DAY_21: //LM impact prediction to PC-2 Update
+		UpdateMacro(UTP_PADONLY, PT_GENERIC, MoonRev >= 38 && MoonRevTime > 50.0*60.0, 124, MST_H1_LUNAR_ORBIT_PC2_DAY_1);
 		break;
 	case MST_H1_LUNAR_ORBIT_PC2_DAY_1: //PC-2 Update to Photography REFSMMAT calculation
 		UpdateMacro(UTP_PADWITHCMCUPLINK, PT_AP11MNV, SubStateTime > 5.0*60.0, 95, MST_H1_LUNAR_ORBIT_PC2_DAY_2);

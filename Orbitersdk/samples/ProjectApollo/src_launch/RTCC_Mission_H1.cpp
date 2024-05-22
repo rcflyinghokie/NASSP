@@ -3018,9 +3018,9 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 	case 110: //SEP BURN & LM JETT PAD + CMC SV UPLINK
 	{
 		AP11ManPADOpt opt;
-		SV sv_CSM, sv_LM;
-		VECTOR3 dV_LVLH;
-		double t_Sep;
+		EphemerisData sv, sv_temp, sv_LM;
+		VECTOR3 dV_LVLH, VG;
+		double t_Sep, t_Jett, m_LM, gmt;
 		char buffer1[100], buffer2[100];
 
 		int hh, mm;
@@ -3028,8 +3028,13 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 
 		AP11MNV * form = (AP11MNV *)pad;
 
+		sv = StateVectorCalcEphem(calcParams.src);
+		m_LM = calcParams.tgt->GetMass();
+
 		t_Sep = calcParams.LunarLiftoff + OrbMech::HHMMSSToSS(6, 0, 42);
 		calcParams.SEP = t_Sep;
+		t_Jett = t_Sep - 5.0*60.0;
+
 		dV_LVLH = _V(0, 0, -1.0)*0.3048;
 
 		opt.R_LLS = BZLAND.rad[RTCC_LMPOS_BEST];
@@ -3043,21 +3048,38 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 
 		AP11ManeuverPAD(&opt, *form);
 		sprintf(form->purpose, "SEP BURN");
-		OrbMech::SStoHHMMSS(form->GETI - 5.0*60.0, hh, mm, ss, 0.01);
-		sprintf(form->remarks, "Jettison PAD: GET %d:%d:%.2lf R 219 P 358 Y 342\nSep burn is Z-axis, retrograde", hh, mm, ss);
+		OrbMech::SStoHHMMSS(t_Jett, hh, mm, ss);
+		sprintf(form->remarks, "Jettison PAD: GET %d:%d:%.0lf R 219 P 358 Y 342\nSep burn is Z-axis, retrograde", hh, mm, ss);
 		form->type = 2;
 
-		sv_CSM = StateVectorCalc(calcParams.src);
-		sv_LM = StateVectorCalc(calcParams.tgt);
+		//To get an accurate LM state vector after jettison, take jettison DV into account
 
-		AGCStateVectorUpdate(buffer1, sv_CSM, true);
-		AGCStateVectorUpdate(buffer2, sv_LM, false);
+		//Step 1: Take state vector to deorbit burn time
+		TimeofIgnition = calcParams.LunarLiftoff + OrbMech::HHMMSSToSS(7, 23, 23);
+		DeltaV_LVLH = _V(-181.2, 60.3, -1.5)*0.3048;
+
+		gmt = GMTfromGET(TimeofIgnition);
+		sv_temp = coast(sv, gmt - sv.GMT);
+
+		//Step 2: Get inertial burn vector
+		VG = PIEXDV(sv_temp.R, sv_temp.V, m_LM, SystemParameters.MCTAT9, DeltaV_LVLH, true);
+
+		//Step 3: Get state vector to jettison time
+		gmt = GMTfromGET(t_Jett);
+		sv_temp = coast(sv, gmt - sv.GMT);
+
+		//Step 4: Adjust velocity along negative deorbit burn vector by jettison DV (roughly 0.1739 m/s)
+		sv_LM = sv_temp;
+		sv_LM.V -= unit(VG)*0.1739;
+
+		AGCStateVectorUpdate(buffer1, 1, RTCC_MPT_CSM, sv_temp);
+		AGCStateVectorUpdate(buffer2, 1, RTCC_MPT_LM, sv_LM);
 
 		sprintf(uplinkdata, "%s%s", buffer1, buffer2);
 		if (upString != NULL) {
 			// give to mcc
 			strncpy(upString, uplinkdata, 1024 * 3);
-			sprintf(upDesc, "CSM and LM state vectors");
+			sprintf(upDesc, "CSM and LM state vectors (TIG-10)");
 		}
 	}
 	break;
@@ -3065,7 +3087,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 	{
 		AP11LMManPADOpt opt;
 
-		SV sv, sv2;
+		SV sv, sv_burnout;
 		char buffer1[1000];
 		char buffer2[1000];
 
@@ -3084,12 +3106,26 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		opt.REFSMMAT = GetREFSMMATfromAGC(&mcc->lm->agc.vagc, false);
 		opt.TIG = TimeofIgnition;
 		opt.vessel = calcParams.tgt;
+		opt.RV_MCC = sv;
+		opt.useSV = true;
 
 		AP11LMManeuverPAD(&opt, *form);
 		sprintf(form->purpose, "IMPACT PAD");
+		form->Att.x = 63.0;
+		form->Att.y = 240.0;
 
 		//Save cutoff time for MCC
 		calcParams.TIGSTORE1 = TimeofIgnition + form->burntime - 1.0;
+
+		//Impact prediction
+		EphemerisData sv_imp;
+		int ITS;
+
+		sv_burnout = ExecuteManeuver(sv, TimeofIgnition, DeltaV_LVLH, 0.0, RTCC_ENGINETYPE_LMRCSPLUS4);
+
+		PMMCEN(ConvertSVtoEphemData(sv_burnout), 0.0, 24.0*3600.0, 3, opt.R_LLS, 1.0, sv_imp, ITS);
+		OrbMech::format_time_HHMMSS(buffer1, GETfromGMT(sv_imp.GMT));
+		sprintf(form->remarks, "Predicted impact at %s GET", buffer1);
 
 		AGCStateVectorUpdate(buffer1, sv, false);
 		LGCExternalDeltaVUpdate(buffer2, TimeofIgnition, DeltaV_LVLH);
@@ -3098,7 +3134,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		if (upString != NULL) {
 			// give to mcc
 			strncpy(upString, uplinkdata, 1024 * 3);
-			sprintf(upDesc, "LM state vector, Impact burn target load");
+			sprintf(upDesc, "LM state vector (TIG-10), Impact burn target load");
 		}
 	}
 	break;
@@ -3145,6 +3181,21 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 			strncpy(upString, uplinkdata, 1024 * 3);
 			sprintf(upDesc, updesc);
 		}
+	}
+	break;
+	case 124: //LM IMPACT PREDICTION
+	{
+		GENERICPAD * form = (GENERICPAD *)pad;
+
+		EphemerisData sv, sv_imp;
+		int ITS;
+		char buffer1[128];
+
+		sv = StateVectorCalcEphem(calcParams.tgt);
+
+		PMMCEN(sv, 0.0, 24.0*3600.0, 3, BZLAND.rad[RTCC_LMPOS_BEST], 1.0, sv_imp, ITS);
+		OrbMech::format_time_HHMMSS(buffer1, GETfromGMT(sv_imp.GMT));
+		sprintf(form->paddata, "Predicted impact at %s GET", buffer1);
 	}
 	break;
 	case 130: //PHOTOGRAPHY REFSMMAT CACLULATION
