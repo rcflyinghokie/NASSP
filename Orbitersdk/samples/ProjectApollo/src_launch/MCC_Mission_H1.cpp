@@ -540,14 +540,14 @@ void MCC::MissionSequence_H1()
 	case MST_H1_LUNAR_ORBIT_PC2_DAY_3: //Rev 39 map update to TEI-41 PAD
 		UpdateMacro(UTP_PADONLY, PT_AP10MAPUPDATE, SubStateTime > 3.0*60.0, 600, MST_H1_LUNAR_ORBIT_PC2_DAY_4);
 		break;
-	case MST_H1_LUNAR_ORBIT_PC2_DAY_4: //TEI-41 PAD to Photography REFSMMAT Uplink
+	case MST_H1_LUNAR_ORBIT_PC2_DAY_4: //TEI-41 PAD to Lalande Photography
 		UpdateMacro(UTP_PADONLY, PT_AP11MNV, rtcc->GETEval2(rtcc->TimeofIgnition + 5.0*60.0), 46, MST_H1_LUNAR_ORBIT_PC2_DAY_5);
 		break;
-	case MST_H1_LUNAR_ORBIT_PC2_DAY_5: //Photography REFSMMAT Uplink to Lalande Photography
-		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, true, 131, MST_H1_LUNAR_ORBIT_PC2_DAY_6);
+	case MST_H1_LUNAR_ORBIT_PC2_DAY_5: //Lalande Photography to Photography REFSMMAT Uplink
+		UpdateMacro(UTP_PADONLY, PT_GENERIC, true, 605, MST_H1_LUNAR_ORBIT_PC2_DAY_6);
 		break;
-	case MST_H1_LUNAR_ORBIT_PC2_DAY_6: //Lalande Photography to stereo photo times
-		UpdateMacro(UTP_PADONLY, PT_GENERIC, MoonRev >= 39 && MoonRevTime > 83.0*60.0, 605, MST_H1_LUNAR_ORBIT_PC2_DAY_7);
+	case MST_H1_LUNAR_ORBIT_PC2_DAY_6: //Photography REFSMMAT Uplink to stereo photo times
+		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, MoonRev >= 39 && MoonRevTime > 83.0*60.0, 131, MST_H1_LUNAR_ORBIT_PC2_DAY_7);
 		break;
 	case MST_H1_LUNAR_ORBIT_PC2_DAY_7: //Stereo photo times to rev 40 map update
 		UpdateMacro(UTP_PADONLY, PT_GENERIC, SubStateTime > 3.0*60.0, 606, MST_H1_LUNAR_ORBIT_PC2_DAY_8);
@@ -638,10 +638,10 @@ void MCC::MissionSequence_H1()
 		UpdateMacro(UTP_PADONLY, PT_GENERIC, rtcc->GETEval2(rtcc->calcParams.TEI + 12.0*3600.0), 140, MST_H1_TRANSEARTH_DAY2_1);
 		break;
 	case MST_H1_TRANSEARTH_DAY2_1: //MCC-5 update to PTC Quads Decision
-		UpdateMacro(UTP_PADWITHCMCUPLINK, PT_AP11MNV, rtcc->GETEval2(rtcc->calcParams.TEI + 17.6*3600.0), 210, MST_H1_TRANSEARTH_DAY2_2);
+		UpdateMacro(UTP_PADWITHCMCUPLINK, PT_AP11MNV, rtcc->GETEval2(rtcc->calcParams.TEI + 17.0*3600.0 + 40.0*60.0), 210, MST_H1_TRANSEARTH_DAY2_2);
 		break;
 	case MST_H1_TRANSEARTH_DAY2_2: //PTC Quads Decision to PTC Quads Decision
-		UpdateMacro(UTP_PADONLY, PT_GENERIC, rtcc->GETEval2(rtcc->calcParams.TEI + 23.6*3600.0), 140, MST_H1_TRANSEARTH_DAY2_3);
+		UpdateMacro(UTP_PADONLY, PT_GENERIC, rtcc->GETEval2(rtcc->calcParams.TEI + 23.0*3600.0 + 40.0*60.0), 140, MST_H1_TRANSEARTH_DAY2_3);
 		break;
 	case MST_H1_TRANSEARTH_DAY2_3: //PTC Quads Decision to CSM SV update
 		UpdateMacro(UTP_PADONLY, PT_GENERIC, rtcc->GETEval2(rtcc->calcParams.EI - 36.0 * 3600.0), 140, MST_H1_TRANSEARTH_DAY3_1);
