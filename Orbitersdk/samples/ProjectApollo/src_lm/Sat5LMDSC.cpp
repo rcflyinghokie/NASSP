@@ -251,8 +251,6 @@ void Sat5LMDSC::DefineAnimations(UINT idx) {
 	static MGROUP_ROTATE mgt_Ladder(idx, &meshgroup_Ladder, 1, DES_LEG_PIVOT[0], DES_LEG_AXIS[0], (float)(45 * RAD));
 	AddAnimationComponent(anim_Gear, 0.0, 1, &mgt_Ladder);
 
-	SetAnimation(anim_Gear, 0.0);
-
 	static MGROUP_ROTATE mgt_Plaque(idx, &meshgroup_Plaque, 1, DES_LEG_PIVOT[0], DES_LEG_AXIS[0], (float)(45 * RAD));
 	AddAnimationComponent(anim_Gear, 0.0, 1, &mgt_Plaque);
 
