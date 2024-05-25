@@ -647,7 +647,7 @@ void MCC::MissionSequence_H1()
 		UpdateMacro(UTP_PADONLY, PT_GENERIC, rtcc->GETEval2(rtcc->calcParams.EI - 36.0 * 3600.0), 140, MST_H1_TRANSEARTH_DAY3_1);
 		break;
 	case MST_H1_TRANSEARTH_DAY3_1: //CSM SV update to PTC Quads Decision
-		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, rtcc->GETEval2(rtcc->calcParams.EI - 30.4 * 3600.0), 5, MST_H1_TRANSEARTH_DAY3_2);
+		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, rtcc->GETEval2(rtcc->calcParams.EI - 30.0 * 3600.0 + 20.0*60.0), 5, MST_H1_TRANSEARTH_DAY3_2);
 		break;
 	case MST_H1_TRANSEARTH_DAY3_2: //PTC Quads Decision to MCC-6 update
 		UpdateMacro(UTP_PADONLY, PT_GENERIC, rtcc->GETEval2(rtcc->calcParams.EI - 23.0 * 3600.0 - 20.0 * 60.0), 140, MST_H1_TRANSEARTH_DAY3_3);
@@ -656,13 +656,13 @@ void MCC::MissionSequence_H1()
 		UpdateMacro(UTP_PADWITHCMCUPLINK, PT_AP11MNV, SubStateTime > 5.0*60.0, 212, MST_H1_TRANSEARTH_DAY3_4);
 		break;
 	case MST_H1_TRANSEARTH_DAY3_4: //Entry PAD update to PTC Quads Decision
-		UpdateMacro(UTP_PADONLY, PT_AP11ENT, rtcc->GETEval2(rtcc->calcParams.EI - 21.0*3600.0 - 50.0*60.0), 216, MST_H1_TRANSEARTH_DAY3_5);
+		UpdateMacro(UTP_PADONLY, PT_AP11ENT, rtcc->GETEval2(rtcc->calcParams.EI - 21.0*3600.0 + 50.0*60.0), 216, MST_H1_TRANSEARTH_DAY3_5);
 		break;
 	case MST_H1_TRANSEARTH_DAY3_5: //PTC Quads Decision to PTC Quads Decision
-		UpdateMacro(UTP_PADONLY, PT_GENERIC, rtcc->GETEval2(rtcc->calcParams.EI - 20.3*3600.0), 140, MST_H1_TRANSEARTH_DAY3_6);
+		UpdateMacro(UTP_PADONLY, PT_GENERIC, rtcc->GETEval2(rtcc->calcParams.EI - 20.0*3600.0 + 20.0*60.0), 140, MST_H1_TRANSEARTH_DAY3_6);
 		break;
 	case MST_H1_TRANSEARTH_DAY3_6: //PTC Quads Decision to PTC Quads Decision
-		UpdateMacro(UTP_PADONLY, PT_GENERIC, rtcc->GETEval2(rtcc->calcParams.EI - 7.4*3600.0), 140, MST_H1_TRANSEARTH_DAY4_1);
+		UpdateMacro(UTP_PADONLY, PT_GENERIC, rtcc->GETEval2(rtcc->calcParams.EI - 7.0*3600.0 +20.0*60.0), 140, MST_H1_TRANSEARTH_DAY4_1);
 		break;
 	case MST_H1_TRANSEARTH_DAY4_1: //PTC Quads Decision to MCC-7 decision update
 		UpdateMacro(UTP_PADONLY, PT_GENERIC, rtcc->GETEval2(rtcc->calcParams.EI - 6.0*3600.0), 140, MST_H1_TRANSEARTH_DAY4_2);
@@ -889,7 +889,7 @@ void MCC::MissionSequence_H1()
 				else
 				{
 					rtcc->calcParams.TEI = rtcc->calcParams.EI - 30.0*3600.0;
-					setSubState(4); //Go to genric MCC. Not enough time for the full transearth timeline.
+					setSubState(4); //Go to generic MCC. Not enough time for the full transearth timeline.
 				}
 			}
 			break;
