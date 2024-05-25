@@ -5198,6 +5198,8 @@ void Saturn::SetVCLighting(UINT meshidx, DWORD *matList, int EmissionMode, doubl
 
 	for (int i = 0; i < cnt; i++)
 	{
+		if (matList[i] == VC_MAT_NONE) continue;
+
 		gcCore *pCore = gcGetCoreInterface();
 		if (pCore) {
 			FVECTOR4 value;
