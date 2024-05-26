@@ -650,7 +650,7 @@ void MCC::MissionSequence_H1()
 		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, rtcc->GETEval2(rtcc->calcParams.EI - (30.0 * 3600.0 + 20.0*60.0)), 5, MST_H1_TRANSEARTH_DAY3_2);
 		break;
 	case MST_H1_TRANSEARTH_DAY3_2: //PTC Quads Decision to MCC-6 update
-		UpdateMacro(UTP_PADONLY, PT_GENERIC, rtcc->GETEval2(rtcc->calcParams.EI - (23.0 * 3600.0 - 20.0 * 60.0)), 140, MST_H1_TRANSEARTH_DAY3_3);
+		UpdateMacro(UTP_PADONLY, PT_GENERIC, rtcc->GETEval2(rtcc->calcParams.EI - (23.0 * 3600.0 + 20.0 * 60.0)), 140, MST_H1_TRANSEARTH_DAY3_3);
 		break;
 	case MST_H1_TRANSEARTH_DAY3_3: //MCC-6 update to Entry PAD update
 		UpdateMacro(UTP_PADWITHCMCUPLINK, PT_AP11MNV, SubStateTime > 5.0*60.0, 212, MST_H1_TRANSEARTH_DAY3_4);
