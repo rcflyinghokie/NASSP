@@ -1511,8 +1511,8 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 		{ "Direct Input", 0, 'I' },
 		{ "Add TLI to MPT", 0, 'T' },
 		{ "Add PDI to MPT", 0, 'P' },
-		{ "", 0, ' ' },
-		{ "", 0, ' ' },
+		{ "Spherical coordinates", 0, 'S' },
+		{ "Enter vector", 0, 'F' },
 		{ "Back to menu", 0, 'B' },
 	};
 

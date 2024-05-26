@@ -35213,6 +35213,9 @@ void RTCC::PMMDMT(int L, unsigned man, RTCCNIAuxOutputTable *aux)
 		AEGDataBlock sv_A, sv_P;
 		double INFO[10];
 
+		//Initialize AEG
+		PMMAEGS(aeg.Header, aeg.Data, aeg.Data);
+
 		//Call Apsides Determination Subroutine
 		if (PMMAPD(aeg.Header, aeg.Data, 0, -1, INFO, &sv_A, &sv_P))
 		{
@@ -35232,6 +35235,8 @@ void RTCC::PMMDMT(int L, unsigned man, RTCCNIAuxOutputTable *aux)
 				mptman->h_p = INFO[6] - R_E;
 				//TBD: V_P
 			}
+
+			//Calculate time and longitude of equator crossing
 			double h_an;
 			if (aux->RBI == BODY_EARTH)
 			{
@@ -35246,6 +35251,10 @@ void RTCC::PMMDMT(int L, unsigned man, RTCCNIAuxOutputTable *aux)
 				if (aeg.Data.coe_osc.e < 1.0)
 				{
 					double isg, gsg, hsg;
+
+					aeg.Data.Item8 = 0.0;
+					aeg.Data.Item10 = 0.0;
+
 					PIATSU(aeg.Data, aeg.Data, isg, gsg, hsg);
 					h_an = hsg;
 				}
