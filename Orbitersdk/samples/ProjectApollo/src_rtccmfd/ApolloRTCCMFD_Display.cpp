@@ -1624,46 +1624,55 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		skp->Text(6 * W / 8, (int)(0.5 * H / 14), "Map Update", 10);
 
 		GET_Display(Buffer, G->mapUpdateGET);
-		skp->Text(1 * W / 8, 2 * H / 14, Buffer, strlen(Buffer));
+		skp->Text(1 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
 
 		if (G->mappage == 0)
 		{
 			skp->Text(6 * W / 8, 4 * H / 14, "Earth", 5);
 
 			sprintf(Buffer, gsnames[G->mapgs]);
-			skp->Text(1 * W / 8, 4 * H / 14, Buffer, strlen(Buffer));
+			skp->Text(1 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
 
 			GET_Display(Buffer2, G->GSAOSGET);
 			sprintf(Buffer, "AOS %s", Buffer2);
-			skp->Text(1 * W / 8, 6 * H / 14, Buffer, strlen(Buffer));
+			skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
 
 			GET_Display(Buffer2, G->GSLOSGET);
 			sprintf(Buffer, "LOS %s", Buffer2);
-			skp->Text(1 * W / 8, 7 * H / 14, Buffer, strlen(Buffer));
+			skp->Text(1 * W / 16, 7 * H / 14, Buffer, strlen(Buffer));
 		}
 		else if (G->mappage == 1)
 		{
+			if (G->mapUpdatePM)
+			{
+				skp->Text(1 * W / 16, 4 * H / 14, "Prime Meridian: 180°W", 21);
+			}
+			else
+			{
+				skp->Text(1 * W / 16, 4 * H / 14, "Prime Meridian: 150°W", 21);
+			}
+
 			skp->Text(6 * W / 8, 4 * H / 14, "Moon", 4);
 
 			GET_Display(Buffer2, G->mapupdate.LOSGET);
 			sprintf(Buffer, "LOS %s", Buffer2);
-			skp->Text(1 * W / 8, 4 * H / 14, Buffer, strlen(Buffer));
+			skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
 
 			GET_Display(Buffer2, G->mapupdate.SRGET);
 			sprintf(Buffer, "SR  %s", Buffer2);
-			skp->Text(1 * W / 8, 5 * H / 14, Buffer, strlen(Buffer));
+			skp->Text(1 * W / 16, 7 * H / 14, Buffer, strlen(Buffer));
 
 			GET_Display(Buffer2, G->mapupdate.PMGET);
 			sprintf(Buffer, "PM  %s", Buffer2);
-			skp->Text(1 * W / 8, 6 * H / 14, Buffer, strlen(Buffer));
+			skp->Text(1 * W / 16, 8 * H / 14, Buffer, strlen(Buffer));
 
 			GET_Display(Buffer2, G->mapupdate.AOSGET);
 			sprintf(Buffer, "AOS %s", Buffer2);
-			skp->Text(1 * W / 8, 7 * H / 14, Buffer, strlen(Buffer));
+			skp->Text(1 * W / 16, 9 * H / 14, Buffer, strlen(Buffer));
 
 			GET_Display(Buffer2, G->mapupdate.SSGET);
 			sprintf(Buffer, "SS  %s", Buffer2);
-			skp->Text(1 * W / 8, 8 * H / 14, Buffer, strlen(Buffer));
+			skp->Text(1 * W / 16, 10 * H / 14, Buffer, strlen(Buffer));
 		}
 	}
 	else if (screen == 12)
