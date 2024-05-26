@@ -3453,6 +3453,10 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 					form->RTGO = res.RTGO;
 					form->VI0 = res.VIO / 0.3048;
 					form->GET05G = res.GET05G;
+					if (opt.enginetype == RTCC_ENGINETYPE_CSMRCSPLUS4)
+					{
+						sprintf(form->remarks, "Use 4 RCS quads for the burn");
+					}
 				}
 			}
 
