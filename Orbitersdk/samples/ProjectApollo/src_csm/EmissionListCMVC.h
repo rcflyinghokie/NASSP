@@ -225,7 +225,9 @@ DWORD FloodLights_P8[] = {
 	VC_MAT_LEB_ConditionLamp_ISS,
 	VC_MAT_LEB_ConditionLamp_PGNS,
 
-	VC_MAT_MasterAlarm_LEB
+	VC_MAT_MasterAlarm_LEB,
+
+	VC_MAT_Panel_225_226_229_Guards
 };
 
 //
