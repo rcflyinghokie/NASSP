@@ -639,6 +639,7 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	mappage = 1;
 	mapgs = 0;
 	mapUpdateGET = 0.0;
+	mapUpdatePM = false;
 	GSAOSGET = 0.0;
 	GSLOSGET = 0.0;
 	PADSolGood = true;
@@ -4145,7 +4146,18 @@ int ARCore::subThread()
 		}
 		else
 		{
-			GC->rtcc->LunarOrbitMapUpdate(sv0, mapupdate);
+			double pm;
+
+			if (mapUpdatePM)
+			{
+				pm = -180.0*RAD;
+			}
+			else
+			{
+				pm = -150.0*RAD;
+			}
+
+			GC->rtcc->LunarOrbitMapUpdate(sv0, mapupdate, pm);
 		}
 
 		Result = DONE;
