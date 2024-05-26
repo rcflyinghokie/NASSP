@@ -164,6 +164,11 @@ public:
 	void SendNetworkPacketNumerics();
 
 	char *GetProg() { return Prog; };
+	char *GetVerb() { return Verb; };
+	char *GetNoun() { return Noun; };
+	char *GetR1() { return R1; };
+	char *GetR2() { return R2; };
+	char *GetR3() { return R3; };
 
 protected:
 
