@@ -2435,20 +2435,22 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 
 void RTCC::FMissionRendezvousPlan(VESSEL *chaser, VESSEL *target, SV sv_A0, double t_TIG, double t_TPI, double &t_Ins, double &CSI)
 {
-	//Plan: Phasing (fixed TIG), Insertion, CSI at apolune, CDH, TPI at midnight (Apollo 10)
+	//Plan: Phasing (fixed TIG), Insertion, CSI 50 minutes after Insertion, CDH, TPI at orbital midnight (Apollo 10)
 
 	LambertMan lamopt, lamopt2;
 	TwoImpulseResuls lamres;
-	double GETbase, t_sv0, t_Phasing, t_Insertion, dt, t_CSI, dt2, ddt, ddt2, T_P, DH, dv_CSI, t_CDH, dt_TPI, t_TPI_apo;
+	double GETbase, t_sv0, t_Phasing, t_Insertion, dt, t_CSI, ddt, T_P, dv_CSI, t_CDH, dt_TPI, t_TPI_apo;
 	VECTOR3 dV_Phasing, dV_Insertion, R_P_CDH1, V_P_CDH1;
 	SV sv_P0, sv_P_CSI, sv_Phasing, sv_Phasing_apo, sv_Insertion, sv_Insertion_apo, sv_CSI, sv_CSI_apo, sv_CDH, sv_CDH_apo, sv_P_CDH;
 
+	//Constants
+	const double dt2 = 50.0*60.0; //Insertion to CSI
+	const double DH = 15.0*1852.0;
+
 	GETbase = CalcGETBase();
 	t_Phasing = t_TIG;
-	dt = 7017.0;
-	dt2 = 3028.0;
+	dt = 7017.0; //Phasing to Insertion
 	dv_CSI = 50.0*0.3048;
-	DH = 15.0*1852.0;
 	ddt = 10.0;
 
 	sv_P0 = StateVectorCalc(target);
@@ -2469,6 +2471,7 @@ void RTCC::FMissionRendezvousPlan(VESSEL *chaser, VESSEL *target, SV sv_A0, doub
 	//Loop
 	while (abs(ddt) > 1.0)
 	{
+		//Phasing Targeting
 		t_Insertion = t_Phasing + dt;
 
 		lamopt.T2 = t_Insertion;
@@ -2480,34 +2483,21 @@ void RTCC::FMissionRendezvousPlan(VESSEL *chaser, VESSEL *target, SV sv_A0, doub
 		sv_Phasing_apo = sv_Phasing;
 		sv_Phasing_apo.V += dV_Phasing;
 
-		ddt2 = 1.0;
+		//Insertion Targeting
+		t_CSI = t_Insertion + dt2;
 
-		//Loop
-		while (abs(ddt2) > 0.1)
-		{
-			t_CSI = t_Insertion + dt2;
+		lamopt2.T1 = t_Insertion;
+		lamopt2.T2 = t_CSI;
+		lamopt2.sv_A = sv_Phasing_apo;
 
-			lamopt2.T1 = t_Insertion;
-			lamopt2.T2 = t_CSI;
-			lamopt2.sv_A = sv_Phasing_apo;
+		LambertTargeting(&lamopt2, lamres);
+		dV_Insertion = lamres.dV;
 
-			LambertTargeting(&lamopt2, lamres);
-			dV_Insertion = lamres.dV;
+		sv_Insertion = coast(sv_Phasing_apo, t_Insertion - t_Phasing);
+		sv_Insertion_apo = sv_Insertion;
+		sv_Insertion_apo.V += dV_Insertion;
 
-			sv_Insertion = coast(sv_Phasing_apo, t_Insertion - t_Phasing);
-			sv_Insertion_apo = sv_Insertion;
-			sv_Insertion_apo.V += dV_Insertion;
-
-			sv_CSI = coast(sv_Insertion_apo, t_CSI - t_Insertion);
-			T_P = OrbMech::period(sv_CSI.R, sv_CSI.V, OrbMech::mu_Moon);
-			ddt2 = OrbMech::timetoapo(sv_CSI.R, sv_CSI.V, OrbMech::mu_Moon);
-
-			if (ddt2 > T_P / 2.0)
-			{
-				ddt2 = ddt2 - T_P;
-			}
-			dt2 += ddt2;
-		}
+		sv_CSI = coast(sv_Insertion_apo, t_CSI - t_Insertion);
 
 		//CSI Targeting
 		sv_P_CSI = coast(sv_P0, t_CSI - OrbMech::GETfromMJD(sv_P0.MJD, GETbase));
@@ -2533,4 +2523,64 @@ void RTCC::FMissionRendezvousPlan(VESSEL *chaser, VESSEL *target, SV sv_A0, doub
 
 	t_Ins = t_Insertion;
 	CSI = t_CSI;
+
+	/*
+	//Debug prints
+	SV sv_before, sv_after;
+	MATRIX3 Rot;
+	VECTOR3 DV_LVLH;
+	double tig, r_apo, r_peri, h_apo, h_peri;
+	char Buffer[128], Buffer2[128];
+
+	for (int i = 0; i < 4; i++)
+	{
+		if (i == 0)
+		{
+			sprintf(Buffer, "Phasing");
+			tig = t_TIG;
+			sv_before = sv_Phasing;
+			sv_after = sv_Phasing_apo;
+		}
+		else if (i == 1)
+		{
+			sprintf(Buffer, "Insertion");
+			tig = t_Insertion;
+			sv_before = sv_Insertion;
+			sv_after = sv_Insertion_apo;
+		}
+		else if (i == 2)
+		{
+			sprintf(Buffer, "CSI");
+			tig = t_CSI;
+			sv_before = sv_CSI;
+			sv_after = sv_CSI_apo;
+		}
+		else if (i == 3)
+		{
+			sprintf(Buffer, "CDH");
+			tig = t_CDH;
+			sv_before = sv_CDH;
+			sv_after = sv_CDH_apo;
+		}
+
+		oapiWriteLog(Buffer);
+
+		OrbMech::format_time_HHMMSS(Buffer2, tig);
+		Rot = OrbMech::LVLH_Matrix(sv_before.R, sv_before.V);
+		DV_LVLH = mul(Rot, sv_after.V - sv_before.V) / 0.3048;
+
+		sprintf(Buffer, "TIG %s DV %.1lf %.1lf %.1lf", Buffer2, DV_LVLH.x, DV_LVLH.y, DV_LVLH.z);
+		oapiWriteLog(Buffer);
+		OrbMech::periapo(sv_after.R, sv_after.V, OrbMech::mu_Moon, r_apo, r_peri);
+		h_apo = r_apo - BZLAND.rad[0];
+		h_peri = r_peri - BZLAND.rad[0];
+		sprintf(Buffer, "HA %.2lf HP %.2lf", h_apo / 1852.0, h_peri / 1852.0);
+		oapiWriteLog(Buffer);
+	}
+
+	oapiWriteLog("TPI");
+	OrbMech::format_time_HHMMSS(Buffer2, t_TPI);
+	sprintf(Buffer, "TIG %s", Buffer2);
+	oapiWriteLog(Buffer);
+	*/
 }
