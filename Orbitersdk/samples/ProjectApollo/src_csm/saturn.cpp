@@ -264,6 +264,11 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	BatteryManifoldPressureSensor("Battery-Manifold-Pressure-Sensor", 0.0, 20.0),
 	WasteH2ODumpTempSensor("Waste-H2O-Dump-Temp-Sensor", 0.0, 100.0),
 	UrineDumpTempSensor("Urine-Dump-Temp-Sensor", 0.0, 100.0),
+	SPSFuelLineTempSensor("SPS-Fuel-Line-Temp-Sensor", 0.0, 200.0),
+	SPSOxidizerLineTempSensor("SPS-Oxidizer-Line-Temp-Sensor", 0.0, 200.0),
+	SPSFuelFeedTempSensor("SPS-Fuel-Feed-Temp-Sensor", 0.0, 200.0),
+	SPSOxidizerFeedTempSensor("SPS-Oxidizer-Feed-Temp-Sensor", 0.0, 200.0),
+	SPSEngVlvTempSensor("SPS-Engine-Valve-Temp-Sensor", 0.0, 200.0),
 	CueCards(vcidx, this, 11),
 	Failures(this)
 #pragma warning ( pop ) // disable:4355
@@ -2382,6 +2387,10 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 		else if (!strnicmp (line, "JOYSTICK_RTT", 12)) {
 			sscanf(line + 12, "%i", &i);
 			rhc_thctoggle = (i != 0);
+		}
+		else if (!strnicmp(line, "VIBRATIONVISUALIZED", 19)) {
+			sscanf(line + 19, "%i", &i);
+			VibrationVisualizationMultiplier = 0.01*(double)i;
 		}
 		else if (papiReadScenario_double(line, "LMDSCFUEL", LMDescentFuelMassKg)); 
 		else if (papiReadScenario_double(line, "LMASCFUEL", LMAscentFuelMassKg));
