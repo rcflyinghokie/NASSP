@@ -147,7 +147,18 @@ public:
 	/// \brief Read the operating mode.
 	///
 	int GetMode(void);
-// by Jordan end
+
+	///
+	/// Is Master Alarm Lit
+	///
+	bool IsMasterAlarmLit(void);
+
+	///
+	/// Is Master Alarm Light Enabled
+	///
+	bool IsMasterAlarmLightEnabled(void);
+
+	// by Jordan end
 
 	///
 	/// \brief Set the CWS source.

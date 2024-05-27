@@ -791,3 +791,16 @@ void CSMCautionWarningSystem::LoadState(FILEHANDLE scn)
 	}
 }
 
+//
+// Code by Jordan
+//
+int CSMCautionWarningSystem::GetGNLampState() {
+	return GNLampState;
+}
+bool CSMCautionWarningSystem::GetGNPGNSAlarm() {
+	return GNPGNSAlarm;
+}
+
+int CSMCautionWarningSystem::GetSource() {
+	return Source;
+}

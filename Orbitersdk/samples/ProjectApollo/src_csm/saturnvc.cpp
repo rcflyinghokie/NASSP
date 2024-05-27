@@ -1768,49 +1768,60 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 		SetVCLighting(vcidx, NumericLights_P100, MAT_LIGHT, (Panel100NumericRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, NUM_ELEMENTS(NumericLights_P100));
 
 		// DSKY and Caution & Warning Lights
-		std::vector<DWORD> DSKY_CW_Lights;
+		std::vector<DWORD> DSKY_Lights;
 		std::vector<DWORD> DSKY_LEB_Lights;
 		std::vector<DWORD> CW_Lights;
 
 		bool LightStates[CWS_LIGHTS_PER_PANEL * 2];
 
-		// Clear Lights list...
+		// Clear Lightstate list...
 		for (int i = 0; i < CWS_LIGHTS_PER_PANEL * 2; i++) {
 			LightStates[i] = false;
 		}
 		// ... and Read them
 		cws.GetCWLightStates(LightStates);
 
-		if (dsky.UplinkLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_UPLINK_ACTY);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_UPLINK_ACTY); }
-		if (dsky.NoAttLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_NO_ATT); 			DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_NO_ATT); }
-		if (dsky.StbyLit())			{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_STBY);			DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_STBY); }
-		if (dsky.KbRelLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_KEY_REL);			DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_KEY_REL); }
-		if (dsky.OprErrLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_OPR_ERR);			DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_OPR_ERR); }
-		if (dsky.TempLit())			{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_TEMP);			DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_TEMP); }
-		if (dsky.GimbalLockLit())	{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_GIMBAL_LOCK);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_GIMBAL_LOCK); }
-		if (dsky.ProgLit())			{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_PROG);			DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_PROG); }
-		if (dsky.RestartLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_RESTART);			DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_RESTART); }
-		if (dsky.TrackerLit())		{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_Lights_TRACKER);			DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_TRACKER); }
+		if (dsky.UplinkLit())		{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_UPLINK_ACTY);	DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_UPLINK_ACTY); }
+		if (dsky.NoAttLit())		{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_NO_ATT); 		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_NO_ATT); }
+		if (dsky.StbyLit())			{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_STBY);			DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_STBY); }
+		if (dsky.KbRelLit())		{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_KEY_REL);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_KEY_REL); }
+		if (dsky.OprErrLit())		{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_OPR_ERR);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_OPR_ERR); }
+		if (dsky.TempLit())			{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_TEMP);			DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_TEMP); }
+		if (dsky.GimbalLockLit())	{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_GIMBAL_LOCK);	DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_GIMBAL_LOCK); }
+		if (dsky.ProgLit())			{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_PROG);			DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_PROG); }
+		if (dsky.RestartLit())		{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_RESTART);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_RESTART); }
+		if (dsky.TrackerLit())		{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_TRACKER);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_TRACKER); }
 
 		for (int i = 0; i < CWS_LIGHTS_PER_PANEL; i++)
 		{
 			if ((LightStates[i]  && cws.GetMode() != CWS_MODE_ACK) || cws.GetCWLightTest() == CWS_TEST_LIGHTS_LEFT)
 			{
-				CW_Lights.push_back(IntegralLights_CW_Lights[i]);
+				if (cws.GetSource() != CWS_SOURCE_CM) {
+					CW_Lights.push_back(IntegralLights_CW_Lights[i]);
+				}
+				else
+				{
+					CW_Lights.push_back(IntegralLights_CW_Lights_CM[i]);
+				}
 			}
 		 }
-
 
 		for (int i = 0; i < CWS_LIGHTS_PER_PANEL; i++)
 		{
 			if ((LightStates[i+30]  && cws.GetMode() != CWS_MODE_ACK) || cws.GetCWLightTest() == CWS_TEST_LIGHTS_RIGHT)
 			{
-				CW_Lights.push_back(IntegralLights_CW_Lights[i+30]);
+				if (cws.GetSource() != CWS_SOURCE_CM) {
+					CW_Lights.push_back(IntegralLights_CW_Lights[i + 30]);
+				}
+				else
+				{
+					CW_Lights.push_back(IntegralLights_CW_Lights_CM[i+30]);
+				}
 			}
 		 }
 
 		SetVCLighting(vcidx, &CW_Lights[0], MAT_LIGHT, 1, CW_Lights.size()); 	//Caution & Warning Lights
-		SetVCLighting(vcidx, &DSKY_CW_Lights[0], MAT_LIGHT, (IntegralRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, DSKY_CW_Lights.size());
+		SetVCLighting(vcidx, &DSKY_Lights[0], MAT_LIGHT, (IntegralRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, DSKY_Lights.size());
 		SetVCLighting(vcidx, &DSKY_LEB_Lights[0], MAT_LIGHT, (Panel100IntegralRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, DSKY_LEB_Lights.size());
 
 		// Full Lit Lights
@@ -1820,16 +1831,35 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 
 		if (secs.LiftoffLightPower()) {
 			if (!secs.NoAutoAbortLightPower()){
-				SetVCLighting(vcidx, FullLitLiftOffNoAutoAbort, MAT_LIGHT, 1, 1);
+				SetVCLighting(vcidx, VC_MAT_CMVC_LIFT_OFF_NO_ABORT, MAT_LIGHT, 1, 1);
 			}
 		}
 
-		if (cws.GetMasterAlarm() || cws.GetCWLightTest() == CWS_TEST_LIGHTS_LEFT) {
-			SetVCLighting(vcidx, FullLitMasterAlarm1, MAT_LIGHT, 1.0, 1);
+		if ((cws.GetMasterAlarm() || cws.GetCWLightTest() == CWS_TEST_LIGHTS_LEFT) && cws.GetMode() != CWS_MODE_BOOST) {
+			SetVCLighting(vcidx, VC_MAT_MASTERALARM_PANEL1, MAT_LIGHT, 1.0, 1);
 		}
 		
 		if (cws.GetMasterAlarm() || cws.GetCWLightTest() == CWS_TEST_LIGHTS_RIGHT) {
-			SetVCLighting(vcidx, FullLitMasterAlarm2, MAT_LIGHT, 1.0, 1);
+			SetVCLighting(vcidx, VC_MAT_MASTERALARM_PANEL2, MAT_LIGHT, 1.0, 1);
+		}
+
+		if (cws.GetMasterAlarm()) {
+			SetVCLighting(vcidx, VC_MAT_MasterAlarm_LEB, MAT_LIGHT, 1.0, 1);
+		}
+
+		// LEB Conditional Lamps
+		if (cws.IsPowered() && cws.GetGNLampState() != 0) {
+			if (cws.GetGNLampState() == 2 || cws.GetGNPGNSAlarm()) {
+				SetVCLighting(vcidx, VC_MAT_LEB_ConditionLamp_PGNS, MAT_LIGHT, Panel100IntegralRotarySwitch.GetOutput(), 1);
+			}
+
+			if (cws.GetGNLampState() == 2 || LightStates[CSM_CWS_CMC_LIGHT + 30 - CWS_LIGHTS_PER_PANEL]){
+				SetVCLighting(vcidx, VC_MAT_LEB_ConditionLamp_CMC, MAT_LIGHT, Panel100IntegralRotarySwitch.GetOutput(), 1);
+			}
+
+			if (cws.GetGNLampState() == 2 || LightStates[CSM_CWS_ISS_LIGHT + 30 - CWS_LIGHTS_PER_PANEL]){
+				SetVCLighting(vcidx, VC_MAT_LEB_ConditionLamp_ISS, MAT_LIGHT, Panel100IntegralRotarySwitch.GetOutput(), 1);
+			}
 		}
 
 		if (SI_EngineNum > 5){
@@ -1851,13 +1881,25 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 			if (ENGIND[4]) SetVCLighting(vcidx, LVEngine_5_5, MAT_LIGHT, 1.0, NUM_ELEMENTS(LVEngine_5_5));
 		}
 
+		if (LVRateLight) {
+			SetVCLighting(vcidx, VC_MAT_LV_ENG_LV_RATE, MAT_LIGHT, 1.0, 1);
+		}
+
+		if (LVGuidLight) {
+			SetVCLighting(vcidx, VC_MAT_LV_ENG_LV_GUID, MAT_LIGHT, 1.0, 1);
+		}
+
+		if (SaturnType == SAT_SATURNV) {
+			if (SIISepState) {
+				SetVCLighting(vcidx, VC_MAT_LV_ENG_SII_SEP, MAT_LIGHT, 1.0, 1);
+			}
+		}
+
 		switch (ems.LiftVectLight()) {
 		case 1:
-//			oapiBlt(surf, srf[SRF_VC_EMS_LIGHTS], 0, 0, 82*TexMul, 21*TexMul, 30*TexMul, 11*TexMul);
 			SetVCLighting(vcidx, LiftVectorIndUp, MAT_LIGHT, 1.0, 1);
 			break;
 		case -1:
-//			oapiBlt(surf, srf[SRF_VC_EMS_LIGHTS], 0, 63*TexMul, 82*TexMul, 21*TexMul, 30*TexMul, 11*TexMul);
 			SetVCLighting(vcidx, LiftVectorIndDown, MAT_LIGHT, 1.0, 1);
 			break;
 		case 0:
@@ -2069,14 +2111,10 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 		return true;
 
 	case AID_VC_CWS_LIGHTS_LEFT:
-		// TODO Test by Jordan
-		SetVCLighting(vcidx, IntegralLights_CW_LeftLights, MAT_LIGHT,1, NUM_ELEMENTS(IntegralLights_CW_LeftLights));
 		cws.RenderLights(surf, srf[SRF_VC_CW_LIGHTS], true, TexMul);
 		return true;
 
 	case AID_VC_CWS_LIGHTS_RIGHT:
-		// TODO Test by Jordan
-		SetVCLighting(vcidx, IntegralLights_CW_RightLights, MAT_LIGHT, 1, NUM_ELEMENTS(IntegralLights_CW_RightLights));
 		cws.RenderLights(surf, srf[SRF_VC_CW_LIGHTS], false, TexMul);
 		return true;
 
@@ -5160,6 +5198,8 @@ void Saturn::SetVCLighting(UINT meshidx, DWORD *matList, int EmissionMode, doubl
 
 	for (int i = 0; i < cnt; i++)
 	{
+		if (matList[i] == VC_MAT_NONE) continue;
+
 		gcCore *pCore = gcGetCoreInterface();
 		if (pCore) {
 			FVECTOR4 value;
@@ -5174,5 +5214,32 @@ void Saturn::SetVCLighting(UINT meshidx, DWORD *matList, int EmissionMode, doubl
 #endif
 		}
 	}
-    //sprintf(oapiDebugString(), "%d %lf", m, state);
+}
+
+#ifdef _OPENORBITER
+void Saturn::SetVCLighting(UINT meshidx, int material, MatProp EmissionMode, double state, int cnt)
+#else
+void Saturn::SetVCLighting(UINT meshidx, int material, int EmissionMode, double state, int cnt)
+#endif
+
+{
+	if (vis == NULL || meshidx == -1) return;
+	DEVMESHHANDLE hMesh = GetDevMesh(vis, meshidx);
+
+    if (!hMesh)
+        return;
+
+	gcCore *pCore = gcGetCoreInterface();
+	if (pCore) {
+		FVECTOR4 value;
+		value.r = (float)state;
+		value.g = (float)state;
+		value.b = (float)state;
+		value.a = 1.0;
+#ifdef _OPENORBITER
+		pCore->SetMeshMaterial(hMesh, material, EmissionMode, &value);
+#else
+		pCore->MeshMaterial(hMesh, material, EmissionMode, &value, true);
+#endif
+	}
 }

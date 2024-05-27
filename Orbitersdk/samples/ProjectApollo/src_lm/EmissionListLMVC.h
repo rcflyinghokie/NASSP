@@ -53,7 +53,7 @@ DWORD FloodLights_LMVC[] = {
 	VC_MAT_MasterAlarm2,
 	VC_MAT_DEDA_Display,
 	VC_MAT_DEDA_Light,
-
+	VC_MAT_Ordeal_Knob,
 
 	// DSKY Lights
 	VC_MAT_DSKY_LIGHTS_NO_ATT,
@@ -102,8 +102,11 @@ DWORD FloodLights_LMVC[] = {
 
 	//Tapemeter Lights
 	VC_MAT_Panel1_Tapemeter_AltAltRate,
-	VC_MAT_Panel1_Tapemeter_RangeRangeRate
+	VC_MAT_Panel1_Tapemeter_RangeRangeRate,
+	VC_MAT_RCS_HE_PRESS_x10,
 
+// Caution & Warning Lights Frame
+	VC_MAT_CW_Frame
 };
 
 DWORD IntegralLights_LMVC[] = {
@@ -111,6 +114,7 @@ DWORD IntegralLights_LMVC[] = {
 	VC_MAT_LMVC_t,
 	VC_MAT_Rotary_LM_t,
 	VC_MAT_FDAI_LM_t,
+	VC_MAT_Ordeal_Knob
 //	VC_MAT_FDAI_ball_LM_t
 };
 
@@ -217,6 +221,11 @@ DWORD Tapemeter_AltAltRate[] = {
 DWORD Tapemeter_RangeRangeRate[] = {
 	VC_MAT_Panel1_Tapemeter_RangeRangeRate
 };
+
+DWORD RCS_Helium_Press_x10[] = {
+	VC_MAT_RCS_HE_PRESS_x10
+};
+
 
 // External Meshes
 DWORD FloodLights_XPointer_Shades[] = {
