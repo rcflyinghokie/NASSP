@@ -539,6 +539,11 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	BatteryManifoldPressureSensor("Battery-Manifold-Pressure-Sensor", 0.0, 20.0),
 	WasteH2ODumpTempSensor("Waste-H2O-Dump-Temp-Sensor", 0.0, 100.0),
 	UrineDumpTempSensor("Urine-Dump-Temp-Sensor", 0.0, 100.0),
+	SPSFuelLineTempSensor("SPS-Fuel-Line-Temp-Sensor", 0.0, 200.0),
+	SPSOxidizerLineTempSensor("SPS-Oxidizer-Line-Temp-Sensor", 0.0, 200.0),
+	SPSFuelFeedTempSensor("SPS-Fuel-Feed-Temp-Sensor", 0.0, 200.0),
+	SPSOxidizerFeedTempSensor("SPS-Oxidizer-Feed-Temp-Sensor", 0.0, 200.0),
+	SPSEngVlvTempSensor("SPS-Engine-Valve-Temp-Sensor", 0.0, 200.0),
 	vesim(&cbCSMVesim, this),
 	CueCards(vcidx, this, 11),
 	Failures(this)
@@ -2674,6 +2679,10 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 			int tmp;
 			sscanf(line + 14, "%i", &tmp);
 			enableVESIM = (tmp!= 0);
+		}
+		else if (!strnicmp(line, "VIBRATIONVISUALIZED", 19)) {
+			sscanf(line + 19, "%i", &i);
+			VibrationVisualizationMultiplier = 0.01*(double)i;
 		}
 		else if (papiReadScenario_double(line, "LMDSCFUEL", LMDescentFuelMassKg)); 
 		else if (papiReadScenario_double(line, "LMASCFUEL", LMAscentFuelMassKg));
