@@ -1611,11 +1611,16 @@ protected:
 
 	ToggleSwitch   CabinFan1Switch;
 	ToggleSwitch   CabinFan2Switch;
+
+	//can these heater switches be removed here?
 	ThreePosSwitch H2Heater1Switch;
 	ThreePosSwitch H2Heater2Switch;
 	ThreePosSwitch O2Heater1Switch;
-	ThreePosSwitch O2Heater2Switch;	
-	ToggleSwitch   O2PressIndSwitch;	
+	ThreePosSwitch O2Heater2Switch;
+
+	ToggleSwitch   O2PressIndSwitch;
+
+	//can these fan switches be removed here?
 	ThreePosSwitch H2Fan1Switch; 
 	ThreePosSwitch H2Fan2Switch; 
 	ThreePosSwitch O2Fan1Switch; 
