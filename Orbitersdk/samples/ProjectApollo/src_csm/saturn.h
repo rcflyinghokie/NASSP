@@ -4065,7 +4065,6 @@ protected:
 	void KillDist(OBJHANDLE &hvessel, double kill_dist = 5000.0);
 	void KillAlt(OBJHANDLE &hvessel,double altVS);
 	void RedrawPanel_MFDButton (SURFHANDLE surf, int mfd, int side, int xoffset, int yoffset, int ydist);
-	void CryoTankHeaterSwitchToggled(TwoPositionSwitch *s, int *pump);
 	void FuelCellHeaterSwitchToggled(TwoPositionSwitch *s, int *pump);
 	void FuelCellReactantsSwitchToggled(TwoPositionSwitch *s, CircuitBrakerSwitch *cb, CircuitBrakerSwitch *cbLatch, int *h2open, int *o2open);
 	void MousePanel_MFDButton(int mfd, int event, int mx, int my);

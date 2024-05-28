@@ -120,7 +120,9 @@ void CryoPressureSwitch::SystemTimestep(double simdt)
 	}
 
 	else
+	{
 		PressureSwitch1 = false;
+	}
 
 	//Tank 2 Pressure Switch
 	if (tank2->space.Press < (lowpress / PSI))
@@ -134,10 +136,77 @@ void CryoPressureSwitch::SystemTimestep(double simdt)
 	}
 
 	else
+	{
 		PressureSwitch2 = false;
+	}
 
+	//Tank 1 Heater Control
+	//AUTO
+	if (PressureSwitch1 == true && PressureSwitch2 == true && htrswitch1->GetState() == THREEPOSSWITCH_UP)
+	{
+		heater1->SetPumpOn();
+	}
+	//ON
+	else if (htrswitch1->GetState() == THREEPOSSWITCH_DOWN)
+	{
+		heater1->SetPumpOn();
+	}
+	//OFF
+	else
+	{
+		heater1->SetPumpOff();
+	}
 
+	//Tank 2 Heater Control
+	//AUTO
+	if (PressureSwitch1 == true && PressureSwitch2 == true && htrswitch2->GetState() == THREEPOSSWITCH_UP)
+	{
+		heater2->SetPumpOn();
+	}
+	//ON
+	else if (htrswitch1->GetState() == THREEPOSSWITCH_DOWN)
+	{
+		heater2->SetPumpOn();
+	}
+	//OFF
+	else
+	{
+		heater2->SetPumpOff();
+	}
 
+	//Tank 1 Fan Control
+	//AUTO
+	if (IsACBus1Powered() && PressureSwitch1 == true && PressureSwitch2 == true && fanswitch1->GetState() == THREEPOSSWITCH_UP)
+	{
+		fan1->SetPumpOn();
+	}
+	//ON
+	else if (fanswitch1->GetState() == THREEPOSSWITCH_DOWN)
+	{
+		fan1->SetPumpOn();
+	}
+	//OFF
+	else
+	{
+		fan1->SetPumpOff();
+	}
+
+	//Tank 2 Fan Control
+	//AUTO
+	if (IsACBus2Powered() && PressureSwitch1 == true && PressureSwitch2 == true && fanswitch2->GetState() == THREEPOSSWITCH_UP)
+	{
+		fan2->SetPumpOn();
+	}
+	//ON
+	else if (fanswitch1->GetState() == THREEPOSSWITCH_DOWN)
+	{
+		fan2->SetPumpOn();
+	}
+	//OFF
+	else
+	{
+		fan2->SetPumpOff();
+	}
 
 }
 

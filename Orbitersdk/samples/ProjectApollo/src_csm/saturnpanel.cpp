@@ -3837,40 +3837,7 @@ bool Saturn::clbkPanelMouseEvent (int id, int event, int mx, int my)
 
 void Saturn::PanelSwitchToggled(TwoPositionSwitch *s) {
 
-	if (s == &O2Heater1Switch) {
-		CryoTankHeaterSwitchToggled(s,
-			(int*) Panelsdk.GetPointerByString("ELECTRIC:O2TANK1HEATER:PUMP"));
-
-	} else if (s == &O2Heater2Switch) {
-		CryoTankHeaterSwitchToggled(s,
-			(int*) Panelsdk.GetPointerByString("ELECTRIC:O2TANK2HEATER:PUMP"));
-
-	} else if (s == &H2Heater1Switch) {
-		CryoTankHeaterSwitchToggled(s,
-			(int*) Panelsdk.GetPointerByString("ELECTRIC:H2TANK1HEATER:PUMP"));
-
-	} else if (s == &H2Heater2Switch) {
-		CryoTankHeaterSwitchToggled(s,
-			(int*) Panelsdk.GetPointerByString("ELECTRIC:H2TANK2HEATER:PUMP"));
-
-	} else if (s == &O2Fan1Switch) {
-		CryoTankHeaterSwitchToggled(s,
-			(int*) Panelsdk.GetPointerByString("ELECTRIC:O2TANK1FAN:PUMP"));
-
-	} else if (s == &O2Fan2Switch) {
-		CryoTankHeaterSwitchToggled(s,
-			(int*) Panelsdk.GetPointerByString("ELECTRIC:O2TANK2FAN:PUMP"));
-
-	} else if (s == &H2Fan1Switch) {
-		CryoTankHeaterSwitchToggled(s,
-			(int*) Panelsdk.GetPointerByString("ELECTRIC:H2TANK1FAN:PUMP"));
-
-	} else if (s == &H2Fan2Switch) {
-		CryoTankHeaterSwitchToggled(s,
-			(int*) Panelsdk.GetPointerByString("ELECTRIC:H2TANK2FAN:PUMP"));
-
-
-	} else if (s == &FuelCellRadiators1Switch) {
+	if (s == &FuelCellRadiators1Switch) {
 		if (FuelCell1RadCB.IsPowered()) {
 			if (FuelCellRadiators1Switch.IsUp())
 				FuelCellCoolingBypass(1, false);
@@ -4170,16 +4137,6 @@ void Saturn::PanelRotationalSwitchChanged(RotationalSwitch *s) {
 			SecEcsRadiatorExchanger2->SetPumpOn();
 		}
 	}
-}
-
-void Saturn::CryoTankHeaterSwitchToggled(TwoPositionSwitch *s, int *pump) {
-
-	if (s->IsUp())
-		*pump = SP_PUMP_AUTO;
-	else if (s->IsCenter())
-		*pump = SP_PUMP_OFF;
-	else if (s->IsDown())
-		*pump = SP_PUMP_ON;
 }
 
 void Saturn::FuelCellHeaterSwitchToggled(TwoPositionSwitch *s, int *pump) {

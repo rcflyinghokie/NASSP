@@ -26,7 +26,7 @@ See http://nassp.sourceforge.net/license/ for more details.
 
 class Saturn;
 
-/// This class simulates the cryo pressure switches in the CSM.
+/// This class simulates the cryo pressure switches and controls for cryo fans and heaters in the CSM.
 class CryoPressureSwitch
 {
 public:
