@@ -52,6 +52,7 @@
 #include "csm_telecom.h"
 #include "sps.h"
 #include "ecs.h"
+#include "eps.h"
 #include "csmrcs.h"
 #include "ORDEAL.h"
 #include "MechanicalAccelerometer.h"
@@ -3615,15 +3616,15 @@ protected:
 	ElectricLight* SpotLight;
 	ElectricLight* RndzLight;
 
-	// O2 tanks.
+	// O2 Tanks
 	h_Tank *O2Tanks[2];
-	Boiler *O2TanksHeaters[2];
-	Boiler *O2TanksFans[2];
+	Boiler *O2TankHeaters[2];
+	Boiler *O2TankFans[2];
 
-	// H2 tanks
+	// H2 Tanks
 	h_Tank *H2Tanks[2];
-	Boiler *H2TanksHeaters[2];
-	Boiler *H2TanksFans[2];
+	Boiler *H2TankHeaters[2];
+	Boiler *H2TankFans[2];
 
 	//Tunnel Pipe
 	h_Pipe *CMTunnel;
@@ -3711,6 +3712,10 @@ protected:
 	// GSE
 	Pump* GSEGlycolPump;
 	h_Radiator* GSERadiator;
+
+	// EPS
+	CryoPressureSwitch H2CryoPressureSwitch;
+	CryoPressureSwitch O2CryoPressureSwitch;
 
 	// ECS
 	h_Tank *CSMCabin;

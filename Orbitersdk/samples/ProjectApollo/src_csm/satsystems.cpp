@@ -145,34 +145,52 @@ void Saturn::SystemsInit() {
 	SpotLight = (ElectricLight *)Panelsdk.GetPointerByString("ELECTRIC:SPOTLIGHT");
 	RndzLight = (ElectricLight *)Panelsdk.GetPointerByString("ELECTRIC:RNDZLIGHT");
 
-
 	//
-	// O2 tanks.
-	//
-
-	O2Tanks[0] = (h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2TANK1");
-	O2Tanks[1] = (h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:O2TANK2");
-
-	O2TanksHeaters[0] = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:O2TANK1HEATER");
-	O2TanksHeaters[0]->WireTo(&CryogenicO2HTR1CB);
-	O2TanksHeaters[1] = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:O2TANK2HEATER");
-	O2TanksHeaters[1]->WireTo(&CryogenicO2HTR2CB);
-	O2TanksFans[0] = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:O2TANK1FAN");
-	O2TanksFans[1] = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:O2TANK2FAN");
-
-	//
-	// H2 tanks.
+	// EPS/Cryo devices
 	//
 
-	H2Tanks[0] = (h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:H2TANK1");
-	H2Tanks[1] = (h_Tank *) Panelsdk.GetPointerByString("HYDRAULIC:H2TANK2");
+	// H2 Tanks
 
-	H2TanksHeaters[0] = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:H2TANK1HEATER");
-	H2TanksHeaters[0]->WireTo(&CryogenicH2HTR1CB);
-	H2TanksHeaters[1] = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:H2TANK2HEATER");
-	H2TanksHeaters[1]->WireTo(&CryogenicH2HTR2CB);
-	H2TanksFans[0] = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:H2TANK1FAN");
-	H2TanksFans[1] = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:H2TANK2FAN");
+	H2TankHeaters[0] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK1HEATER");
+	H2TankHeaters[0]->WireTo(&CryogenicH2HTR1CB);
+	H2TankHeaters[1] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK2HEATER");
+	H2TankHeaters[1]->WireTo(&CryogenicH2HTR2CB);
+	H2TankFans[0] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK1FAN");
+	H2TankFans[1] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK2FAN");
+
+	H2CryoPressureSwitch.Init(this, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:H2TANK1"),
+		(h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:H2TANK2"),
+		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK1HEATER"),
+		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK2HEATER"),
+		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK1FAN"),
+		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK2FAN"),
+		&H2Heater1Switch, &H2Heater2Switch, &H2Fan1Switch, &H2Fan1Switch,
+		&CryogenicH2HTR1CB, &CryogenicH2HTR2CB,
+		&CryogenicFanMotorsAC1ACB, &CryogenicFanMotorsAC1BCB, &CryogenicFanMotorsAC1CCB,
+		&CryogenicFanMotorsAC2ACB, &CryogenicFanMotorsAC2BCB, &CryogenicFanMotorsAC2CCB,
+		225, 260);
+	
+	// O2 Tanks
+
+	O2TankHeaters[0] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK1HEATER");
+	O2TankHeaters[0]->WireTo(&CryogenicO2HTR1CB);
+	O2TankHeaters[1] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK2HEATER");
+	O2TankHeaters[1]->WireTo(&CryogenicO2HTR2CB);
+	O2TankFans[0] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK1FAN");
+	O2TankFans[1] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK2FAN");
+	
+	O2CryoPressureSwitch.Init(this, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:O2TANK1"),
+		(h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:O2TANK2"),
+		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK1HEATER"),
+		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK2HEATER"),
+		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK1FAN"),
+		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK2FAN"),
+		&O2Heater1Switch, &O2Heater2Switch, &O2Fan1Switch, &O2Fan1Switch,
+		&CryogenicO2HTR1CB, &CryogenicO2HTR2CB,
+		&CryogenicFanMotorsAC1ACB, &CryogenicFanMotorsAC1BCB, &CryogenicFanMotorsAC1CCB,
+		&CryogenicFanMotorsAC2ACB, &CryogenicFanMotorsAC2BCB, &CryogenicFanMotorsAC2CCB,
+		865, 935);
+
 
 	//
 	// Entry and landing batteries.
@@ -2739,14 +2757,14 @@ void Saturn::CheckSMSystemsState()
 		FuelCellHeaters[2]->WireTo(NULL);
 
 		// Cryo heaters/fans
-		O2TanksHeaters[0]->WireTo(NULL);
-		O2TanksHeaters[1]->WireTo(NULL);
-		H2TanksHeaters[0]->WireTo(NULL);
-		H2TanksHeaters[1]->WireTo(NULL);
-		O2TanksFans[0]->WireTo(NULL);
-		O2TanksFans[1]->WireTo(NULL);
-		H2TanksFans[0]->WireTo(NULL);
-		H2TanksFans[1]->WireTo(NULL);
+		O2TankHeaters[0]->WireTo(NULL);
+		O2TankHeaters[1]->WireTo(NULL);
+		H2TankHeaters[0]->WireTo(NULL);
+		H2TankHeaters[1]->WireTo(NULL);
+		O2TankFans[0]->WireTo(NULL);
+		O2TankFans[1]->WireTo(NULL);
+		H2TankFans[0]->WireTo(NULL);
+		H2TankFans[1]->WireTo(NULL);
 		
 		// SPS Line Heaters
 		SPSFuelSumpTankHeaterA->WireTo(NULL);
@@ -2891,10 +2909,10 @@ bool Saturn::CabinFan1Active()
 
 {
 	//
-	// For now, if any power breaker is enabled, then run the fans.
+	// Three phase motor, needs all three phases powered
 	//
 
-	bool PowerFan1 = (ECSCabinFanAC1ACircuitBraker.Voltage() > SP_MIN_ACVOLTAGE) || (ECSCabinFanAC1BCircuitBraker.Voltage() > SP_MIN_ACVOLTAGE) || (ECSCabinFanAC1CCircuitBraker.Voltage() > SP_MIN_ACVOLTAGE);
+	bool PowerFan1 = (ECSCabinFanAC1ACircuitBraker.Voltage() > SP_MIN_ACVOLTAGE) && (ECSCabinFanAC1BCircuitBraker.Voltage() > SP_MIN_ACVOLTAGE) && (ECSCabinFanAC1CCircuitBraker.Voltage() > SP_MIN_ACVOLTAGE);
 
 	return (CabinFan1Switch.IsUp() && PowerFan1);
 }
@@ -2903,10 +2921,10 @@ bool Saturn::CabinFan2Active()
 
 {
 	//
-	// For now, if any power breaker is enabled, then run the fans.
+	// Three phase motor, needs all three phases powered
 	//
 
-	bool PowerFan2 = (ECSCabinFanAC2ACircuitBraker.Voltage() > SP_MIN_ACVOLTAGE) || (ECSCabinFanAC2BCircuitBraker.Voltage() > SP_MIN_ACVOLTAGE) || (ECSCabinFanAC2CCircuitBraker.Voltage() > SP_MIN_ACVOLTAGE);
+	bool PowerFan2 = (ECSCabinFanAC2ACircuitBraker.Voltage() > SP_MIN_ACVOLTAGE) && (ECSCabinFanAC2BCircuitBraker.Voltage() > SP_MIN_ACVOLTAGE) && (ECSCabinFanAC2CCircuitBraker.Voltage() > SP_MIN_ACVOLTAGE);
 
 	return (CabinFan2Switch.IsUp() && PowerFan2);
 }
