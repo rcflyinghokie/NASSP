@@ -207,23 +207,22 @@ void CryoPressureSwitch::SystemTimestep(double simdt)
 	{
 		fan2->SetPumpOff();
 	}
-
 }
 
-void CryoPressureSwitch::LoadState(char *line)
+void CryoPressureSwitch::LoadState(char *line, int strlen)
 {
 	int i, j;
 
-	sscanf(line + 15, "%i %i", &i, &j);
+	sscanf(line + strlen + 1, "%i %i", &i, &j);
 
 	PressureSwitch1 = (i != 0);
 	PressureSwitch2 = (j != 0);
 }
 
-void CryoPressureSwitch::SaveState(FILEHANDLE scn)
+void CryoPressureSwitch::SaveState(FILEHANDLE scn, char *name_str)
 {
 	char buffer[100];
 
 	sprintf(buffer, "%d %d", PressureSwitch1, PressureSwitch2);
-	oapiWriteScenario_string(scn, "CRYOPRESSSWITCH", buffer);
+	oapiWriteScenario_string(scn, name_str, buffer);
 }

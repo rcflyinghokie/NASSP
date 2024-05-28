@@ -1602,7 +1602,7 @@ protected:
 	GuardedPushSwitch MainDeploySwitch;
 	GuardedPushSwitch CmRcsHeDumpSwitch;
 
-	ToggleSwitch	    EDSSwitch;				
+	ToggleSwitch EDSSwitch;				
 	GuardedToggleSwitch CsmLmFinalSep1Switch;
 	GuardedToggleSwitch CsmLmFinalSep2Switch;
 	GuardedToggleSwitch CmSmSep1Switch;
@@ -1618,13 +1618,13 @@ protected:
 	ThreePosSwitch O2Heater1Switch;
 	ThreePosSwitch O2Heater2Switch;
 
-	ToggleSwitch   O2PressIndSwitch;
-
 	//can these fan switches be removed here?
 	ThreePosSwitch H2Fan1Switch; 
 	ThreePosSwitch H2Fan2Switch; 
 	ThreePosSwitch O2Fan1Switch; 
-	ThreePosSwitch O2Fan2Switch; 
+	ThreePosSwitch O2Fan2Switch;
+
+	ToggleSwitch   O2PressIndSwitch;
 
 	IndicatorSwitch FuelCellPhIndicator;
 	IndicatorSwitch FuelCellRadTempIndicator;

@@ -40,8 +40,8 @@ public:
 	bool IsACBus1Powered();
 	bool IsACBus2Powered();
 	void SystemTimestep(double simdt);
-	void SaveState(FILEHANDLE scn);
-	void LoadState(char *line);
+	void SaveState(FILEHANDLE scn, char *name_str);
+	void LoadState(char *line, int strlen);
 
 protected:
 	Saturn *saturn;
