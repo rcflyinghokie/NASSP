@@ -4838,6 +4838,7 @@ public:
 		int IntBuffer[2];
 		VECTOR3 VectorBuffer[2];
 		MATRIX3 MatrixBuffer;
+		std::string LastMEDMessage;
 	} RTCCONLINEMON;
 
 	//AEG

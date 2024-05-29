@@ -27051,6 +27051,9 @@ bool RTCC::GMGMED(char *str)
 		GMSPRINT("GMGMED", 51);
 	}
 
+	//Save for MFD display
+	RTCCONLINEMON.LastMEDMessage = RTCCONLINEMON.TextBuffer[0];
+
 	return true;
 }
 

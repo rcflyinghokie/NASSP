@@ -10624,6 +10624,9 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			Text(skp, MEDInputData.table[i].Data.c_str(), 10, (i + 3), 22, 22);
 			Text(skp, MEDInputData.table[i].Unit.c_str(), 18, (i + 3), 22, 22);
 		}
+
+		skp->SetTextAlign(oapi::Sketchpad::CENTER);
+		Text(skp, GC->rtcc->RTCCONLINEMON.LastMEDMessage, 1, 21, 2, 22);
 	}
 	return true;
 }
