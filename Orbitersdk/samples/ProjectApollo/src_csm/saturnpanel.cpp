@@ -705,12 +705,6 @@ bool Saturn::clbkLoadPanel (int id) {
 		return false;
 
 	//
-	// No panel in engineering camera view.
-	//
-	if (viewpos == SATVIEW_ENG1 || viewpos == SATVIEW_ENG2 || viewpos == SATVIEW_ENG3)
-		return false;
-
-	//
 	// Get screen info from the configurator
 	//
 	int renderViewportIsWideScreen = GetRenderViewportIsWideScreen();
