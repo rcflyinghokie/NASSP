@@ -149,6 +149,9 @@ void Saturn::SystemsInit() {
 	// EPS/Cryo devices
 	//
 
+	CryoFanMotorsTank1Feeder.WireToBuses(&CryogenicFanMotorsAC1ACB, &CryogenicFanMotorsAC1BCB, &CryogenicFanMotorsAC1CCB);
+	CryoFanMotorsTank2Feeder.WireToBuses(&CryogenicFanMotorsAC2ACB, &CryogenicFanMotorsAC2BCB, &CryogenicFanMotorsAC2CCB);
+
 	// H2 Tanks
 
 	H2TankHeaters[0] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK1HEATER");
@@ -156,7 +159,9 @@ void Saturn::SystemsInit() {
 	H2TankHeaters[1] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK2HEATER");
 	H2TankHeaters[1]->WireTo(&CryogenicH2HTR2CB);
 	H2TankFans[0] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK1FAN");
+	H2TankFans[0]->WireTo(&CryoFanMotorsTank1Feeder);
 	H2TankFans[1] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK2FAN");
+	H2TankFans[1]->WireTo(&CryoFanMotorsTank2Feeder);
 
 	H2CryoPressureSwitch.Init(this, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:H2TANK1"),
 		(h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:H2TANK2"),
@@ -164,10 +169,9 @@ void Saturn::SystemsInit() {
 		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK2HEATER"),
 		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK1FAN"),
 		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK2FAN"),
-		&H2Heater1Switch, &H2Heater2Switch, &H2Fan1Switch, &H2Fan1Switch,
+		&H2Heater1Switch, &H2Heater2Switch, &H2Fan1Switch, &H2Fan2Switch,
 		&CryogenicH2HTR1CB, &CryogenicH2HTR2CB,
-		&CryogenicFanMotorsAC1ACB, &CryogenicFanMotorsAC1BCB, &CryogenicFanMotorsAC1CCB,
-		&CryogenicFanMotorsAC2ACB, &CryogenicFanMotorsAC2BCB, &CryogenicFanMotorsAC2CCB,
+		&MainBusAController, &MainBusBController,
 		225, 260);
 	
 	// O2 Tanks
@@ -177,7 +181,9 @@ void Saturn::SystemsInit() {
 	O2TankHeaters[1] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK2HEATER");
 	O2TankHeaters[1]->WireTo(&CryogenicO2HTR2CB);
 	O2TankFans[0] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK1FAN");
+	O2TankFans[0]->WireTo(&CryoFanMotorsTank1Feeder);
 	O2TankFans[1] = (Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK2FAN");
+	O2TankFans[1]->WireTo(&CryoFanMotorsTank2Feeder);
 	
 	O2CryoPressureSwitch.Init(this, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:O2TANK1"),
 		(h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:O2TANK2"),
@@ -185,10 +191,9 @@ void Saturn::SystemsInit() {
 		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK2HEATER"),
 		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK1FAN"),
 		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK2FAN"),
-		&O2Heater1Switch, &O2Heater2Switch, &O2Fan1Switch, &O2Fan1Switch,
+		&O2Heater1Switch, &O2Heater2Switch, &O2Fan1Switch, &O2Fan2Switch,
 		&CryogenicO2HTR1CB, &CryogenicO2HTR2CB,
-		&CryogenicFanMotorsAC1ACB, &CryogenicFanMotorsAC1BCB, &CryogenicFanMotorsAC1CCB,
-		&CryogenicFanMotorsAC2ACB, &CryogenicFanMotorsAC2BCB, &CryogenicFanMotorsAC2CCB,
+		&MainBusAController, &MainBusBController,
 		865, 935);
 
 
@@ -1796,6 +1801,8 @@ void Saturn::SystemsInternalTimestep(double simdt)
 		MissionTimer306Display.SystemTimestep(tFactor);
 		EventTimerDisplay.SystemTimestep(tFactor);
 		EventTimer306Display.SystemTimestep(tFactor);
+		H2CryoPressureSwitch.SystemTimestep(tFactor);
+		O2CryoPressureSwitch.SystemTimestep(tFactor);
 
 		simdt -= tFactor;
 		tFactor = __min(mintFactor, simdt);

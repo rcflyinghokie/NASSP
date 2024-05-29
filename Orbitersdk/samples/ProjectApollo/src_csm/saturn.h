@@ -3714,6 +3714,9 @@ protected:
 	PowerMerge SwitchPower;
 	PowerMerge GaugePower;
 
+	ThreePhasePowerMerge CryoFanMotorsTank1Feeder;
+	ThreePhasePowerMerge CryoFanMotorsTank2Feeder;
+
 	// GSE
 	Pump* GSEGlycolPump;
 	h_Radiator* GSERadiator;
