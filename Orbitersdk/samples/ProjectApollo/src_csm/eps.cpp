@@ -42,7 +42,10 @@ CryoPressureSwitch::CryoPressureSwitch()
 	highpress = 0;
 	PressureSwitch1 = false;
 	PressureSwitch2 = false;
-
+	dcbreaker1 = NULL;
+	dcbreaker2 = NULL;
+	dcacontrol = NULL;
+	dcbcontrol = NULL;
 }
 
 CryoPressureSwitch::~CryoPressureSwitch() 
@@ -52,8 +55,7 @@ CryoPressureSwitch::~CryoPressureSwitch()
 
 void CryoPressureSwitch::Init(Saturn *s, h_Tank *tnk1, h_Tank *tnk2, Boiler *htr1, Boiler *htr2, Boiler *fn1, Boiler *fn2, 
 	ThreePosSwitch *htrsw1, ThreePosSwitch *htrsw2, ThreePosSwitch *fnsw1, ThreePosSwitch *fnsw2,
-	CircuitBrakerSwitch *dc1, CircuitBrakerSwitch *dc2, 
-	CircuitBrakerSwitch *ac1a, CircuitBrakerSwitch *ac1b, CircuitBrakerSwitch *ac1c, CircuitBrakerSwitch *ac2a, CircuitBrakerSwitch *ac2b, CircuitBrakerSwitch *ac2c,
+	CircuitBrakerSwitch *dc1, CircuitBrakerSwitch *dc2, DCBusController* dcacont, DCBusController* dcbcont,
 	double lp, double hp)
 {
 	saturn = s;
@@ -71,37 +73,12 @@ void CryoPressureSwitch::Init(Saturn *s, h_Tank *tnk1, h_Tank *tnk2, Boiler *htr
 
 	dcbreaker1 = dc1;
 	dcbreaker2 = dc2;
-	ac1abreaker = ac1a;
-	ac1bbreaker = ac1b;
-	ac1cbreaker = ac1c;
-	ac2abreaker = ac2a;
-	ac2bbreaker = ac2b;
-	ac2cbreaker = ac2c;
+
+	dcacontrol = dcacont;
+	dcbcontrol = dcbcont;
 
 	lowpress = lp;
 	highpress = hp;
-}
-
-bool CryoPressureSwitch::IsACBus1Powered()
-{
-	if (ac1abreaker->Voltage() > SP_MIN_ACVOLTAGE && ac1bbreaker->Voltage() > SP_MIN_ACVOLTAGE && ac1cbreaker->Voltage() > SP_MIN_ACVOLTAGE)
-	{
-		return true;
-	}
-
-	else
-		return false;
-}
-
-bool CryoPressureSwitch::IsACBus2Powered()
-{
-	if (ac2abreaker->Voltage() > SP_MIN_ACVOLTAGE && ac2bbreaker->Voltage() > SP_MIN_ACVOLTAGE && ac2cbreaker->Voltage() > SP_MIN_ACVOLTAGE)
-	{
-		return true;
-	}
-
-	else
-		return false;
 }
 
 void CryoPressureSwitch::SystemTimestep(double simdt)
@@ -109,35 +86,35 @@ void CryoPressureSwitch::SystemTimestep(double simdt)
 	if (!tank1 || !tank2) return;
 
 	//Tank 1 Pressure Switch
-	if (tank1->space.Press < (lowpress / PSI))
+	if (PressureSwitch1)
 	{
-		PressureSwitch1 = true;
+		if (tank1->space.Press > (highpress / PSI))
+		{
+			PressureSwitch1 = false;
+		}
 	}
-
-	else if (PressureSwitch1 == true && tank1->space.Press >(highpress / PSI))
-	{
-		PressureSwitch1 = false;
-	}
-
 	else
 	{
-		PressureSwitch1 = false;
+		if (tank1->space.Press < (lowpress / PSI))
+		{
+			PressureSwitch1 = true;
+		}
 	}
 
 	//Tank 2 Pressure Switch
-	if (tank2->space.Press < (lowpress / PSI))
+	if (PressureSwitch2)
 	{
-		PressureSwitch2 = true;
+		if (tank2->space.Press > (highpress / PSI))
+		{
+			PressureSwitch2 = false;
+		}
 	}
-
-	else if (PressureSwitch2 == true && tank2->space.Press >(highpress / PSI))
-	{
-		PressureSwitch2 = false;
-	}
-
 	else
 	{
-		PressureSwitch2 = false;
+		if (tank2->space.Press < (lowpress / PSI))
+		{
+			PressureSwitch2 = true;
+		}
 	}
 
 	//Tank 1 Heater Control
@@ -174,9 +151,11 @@ void CryoPressureSwitch::SystemTimestep(double simdt)
 		heater2->SetPumpOff();
 	}
 
+	bool SMBusesPowered = (dcacontrol->IsSMBusPowered() || dcbcontrol->IsSMBusPowered());
+
 	//Tank 1 Fan Control
 	//AUTO
-	if (IsACBus1Powered() && PressureSwitch1 == true && PressureSwitch2 == true && fanswitch1->GetState() == THREEPOSSWITCH_UP)
+	if (SMBusesPowered && PressureSwitch1 == true && PressureSwitch2 == true && fanswitch1->GetState() == THREEPOSSWITCH_UP)
 	{
 		fan1->SetPumpOn();
 	}
@@ -193,12 +172,12 @@ void CryoPressureSwitch::SystemTimestep(double simdt)
 
 	//Tank 2 Fan Control
 	//AUTO
-	if (IsACBus2Powered() && PressureSwitch1 == true && PressureSwitch2 == true && fanswitch2->GetState() == THREEPOSSWITCH_UP)
+	if (SMBusesPowered && PressureSwitch1 == true && PressureSwitch2 == true && fanswitch2->GetState() == THREEPOSSWITCH_UP)
 	{
 		fan2->SetPumpOn();
 	}
 	//ON
-	else if (fanswitch1->GetState() == THREEPOSSWITCH_DOWN)
+	else if (fanswitch2->GetState() == THREEPOSSWITCH_DOWN)
 	{
 		fan2->SetPumpOn();
 	}
