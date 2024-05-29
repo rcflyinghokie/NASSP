@@ -2241,7 +2241,7 @@ void Saturn::SetView(double offset, bool update_direction)
 	// 2D panel 
 	// Direction/rotation range is in clbkLoadPanel
 	//
-	else if (InPanel) {
+	if (InPanel) {
 		if (PanelId == SATPANEL_LEFT_RNDZ_WINDOW) {
 			v = _V(-0.605, 1.045, offset - 3.0); // Adjusted to line up with docking target
 
