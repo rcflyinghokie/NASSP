@@ -3717,6 +3717,9 @@ protected:
 	ThreePhasePowerMerge CryoFanMotorsTank1Feeder;
 	ThreePhasePowerMerge CryoFanMotorsTank2Feeder;
 
+	ThreePhasePowerMerge CabinFan1Feeder;
+	ThreePhasePowerMerge CabinFan2Feeder;
+
 	// GSE
 	Pump* GSEGlycolPump;
 	h_Radiator* GSERadiator;

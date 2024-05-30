@@ -42,8 +42,6 @@ CryoPressureSwitch::CryoPressureSwitch()
 	highpress = 0;
 	PressureSwitch1 = false;
 	PressureSwitch2 = false;
-	dcbreaker1 = NULL;
-	dcbreaker2 = NULL;
 	dcacontrol = NULL;
 	dcbcontrol = NULL;
 }
@@ -54,8 +52,7 @@ CryoPressureSwitch::~CryoPressureSwitch()
 }
 
 void CryoPressureSwitch::Init(Saturn *s, h_Tank *tnk1, h_Tank *tnk2, Boiler *htr1, Boiler *htr2, Boiler *fn1, Boiler *fn2, 
-	ThreePosSwitch *htrsw1, ThreePosSwitch *htrsw2, ThreePosSwitch *fnsw1, ThreePosSwitch *fnsw2,
-	CircuitBrakerSwitch *dc1, CircuitBrakerSwitch *dc2, DCBusController* dcacont, DCBusController* dcbcont,
+	ThreePosSwitch *htrsw1, ThreePosSwitch *htrsw2, ThreePosSwitch *fnsw1, ThreePosSwitch *fnsw2, DCBusController* dcacont, DCBusController* dcbcont,
 	double lp, double hp)
 {
 	saturn = s;
@@ -70,9 +67,6 @@ void CryoPressureSwitch::Init(Saturn *s, h_Tank *tnk1, h_Tank *tnk2, Boiler *htr
 	htrswitch2 = htrsw2;
 	fanswitch1 = fnsw1;
 	fanswitch2 = fnsw2;
-
-	dcbreaker1 = dc1;
-	dcbreaker2 = dc2;
 
 	dcacontrol = dcacont;
 	dcbcontrol = dcbcont;

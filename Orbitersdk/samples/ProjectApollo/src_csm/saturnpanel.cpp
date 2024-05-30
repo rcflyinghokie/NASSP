@@ -4265,15 +4265,11 @@ void Saturn::CabinFanSound()
 	//
 
 	if (CabinFan1Switch.IsUp()) {
-		volume += ECSCabinFanAC1ACircuitBraker.Voltage();
-		volume += ECSCabinFanAC1BCircuitBraker.Voltage();
-		volume += ECSCabinFanAC1CCircuitBraker.Voltage();
+		volume = (CabinFan1Feeder.Voltage() * 3);
 	}
 
 	if (CabinFan2Switch.IsUp()) {
-		volume += ECSCabinFanAC2ACircuitBraker.Voltage();
-		volume += ECSCabinFanAC2BCircuitBraker.Voltage();
-		volume += ECSCabinFanAC2CCircuitBraker.Voltage();
+		volume = (CabinFan2Feeder.Voltage() * 3);
 	}
 
 	//

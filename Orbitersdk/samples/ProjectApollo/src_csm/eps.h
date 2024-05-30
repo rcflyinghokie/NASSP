@@ -33,8 +33,8 @@ public:
 	CryoPressureSwitch();
 	virtual ~CryoPressureSwitch();
 	void Init(Saturn *s, h_Tank *tnk1, h_Tank *tnk2, Boiler *htr1, Boiler *htr2, Boiler *fn1, Boiler *fn2,
-		ThreePosSwitch *htrsw1, ThreePosSwitch *htrsw2, ThreePosSwitch *fnsw1, ThreePosSwitch *fnsw2,
-		CircuitBrakerSwitch *dc1, CircuitBrakerSwitch *dc2, DCBusController* dcacont, DCBusController* dcbcont,
+		ThreePosSwitch *htrsw1, ThreePosSwitch *htrsw2, ThreePosSwitch *fnsw1, ThreePosSwitch *fnsw2, 
+		DCBusController* dcacont, DCBusController* dcbcont,
 		double lp, double hp);
 	void SystemTimestep(double simdt);
 	void SaveState(FILEHANDLE scn, char *name_str);
@@ -45,7 +45,6 @@ protected:
 	h_Tank *tank1, *tank2;
 	ThreePosSwitch *htrswitch1, *htrswitch2, *fanswitch1, *fanswitch2;
 	Boiler *heater1, *heater2, *fan1, *fan2;
-	CircuitBrakerSwitch *dcbreaker1, *dcbreaker2;
 	DCBusController *dcacontrol, *dcbcontrol;
 	bool PressureSwitch1;
 	bool PressureSwitch2;

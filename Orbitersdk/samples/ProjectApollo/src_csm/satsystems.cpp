@@ -170,7 +170,6 @@ void Saturn::SystemsInit() {
 		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK1FAN"),
 		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK2FAN"),
 		&H2Heater1Switch, &H2Heater2Switch, &H2Fan1Switch, &H2Fan2Switch,
-		&CryogenicH2HTR1CB, &CryogenicH2HTR2CB,
 		&MainBusAController, &MainBusBController,
 		225, 260);
 	
@@ -192,7 +191,6 @@ void Saturn::SystemsInit() {
 		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK1FAN"),
 		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK2FAN"),
 		&O2Heater1Switch, &O2Heater2Switch, &O2Fan1Switch, &O2Fan2Switch,
-		&CryogenicO2HTR1CB, &CryogenicO2HTR2CB,
 		&MainBusAController, &MainBusBController,
 		865, 935);
 
@@ -348,6 +346,8 @@ void Saturn::SystemsInit() {
 	//
 
 	CSMCabin = (h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:CABIN");
+	CabinFan1Feeder.WireToBuses(&ECSCabinFanAC1ACircuitBraker, &ECSCabinFanAC1BCircuitBraker, &ECSCabinFanAC1CCircuitBraker);
+	CabinFan2Feeder.WireToBuses(&ECSCabinFanAC2ACircuitBraker, &ECSCabinFanAC2BCircuitBraker, &ECSCabinFanAC2CCircuitBraker);
 
 	PrimCabinHeatExchanger = (h_HeatExchanger *) Panelsdk.GetPointerByString("HYDRAULIC:PRIMCABINHEATEXCHANGER");
 	PrimSuitHeatExchanger = (h_HeatExchanger *) Panelsdk.GetPointerByString("HYDRAULIC:PRIMSUITHEATEXCHANGER");
@@ -2641,11 +2641,11 @@ void Saturn::CabinFansSystemTimestep()
 
 	if (CabinFansActive()) {
 		if (CabinFan1Active()) {
-			ACBus1.DrawPower(19.3);
+			CabinFan1Feeder.DrawPower(19.3);
 		}
 
 		if (CabinFan2Active()) {
-			ACBus2.DrawPower(19.3);
+			CabinFan2Feeder.DrawPower(19.3);
 		}
 
 		PrimCabinHeatExchanger->SetPumpAuto();
@@ -2915,11 +2915,7 @@ bool Saturn::CabinFansActive()
 bool Saturn::CabinFan1Active()
 
 {
-	//
-	// Three phase motor, needs all three phases powered
-	//
-
-	bool PowerFan1 = (ECSCabinFanAC1ACircuitBraker.Voltage() > SP_MIN_ACVOLTAGE) && (ECSCabinFanAC1BCircuitBraker.Voltage() > SP_MIN_ACVOLTAGE) && (ECSCabinFanAC1CCircuitBraker.Voltage() > SP_MIN_ACVOLTAGE);
+	bool PowerFan1 = (CabinFan1Feeder.Voltage() > SP_MIN_ACVOLTAGE);
 
 	return (CabinFan1Switch.IsUp() && PowerFan1);
 }
@@ -2927,11 +2923,7 @@ bool Saturn::CabinFan1Active()
 bool Saturn::CabinFan2Active()
 
 {
-	//
-	// Three phase motor, needs all three phases powered
-	//
-
-	bool PowerFan2 = (ECSCabinFanAC2ACircuitBraker.Voltage() > SP_MIN_ACVOLTAGE) && (ECSCabinFanAC2BCircuitBraker.Voltage() > SP_MIN_ACVOLTAGE) && (ECSCabinFanAC2CCircuitBraker.Voltage() > SP_MIN_ACVOLTAGE);
+	bool PowerFan2 = (CabinFan2Feeder.Voltage() > SP_MIN_ACVOLTAGE);
 
 	return (CabinFan2Switch.IsUp() && PowerFan2);
 }
