@@ -171,7 +171,7 @@ void Saturn::SystemsInit() {
 		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:H2TANK2FAN"),
 		&H2Heater1Switch, &H2Heater2Switch, &H2Fan1Switch, &H2Fan2Switch,
 		&MainBusAController, &MainBusBController,
-		225, 260);
+		225.0, 260.0);
 	
 	// O2 Tanks
 
@@ -192,7 +192,7 @@ void Saturn::SystemsInit() {
 		(Boiler *)Panelsdk.GetPointerByString("ELECTRIC:O2TANK2FAN"),
 		&O2Heater1Switch, &O2Heater2Switch, &O2Fan1Switch, &O2Fan2Switch,
 		&MainBusAController, &MainBusBController,
-		865, 935);
+		865.0, 935.0);
 
 
 	//
