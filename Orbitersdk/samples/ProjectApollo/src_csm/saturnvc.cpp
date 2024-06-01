@@ -796,13 +796,6 @@ bool Saturn::clbkLoadVC (int id)
 	//Reset Clip Radius settings
 	SetClipRadius(0.0);
 
-	if ((id >= SATVIEW_ENG1) && (id <= SATVIEW_ENG6))
-	{
-		viewpos = id;
-		SetView(true);
-		return true;
-	}
-
 	// Init the 2D panel switches to fix XRSound not giving us switch clicks if we load directly into the VC.
 	// Calling InitPanel(SATPANEL_MAIN) also works, since that function calls SetSwitches() as well.
 	SetSwitches(SATPANEL_MAIN);	// Use main panel as a placeholder, it doesn't actually matter
@@ -2244,113 +2237,11 @@ void Saturn::SetView(double offset, bool update_direction)
 		ofs_vc.z = ofs_vc.z - 0.15;
 	}
 
-	//
-	// Engineering cameras
-	//
-	if (viewpos >= SATVIEW_ENG1)
-	{
-		VECTOR3 e1 = _V(0, 0, 0), e2 = _V(0, 0, 0), e3 = _V(0, 0, 0), e4 = _V(0, 0, 0), e5 = _V(0, 0, 0), e6 = _V(0, 0, 0);	
-		VECTOR3 v1 = _V(0, 0, 0), v2 = _V(0, 0, 0), v3 = _V(0, 0, 0), v4 = _V(0, 0, 0), v5 = _V(0, 0, 0), v6 = _V(0, 0, 0);
-		VECTOR3 cd;
-
-		//
-		// We really need different cameras for Saturn V and 1b.
-		//
-
-		switch (stage) {
-		case PRELAUNCH_STAGE:
-			e3 = _V(0.0, 7.5, -10.0+STG0O);
-			v3 = _V(0.0, -0.1, -1.0);
-			e4 = _V(7.5, 0.0, -10.0+STG0O);
-			v4 = _V(-0.1, 0.0, -1.0);
-			e5 = _V(0.0, -7.5, -10.0+STG0O);
-			v5 = _V(0.0, 0.1, -1.0);
-			e6 = _V(-7.5, 0.0, -10.0+STG0O);
-			v6 = _V(0.1, 0.0, -1.0);
-			break;
-
-		case LAUNCH_STAGE_ONE:
-			e1 = _V(4.0, 0.0, -39.0+STG0O);
-			v1 = _V(-0.15, 0, 1.0);
-			e2 = _V(3.5, 0.0, -31.0+STG0O);
-			v2 = _V(-0.15, 0, -1.0);
-			e3 = _V(0.0, 7.5, -10.0+STG0O);
-			v3 = _V(0.0, -0.1, -1.0);
-			e4 = _V(7.5, 0.0, -10.0+STG0O);
-			v4 = _V(-0.1, 0.0, -1.0);
-			e5 = _V(0.0, -7.5, -10.0+STG0O);
-			v5 = _V(0.0, 0.1, -1.0);
-			e6 = _V(-7.5, 0.0, -10.0+STG0O);
-			v6 = _V(0.1, 0.0, -1.0);
-			break;
-
-		case LAUNCH_STAGE_TWO:
-		case LAUNCH_STAGE_TWO_ISTG_JET:
-			e2 = _V(3.5, 0.0, -31.0-STG1O);
-			v2 = _V(-0.15, 0, -1.0);
-			e3 = _V(0.0, 7.5, -10.0-STG1O);
-			v3 = _V(0.0, -0.1, -1.0);
-			e4 = _V(7.5, 0.0, -10.0-STG1O);
-			v4 = _V(-0.1, 0.0, -1.0);
-			e5 = _V(0.0, -7.5, -10.0-STG1O);
-			v5 = _V(0.0, 0.1, -1.0);
-			e6 = _V(-7.5, 0.0, -10.0-STG1O);
-			v6 = _V(0.1, 0.0, -1.0);
-			break;
-
-		//
-		// Switch back to commander view if we're past the point where we can
-		// display anything useful.
-		//
-
-		case LAUNCH_STAGE_SIVB:
-			viewpos = SATVIEW_LEFTSEAT;
-			SetView(offset, true);
-			return;
-		}
-
-		switch (viewpos) {
-		case SATVIEW_ENG1:
-			v = e1;
-			cd = v1;
-			break;
-
-		case SATVIEW_ENG2:
-			v = e2;
-			cd = v2;
-			break;
-
-		case SATVIEW_ENG3:
-			v = e3;
-			cd = v3;
-			break;
-
-		case SATVIEW_ENG4:
-			v = e4;
-			cd = v4;
-			break;
-
-		case SATVIEW_ENG5:
-			v = e5;
-			cd = v5;
-			break;
-
-		case SATVIEW_ENG6:
-			v = e6;
-			cd = v6;
-			break;
-		}
-
-		SetCameraRotationRange(0.0, 0.0, 0.0, 0.0);
-		SetCameraDefaultDirection(cd);
-		oapiCameraSetCockpitDir(0,0);
-	}
-
 	// 
 	// 2D panel 
 	// Direction/rotation range is in clbkLoadPanel
 	//
-	else if (InPanel) {
+	if (InPanel) {
 		if (PanelId == SATPANEL_LEFT_RNDZ_WINDOW) {
 			v = _V(-0.605, 1.045, offset - 3.0); // Adjusted to line up with docking target
 
