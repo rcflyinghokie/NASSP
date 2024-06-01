@@ -1571,7 +1571,7 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 		// Get the Caution& Warning Light Status
 		for (int i = 0; i < 5;  i++) {
 			for (int j = 0; j < 8; j++) {
-				if (CWEA.GetCWLightStatus(i, j)==1) { DSKY_CW_Lights.push_back(LMVC_CW_Lights[i][j]); }
+				if (CWEA.GetCWLightStatus(i, j)==1 && CWEA.IsCWPWRLTGPowered() == true) { DSKY_CW_Lights.push_back(LMVC_CW_Lights[i][j]); }
 			}
 		}
 		
@@ -3475,6 +3475,8 @@ void LEM::SetVCLighting(UINT meshidx, DWORD *matList, int EmissionMode, double s
 
 	for (int i = 0; i < cnt; i++)
 	{
+		if (matList[i] == VC_MAT_NONE) continue;
+
 		gcCore *pCore = gcGetCoreInterface();
 		if (pCore) {
 			FVECTOR4 value;
