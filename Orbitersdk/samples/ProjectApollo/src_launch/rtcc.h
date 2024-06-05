@@ -312,19 +312,18 @@ struct AP7ManPADOpt
 
 struct AP11ManPADOpt
 {
-	VESSEL* vessel; //vessel
-	double TIG; //Time of Ignition
-	VECTOR3 dV_LVLH; //Delta V in LVLH coordinates
-	int enginetype = RTCC_ENGINETYPE_CSMSPS; //Engine type used for the maneuver
-	bool HeadsUp; //Orientation during the maneuver
-	MATRIX3 REFSMMAT;//REFSMMAT during the maneuver
-	double sxtstardtime = 0; //time delay for the sextant star check (in case no star is available during the maneuver)
-	int vesseltype = 0; //0=CSM, 1=CSM/LM docked, 2 = LM, 3 = LM/CSM docked
-	bool useSV = false;		//true if state vector is to be used
-	SV RV_MCC;		//State vector as input
-	double R_LLS = OrbMech::R_Moon;	//Landing site radius
-	bool UllageThrusterOpt = true; // false = 2 thrusters, true = 4 thrusters
-	double UllageDT = 0.0;
+	AP11ManPADOpt();
+
+	double TIG;						// Time of Ignition (GET)
+	VECTOR3 dV_LVLH;				// Delta V in LVLH coordinates
+	int enginetype;					// Engine type used for the maneuver
+	bool HeadsUp;					// Orientation during the maneuver
+	MATRIX3 REFSMMAT;				// REFSMMAT during the maneuver
+	double sxtstardtime;			// Time delay for the sextant star check (in case no star is available during the maneuver)
+	EphemerisData RV_MCC;			// State vector as input
+	PLAWDTOutput WeightsTable;		// Table with spacecraft weights
+	bool UllageThrusterOpt;			// Ullage: false = 2 thrusters, true = 4 thrusters
+	double UllageDT;				// Ullage duration, set to 0.0 if no ullage
 };
 
 struct AP11LMManPADOpt
@@ -2477,7 +2476,7 @@ public:
 	void NavCheckPAD(SV sv, AP7NAV &pad, double GET = 0.0);
 	void AGSStateVectorPAD(const AGSSVOpt &opt, AP11AGSSVPAD &pad);
 	void AP11LMManeuverPAD(AP11LMManPADOpt *opt, AP11LMMNV &pad);
-	void AP11ManeuverPAD(AP11ManPADOpt *opt, AP11MNV &pad);
+	void AP11ManeuverPAD(const AP11ManPADOpt &opt, AP11MNV &pad);
 	void AP10CSIPAD(AP10CSIPADOpt *opt, AP10CSI &pad);
 	void CSMDAPUpdate(VESSEL *v, AP10DAPDATA &pad, bool docked);
 	void LMDAPUpdate(VESSEL *v, AP10DAPDATA &pad, bool docked, bool asc = false);
@@ -2495,7 +2494,7 @@ public:
 	void PoweredFlightProcessor(SV sv0, double GET_TIG_imp, int enginetype, double attachedMass, VECTOR3 DV, bool DVIsLVLH, double &GET_TIG, VECTOR3 &dV_LVLH, SV &sv_pre, SV &sv_post, bool agc = true);
 	void PoweredFlightProcessor(SV sv0, double GET_TIG_imp, int enginetype, double attachedMass, VECTOR3 DV, bool DVIsLVLH, double &GET_TIG, VECTOR3 &dV_LVLH, bool agc = true);
 	void PoweredFlightProcessor(EphemerisData sv0, double mass, double GET_TIG_imp, int enginetype, double attachedMass, VECTOR3 DV, bool DVIsLVLH, double &GET_TIG, VECTOR3 &dV_LVLH, bool agc = true);
-	double GetDockedVesselMass(VESSEL *vessel);
+	double GetDockedVesselMass(VESSEL *vessel) const;
 	SV StateVectorCalc(VESSEL *vessel, double SVMJD = 0.0);
 	EphemerisData StateVectorCalcEphem(VESSEL *vessel);
 	SV2 StateVectorCalc2(VESSEL *vessel);
@@ -2654,8 +2653,8 @@ public:
 	double CalcGETBase();
 	double GetGMTBase() { return SystemParameters.GMTBASE; }
 	void SetGMTBase(double gmt) { SystemParameters.GMTBASE = gmt; }
-	double GETfromGMT(double GMT);
-	double GMTfromGET(double GET);
+	double GETfromGMT(double GMT) const;
+	double GMTfromGET(double GET) const;
 	double GetCMCClockZero() { return SystemParameters.MCGZSA * 3600.0; }
 	double GetLGCClockZero() { return SystemParameters.MCGZSL * 3600.0; }
 	double GetIUClockZero() { return SystemParameters.MCGRIC * 3600.0; }
@@ -4938,6 +4937,7 @@ public:
 	void EMGPRINT(std::string source, int i);
 	void EMGPRINT(std::string source, std::vector<std::string> message);
 	void MPTMassUpdate(VESSEL *vessel, MED_M50 &med1, MED_M55 &med2, MED_M49 &med3, bool docked = true);
+	PLAWDTOutput GetWeightsTable(VESSEL *v, bool isCSM, bool isDocked) const;
 	void MPTGetConfigFromString(const std::string &str, std::bitset<4> &cfg);
 	void MPTGetStringFromConfig(const std::bitset<4> &cfg, char *str);
 	MissionPlanTable *GetMPTPointer(int L);
@@ -4954,9 +4954,10 @@ protected:
 	int PMMMCDCallEMSMISS(EphemerisData sv0, double GMTI, EphemerisData &sv1);
 	int PMSVCTAuxVectorFetch(int L, double T_F, EphemerisData &sv);
 	bool MEDTimeInputHHMMSS(std::string vec, double &hours);
-
+public:
 	EphemerisData ConvertSVtoEphemData(SV sv);
 	SV ConvertEphemDatatoSV(EphemerisData sv, double mass = 0.0);
+protected:
 
 	//RTACF Routines
 

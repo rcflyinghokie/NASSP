@@ -3158,68 +3158,46 @@ int ARCore::subThread()
 	break;
 	case 9: //Maneuver PAD
 	{
-		SV sv_A;
+		EphemerisData sv_A;
+		PLAWDTOutput WeightsTable;
 
 		if (GC->MissionPlanningActive)
 		{
 			double GMT = GC->rtcc->GMTfromGET(P30TIG);
 			EphemerisData EPHEM;
-			if (GC->rtcc->EMSFFV(GMT, mptveh, EPHEM))
+			if (GC->rtcc->EMSFFV(GMT, mptveh, sv_A))
 			{
 				Result = DONE;
 				break;
 			}
-			sv_A.R = EPHEM.R;
-			sv_A.V = EPHEM.V;
-			sv_A.MJD = OrbMech::MJDfromGET(EPHEM.GMT, GC->rtcc->GetGMTBase());
-			sv_A.gravref = GC->rtcc->GetGravref(EPHEM.RBI);
 
 			PLAWDTInput pin;
-			PLAWDTOutput pout;
 			pin.T_UP = GMT;
 			pin.TableCode = mptveh;
-			GC->rtcc->PLAWDT(pin, pout);
-
-			if (vesseltype == 0)
-			{
-				sv_A.mass = pout.CSMWeight;
-			}
-			else
-			{
-				sv_A.mass = pout.LMAscWeight + pout.LMDscWeight;
-			}
+			GC->rtcc->PLAWDT(pin, WeightsTable);
 		}
 		else
 		{
-			sv_A = GC->rtcc->StateVectorCalc(vessel);
+			sv_A = GC->rtcc->StateVectorCalcEphem(vessel);
+			WeightsTable = GC->rtcc->GetWeightsTable(vessel, vesseltype == 0, vesselisdocked);
 		}
 
 		if (vesseltype == 0)
 		{
 			AP11ManPADOpt opt;
 
+			opt.TIG = P30TIG;
 			opt.dV_LVLH = dV_LVLH;
 			opt.enginetype = manpadenginetype;
 			opt.HeadsUp = HeadsUp;
 			opt.REFSMMAT = GC->rtcc->EZJGMTX1.data[0].REFSMMAT;
 			opt.sxtstardtime = sxtstardtime;
-			opt.TIG = P30TIG;
-			opt.vessel = vessel;
-			if (vesselisdocked)
-			{
-				opt.vesseltype = 1;
-			}
-			else
-			{
-				opt.vesseltype = 0;
-			}
-			opt.R_LLS = GC->rtcc->BZLAND.rad[RTCC_LMPOS_BEST];
-			opt.useSV = true;
 			opt.RV_MCC = sv_A;
+			opt.WeightsTable = WeightsTable;
 			opt.UllageDT = manpad_ullage_dt;
 			opt.UllageThrusterOpt = manpad_ullage_opt;
 
-			GC->rtcc->AP11ManeuverPAD(&opt, manpad);
+			GC->rtcc->AP11ManeuverPAD(opt, manpad);
 		}
 		else
 		{
@@ -3235,7 +3213,7 @@ int ARCore::subThread()
 			opt.csmlmdocked = !GC->MissionPlanningActive && vesselisdocked;
 			opt.R_LLS = GC->rtcc->BZLAND.rad[RTCC_LMPOS_BEST];
 			opt.useSV = true;
-			opt.RV_MCC = sv_A;
+			opt.RV_MCC = GC->rtcc->ConvertEphemDatatoSV(sv_A, WeightsTable.LMAscWeight + WeightsTable.LMDscWeight);
 
 			GC->rtcc->AP11LMManeuverPAD(&opt, lmmanpad);
 		}
