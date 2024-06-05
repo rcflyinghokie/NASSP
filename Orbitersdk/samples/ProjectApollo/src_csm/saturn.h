@@ -52,6 +52,7 @@
 #include "csm_telecom.h"
 #include "sps.h"
 #include "ecs.h"
+#include "eps.h"
 #include "csmrcs.h"
 #include "ORDEAL.h"
 #include "MechanicalAccelerometer.h"
@@ -1598,7 +1599,7 @@ protected:
 	GuardedPushSwitch MainDeploySwitch;
 	GuardedPushSwitch CmRcsHeDumpSwitch;
 
-	ToggleSwitch	    EDSSwitch;				
+	ToggleSwitch EDSSwitch;				
 	GuardedToggleSwitch CsmLmFinalSep1Switch;
 	GuardedToggleSwitch CsmLmFinalSep2Switch;
 	GuardedToggleSwitch CmSmSep1Switch;
@@ -1607,15 +1608,20 @@ protected:
 
 	ToggleSwitch   CabinFan1Switch;
 	ToggleSwitch   CabinFan2Switch;
+
+	//can these heater switches be removed here?
 	ThreePosSwitch H2Heater1Switch;
 	ThreePosSwitch H2Heater2Switch;
 	ThreePosSwitch O2Heater1Switch;
-	ThreePosSwitch O2Heater2Switch;	
-	ToggleSwitch   O2PressIndSwitch;	
+	ThreePosSwitch O2Heater2Switch;
+
+	//can these fan switches be removed here?
 	ThreePosSwitch H2Fan1Switch; 
 	ThreePosSwitch H2Fan2Switch; 
 	ThreePosSwitch O2Fan1Switch; 
-	ThreePosSwitch O2Fan2Switch; 
+	ThreePosSwitch O2Fan2Switch;
+
+	ToggleSwitch   O2PressIndSwitch;
 
 	IndicatorSwitch FuelCellPhIndicator;
 	IndicatorSwitch FuelCellRadTempIndicator;
@@ -3612,15 +3618,15 @@ protected:
 	ElectricLight* SpotLight;
 	ElectricLight* RndzLight;
 
-	// O2 tanks.
+	// O2 Tanks
 	h_Tank *O2Tanks[2];
-	Boiler *O2TanksHeaters[2];
-	Boiler *O2TanksFans[2];
+	Boiler *O2TankHeaters[2];
+	Boiler *O2TankFans[2];
 
-	// H2 tanks
+	// H2 Tanks
 	h_Tank *H2Tanks[2];
-	Boiler *H2TanksHeaters[2];
-	Boiler *H2TanksFans[2];
+	Boiler *H2TankHeaters[2];
+	Boiler *H2TankFans[2];
 
 	//Tunnel Pipe
 	h_Pipe *CMTunnel;
@@ -3705,9 +3711,19 @@ protected:
 	PowerMerge SwitchPower;
 	PowerMerge GaugePower;
 
+	ThreePhasePowerMerge CryoFanMotorsTank1Feeder;
+	ThreePhasePowerMerge CryoFanMotorsTank2Feeder;
+
+	ThreePhasePowerMerge CabinFan1Feeder;
+	ThreePhasePowerMerge CabinFan2Feeder;
+
 	// GSE
 	Pump* GSEGlycolPump;
 	h_Radiator* GSERadiator;
+
+	// EPS
+	CryoPressureSwitch H2CryoPressureSwitch;
+	CryoPressureSwitch O2CryoPressureSwitch;
 
 	// ECS
 	h_Tank *CSMCabin;
@@ -4057,7 +4073,6 @@ protected:
 	void KillDist(OBJHANDLE &hvessel, double kill_dist = 5000.0);
 	void KillAlt(OBJHANDLE &hvessel,double altVS);
 	void RedrawPanel_MFDButton (SURFHANDLE surf, int mfd, int side, int xoffset, int yoffset, int ydist);
-	void CryoTankHeaterSwitchToggled(TwoPositionSwitch *s, int *pump);
 	void FuelCellHeaterSwitchToggled(TwoPositionSwitch *s, int *pump);
 	void FuelCellReactantsSwitchToggled(TwoPositionSwitch *s, CircuitBrakerSwitch *cb, CircuitBrakerSwitch *cbLatch, int *h2open, int *o2open);
 	void MousePanel_MFDButton(int mfd, int event, int mx, int my);
