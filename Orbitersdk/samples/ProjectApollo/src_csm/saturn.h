@@ -3859,12 +3859,6 @@ protected:
     #define SATVIEW_TUNNEL          8
     #define SATVIEW_LOWER_CENTER    9
     #define SATVIEW_UPPER_CENTER    10
-	#define SATVIEW_ENG1			20
-	#define SATVIEW_ENG2			21
-	#define SATVIEW_ENG3			22
-	#define SATVIEW_ENG4			23
-	#define SATVIEW_ENG5			24
-	#define SATVIEW_ENG6			25
 
 	unsigned int	viewpos;
 
