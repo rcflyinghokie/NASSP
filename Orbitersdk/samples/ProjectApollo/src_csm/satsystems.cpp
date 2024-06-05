@@ -361,7 +361,10 @@ void Saturn::SystemsInit() {
 	SecEcsRadiatorExchanger1 = (h_HeatExchanger *) Panelsdk.GetPointerByString("HYDRAULIC:SECECSRADIATOREXCHANGER1");
 	SecEcsRadiatorExchanger2 = (h_HeatExchanger *) Panelsdk.GetPointerByString("HYDRAULIC:SECECSRADIATOREXCHANGER2");
 
-	PrimGlycolPump = (Pump*)Panelsdk.GetPointerByString("ELECTRIC:PRIMGLYCOLPUMP");
+	PrimGlycolPump1 = (Pump *)Panelsdk.GetPointerByString("ELECTRIC:PRIMGLYCOLPUMP1");
+	PrimGlycolPump2 = (Pump *)Panelsdk.GetPointerByString("ELECTRIC:PRIMGLYCOLPUMP2");
+	GlycolPump1Feeder.WireToBuses(&ECSGlycolPumpsAc1ACircuitBraker, &ECSGlycolPumpsAc1BCircuitBraker, &ECSGlycolPumpsAc1CCircuitBraker);
+	GlycolPump2Feeder.WireToBuses(&ECSGlycolPumpsAc2ACircuitBraker, &ECSGlycolPumpsAc2BCircuitBraker, &ECSGlycolPumpsAc2CCircuitBraker);
 	
 	CabinHeater = (Boiler *) Panelsdk.GetPointerByString("ELECTRIC:CABINHEATER");
 	
@@ -374,6 +377,9 @@ void Saturn::SystemsInit() {
 	SuitCompressor1->WireTo(&SuitCompressor1Switch);
 	SuitCompressor2 = (AtmRegen *) Panelsdk.GetPointerByString("ELECTRIC:SUITCOMPRESSORCO2ABSORBER2");
 	SuitCompressor2->WireTo(&SuitCompressor2Switch);
+
+	SuitCompressor1Feeder.WireToBuses(&SuitCompressorsAc1ACircuitBraker, &SuitCompressorsAc1BCircuitBraker, &SuitCompressorsAc1CCircuitBraker);
+	SuitCompressor2Feeder.WireToBuses(&SuitCompressorsAc2ACircuitBraker, &SuitCompressorsAc2BCircuitBraker, &SuitCompressorsAc2CCircuitBraker);
 
 	eo = (e_object *) Panelsdk.GetPointerByString("ELECTRIC:SECGLYCOLPUMP");
 	eo->WireTo(&SecCoolantLoopPumpSwitch);
@@ -925,7 +931,7 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 
 			case SATSYSTEMS_PRELAUNCH:
 				//Switches off GSE Glycol pump when CSM pump enabled
-				if (PrimGlycolPump->pumping || MissionTime >= -900) {
+				if (PrimGlycolPump1->pumping || PrimGlycolPump2->pumping || MissionTime >= -900) {
 					GSEGlycolPump->SetPumpOff();
 				}
 				//	Should be triggered by the suit compressor, the Mission Time condition is just in case 

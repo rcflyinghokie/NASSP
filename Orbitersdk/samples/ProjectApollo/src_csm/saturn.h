@@ -3720,6 +3720,12 @@ protected:
 	ThreePhasePowerMerge CabinFan1Feeder;
 	ThreePhasePowerMerge CabinFan2Feeder;
 
+	ThreePhasePowerMerge GlycolPump1Feeder;
+	ThreePhasePowerMerge GlycolPump2Feeder;
+
+	ThreePhasePowerMerge SuitCompressor1Feeder;
+	ThreePhasePowerMerge SuitCompressor2Feeder;
+
 	// GSE
 	Pump* GSEGlycolPump;
 	h_Radiator* GSERadiator;
@@ -3740,7 +3746,8 @@ protected:
 	h_HeatExchanger *PrimEcsRadiatorExchanger2;
 	h_HeatExchanger *SecEcsRadiatorExchanger1;
 	h_HeatExchanger *SecEcsRadiatorExchanger2;
-	Pump* PrimGlycolPump;
+	Pump* PrimGlycolPump1;
+	Pump *PrimGlycolPump2;
 	Boiler *CabinHeater;
 	Boiler *PrimECSTestHeater;
 	Boiler *SecECSTestHeater;
