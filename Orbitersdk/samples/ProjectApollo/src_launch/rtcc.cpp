@@ -17932,14 +17932,27 @@ void RTCC::EMMENI(EMMENIInputTable &in)
 	integ.Propagate(in);
 }
 
-int RTCC::EMMXTR(double GMT, double rmag, double vmag, double rtasc, double decl, double fpav, double az, VECTOR3 &R, VECTOR3 &V)
+int RTCC::EMMXTR(double GMT, double rmag, double vmag, double rtasc, double decl, double fpav, double az, int RBI, VECTOR3 &R, VECTOR3 &V)
 {
 	EphemerisData2 sv, sv_out;
+	int in, out;
 
-	OrbMech::adbar_from_rv(rmag, vmag, rtasc + OrbMech::w_Earth*GMT, decl, fpav, az, sv.R, sv.V);
+	if (RBI == BODY_EARTH)
+	{
+		OrbMech::adbar_from_rv(rmag, vmag, rtasc + OrbMech::w_Earth*GMT, decl, fpav, az, sv.R, sv.V);
+		in = RTCC_COORDINATES_ECT;
+		out = RTCC_COORDINATES_ECI;
+	}
+	else
+	{
+		OrbMech::adbar_from_rv(rmag, vmag, rtasc, decl, fpav, az, sv.R, sv.V);
+		in = RTCC_COORDINATES_MCT;
+		out = RTCC_COORDINATES_MCI;
+	}
+	
 	sv.GMT = GMT;
 
-	if (ELVCNV(sv, 1, 0, sv_out))
+	if (ELVCNV(sv, in, out, sv_out))
 	{
 		return 1;
 	}
@@ -19478,7 +19491,7 @@ void RTCC::PMMIEV(int L, double T_L)
 
 	VECTOR3 R, V;
 	double GMT_EOI = T_L + dt_EOI;
-	if (EMMXTR(GMT_EOI, rad_EOI, vel_EOI, lng_EOI, lat_EOI, fpa_EOI + PI05, azi_EOI, R, V))
+	if (EMMXTR(GMT_EOI, rad_EOI, vel_EOI, lng_EOI, lat_EOI, PI05 - fpa_EOI, azi_EOI, BODY_EARTH, R, V))
 	{
 		PMXSPT("PMMIEV", 120);
 		return;
@@ -27038,6 +27051,9 @@ bool RTCC::GMGMED(char *str)
 		GMSPRINT("GMGMED", 51);
 	}
 
+	//Save for MFD display
+	RTCCONLINEMON.LastMEDMessage = RTCCONLINEMON.TextBuffer[0];
+
 	return true;
 }
 
@@ -30323,8 +30339,117 @@ int RTCC::PMMMED(std::string med, std::vector<std::string> data)
 	return 0;
 }
 
+int MEDProcessingEBCDIC(const std::vector<std::string> &data, unsigned i, const std::vector<std::string> &options, unsigned &val, bool usedefault = false, std::string defaulttext = "")
+{
+	//Return value: 0 = no error, 1 = MED input not large enough, 2 = limit check failure
+
+	std::string text;
+
+	//Use default value if MED input is too small
+	if (data.size() <= i)
+	{
+		if (usedefault)
+		{
+			text = defaulttext;
+		}
+		else
+		{
+			return 1;
+		}
+	}
+	else
+	{
+		text = data[i];
+	}
+
+	//Also use default input if blank was input
+	if (usedefault && text == "")
+	{
+		text = defaulttext;
+	}
+
+	//Now search through available options
+	for (unsigned j = 0; j < options.size(); j++)
+	{
+		if (text == options[j])
+		{
+			val = j;
+			return 0;
+		}
+	}
+	return 2;
+}
+
+int MEDProcessingDouble(const std::vector<std::string> &data, unsigned i, double scale, double min, double max, double &val, bool usedefault = false, std::string defaulttext = "")
+{
+	//Return value: 0 = no error, 1 = MED input not large enough, 2 = limit check failure
+
+	std::string text;
+
+	//Use default value if MED input is too small
+	if (data.size() <= i)
+	{
+		if (usedefault)
+		{
+			text = defaulttext;
+		}
+		else
+		{
+			return 1;
+		}
+	}
+	else
+	{
+		text = data[i];
+	}
+
+	//Also use default input if blank was input
+	if (usedefault && text == "")
+	{
+		text = defaulttext;
+	}
+
+	if (sscanf(text.c_str(), "%lf", &val) != 1) return 2;
+
+	if (val < min) return 2;
+	if (val > max) return 2;
+
+	val *= scale;
+	return 0;
+}
+
+int MEDProcessingTime(const std::vector<std::string> &data, unsigned i, double &time)
+{
+	//Return value: 0 = no error, 1 = MED input not large enough, 2 = limit check failure
+
+	if (data.size() <= i) return 1;
+
+	int hh, mm;
+	double ss;
+	bool pos = true;
+
+	if (sscanf(data[i].c_str(), "%d:%d:%lf", &hh, &mm, &ss) != 3)
+	{
+		return 2;
+	}
+	if (data[i][0] == '-')
+	{
+		pos = false;
+		hh = abs(hh);
+	}
+	time = 3600.0*(double)hh + 60.0*(double)mm + ss;
+	if (pos == false)
+	{
+		time = -time;
+	}
+
+	return 0;
+}
+
 int RTCC::GMSMED(std::string med, std::vector<std::string> data)
 {
+	int err;
+
 	//Enter planned or actual liftoff time
 	if (med == "10")
 	{
@@ -31164,7 +31289,176 @@ int RTCC::GMSMED(std::string med, std::vector<std::string> data)
 	//Enter vector
 	else if (med == "13" || med == "14")
 	{
-		//TBD
+		//Vehicle
+		unsigned VEH;
+
+		err = MEDProcessingEBCDIC(data, 0, MHGVNM.tab, VEH);
+		if (err) return err;
+
+		double values[6];
+
+		if (med == "13")
+		{
+			//Velocity
+			err = MEDProcessingDouble(data, 1, 0.3048, 0.0, DBL_MAX, values[0]);
+			if (err) return err;
+
+			//Flight Path Angle
+			err = MEDProcessingDouble(data, 2, RAD, -90.0, 90.0, values[1]);
+			if (err) return err;
+
+			//Azimuth
+			err = MEDProcessingDouble(data, 3, RAD, 0.0, 360.0, values[2]);
+			if (err) return err;
+
+			//Latitude
+			err = MEDProcessingDouble(data, 4, RAD, -90.0, 90.0, values[3]);
+			if (err) return err;
+
+			//Longitude
+			err = MEDProcessingDouble(data, 5, RAD, -180.0, 180.0, values[4]);
+			if (err) return err;
+
+			//Height
+			err = MEDProcessingDouble(data, 6, 1852.0, 0.0, DBL_MAX, values[5]);
+			if (err) return err;
+		}
+		else
+		{
+			//Position X
+			err = MEDProcessingDouble(data, 1, SystemParameters.MCCMCU, -60.0, 60.0, values[0]);
+			if (err) return err;
+
+			//Position Y
+			err = MEDProcessingDouble(data, 2, SystemParameters.MCCMCU, -60.0, 60.0, values[1]);
+			if (err) return err;
+
+			//Position Z
+			err = MEDProcessingDouble(data, 3, SystemParameters.MCCMCU, -60.0, 60.0, values[2]);
+			if (err) return err;
+
+			//Velocity X
+			err = MEDProcessingDouble(data, 4, SystemParameters.MCCMCU / 3600.0, -60.0, 60.0, values[3]);
+			if (err) return err;
+
+			//Velocity Y
+			err = MEDProcessingDouble(data, 5, SystemParameters.MCCMCU / 3600.0, -60.0, 60.0, values[4]);
+			if (err) return err;
+
+			//Velocity Z
+			err = MEDProcessingDouble(data, 6, SystemParameters.MCCMCU / 3600.0, -60.0, 60.0, values[5]);
+			if (err) return err;
+		}
+
+		double get, gmt;
+
+		//Time
+		err = MEDProcessingTime(data, 7, get);
+		if (err) return err;
+
+		gmt = GMTfromGET(get);
+
+		//Live/Static Ephemeris Indicator
+		const std::vector<std::string> EphemIndTable = {"L", "B", "S", "G"};
+		unsigned EphemInd;
+
+		err = MEDProcessingEBCDIC(data, 8, EphemIndTable, EphemInd, true, "L");
+		if (err) return err;
+
+		//Coordinate system indicator and conversion
+		EphemerisData sv;
+
+		sv.GMT = gmt;
+
+		if (med == "13")
+		{
+			double rmag;
+			unsigned coord;
+
+			const std::vector<std::string> CoordSystemIndTable = { "ECT", "MCT" };
+
+			err = MEDProcessingEBCDIC(data, 9, CoordSystemIndTable, coord, true, "ECT");
+			if (err) return err;
+
+			if (coord == 0)
+			{
+				rmag = OrbMech::R_Earth + values[5];
+			}
+			else
+			{
+				rmag = BZLAND.rad[0] + values[5];
+			}
+
+			if (coord == 0)
+			{
+				sv.RBI = BODY_EARTH;
+			}
+			else
+			{
+				sv.RBI = BODY_MOON;
+			}
+
+			EMMXTR(gmt, rmag, values[0], values[4], values[3], PI05 - values[1], values[2], sv.RBI, sv.R, sv.V);
+		}
+		else
+		{
+			EphemerisData2 sv_temp, sv_out;
+			unsigned coord;
+			int in, out;
+
+			const std::vector<std::string> CoordSystemIndTable = { "ECI", "ECT", "MCI", "MCT", "EMP" };
+
+			err = MEDProcessingEBCDIC(data, 9, CoordSystemIndTable, coord, true, "ECT");
+			if (err) return err;
+
+			sv_temp.R = _V(values[0], values[1], values[2]);
+			sv_temp.V = _V(values[3], values[4], values[5]);
+			sv_temp.GMT = gmt;
+
+			in = (int)coord;
+
+			if (in <= 1)
+			{
+				out = RTCC_COORDINATES_ECI;
+			}
+			else
+			{
+				out = RTCC_COORDINATES_MCI;
+			}
+
+			err = ELVCNV(sv_temp, in, out, sv_out);
+			if (err) return 2;
+
+			sv.R = sv_out.R;
+			sv.V = sv_out.V;
+		}
+		
+		//Route to trajectory update
+
+		//Write insertion vector in GZLTRA BLK (56, 62)
+		GZLTRA.GMT_T = sv.GMT;
+		GZLTRA.R_T = sv.R;
+		GZLTRA.V_T = sv.V;
+
+		if (EphemInd != 2)
+		{
+			//ETMSCTRL for trajectory update
+			StateVectorTableEntry sv0;
+
+			if (EphemInd == 0)
+			{
+				sv0.VectorCode = "MED001";
+			}
+			else
+			{
+				sv0.VectorCode = "STAT001";
+			}
+			
+			sv0.LandingSiteIndicator = false;
+			sv0.Vector = sv;
+
+			PMSVCT(4, VEH == 0 ? RTCC_MPT_CSM : RTCC_MPT_LM, sv0);
+		}
 	}
 	//High speed processing control
 	else if (med == "60")
@@ -34921,6 +35215,9 @@ void RTCC::PMMDMT(int L, unsigned man, RTCCNIAuxOutputTable *aux)
 		AEGDataBlock sv_A, sv_P;
 		double INFO[10];
 
+		//Initialize AEG
+		PMMAEGS(aeg.Header, aeg.Data, aeg.Data);
+
 		//Call Apsides Determination Subroutine
 		if (PMMAPD(aeg.Header, aeg.Data, 0, -1, INFO, &sv_A, &sv_P))
 		{
@@ -34940,6 +35237,8 @@ void RTCC::PMMDMT(int L, unsigned man, RTCCNIAuxOutputTable *aux)
 				mptman->h_p = INFO[6] - R_E;
 				//TBD: V_P
 			}
+
+			//Calculate time and longitude of equator crossing
 			double h_an;
 			if (aux->RBI == BODY_EARTH)
 			{
@@ -34954,6 +35253,10 @@ void RTCC::PMMDMT(int L, unsigned man, RTCCNIAuxOutputTable *aux)
 				if (aeg.Data.coe_osc.e < 1.0)
 				{
 					double isg, gsg, hsg;
+
+					aeg.Data.Item8 = 0.0;
+					aeg.Data.Item10 = 0.0;
+
 					PIATSU(aeg.Data, aeg.Data, isg, gsg, hsg);
 					h_an = hsg;
 				}
