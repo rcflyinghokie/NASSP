@@ -294,20 +294,19 @@ struct LambertMan //Data for Lambert targeting
 
 struct AP7ManPADOpt
 {
-	double TIG; //Time of Ignition
-	VECTOR3 dV_LVLH; //Delta V in LVLH coordinates
-	int enginetype = RTCC_ENGINETYPE_CSMSPS; //Engine type used for the maneuver
-	bool HeadsUp; //Orientation during the maneuver
-	MATRIX3 REFSMMAT;//REFSMMAT during the maneuver
-	double sxtstardtime; //time delay for the sextant star check (in case no star is available during the maneuver)
-	double navcheckGET; //Time for the navcheck. 0 = no nav check
-	bool UllageThrusterOpt = true; // false = 2 thrusters, true = 4 thrusters
-	double UllageDT = 0.0;
+	AP7ManPADOpt();
 
-	EphemerisData sv0;		//State vector as input
-	double CSMMass = 0.0;
-	double LMMass = 0.0;
-	double Area = 129.4*0.3048*0.3048; //Valid for CSM and LM
+	double TIG;					// Time of Ignition
+	VECTOR3 dV_LVLH;			// Delta V in LVLH coordinates
+	int enginetype;				// Engine type used for the maneuver
+	bool HeadsUp;				// Orientation during the maneuver
+	MATRIX3 REFSMMAT;			// REFSMMAT during the maneuver
+	double sxtstardtime;		// Time delay for the sextant star check (in case no star is available during the maneuver)
+	double navcheckGET;			// Time for the navcheck. 0 = no nav check
+	EphemerisData sv0;			// State vector as input
+	PLAWDTOutput WeightsTable;	// Table with spacecraft weights
+	bool UllageThrusterOpt;		// false = 2 thrusters, true = 4 thrusters
+	double UllageDT;			// Ullage duration, set to 0.0 if no ullage
 };
 
 struct AP11ManPADOpt
@@ -4857,7 +4856,7 @@ public:
 	double GetTEPHEMFromAGC(agc_t *agc, bool IsCMC);
 
 private:
-	void AP7ManeuverPAD(AP7ManPADOpt *opt, AP7MNV &pad);
+	void AP7ManeuverPAD(const AP7ManPADOpt &opt, AP7MNV &pad);
 	void navcheck(VECTOR3 R, double GMT, int RBI, double &lat, double &lng, double &alt);
 	void AP7BlockData(AP7BLKOpt *opt, AP7BLK &pad);
 	void AP11BlockData(AP11BLKOpt *opt, P37PAD &pad);

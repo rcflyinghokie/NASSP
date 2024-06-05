@@ -278,6 +278,19 @@ bool papiReadConfigFile_CGTable(char *line, char *item, double *WeightTable, VEC
 	return false;
 }
 
+AP7ManPADOpt::AP7ManPADOpt()
+{
+	TIG = 0.0;
+	dV_LVLH = _V(0, 0, 0);
+	enginetype = RTCC_ENGINETYPE_CSMSPS;
+	HeadsUp = false;
+	REFSMMAT = _M(1, 0, 0, 0, 1, 0, 0, 0, 1);
+	sxtstardtime = 0.0;
+	navcheckGET = 0.0;
+	UllageThrusterOpt = true;
+	UllageDT = 0.0;
+}
+
 AP11ManPADOpt::AP11ManPADOpt()
 {
 	TIG = 0.0;
@@ -285,7 +298,7 @@ AP11ManPADOpt::AP11ManPADOpt()
 	enginetype = RTCC_ENGINETYPE_CSMSPS;
 	HeadsUp = false;
 	REFSMMAT = _M(1, 0, 0, 0, 1, 0, 0, 0, 1);
-	sxtstardtime = 0;
+	sxtstardtime = 0.0;
 	UllageThrusterOpt = true;
 	UllageDT = 0.0;
 }
@@ -4414,25 +4427,24 @@ void RTCC::AP11ManeuverPAD(const AP11ManPADOpt &opt, AP11MNV &pad)
 	pad.RTGO = 0;
 }
 
-void RTCC::AP7ManeuverPAD(AP7ManPADOpt *opt, AP7MNV &pad)
+void RTCC::AP7ManeuverPAD(const AP7ManPADOpt &opt, AP7MNV &pad)
 {
 	PMMRKJInputArray integin;
 	int Ierr;
 	RTCCNIAuxOutputTable aux;
 	VECTOR3 IMUangles;
-	double dt, mu, apo, peri, ManPADApo, ManPADPeri, ManPADPTrim, ManPADYTrim, GMT_TIG, TotalMass;
+	double dt, mu, apo, peri, ManPADApo, ManPADPeri, ManPADPTrim, ManPADYTrim, GMT_TIG;
 	double R_E;
 	EphemerisData sv1, sv2;
 
-	GMT_TIG = GMTfromGET(opt->TIG);
-	TotalMass = opt->CSMMass + opt->LMMass;
+	GMT_TIG = GMTfromGET(opt.TIG);
 
 	//Calculate time of ullage on for burn simulation
-	if (opt->enginetype == RTCC_ENGINETYPE_CSMSPS)
+	if (opt.enginetype == RTCC_ENGINETYPE_CSMSPS)
 	{
 		double dt_ullage_overlap;
 
-		if (opt->UllageDT == 0.0)
+		if (opt.UllageDT == 0.0)
 		{
 			dt_ullage_overlap = 0.0;
 		}
@@ -4441,41 +4453,37 @@ void RTCC::AP7ManeuverPAD(AP7ManPADOpt *opt, AP7MNV &pad)
 			dt_ullage_overlap = SystemParameters.MCTSD9;
 		}
 
-		double gmt_bb = GMT_TIG - opt->UllageDT + dt_ullage_overlap; //GMT of burn begin (ullage)
-		dt = gmt_bb - opt->sv0.GMT;
+		double gmt_bb = GMT_TIG - opt.UllageDT + dt_ullage_overlap; //GMT of burn begin (ullage)
+		dt = gmt_bb - opt.sv0.GMT;
 
-		integin.DTU = opt->UllageDT;
+		integin.DTU = opt.UllageDT;
 	}
 	else
 	{
-		dt = GMT_TIG - opt->sv0.GMT;
+		dt = GMT_TIG - opt.sv0.GMT;
 		integin.DTU = 0.0;
 	}
-	sv1 = coast(opt->sv0, dt, TotalMass, opt->Area, 1.0, false);
+	sv1 = coast(opt.sv0, dt, opt.WeightsTable.ConfigWeight, opt.WeightsTable.ConfigArea, opt.WeightsTable.KFactor, false);
 
 	//Settings for burn simulation
 	integin.sv0 = sv1;
-	integin.CAPWT = TotalMass;
+	integin.DENSMULT = opt.WeightsTable.KFactor;
+	integin.A = opt.WeightsTable.ConfigArea;
+	integin.CAPWT = opt.WeightsTable.ConfigWeight;
 	integin.KEPHOP = 0;
 	integin.KAUXOP = true;
-	integin.CSMWT = opt->CSMMass;
-	integin.LMAWT = opt->LMMass;
+	integin.CSMWT = opt.WeightsTable.CSMWeight;
+	integin.LMAWT = opt.WeightsTable.LMAscWeight;
+	integin.LMDWT = opt.WeightsTable.LMDscWeight;
 	integin.MANOP = RTCC_ATTITUDE_PGNS_EXDV;
-	integin.ThrusterCode = opt->enginetype;
-	integin.UllageOption = opt->UllageThrusterOpt;
-	if (opt->LMMass)
-	{
-		integin.IC = 13;
-	}
-	else
-	{
-		integin.IC = 1;
-	}
+	integin.ThrusterCode = opt.enginetype;
+	integin.UllageOption = opt.UllageThrusterOpt;
+	integin.IC = opt.WeightsTable.CC.to_ulong();
 	integin.TVC = 1;
 	integin.KTRIMOP = -1;
 	integin.DOCKANG = 0.0;
-	integin.VG = opt->dV_LVLH;
-	integin.HeadsUpDownInd = opt->HeadsUp;
+	integin.VG = opt.dV_LVLH;
+	integin.HeadsUpDownInd = opt.HeadsUp;
 	integin.ExtDVCoordInd = true;
 
 	//Burn simulation
@@ -4483,14 +4491,14 @@ void RTCC::AP7ManeuverPAD(AP7ManPADOpt *opt, AP7MNV &pad)
 	numin.PMMRKJ();
 
 	//Store PAD data from inputs
-	pad.GETI = opt->TIG;
-	pad.dV = opt->dV_LVLH / 0.3048;
-	pad.Weight = opt->CSMMass / 0.45359237;
+	pad.GETI = opt.TIG;
+	pad.dV = opt.dV_LVLH / 0.3048;
+	pad.Weight = opt.WeightsTable.CSMWeight / 0.45359237;
 
 	//Store PAD data from burn simulation
 	pad.burntime = aux.DT_B;
 	pad.Vc = aux.DV_C / 0.3048;
-	if (opt->enginetype == RTCC_ENGINETYPE_CSMRCSMINUS2 || opt->enginetype == RTCC_ENGINETYPE_CSMRCSMINUS4)
+	if (opt.enginetype == RTCC_ENGINETYPE_CSMRCSMINUS2 || opt.enginetype == RTCC_ENGINETYPE_CSMRCSMINUS4)
 	{
 		pad.Vc = -pad.Vc;
 	}
@@ -4515,9 +4523,9 @@ void RTCC::AP7ManeuverPAD(AP7ManPADOpt *opt, AP7MNV &pad)
 
 	//Attitude
 	VECTOR3 X_P, Y_P, Z_P;
-	X_P = _V(opt->REFSMMAT.m11, opt->REFSMMAT.m12, opt->REFSMMAT.m13);
-	Y_P = _V(opt->REFSMMAT.m21, opt->REFSMMAT.m22, opt->REFSMMAT.m23);
-	Z_P = _V(opt->REFSMMAT.m31, opt->REFSMMAT.m32, opt->REFSMMAT.m33);
+	X_P = _V(opt.REFSMMAT.m11, opt.REFSMMAT.m12, opt.REFSMMAT.m13);
+	Y_P = _V(opt.REFSMMAT.m21, opt.REFSMMAT.m22, opt.REFSMMAT.m23);
+	Z_P = _V(opt.REFSMMAT.m31, opt.REFSMMAT.m32, opt.REFSMMAT.m33);
 
 	double MG, OG, IG, C;
 
@@ -4536,22 +4544,22 @@ void RTCC::AP7ManeuverPAD(AP7ManPADOpt *opt, AP7MNV &pad)
 	}
 
 	IMUangles = _V(OG, IG, MG);
+
 	EphemerisData sv_sxt;
+	sv_sxt = coast(sv1, opt.sxtstardtime, opt.WeightsTable.ConfigWeight, opt.WeightsTable.ConfigArea, opt.WeightsTable.KFactor, false);
 
-	sv_sxt = coast(sv1, opt->sxtstardtime, TotalMass, opt->Area, 1.0, false);
+	OrbMech::checkstar(EZJGSTAR, opt.REFSMMAT, _V(round(IMUangles.x*DEG)*RAD, round(IMUangles.y*DEG)*RAD, round(IMUangles.z*DEG)*RAD), sv_sxt.R, R_E, pad.Star, pad.Trun, pad.Shaft);
 
-	OrbMech::checkstar(EZJGSTAR, opt->REFSMMAT, _V(round(IMUangles.x*DEG)*RAD, round(IMUangles.y*DEG)*RAD, round(IMUangles.z*DEG)*RAD), sv_sxt.R, R_E, pad.Star, pad.Trun, pad.Shaft);
-
-	if (opt->navcheckGET != 0.0)
+	if (opt.navcheckGET != 0.0)
 	{
 		EphemerisData sv_nav;
 		double alt, lat, lng;
 
-		sv_nav = coast(sv1, GMTfromGET(opt->navcheckGET) - sv1.GMT, TotalMass, opt->Area, 1.0, false);
+		sv_nav = coast(sv1, GMTfromGET(opt.navcheckGET) - sv1.GMT, opt.WeightsTable.ConfigWeight, opt.WeightsTable.ConfigArea, opt.WeightsTable.KFactor, false);
 
 		navcheck(sv_nav.R, sv_nav.GMT, sv1.RBI, lat, lng, alt);
 
-		pad.NavChk = opt->navcheckGET;
+		pad.NavChk = opt.navcheckGET;
 		pad.lat = lat*DEG;
 		pad.lng = lng*DEG;
 		pad.alt = alt / 1852;
@@ -4560,7 +4568,7 @@ void RTCC::AP7ManeuverPAD(AP7ManPADOpt *opt, AP7MNV &pad)
 	pad.Att = _V(OrbMech::imulimit(IMUangles.x*DEG), OrbMech::imulimit(IMUangles.y*DEG), OrbMech::imulimit(IMUangles.z*DEG));
 
 	//Trim angles
-	if (opt->enginetype == RTCC_ENGINETYPE_CSMSPS)
+	if (opt.enginetype == RTCC_ENGINETYPE_CSMSPS)
 	{
 		ManPADPTrim = aux.P_G - SystemParameters.MCTSPP;
 		ManPADYTrim = aux.Y_G - SystemParameters.MCTSYP;
