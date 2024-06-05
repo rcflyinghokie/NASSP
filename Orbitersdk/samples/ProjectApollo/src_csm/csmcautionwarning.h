@@ -102,6 +102,12 @@ public:
 
 	void LoadState(FILEHANDLE scn);
 
+	int GetGNLampState();
+
+	bool GetGNPGNSAlarm();
+
+	int GetSource();
+
 protected:
 
 	//
