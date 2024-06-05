@@ -1612,13 +1612,11 @@ protected:
 	ToggleSwitch   CabinFan1Switch;
 	ToggleSwitch   CabinFan2Switch;
 
-	//can these heater switches be removed here?
 	ThreePosSwitch H2Heater1Switch;
 	ThreePosSwitch H2Heater2Switch;
 	ThreePosSwitch O2Heater1Switch;
 	ThreePosSwitch O2Heater2Switch;
 
-	//can these fan switches be removed here?
 	ThreePosSwitch H2Fan1Switch; 
 	ThreePosSwitch H2Fan2Switch; 
 	ThreePosSwitch O2Fan1Switch; 
@@ -3746,7 +3744,7 @@ protected:
 	h_HeatExchanger *PrimEcsRadiatorExchanger2;
 	h_HeatExchanger *SecEcsRadiatorExchanger1;
 	h_HeatExchanger *SecEcsRadiatorExchanger2;
-	Pump* PrimGlycolPump1;
+	Pump *PrimGlycolPump1;
 	Pump *PrimGlycolPump2;
 	Boiler *CabinHeater;
 	Boiler *PrimECSTestHeater;
