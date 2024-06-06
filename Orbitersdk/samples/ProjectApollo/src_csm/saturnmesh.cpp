@@ -1889,13 +1889,6 @@ bool Saturn::clbkLoadGenericCockpit ()
 {
 	TRACESETUP("Saturn::clbkLoadGenericCockpit");
 
-	//
-	// VC-only in engineering camera view.
-	//
-
-	if (viewpos == SATVIEW_ENG1 || viewpos == SATVIEW_ENG2 || viewpos == SATVIEW_ENG3)
-		return false;
-
 	SetCameraRotationRange(0.0, 0.0, 0.0, 0.0);
 	SetCameraDefaultDirection(_V(0.0, 0.0, 1.0));
 	oapiCameraSetCockpitDir(0,0);

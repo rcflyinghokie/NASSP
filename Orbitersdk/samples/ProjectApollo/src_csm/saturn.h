@@ -289,8 +289,8 @@ typedef struct {
 ///
 typedef struct {
 	double chamberPressurePSI;
-	double PropellantLineTempF;
-	double OxidizerLineTempF;
+	double InjectorFlange1TempF;
+	double InjectorFlange2TempF;
 } SPSStatus;
 
 // Vesim input IDs
@@ -3588,9 +3588,15 @@ public:
 	CSMPipeFlowTransducer FCH2FlowSensor1;
 	CSMPipeFlowTransducer FCH2FlowSensor2;
 	CSMPipeFlowTransducer FCH2FlowSensor3;
+	TemperatureTransducer SPSFuelLineTempSensor;
+	TemperatureTransducer SPSOxidizerLineTempSensor;
+	TemperatureTransducer SPSFuelFeedTempSensor;
+	TemperatureTransducer SPSOxidizerFeedTempSensor;
+	TemperatureTransducer SPSEngVlvTempSensor;
 	CSMTankPressTransducer BatteryManifoldPressureSensor;
 	TemperatureTransducer WasteH2ODumpTempSensor;
 	TemperatureTransducer UrineDumpTempSensor;
+
 protected:
 
 	// CM Optics
@@ -3856,12 +3862,6 @@ protected:
     #define SATVIEW_TUNNEL          8
     #define SATVIEW_LOWER_CENTER    9
     #define SATVIEW_UPPER_CENTER    10
-	#define SATVIEW_ENG1			20
-	#define SATVIEW_ENG2			21
-	#define SATVIEW_ENG3			22
-	#define SATVIEW_ENG4			23
-	#define SATVIEW_ENG5			24
-	#define SATVIEW_ENG6			25
 
 	unsigned int	viewpos;
 
@@ -4348,8 +4348,18 @@ protected:
 
 	SPSEngine SPSEngine;
 	SPSPropellantSource SPSPropellant;
-	Boiler *SPSPropellantLineHeaterA;
-	Boiler *SPSPropellantLineHeaterB;
+	Boiler *SPSFuelSumpTankHeaterA;
+	Boiler *SPSFuelSumpTankHeaterB;
+	Boiler *SPSFuelInterfaceFeedHeaterA;
+	Boiler *SPSFuelInterfaceFeedHeaterB;
+	Boiler *SPSFuelBallValveHeaterA;
+	Boiler *SPSFuelBallValveHeaterB;
+	Boiler *SPSOxSumpTankHeaterA;
+	Boiler *SPSOxSumpTankHeaterB;
+	Boiler *SPSOxInterfaceFeedHeaterA;
+	Boiler *SPSOxInterfaceFeedHeaterB;
+	Boiler *SPSOxBallValveHeaterA;
+	Boiler *SPSOxBallValveHeaterB;
 	h_HeatLoad *CMRCSHeat[12];
 
 	//

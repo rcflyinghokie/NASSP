@@ -316,6 +316,7 @@ public:
 	double GSAOSGET, GSLOSGET;
 	int mappage, mapgs;
 	double mapUpdateGET;
+	bool mapUpdatePM; //true = 180°, false = 150°
 
 	//TLCC PAGE
 	int TLCCSolGood;

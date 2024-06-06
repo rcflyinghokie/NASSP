@@ -320,11 +320,11 @@ struct AP10MAPUPDATE
 	double PMGET;	//Time of meridian crossing (150° or 180° W), alternative: AOS without burn
 	double SSGET;	//Time of sunset
 	double SRGET;	//Time of sunrise
-	double LOSGET2;
-	double SSGET2;
-	double PMGET2;
-	double AOSGET2;
-	int type;		//0 = Only LOS/AOS and PM, 1 = Display all parameters, 2 = LOS, AOS with and AOS without LOI
+	double LOSGET2; //Time of LOS for a second rev (type = 3)
+	double SSGET2;  //Time of sunset for a second rev (type = 3)
+	double PMGET2;	//Time of meridian crossing (150° or 180°W) for a second rev (type = 3)
+	double AOSGET2; //Time of AOS for a second rev (type = 3) or taking LOI into account (type = 2) or TEI (type = 5)
+	int type;		//0 = Only LOS/AOS and PM, 1 = Display all parameters, 2 = LOS, AOS with and AOS without LOI, 3 = Like 1 but for two revs, 4 = Like 0 but shows 180° instead of PM, 5 = like 2 but for TEI
 };
 
 // APOLLO 11 LANDMARK TRACKING PAD

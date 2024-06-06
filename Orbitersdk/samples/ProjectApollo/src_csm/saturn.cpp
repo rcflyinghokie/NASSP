@@ -540,6 +540,11 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	BatteryManifoldPressureSensor("Battery-Manifold-Pressure-Sensor", 0.0, 20.0),
 	WasteH2ODumpTempSensor("Waste-H2O-Dump-Temp-Sensor", 0.0, 100.0),
 	UrineDumpTempSensor("Urine-Dump-Temp-Sensor", 0.0, 100.0),
+	SPSFuelLineTempSensor("SPS-Fuel-Line-Temp-Sensor", 0.0, 200.0),
+	SPSOxidizerLineTempSensor("SPS-Oxidizer-Line-Temp-Sensor", 0.0, 200.0),
+	SPSFuelFeedTempSensor("SPS-Fuel-Feed-Temp-Sensor", 0.0, 200.0),
+	SPSOxidizerFeedTempSensor("SPS-Oxidizer-Feed-Temp-Sensor", 0.0, 200.0),
+	SPSEngVlvTempSensor("SPS-Engine-Valve-Temp-Sensor", 0.0, 200.0),
 	vesim(&cbCSMVesim, this),
 	CueCards(vcidx, this, 11),
 	Failures(this)
@@ -3666,59 +3671,6 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 		}
 	}
 
-	//
-	// We only allow this switch in VC mode, as we need to disable the panel when selecting these
-	// cameras.
-	//
-	// For now this is limited to the Saturn V.
-	//
-
-	if (key == OAPI_KEY_1 && down == true && InVC && stage < LAUNCH_STAGE_TWO && stage >= LAUNCH_STAGE_ONE) {
-		clbkLoadVC(SATVIEW_ENG1);
-		return 1;
-	}
-
-	if (key == OAPI_KEY_2 && down == true && InVC && stage < LAUNCH_STAGE_SIVB && stage >= LAUNCH_STAGE_ONE) {
-		clbkLoadVC(SATVIEW_ENG2);
-		return 1;
-	}
-
-	if (key == OAPI_KEY_3 && down == true && InVC && stage < LAUNCH_STAGE_SIVB && stage >= PRELAUNCH_STAGE)
-	{
-		//
-		// Key 3 switches to position 3 by default, then cycles around them.
-		//
-		switch (viewpos)
-		{
-		case SATVIEW_ENG3:
-			viewpos = SATVIEW_ENG4;
-			break;
-
-		case SATVIEW_ENG4:
-			viewpos = SATVIEW_ENG5;
-			break;
-
-		case SATVIEW_ENG5:
-			viewpos = SATVIEW_ENG6;
-			break;
-
-		case SATVIEW_ENG6:
-			viewpos = SATVIEW_ENG3;
-			break;
-
-		default:
-			viewpos = SATVIEW_ENG3;
-			break;
-		}
-		clbkLoadVC(viewpos);
-		return 1;
-	}
-
-	//Load left seat
-	if (key == OAPI_KEY_4 && down == true && InVC) {
-		clbkLoadVC(SATVIEW_LEFTSEAT);
-		return 1;
-	}
 	return 0;
 }
 
