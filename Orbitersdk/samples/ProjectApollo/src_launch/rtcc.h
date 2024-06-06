@@ -313,31 +313,30 @@ struct AP11ManPADOpt
 {
 	AP11ManPADOpt();
 
-	double TIG;						// Time of Ignition (GET)
-	VECTOR3 dV_LVLH;				// Delta V in LVLH coordinates
-	int enginetype;					// Engine type used for the maneuver
-	bool HeadsUp;					// Orientation during the maneuver
-	MATRIX3 REFSMMAT;				// REFSMMAT during the maneuver
-	double sxtstardtime;			// Time delay for the sextant star check (in case no star is available during the maneuver)
-	EphemerisData RV_MCC;			// State vector as input
-	PLAWDTOutput WeightsTable;		// Table with spacecraft weights
-	bool UllageThrusterOpt;			// Ullage: false = 2 thrusters, true = 4 thrusters
-	double UllageDT;				// Ullage duration, set to 0.0 if no ullage
+	double TIG;					// Time of Ignition (GET)
+	VECTOR3 dV_LVLH;			// Delta V in LVLH coordinates
+	int enginetype;				// Engine type used for the maneuver
+	bool HeadsUp;				// Orientation during the maneuver
+	MATRIX3 REFSMMAT;			// REFSMMAT during the maneuver
+	double sxtstardtime;		// Time delay for the sextant star check (in case no star is available during the maneuver)
+	EphemerisData RV_MCC;		// State vector as input
+	PLAWDTOutput WeightsTable;	// Table with spacecraft weights
+	bool UllageThrusterOpt;		// Ullage: false = 2 thrusters, true = 4 thrusters
+	double UllageDT;			// Ullage duration, set to 0.0 if no ullage
 };
 
 struct AP11LMManPADOpt
 {
-	VESSEL* vessel; //vessel
-	double TIG; //Time of Ignition
-	VECTOR3 dV_LVLH; //Delta V in LVLH coordinates
-	int enginetype = RTCC_ENGINETYPE_LMDPS; //Engine type used for the maneuver
-	bool HeadsUp = false; //Orientation during the maneuver
-	MATRIX3 REFSMMAT;//REFSMMAT during the maneuver
-	double sxtstardtime = 0; //time delay for the sextant star check (in case no star is available during the maneuver)
-	bool csmlmdocked = false; //0 = CSM/LM alone, 1 = CSM/LM docked
-	bool useSV = false;		//true if state vector is to be used
-	SV RV_MCC;		//State vector as input
-	double R_LLS = OrbMech::R_Moon;	//Landing site radius
+	AP11LMManPADOpt();
+
+	double TIG;					// Time of Ignition
+	VECTOR3 dV_LVLH;			// Delta V in LVLH coordinates
+	int enginetype;				// Engine type used for the maneuver
+	bool HeadsUp;				// Orientation during the maneuver
+	MATRIX3 REFSMMAT;			// REFSMMAT during the maneuver
+	double sxtstardtime;		// time delay for the sextant star check (in case no star is available during the maneuver)
+	EphemerisData RV_MCC;		// State vector as input
+	PLAWDTOutput WeightsTable;	// Table with spacecraft weights
 };
 
 struct AP10CSIPADOpt
@@ -2464,7 +2463,7 @@ public:
 	MATRIX3 REFSMMATCalc(REFSMMATOpt *opt);
 	void EntryTargeting(EntryOpt *opt, EntryResults *res);//VECTOR3 &dV_LVLH, double &P30TIG, double &latitude, double &longitude, double &GET05G, double &RTGO, double &VIO, double &ReA, int &precision);
 	void BlockDataProcessor(EarthEntryOpt *opt, EntryResults *res);
-	void TranslunarInjectionProcessor(SV2 state);
+	void TranslunarInjectionProcessor(EphemerisData sv, PLAWDTOutput WeightsTable);
 	void TranslunarMidcourseCorrectionProcessor(EphemerisData sv0, double CSMmass, double LMmass);
 	int LunarDescentPlanningProcessor(SV sv);
 	bool GeneralManeuverProcessor(GMPOpt *opt, VECTOR3 &dV_i, double &P30TIG);
@@ -2474,7 +2473,7 @@ public:
 	EphemerisData RotateSVToSOI(EphemerisData2 sv);
 	void NavCheckPAD(SV sv, AP7NAV &pad, double GET = 0.0);
 	void AGSStateVectorPAD(const AGSSVOpt &opt, AP11AGSSVPAD &pad);
-	void AP11LMManeuverPAD(AP11LMManPADOpt *opt, AP11LMMNV &pad);
+	void AP11LMManeuverPAD(const AP11LMManPADOpt &opt, AP11LMMNV &pad);
 	void AP11ManeuverPAD(const AP11ManPADOpt &opt, AP11MNV &pad);
 	void AP10CSIPAD(AP10CSIPADOpt *opt, AP10CSI &pad);
 	void CSMDAPUpdate(VESSEL *v, AP10DAPDATA &pad, bool docked);
@@ -2496,8 +2495,7 @@ public:
 	double GetDockedVesselMass(VESSEL *vessel) const;
 	SV StateVectorCalc(VESSEL *vessel, double SVMJD = 0.0);
 	EphemerisData StateVectorCalcEphem(VESSEL *vessel);
-	SV2 StateVectorCalc2(VESSEL *vessel);
-	SV2 ExecuteManeuver(SV2 sv, double P30TIG, VECTOR3 dV_LVLH, int Thruster);
+	void ExecuteManeuver(EphemerisData sv, PLAWDTOutput WeightsTable_before, double P30TIG, VECTOR3 dV_LVLH, int Thruster, EphemerisData &sv_after, PLAWDTOutput &WeightsTable_after);
 	SV ExecuteManeuver(SV sv, double P30TIG, VECTOR3 dV_LVLH, double attachedMass, int Thruster);
 	SV ExecuteManeuver(SV sv, double P30TIG, VECTOR3 dV_LVLH, double attachedMass, int Thruster, MATRIX3 &Q_Xx, VECTOR3 &V_G);
 	void PMMENS(VECTOR3 R, VECTOR3 V, double dt_pf, double y_s, double theta_PF, double h_bo, double V_H, double V_R, double GMT_LO, VECTOR3 R_LS, VECTOR3 &R_BO, VECTOR3 &V_BO, double &GMT_BO);

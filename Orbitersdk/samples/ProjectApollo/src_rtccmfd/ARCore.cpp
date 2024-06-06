@@ -3203,19 +3203,16 @@ int ARCore::subThread()
 		{
 			AP11LMManPADOpt opt;
 
+			opt.TIG = P30TIG;
 			opt.dV_LVLH = dV_LVLH;
 			opt.enginetype = manpadenginetype;
 			opt.HeadsUp = HeadsUp;
 			opt.REFSMMAT = GC->rtcc->EZJGMTX3.data[0].REFSMMAT;
 			opt.sxtstardtime = sxtstardtime;
-			opt.TIG = P30TIG;
-			opt.vessel = vessel;
-			opt.csmlmdocked = !GC->MissionPlanningActive && vesselisdocked;
-			opt.R_LLS = GC->rtcc->BZLAND.rad[RTCC_LMPOS_BEST];
-			opt.useSV = true;
-			opt.RV_MCC = GC->rtcc->ConvertEphemDatatoSV(sv_A, WeightsTable.LMAscWeight + WeightsTable.LMDscWeight);
+			opt.RV_MCC = sv_A;
+			opt.WeightsTable = WeightsTable;
 
-			GC->rtcc->AP11LMManeuverPAD(&opt, lmmanpad);
+			GC->rtcc->AP11LMManeuverPAD(opt, lmmanpad);
 		}
 
 		Result = DONE;
@@ -3276,11 +3273,13 @@ int ARCore::subThread()
 	break;
 	case 12: //TLI Processor
 	{
-		SV2 state;
+		EphemerisData state;
+		PLAWDTOutput WeightsTable;
 
-		state = GC->rtcc->StateVectorCalc2(vessel);
+		state = GC->rtcc->StateVectorCalcEphem(vessel);
+		WeightsTable = GC->rtcc->GetWeightsTable(vessel, true, false);
 
-		GC->rtcc->TranslunarInjectionProcessor(state);
+		GC->rtcc->TranslunarInjectionProcessor(state, WeightsTable);
 
 		Result = DONE;
 	}

@@ -669,15 +669,15 @@ bool RTCC::CalculationMTP_D(int fcn, LPVOID &pad, char * upString, char * upDesc
 
 		sv0 = StateVectorCalcEphem(calcParams.src); //State vector for uplink
 
-		manopt.csmlmdocked = true;
+		manopt.TIG = TimeofIgnition;
 		manopt.dV_LVLH = DeltaV_LVLH;
 		manopt.enginetype = RTCC_ENGINETYPE_LMDPS;
 		manopt.HeadsUp = false;
 		manopt.REFSMMAT = EZJGMTX3.data[0].REFSMMAT;
-		manopt.TIG = TimeofIgnition;
-		manopt.vessel = calcParams.tgt;
+		manopt.RV_MCC = sv0;
+		manopt.WeightsTable = GetWeightsTable(calcParams.tgt, false, true);
 
-		AP11LMManeuverPAD(&manopt, *form);
+		AP11LMManeuverPAD(manopt, *form);
 		LMDAPUpdate(calcParams.tgt, dappad, true);
 
 		sprintf(form->purpose, "Docked DPS");
@@ -986,14 +986,15 @@ bool RTCC::CalculationMTP_D(int fcn, LPVOID &pad, char * upString, char * upDesc
 		PoweredFlightProcessor(in, GMT_TIG, dV_LVLH);
 		P30TIG = GETfromGMT(GMT_TIG);
 
+		opt.TIG = P30TIG;
 		opt.dV_LVLH = dV_LVLH;
 		opt.enginetype = RTCC_ENGINETYPE_LMDPS;
 		opt.HeadsUp = false;
 		opt.REFSMMAT = GetREFSMMATfromAGC(&mcc->lm->agc.vagc, false);
-		opt.TIG = P30TIG;
-		opt.vessel = calcParams.tgt;
+		opt.RV_MCC = sv1;
+		opt.WeightsTable = GetWeightsTable(calcParams.tgt, false, false);
 
-		AP11LMManeuverPAD(&opt, *form);
+		AP11LMManeuverPAD(opt, *form);
 
 		t_Sep = calcParams.Phasing - 44.5*60.0;
 
@@ -1062,14 +1063,15 @@ bool RTCC::CalculationMTP_D(int fcn, LPVOID &pad, char * upString, char * upDesc
 		ConcentricRendezvousProcessor(opt, res);
 		PoweredFlightProcessor(sv_A, TIG, RTCC_ENGINETYPE_LMDPS, 0.0, res.dV_CDH, true, P30TIG, dV_LVLH);
 
+		manopt.TIG = P30TIG;
 		manopt.dV_LVLH = dV_LVLH;
 		manopt.enginetype = RTCC_ENGINETYPE_LMDPS;
 		manopt.HeadsUp = false;
 		manopt.REFSMMAT = GetREFSMMATfromAGC(&mcc->lm->agc.vagc, false);
-		manopt.TIG = P30TIG;
-		manopt.vessel = calcParams.tgt;
+		manopt.RV_MCC = ConvertSVtoEphemData(sv_A);
+		manopt.WeightsTable = GetWeightsTable(calcParams.tgt, false, false);
 
-		AP11LMManeuverPAD(&manopt, *form);
+		AP11LMManeuverPAD(manopt, *form);
 
 		sprintf(form->purpose, "Insertion");
 	}
@@ -1242,13 +1244,14 @@ bool RTCC::CalculationMTP_D(int fcn, LPVOID &pad, char * upString, char * upDesc
 		TimeofIgnition = P30TIG;
 		DeltaV_LVLH = dV_LVLH;
 
+		opt.TIG = P30TIG;
 		opt.dV_LVLH = dV_LVLH;
 		opt.enginetype = RTCC_ENGINETYPE_LMAPS;
 		opt.REFSMMAT= GetREFSMMATfromAGC(&mcc->lm->agc.vagc, false);
-		opt.TIG = P30TIG;
-		opt.vessel = calcParams.tgt;
+		opt.RV_MCC = ConvertSVtoEphemData(sv0);
+		opt.WeightsTable = GetWeightsTable(calcParams.tgt, false, false);
 
-		AP11LMManeuverPAD(&opt, *form);
+		AP11LMManeuverPAD(opt, *form);
 
 		LMDAPUpdate(calcParams.tgt, dappad, false);
 		sprintf(form->purpose, "APS Depletion");
@@ -1271,13 +1274,14 @@ bool RTCC::CalculationMTP_D(int fcn, LPVOID &pad, char * upString, char * upDesc
 		AP11LMMNV manpad;
 		AP11LMManPADOpt opt;
 
+		opt.TIG = TimeofIgnition;
 		opt.dV_LVLH = DeltaV_LVLH;
 		opt.enginetype = RTCC_ENGINETYPE_LMAPS;
 		opt.REFSMMAT = GetREFSMMATfromAGC(&mcc->lm->agc.vagc, false);
-		opt.TIG = TimeofIgnition;
-		opt.vessel = calcParams.tgt;
+		opt.RV_MCC = StateVectorCalcEphem(calcParams.tgt);
+		opt.WeightsTable = GetWeightsTable(calcParams.tgt, false, false);
 
-		AP11LMManeuverPAD(&opt, manpad);
+		AP11LMManeuverPAD(opt, manpad);
 
 		DockAlignOpt dockopt;
 
