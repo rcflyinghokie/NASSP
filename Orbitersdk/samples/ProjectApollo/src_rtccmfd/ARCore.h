@@ -159,14 +159,15 @@ public:
 	void TLI_PAD();
 	void PDI_PAD();
 	void MapUpdate();
-	void NavCheckPAD();
+	void NavCheckPAD(bool IsCSM);
 	void AP11AbortCoefUplink();
 	void AP12AbortCoefUplink();
 	void DetermineGMPCode();
 	void NodeConvCalc();
 	void SendNodeToSFP();
 	void CalculateTPITime();
-	void GetStateVectorFromAGC(bool csm);
+	agc_t *GetAGCPointer(bool cmc) const;
+	void GetStateVectorFromAGC(bool csm, bool cmc);
 	void GetStateVectorFromIU();
 	void GetStateVectorsFromAGS();
 	void VectorCompareDisplayCalc();

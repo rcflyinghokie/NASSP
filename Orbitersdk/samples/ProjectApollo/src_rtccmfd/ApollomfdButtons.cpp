@@ -386,11 +386,10 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
-		{ "", 0, ' ' },
 
+		{ "Select CSM or LM", 0, 'E' },
 		{ "Calc Map Update", 0, 'C' },
-		{ "", 0, ' ' },
-		{ "", 0, ' ' },
+		{ "Earth or Moon", 0, 'V' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
 		{ "Back to menu", 0, 'B' },
@@ -398,16 +397,16 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 
 	RegisterPage(mnu11, sizeof(mnu11) / sizeof(MFDBUTTONMENU));
 
+	RegisterFunction("VES", OAPI_KEY_P, &ApolloRTCCMFD::CycleCSMOrLMSelection);
 	RegisterFunction("GET", OAPI_KEY_G, &ApolloRTCCMFD::menuSetMapUpdateGET);
 	RegisterFunction("PM", OAPI_KEY_D, &ApolloRTCCMFD::menuCycleMapUpdatePM);
-	RegisterFunction("", OAPI_KEY_M, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_N, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_U, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_A, &ApolloRTCCMFD::menuVoid);
 
+	RegisterFunction("SEL", OAPI_KEY_E, &ApolloRTCCMFD::set_Vessel);
 	RegisterFunction("CLC", OAPI_KEY_C, &ApolloRTCCMFD::menuCalcMapUpdate);
 	RegisterFunction("MOD", OAPI_KEY_V, &ApolloRTCCMFD::menuSwitchMapUpdate);
-	RegisterFunction("", OAPI_KEY_E, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_K, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_L, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("BCK", OAPI_KEY_B, &ApolloRTCCMFD::menuSetPADMenu);
@@ -416,7 +415,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	static const MFDBUTTONMENU mnu12[] =
 	{
 		{ "LOI init page", 0, 'I' },
-		{ "Vector time", 0, 'V' },
+		{ "Vessel or vector time", 0, 'V' },
 		{ "LOI1 apolune", 0, 'A' },
 		{ "LOI1 perilune", 0, 'P' },
 		{ "Max DV for pos soln", 0, 'D' },
@@ -449,11 +448,11 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 
 	static const MFDBUTTONMENU mnu13[] =
 	{
+		{ "Choose CSM", 0, 'E' },
 		{ "T1 guess", 0, 'T' },
 		{ "Landmark Latitude", 0, 'A' },
 		{ "Landmark Longitude", 0, 'O' },
 		{ "Load landing site coordinates", 0, 'D' },
-		{ "", 0, ' ' },
 		{ "", 0, ' ' },
 
 		{ "Calculate PAD", 0, 'C' },
@@ -466,11 +465,11 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 
 	RegisterPage(mnu13, sizeof(mnu13) / sizeof(MFDBUTTONMENU));
 
+	RegisterFunction("CSM", OAPI_KEY_E, &ApolloRTCCMFD::set_CSMVessel);
 	RegisterFunction("TIM", OAPI_KEY_T, &ApolloRTCCMFD::menuSetLmkTime);
 	RegisterFunction("LAT", OAPI_KEY_A, &ApolloRTCCMFD::menuSetLmkLat);
 	RegisterFunction("LNG", OAPI_KEY_O, &ApolloRTCCMFD::menuSetLmkLng);
 	RegisterFunction("LLS", OAPI_KEY_D, &ApolloRTCCMFD::menuLmkUseLandingSite);
-	RegisterFunction("", OAPI_KEY_E, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_F, &ApolloRTCCMFD::menuVoid);
 
 	RegisterFunction("CLC", OAPI_KEY_C, &ApolloRTCCMFD::menuLmkPADCalc);
@@ -517,15 +516,15 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 
 	static const MFDBUTTONMENU mnu15[] =
 	{
+		{ "CSM or LM", 0, 'P' },
 		{ "Pointing body", 0, 'P' },
 		{ "Vessel axis", 0, 'D' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
-		{ "", 0, ' ' },
 
+		{ "Select Vessel", 0, 'T' },
 		{ "Calculate attitude", 0, 'C' },
-		{ "", 0, ' ' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
@@ -534,15 +533,15 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 
 	RegisterPage(mnu15, sizeof(mnu15) / sizeof(MFDBUTTONMENU));
 
+	RegisterFunction("VES", OAPI_KEY_P, &ApolloRTCCMFD::CycleCSMOrLMSelection);
 	RegisterFunction("OPT", OAPI_KEY_G, &ApolloRTCCMFD::cycleVECPOINTOpt);
 	RegisterFunction("BOD", OAPI_KEY_P, &ApolloRTCCMFD::vecbodydialogue);
 	RegisterFunction("DIR", OAPI_KEY_D, &ApolloRTCCMFD::cycleVECDirOpt);
-	RegisterFunction("", OAPI_KEY_V, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_E, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_F, &ApolloRTCCMFD::menuVoid);
 
+	RegisterFunction("SEL", OAPI_KEY_T, &ApolloRTCCMFD::set_Vessel);
 	RegisterFunction("CLC", OAPI_KEY_C, &ApolloRTCCMFD::menuVECPOINTCalc);
-	RegisterFunction("", OAPI_KEY_H, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_I, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_J, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_K, &ApolloRTCCMFD::menuVoid);
@@ -552,8 +551,8 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	static const MFDBUTTONMENU mnu16[] =
 	{
 		{ "Init parameters", 0, 'I' },
-		{ "MPT vehicle", 0, 'V' },
-		{ "MPT vector time", 0, 'T' },
+		{ "Vehicle", 0, 'V' },
+		{ "Vessel or vector time", 0, 'T' },
 		{ "LDPP mode", 0, 'M' },
 		{ "LDPP sequence", 0, 'S' },
 		{ "Desired height", 0, 'H' },
@@ -757,7 +756,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	static const MFDBUTTONMENU mnu22[] =
 	{
 		{ "Maneuver type", 0, 'M' },
-		{ "Vector time", 0, 'V' },
+		{ "Vessel or vector time", 0, 'V' },
 		{ "Ignition time", 0, 'T' },
 		{ "Column for results", 0, 'C' },
 		{ "Docked or undocked", 0, 'D' },
@@ -792,12 +791,12 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	{
 		{ "LLWP Init", 0, 'I' },
 		{ "Chaser vehicle", 0, 'C' },
-		{ "Vector time", 0, 'V' },
+		{ "CSM or vector time", 0, 'V' },
 		{ "Threshold time", 0, 'H' },
 		{ "CSI option", 0, 'S' },
 		{ "CDH option", 0, 'D' },
 
-		{ "Target Vessel", 0, 'T' },
+		{ "", 0, ' ' },
 		{ "TPI option", 0, 'P' },
 		{ "DH option", 0, 'A' },
 		{ "Delta heights", 0, 'E' },
@@ -814,7 +813,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	RegisterFunction("CSI", OAPI_KEY_S, &ApolloRTCCMFD::menuSetLLWPCSIFlag);
 	RegisterFunction("CDH", OAPI_KEY_D, &ApolloRTCCMFD::menuSetLLWPCDHFlag);
 
-	RegisterFunction("TGT", OAPI_KEY_T, &ApolloRTCCMFD::set_target);
+	RegisterFunction("", OAPI_KEY_T, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("TPI", OAPI_KEY_P, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("LLW", OAPI_KEY_A, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("DH", OAPI_KEY_E, &ApolloRTCCMFD::menuSetLLWPDeltaHeights);
@@ -858,15 +857,15 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 
 	static const MFDBUTTONMENU mnu25[] =
 	{
+		{ "Choose vessel type", 0, 'P' },
 		{ "GET of Nav Check", 0, 'G' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
-		{ "", 0, ' ' },
 
+		{ "Select CSM or LM", 0, 'E' },
 		{ "Calculate PAD", 0, 'C' },
-		{ "", 0, ' ' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
@@ -875,15 +874,15 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 
 	RegisterPage(mnu25, sizeof(mnu25) / sizeof(MFDBUTTONMENU));
 
+	RegisterFunction("VES", OAPI_KEY_P, &ApolloRTCCMFD::CycleCSMOrLMSelection);
 	RegisterFunction("GET", OAPI_KEY_G, &ApolloRTCCMFD::menuSetNavCheckGET);
-	RegisterFunction("", OAPI_KEY_J, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_F, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_D, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_E, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_T, &ApolloRTCCMFD::menuVoid);
 
+	RegisterFunction("SEL", OAPI_KEY_E, &ApolloRTCCMFD::set_Vessel);
 	RegisterFunction("CLC", OAPI_KEY_C, &ApolloRTCCMFD::menuNavCheckPADCalc);
-	RegisterFunction("", OAPI_KEY_V, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_O, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_H, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_U, &ApolloRTCCMFD::menuVoid);

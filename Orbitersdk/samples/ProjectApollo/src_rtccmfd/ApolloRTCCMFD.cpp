@@ -6207,7 +6207,6 @@ void ApolloRTCCMFD::menuUpdateLiftoffTime()
 {
 	bool UpdateLiftoffTimeInput(void *id, char *str, void *data);
 	oapiOpenInputBox("Update RTCC liftoff time from CMC or LGC. Choose CMC or LGC:", UpdateLiftoffTimeInput, 0, 20, (void*)this);
-
 }
 
 bool UpdateLiftoffTimeInput(void *id, char *str, void *data)
@@ -6228,46 +6227,14 @@ bool UpdateLiftoffTimeInput(void *id, char *str, void *data)
 		return false;
 	}
 
-	((ApolloRTCCMFD*)data)->set_LiftoffTime(IsCMC);
-	return true;
+	return ((ApolloRTCCMFD*)data)->set_LiftoffTime(IsCMC);
 }
 
-void ApolloRTCCMFD::set_LiftoffTime(bool IsCMC)
+bool ApolloRTCCMFD::set_LiftoffTime(bool IsCMC)
 {
-	VESSEL *v;
+	agc_t *agc = G->GetAGCPointer(IsCMC);
 
-	if (IsCMC)
-	{
-		v = GC->rtcc->pCSM;
-	}
-	else
-	{
-		v = GC->rtcc->pLM;
-	}
-
-	if (v == NULL) return;
-
-	agc_t *agc = NULL;
-
-	if (IsCMC)
-	{
-		if (utils::IsVessel(v, utils::Saturn))
-		{
-			Saturn *sat = (Saturn *)v;
-			agc = &sat->agc.vagc;
-		}
-	}
-	else
-	{
-
-		if (utils::IsVessel(v, utils::LEM))
-		{
-			LEM *lem = (LEM *)v;
-			agc = &lem->agc.vagc;
-		}
-	}
-
-	if (agc == NULL) return;
+	if (agc == NULL) return false;
 
 	double LaunchMJD;
 
@@ -6297,7 +6264,9 @@ void ApolloRTCCMFD::set_LiftoffTime(bool IsCMC)
 	GC->rtcc->GMGMED(Buff);
 
 	//Also update IU, if possible
-	G->UpdateGRRTime(v);
+	G->UpdateGRRTime(GC->rtcc->pCSM);
+
+	return true;
 }
 
 void ApolloRTCCMFD::cycleREFSMMATHeadsUp()
@@ -6383,22 +6352,8 @@ ApolloRTCCMFD::ScreenData ApolloRTCCMFD::screenData = { 0 };
 
 void ApolloRTCCMFD::GetREFSMMATfromAGC()
 {
-	agc_t* vagc;
-
-	if (IsCSM)
-	{
-		if (utils::IsVessel(GC->rtcc->pCSM, utils::ClassNames::Saturn) == false) return;
-
-		saturn = (Saturn *)GC->rtcc->pCSM;
-		vagc = &saturn->agc.vagc;
-	}
-	else
-	{
-		if (utils::IsVessel(GC->rtcc->pLM, utils::ClassNames::LEM) == false) return;
-
-		lem = (LEM *)GC->rtcc->pLM;
-		vagc = &lem->agc.vagc;
-	}
+	agc_t *vagc = G->GetAGCPointer(IsCSM);
+	if (vagc == NULL) return;
 
 	MATRIX3 REFSMMAT = GC->rtcc->GetREFSMMATfromAGC(vagc, IsCSM);
 
@@ -6432,27 +6387,21 @@ void ApolloRTCCMFD::menuCycleLunarEntryPADSxtOption()
 
 void ApolloRTCCMFD::GetEntryTargetfromAGC()
 {
-	if (G->vesseltype == 0)
-	{
-		saturn = (Saturn *)G->vessel;
-		//if (saturn->IsVirtualAGC() == FALSE)
-		//{
-		//
-		//}
-		//else
-		//{
-			unsigned short Entryoct[6];
-			Entryoct[2] = saturn->agc.vagc.Erasable[0][03400];
-			Entryoct[3] = saturn->agc.vagc.Erasable[0][03401];
-			Entryoct[4] = saturn->agc.vagc.Erasable[0][03402];
-			Entryoct[5] = saturn->agc.vagc.Erasable[0][03403];
+	VESSEL *v = GC->rtcc->pCSM;
 
-			GC->rtcc->RZDBSC1.lat_T = OrbMech::DecToDouble(Entryoct[2], Entryoct[3])*PI2;
-			GC->rtcc->RZDBSC1.lng_T = OrbMech::DecToDouble(Entryoct[4], Entryoct[5])*PI2;
-			//G->EntryPADLat = G->EntryLatcor;
-			//G->EntryPADLng = G->EntryLngcor;
-		//}
-	}
+	if (v == NULL) return;
+
+	if (utils::IsVessel(v, utils::Saturn) == false) return;
+
+	unsigned short Entryoct[6];
+	Entryoct[2] = saturn->agc.vagc.Erasable[0][03400];
+	Entryoct[3] = saturn->agc.vagc.Erasable[0][03401];
+	Entryoct[4] = saturn->agc.vagc.Erasable[0][03402];
+	Entryoct[5] = saturn->agc.vagc.Erasable[0][03403];
+
+	GC->rtcc->RZDBSC1.lat_T = OrbMech::DecToDouble(Entryoct[2], Entryoct[3])*PI2;
+	GC->rtcc->RZDBSC1.lng_T = OrbMech::DecToDouble(Entryoct[4], Entryoct[5])*PI2;
+
 }
 
 void ApolloRTCCMFD::menuSetRTEReentryTime()
@@ -6495,7 +6444,14 @@ void ApolloRTCCMFD::menuTransferLOIMCCtoMPT()
 
 void ApolloRTCCMFD::menuTLCCVectorTime()
 {
-	GenericGETInput(&GC->rtcc->PZMCCPLN.VectorGET, "Choose the vector time for the maneuver (Format: hhh:mm:ss)");
+	if (GC->MissionPlanningActive)
+	{
+		GenericGETInput(&GC->rtcc->PZMCCPLN.VectorGET, "Choose the vector time for the maneuver (Format: hhh:mm:ss)");
+	}
+	else
+	{
+		set_CSMVessel();
+	}
 }
 
 void ApolloRTCCMFD::menuCycleTLCCColumnNumber()
@@ -6818,7 +6774,14 @@ void ApolloRTCCMFD::set_TLMCCLOPCRevs(int m, int n)
 
 void ApolloRTCCMFD::menuSetLOIVectorTime()
 {
-	GenericGETInput(&GC->rtcc->med_k18.VectorTime, "Choose the vector time for LOI computation:");
+	if (GC->MissionPlanningActive)
+	{
+		GenericGETInput(&GC->rtcc->med_k18.VectorTime, "Choose the vector time for LOI computation:");
+	}
+	else
+	{
+		set_CSMVessel();
+	}
 }
 
 void ApolloRTCCMFD::menuSetLOIApo()
@@ -6943,6 +6906,17 @@ void ApolloRTCCMFD::menuSetLDPPVectorTime()
 	if (GC->MissionPlanningActive)
 	{
 		GenericGETInput(&GC->rtcc->med_k16.VectorTime, "Choose the vector time (Format: hhh:mm:ss)");
+	}
+	else
+	{
+		if (GC->rtcc->med_k16.Vehicle == RTCC_MPT_LM)
+		{
+			set_LMVessel();
+		}
+		else
+		{
+			set_CSMVessel();
+		}
 	}
 }
 
@@ -7149,18 +7123,12 @@ void ApolloRTCCMFD::menuTLIEllipseApogee()
 
 void ApolloRTCCMFD::menuLunarLiftoffCalc()
 {
-	if (GC->MissionPlanningActive ||(G->target != NULL && G->vesseltype == 1))
-	{
-		G->LunarLiftoffCalc();
-	}
+	G->LunarLiftoffCalc();
 }
 
 void ApolloRTCCMFD::menuLLTPCalc()
 {
-	if (GC->MissionPlanningActive || (G->target != NULL && G->vesseltype == 1))
-	{
-		G->LunarLaunchTargetingCalc();
-	}
+	G->LunarLaunchTargetingCalc();
 }
 
 void ApolloRTCCMFD::menuSetLiftoffDT()
@@ -7406,7 +7374,7 @@ void ApolloRTCCMFD::menuUplinkEMP()
 
 void ApolloRTCCMFD::menuNavCheckPADCalc()
 {
-	G->NavCheckPAD();
+	G->NavCheckPAD(IsCSM);
 }
 
 void ApolloRTCCMFD::menuSetNavCheckGET()
@@ -8292,16 +8260,13 @@ void ApolloRTCCMFD::set_LDPPDescentFlightTime(double dt)
 
 void ApolloRTCCMFD::cycleLDPPVehicle()
 {
-	if (GC->MissionPlanningActive)
+	if (GC->rtcc->med_k16.Vehicle == RTCC_MPT_CSM)
 	{
-		if (GC->rtcc->med_k16.Vehicle == RTCC_MPT_CSM)
-		{
-			GC->rtcc->med_k16.Vehicle = RTCC_MPT_LM;
-		}
-		else
-		{
-			GC->rtcc->med_k16.Vehicle = RTCC_MPT_CSM;
-		}
+		GC->rtcc->med_k16.Vehicle = RTCC_MPT_LM;
+	}
+	else
+	{
+		GC->rtcc->med_k16.Vehicle = RTCC_MPT_CSM;
 	}
 }
 
@@ -9099,8 +9064,10 @@ void ApolloRTCCMFD::menuGetOnboardStateVectors()
 	//To update display immediately
 	GC->rtcc->VectorPanelSummaryBuffer.gmt = -1.0;
 
-	G->GetStateVectorFromAGC(true);
-	G->GetStateVectorFromAGC(false);
+	G->GetStateVectorFromAGC(true, true);
+	G->GetStateVectorFromAGC(true, false);
+	G->GetStateVectorFromAGC(false, true);
+	G->GetStateVectorFromAGC(false, false);
 	G->GetStateVectorFromIU();
 	G->GetStateVectorsFromAGS();
 }

@@ -514,9 +514,21 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	}
 
 	vesselisdocked = false;
-	if (vessel->DockingStatus(0) == 1)
+
+	//For now, CSM or LM being docked will set this flag
+	if (GC->rtcc->pCSM)
 	{
-		vesselisdocked = true;
+		if (GC->rtcc->pCSM->DockingStatus(0) == 1)
+		{
+			vesselisdocked = true;
+		}
+	}
+	if (GC->rtcc->pLM)
+	{
+		if (GC->rtcc->pLM->DockingStatus(0) == 1)
+		{
+			vesselisdocked = true;
+		}
 	}
 
 	REFSMMATHeadsUp = true;
@@ -1400,24 +1412,49 @@ void ARCore::GetStateVectorsFromAGS()
 	GC->rtcc->BZSTLM.HighSpeedAGSLEMVector = sv_LM;
 }
 
-void ARCore::GetStateVectorFromAGC(bool csm)
+agc_t* ARCore::GetAGCPointer(bool cmc) const
 {
-	if (vesseltype < 0 || vesseltype > 1) return;
+	VESSEL *v;
 
-	agc_t* vagc;
-
-	if (vesseltype == 0)
+	if (cmc)
 	{
-		Saturn *saturn = (Saturn *)vessel;
+		v = GC->rtcc->pCSM;
+	}
+	else
+	{
+		v = GC->rtcc->pLM;
+	}
 
+	if (v == NULL) return NULL;
+
+	agc_t* vagc = NULL;
+
+	if (cmc)
+	{
+		if (utils::IsVessel(v, utils::ClassNames::Saturn) == false)
+		{
+			return NULL;
+		}
+		Saturn *saturn = (Saturn *)v;
 		vagc = &saturn->agc.vagc;
 	}
 	else
 	{
-		LEM *lem = (LEM *)vessel;
-
+		if (utils::IsVessel(v, utils::ClassNames::LEM) == false)
+		{
+			return NULL;
+		}
+		LEM *lem = (LEM *)v;
 		vagc = &lem->agc.vagc;
 	}
+
+	return vagc;
+}
+
+void ARCore::GetStateVectorFromAGC(bool csm, bool cmc)
+{
+	agc_t* vagc = GetAGCPointer(cmc);
+	if (vagc == NULL) return;
 
 	unsigned short SVoct[16];
 	int SVadd, MoonBit;
@@ -1477,7 +1514,7 @@ void ARCore::GetStateVectorFromAGC(bool csm)
 	EphemerisData sv;
 	sv.R = R;
 	sv.V = V;
-	if (vesseltype == 0)
+	if (cmc)
 	{
 		sv.GMT = GET + GC->rtcc->GetCMCClockZero();
 	}
@@ -1497,7 +1534,7 @@ void ARCore::GetStateVectorFromAGC(bool csm)
 
 	if (csm)
 	{
-		if (vesseltype == 0)
+		if (cmc)
 		{
 			GC->rtcc->BZSTLM.HighSpeedCMCCSMVector = sv;
 		}
@@ -1508,7 +1545,7 @@ void ARCore::GetStateVectorFromAGC(bool csm)
 	}
 	else
 	{
-		if (vesseltype == 0)
+		if (cmc)
 		{
 			GC->rtcc->BZSTLM.HighSpeedCMCLEMVector = sv;
 		}
@@ -1519,9 +1556,22 @@ void ARCore::GetStateVectorFromAGC(bool csm)
 	}
 }
 
-void ARCore::NavCheckPAD()
+void ARCore::NavCheckPAD(bool IsCSM)
 {
 	SV sv;
+
+	VESSEL *v;
+
+	if (IsCSM)
+	{
+		v = GC->rtcc->pCSM;
+	}
+	else
+	{
+		v = GC->rtcc->pLM;
+	}
+
+	if (v == NULL) return;
 
 	sv = GC->rtcc->StateVectorCalc(vessel);
 
@@ -3071,18 +3121,15 @@ int ARCore::subThread()
 		}
 		else
 		{
-			SV sv0_apo = GC->rtcc->StateVectorCalc(vessel);
-			sv0.R = sv0_apo.R;
-			sv0.V = sv0_apo.V;
-			sv0.GMT = OrbMech::GETfromMJD(sv0_apo.MJD, GC->rtcc->GetGMTBase());
-			if (sv0_apo.gravref == oapiGetObjectByName("Earth"))
+			VESSEL *v = GC->rtcc->pCSM;
+
+			if (v == NULL)
 			{
-				sv0.RBI = BODY_EARTH;
+				Result = DONE;
+				break;
 			}
-			else
-			{
-				sv0.RBI = BODY_MOON;
-			}
+
+			sv0 =  GC->rtcc->StateVectorCalcEphem(v);
 		}
 
 		GC->rtcc->PMMLRBTI(sv0);
@@ -3294,7 +3341,24 @@ int ARCore::subThread()
 		}
 		else
 		{
-			sv = GC->rtcc->StateVectorCalc(vessel);
+			VESSEL *v;
+
+			if (GC->rtcc->med_k16.Vehicle == RTCC_MPT_CSM)
+			{
+				v = GC->rtcc->pCSM;
+			}
+			else
+			{
+				v = GC->rtcc->pLM;
+			}
+
+			if (v == NULL)
+			{
+				Result = DONE;
+				break;
+			}
+
+			sv = GC->rtcc->StateVectorCalc(v);
 		}
 
 		if (!GC->rtcc->LunarDescentPlanningProcessor(sv))
@@ -3399,9 +3463,17 @@ int ARCore::subThread()
 		}
 		else
 		{
-			sv0 = GC->rtcc->StateVectorCalcEphem(vessel);
+			VESSEL *v = GC->rtcc->pCSM;
 
-			CSMmass = vessel->GetMass();
+			if (v == NULL)
+			{
+				Result = DONE;
+				break;
+			}
+
+			sv0 = GC->rtcc->StateVectorCalcEphem(v);
+
+			CSMmass = v->GetMass();
 			//Assume pre CSM separation from the S-IVB
 			if (CSMmass > 40000.0)
 			{
@@ -3409,7 +3481,7 @@ int ARCore::subThread()
 			}
 			if (GC->rtcc->PZMCCPLN.Config)
 			{
-				LMmass = GC->rtcc->GetDockedVesselMass(vessel);
+				LMmass = GC->rtcc->GetDockedVesselMass(v);
 			}
 			else
 			{
@@ -3443,7 +3515,15 @@ int ARCore::subThread()
 		}
 		else
 		{
-			sv_CSM = GC->rtcc->StateVectorCalc(target);
+			VESSEL *v = GC->rtcc->pCSM;
+
+			if (v == NULL)
+			{
+				Result = DONE;
+				break;
+			}
+
+			sv_CSM = GC->rtcc->StateVectorCalc(v);
 		}
 
 		if (GC->rtcc->med_k15.CSI_Flag == 0)
@@ -3577,8 +3657,16 @@ int ARCore::subThread()
 		}
 		else
 		{
-			sv = GC->rtcc->StateVectorCalcEphem(vessel);
-			CSMmass = vessel->GetMass();
+			VESSEL *v = GC->rtcc->pCSM;
+
+			if (v == NULL)
+			{
+				Result = DONE;
+				break;
+			}
+
+			sv = GC->rtcc->StateVectorCalcEphem(v);
+			CSMmass = v->GetMass();
 			//Assume pre CSM separation from the S-IVB
 			if (CSMmass > 30000.0)
 			{
@@ -4028,6 +4116,14 @@ int ARCore::subThread()
 	break;
 	case 31: //Entry PAD
 	{
+		VESSEL *v = GC->rtcc->pCSM;
+
+		if (v == NULL)
+		{
+			Result = DONE;
+			break;
+		}
+
 		OBJHANDLE hEarth;
 		double mu;
 
@@ -4041,7 +4137,7 @@ int ARCore::subThread()
 			opt.dV_LVLH = dV_LVLH;
 			opt.P30TIG = P30TIG;
 			opt.REFSMMAT = GC->rtcc->EZJGMTX1.data[0].REFSMMAT;
-			opt.sv0 = GC->rtcc->StateVectorCalc(vessel);
+			opt.sv0 = GC->rtcc->StateVectorCalc(v);
 			opt.Thruster = manpadenginetype;
 			opt.InitialBank = GC->rtcc->RZC1RCNS.entry.GNInitialBank;
 			opt.GLevel = GC->rtcc->RZC1RCNS.entry.GLevel;
@@ -4059,10 +4155,11 @@ int ARCore::subThread()
 
 			VECTOR3 R, V;
 			double apo, peri;
-			OBJHANDLE gravref = GC->rtcc->AGCGravityRef(vessel);
-			vessel->GetRelativePos(gravref, R);
-			vessel->GetRelativeVel(gravref, V);
+			OBJHANDLE gravref = GC->rtcc->AGCGravityRef(v);
+			v->GetRelativePos(gravref, R);
+			v->GetRelativeVel(gravref, V);
 			OrbMech::periapo(R, V, mu, apo, peri);
+
 			if (peri < oapiGetSize(gravref) + 50 * 1852.0)
 			{
 				opt.preburn = false;
@@ -4089,12 +4186,12 @@ int ARCore::subThread()
 				{
 					if (GC->rtcc->NewMPTTrajectory(RTCC_MPT_CSM, opt.sv0))
 					{
-						opt.sv0 = GC->rtcc->StateVectorCalc(vessel);
+						opt.sv0 = GC->rtcc->StateVectorCalc(v);
 					}
 				}
 				else
 				{
-					opt.sv0 = GC->rtcc->StateVectorCalc(vessel);
+					opt.sv0 = GC->rtcc->StateVectorCalc(v);
 				}
 
 				//EntryPADLat = EntryLatcor;
@@ -4734,12 +4831,28 @@ int ARCore::subThread()
 				dv = GC->rtcc->PZMCCXFR.V_man_after[num - 1] - GC->rtcc->PZMCCXFR.sv_man_bef[num - 1].V;
 			}
 
+			VESSEL *v;
 			EphemerisData sv_now, sv_tig;
 			double mass, dt, attachedMass;
 			int ITS;
 
-			sv_now = GC->rtcc->StateVectorCalcEphem(vessel);
-			mass = vessel->GetMass();
+			if (GC->rtcc->med_m78.Table == RTCC_MPT_CSM)
+			{
+				v = GC->rtcc->pCSM;
+			}
+			else
+			{
+				v = GC->rtcc->pLM;
+			}
+
+			if (v == NULL)
+			{
+				Result = DONE;
+				break;
+			}
+
+			sv_now = GC->rtcc->StateVectorCalcEphem(v);
+			mass = v->GetMass();
 
 			//Propagate to TIG
 			dt = gmt_tig - sv_now.GMT;
@@ -4747,7 +4860,7 @@ int ARCore::subThread()
 
 			if (vesselisdocked)
 			{
-				attachedMass = GC->rtcc->GetDockedVesselMass(vessel);
+				attachedMass = GC->rtcc->GetDockedVesselMass(v);
 			}
 			else
 			{
