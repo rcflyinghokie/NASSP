@@ -1882,6 +1882,8 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	CrewStatus.SaveState(scn);
 	ForwardHatch.SaveState(scn);
 	SideHatch.SaveState(scn);
+	H2CryoPressureSwitch.SaveState(scn, "H2PRESSSWITCHES");
+	O2CryoPressureSwitch.SaveState(scn, "O2PRESSSWITCHES");
 	usb.SaveState(scn);
 	if (pMission->CSMHasHGA()) hga.SaveState(scn);
 	vhftransceiver.SaveState(scn);
@@ -2577,6 +2579,12 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	    else if (!strnicmp (line, "SIDEHATCH", 9)) {
 		    SideHatch.LoadState(line);
 	    }
+		else if (!strnicmp(line, "H2PRESSSWITCHES", 15)) {
+			H2CryoPressureSwitch.LoadState(line, 15);
+		}
+		else if (!strnicmp(line, "O2PRESSSWITCHES", 15)) {
+			O2CryoPressureSwitch.LoadState(line, 15);
+		}
 	    else if (!strnicmp (line, "UNIFIEDSBAND", 12)) {
 		    usb.LoadState(line);
 	    }
