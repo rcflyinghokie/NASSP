@@ -2713,7 +2713,7 @@ public:
 	//Encke Integrator
 	void EMMENI(EMMENIInputTable &in);
 	//Spherical to inertial conversion
-	int EMMXTR(double GMT, double rmag, double vmag, double rtasc, double decl, double fpav, double az, VECTOR3 &R, VECTOR3 &V);
+	int EMMXTR(double GMT, double rmag, double vmag, double rtasc, double decl, double fpav, double az, int RBI, VECTOR3 &R, VECTOR3 &V);
 	//Orbital Elements Computations
 	void EMMDYNEL(EphemerisData sv, TimeConstraintsTable &tab);
 	//Anchor Vector Maintenance Module
@@ -4834,6 +4834,7 @@ public:
 		int IntBuffer[2];
 		VECTOR3 VectorBuffer[2];
 		MATRIX3 MatrixBuffer;
+		std::string LastMEDMessage;
 	} RTCCONLINEMON;
 
 	//AEG
