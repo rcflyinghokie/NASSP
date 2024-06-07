@@ -188,8 +188,6 @@ public:
 
 	//TARGETING VESSELS
 	VESSEL* vessel;
-	VESSEL* target;
-	int targetnumber;		//Vessel index for target
 
 	//GENERAL PARAMETERS
 	double P30TIG;				//Maneuver GET

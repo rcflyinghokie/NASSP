@@ -497,9 +497,7 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	t_TPI = 0.0;
 
 	SPQDeltaV = _V(0, 0, 0);
-	target = NULL;
 	//screen = 0;
-	targetnumber = -1;
 	REFSMMAT_LVLH_Time = 0.0;
 	REFSMMATopt = 4;
 	REFSMMATcur = 4;
@@ -3425,7 +3423,15 @@ int ARCore::subThread()
 		}
 		else
 		{
-			sv_CSM = GC->rtcc->StateVectorCalcEphem(target);
+			VESSEL *v = GC->rtcc->pCSM;
+
+			if (v == NULL)
+			{
+				Result = DONE;
+				break;
+			}
+
+			sv_CSM = GC->rtcc->StateVectorCalcEphem(v);
 		}
 
 		opt.sv_CSM = sv_CSM;
@@ -4015,12 +4021,14 @@ int ARCore::subThread()
 	break;
 	case 23: //Calculate TPI times
 	{
-		if (target == NULL)
+		VESSEL *v = GC->rtcc->pCSM;
+
+		if (v == NULL)
 		{
 			Result = DONE;
 			break;
 		}
-		SV sv0 = GC->rtcc->StateVectorCalc(target);
+		SV sv0 = GC->rtcc->StateVectorCalc(v);
 		t_TPI = GC->rtcc->CalculateTPITimes(sv0, TPI_Mode, t_TPIguess, dt_TPI_sunrise);
 
 		Result = DONE;
@@ -4907,7 +4915,7 @@ int ARCore::subThread()
 	break;
 	case 50: //Lunar Targeting Program (S-IVB Lunar Impact)
 	{
-		if (target == NULL)
+		if (svtarget == NULL)
 		{
 			Result = DONE;
 			break;
@@ -4918,15 +4926,15 @@ int ARCore::subThread()
 
 		bool uplinkaccepted = false;
 
-		if (utils::IsVessel(target, utils::SaturnV))
+		if (utils::IsVessel(svtarget, utils::SaturnV))
 		{
-			Saturn *iuv = (Saturn *)target;
+			Saturn *iuv = (Saturn *)svtarget;
 
 			iu = iuv->GetIU();
 		}
-		else if (utils::IsVessel(target, utils::SaturnV_SIVB))
+		else if (utils::IsVessel(svtarget, utils::SaturnV_SIVB))
 		{
-			SIVB *iuv = (SIVB *)target;
+			SIVB *iuv = (SIVB *)svtarget;
 
 			iu = iuv->GetIU();
 		}
@@ -4953,8 +4961,8 @@ int ARCore::subThread()
 
 		LunarTargetingProgramInput in;
 		
-		in.sv_in = GC->rtcc->StateVectorCalcEphem(target);
-		in.mass = target->GetMass();
+		in.sv_in = GC->rtcc->StateVectorCalcEphem(svtarget);
+		in.mass = svtarget->GetMass();
 		in.lat_tgt = LUNTAR_lat;
 		in.lng_tgt = LUNTAR_lng;
 		in.bt_guess = LUNTAR_bt_guess;
@@ -5215,7 +5223,7 @@ int ARCore::subThread()
 	break;
 	case 54: //Skylab Saturn IB Launch Targeting
 	{
-		if (target == NULL || GC->rtcc->GetGMTBase() == 0.0)
+		if (svtarget == NULL || GC->rtcc->GetGMTBase() == 0.0)
 		{
 			Result = DONE;
 			break;
@@ -5223,7 +5231,7 @@ int ARCore::subThread()
 		
 		EphemerisData sv, sv_ECT;
 
-		sv = GC->rtcc->StateVectorCalcEphem(target);
+		sv = GC->rtcc->StateVectorCalcEphem(svtarget);
 
 		GC->rtcc->ELVCNV(sv, 1, sv_ECT);
 

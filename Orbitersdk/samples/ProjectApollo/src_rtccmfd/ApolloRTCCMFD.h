@@ -89,7 +89,6 @@ public:
 	void set_CSMVessel();
 	void set_LMVessel();
 	void CycleThroughVessels(VESSEL **v) const;
-	void set_target();
 	void menuSLVLaunchTargetingPad();
 	void menuSLVLaunchTargeting();
 	void menuSLVLaunchUplink();

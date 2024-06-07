@@ -128,8 +128,6 @@ bool ApolloRTCCMFD::ConsumeKeyBuffered(DWORD key)
 
 void ApolloRTCCMFD::WriteStatus(FILEHANDLE scn) const
 {
-	char Buffer2[100];
-
 	//oapiWriteScenario_int(scn, "SCREEN", G->screen);
 	papiWriteScenario_bool(scn, "VESSELISDOCKED", G->vesselisdocked);
 	papiWriteScenario_double(scn, "SXTSTARDTIME", G->sxtstardtime);
@@ -143,12 +141,7 @@ void ApolloRTCCMFD::WriteStatus(FILEHANDLE scn) const
 	papiWriteScenario_double(scn, "SPQTIG", G->SPQTIG);
 	oapiWriteScenario_int(scn, "CDHTIMEMODE", G->CDHtimemode);
 	papiWriteScenario_vec(scn, "SPQDeltaV", G->SPQDeltaV);
-	if (G->target != NULL)
-	{
-		sprintf(Buffer2, G->target->GetName());
-		oapiWriteScenario_string(scn, "TARGET", Buffer2);
-	}
-	oapiWriteScenario_int(scn, "TARGETNUMBER", G->targetnumber);
+
 	papiWriteScenario_double(scn, "P30TIG", G->P30TIG);
 	papiWriteScenario_vec(scn, "DV_LVLH", G->dV_LVLH);
 	papiWriteScenario_double(scn, "ENTRYRANGE", G->entryrange);
@@ -189,8 +182,6 @@ void ApolloRTCCMFD::WriteStatus(FILEHANDLE scn) const
 void ApolloRTCCMFD::ReadStatus(FILEHANDLE scn)
 {
 	char *line;
-	char Buffer2[100];
-	bool istarget = false;
 
 	while (oapiReadScenario_nextline(scn, line)) {
 		if (!strnicmp(line, "END_MFD", 7))
@@ -210,19 +201,6 @@ void ApolloRTCCMFD::ReadStatus(FILEHANDLE scn)
 		papiReadScenario_int(line, "CDHTIMEMODE", G->CDHtimemode);
 		papiReadScenario_vec(line, "SPQDeltaV", G->SPQDeltaV);
 
-		istarget = papiReadScenario_string(line, "TARGET", Buffer2);
-		if (istarget)
-		{
-			OBJHANDLE obj;
-			obj = oapiGetVesselByName(Buffer2);
-			if (obj)
-			{
-				G->target = oapiGetVesselInterface(obj);
-			}
-			istarget = false;
-		}
-
-		papiReadScenario_int(line, "TARGETNUMBER", G->targetnumber);
 		papiReadScenario_double(line, "P30TIG", G->P30TIG);
 		papiReadScenario_vec(line, "DV_LVLH", G->dV_LVLH);
 		papiReadScenario_double(line, "ENTRYRANGE", G->entryrange);
@@ -5373,27 +5351,6 @@ void ApolloRTCCMFD::CycleThroughVessels(VESSEL **v) const
 	}
 
 	*v = oapiGetVesselInterface(oapiGetVesselByIndex(i));
-}
-
-void ApolloRTCCMFD::set_target()
-{
-	if (!G->SVSlot || screen != 7)
-	{
-		int vesselcount;
-
-		vesselcount = oapiGetVesselCount();
-
-		if (G->targetnumber < vesselcount - 1)
-		{
-			G->targetnumber++;
-		}
-		else
-		{
-			G->targetnumber = 0;
-		}
-
-		G->target = oapiGetVesselInterface(oapiGetVesselByIndex(G->targetnumber));
-	}
 }
 
 void ApolloRTCCMFD::set_svtarget()

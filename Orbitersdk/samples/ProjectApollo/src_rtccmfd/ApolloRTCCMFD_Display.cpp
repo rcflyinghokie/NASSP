@@ -7940,15 +7940,8 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		}
 		else
 		{
-			if (G->target != NULL)
-			{
-				sprintf(Buffer, G->target->GetName());
-				skp->Text(12 * W / 32, 4 * H / 32, Buffer, strlen(Buffer));
-			}
-			else
-			{
-				skp->Text(12 * W / 32, 4 * H / 32, "No Target!", 10);
-			}
+			PrintCSMVessel(Buffer);
+			skp->Text(12 * W / 32, 4 * H / 32, Buffer, strlen(Buffer));
 		}
 
 		GET_Display(Buffer, GC->rtcc->med_k50.GETTH, false);
@@ -8034,14 +8027,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		skp->Text(4 * W / 8, 2 * H / 32, "TPI TIMES", 9);
 		skp->SetTextAlign(oapi::Sketchpad::LEFT);
 
-		if (G->target != NULL)
-		{
-			sprintf_s(Buffer, G->target->GetName());
-		}
-		else
-		{
-			sprintf_s(Buffer, "No Target!");
-		}
+		PrintCSMVessel(Buffer);
 		skp->Text(1 * W / 8, 2 * H / 14, Buffer, strlen(Buffer));
 
 		if (G->TPI_Mode == 0)
@@ -9499,9 +9485,9 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			skp->Text(1 * W / 16, 2 * H / 14, "Trajectory Evaluation", 21);
 		}
 
-		if (G->target != NULL)
+		if (G->svtarget != NULL)
 		{
-			sprintf(Buffer, G->target->GetName());
+			sprintf(Buffer, G->svtarget->GetName());
 			skp->Text(10 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
 		}
 		else
@@ -9868,9 +9854,9 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		}
 		skp->Text(1 * W / 16, 12 * H / 14, Buffer, strlen(Buffer));
 
-		if (G->target != NULL)
+		if (G->svtarget != NULL)
 		{
-			sprintf(Buffer, G->target->GetName());
+			sprintf(Buffer, G->svtarget->GetName());
 			skp->Text(5 * W / 8, 2 * H / 14, Buffer, strlen(Buffer));
 		}
 		else

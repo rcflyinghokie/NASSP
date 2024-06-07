@@ -3108,7 +3108,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 		{ "", 0, ' ' },
 
 		{ "Calculate solution", 0, 'C' },
-		{ "Select target", 0, 'T' },
+		{ "Select CSM", 0, 'T' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
@@ -3125,7 +3125,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	RegisterFunction("", OAPI_KEY_Q, &ApolloRTCCMFD::menuVoid);
 
 	RegisterFunction("CLC", OAPI_KEY_C, &ApolloRTCCMFD::menuLLTPCalc);
-	RegisterFunction("TGT", OAPI_KEY_A, &ApolloRTCCMFD::set_target);
+	RegisterFunction("CSM", OAPI_KEY_A, &ApolloRTCCMFD::set_CSMVessel);
 	RegisterFunction("", OAPI_KEY_G, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_S, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_E, &ApolloRTCCMFD::menuVoid);
@@ -3134,7 +3134,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 
 	static const MFDBUTTONMENU mnu92[] =
 	{
-		{ "Set Target", 0, 'T' },
+		{ "Set CSM", 0, 'T' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
@@ -3151,7 +3151,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 
 	RegisterPage(mnu92, sizeof(mnu92) / sizeof(MFDBUTTONMENU));
 
-	RegisterFunction("TGT", OAPI_KEY_T, &ApolloRTCCMFD::set_target);
+	RegisterFunction("CSM", OAPI_KEY_T, &ApolloRTCCMFD::set_CSMVessel);
 	RegisterFunction("MOD", OAPI_KEY_Q, &ApolloRTCCMFD::menuCycleTPIMode);
 	RegisterFunction("DT", OAPI_KEY_V, &ApolloRTCCMFD::TPIDTDialogue);
 	RegisterFunction("TPI", OAPI_KEY_L, &ApolloRTCCMFD::menuSetTPIguess);
@@ -3938,7 +3938,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	RegisterFunction("LAT", OAPI_KEY_F, &ApolloRTCCMFD::LUNTAR_LatInput);
 	RegisterFunction("LNG", OAPI_KEY_P, &ApolloRTCCMFD::LUNTAR_LngInput);
 	
-	RegisterFunction("S4B", OAPI_KEY_D, &ApolloRTCCMFD::set_target);
+	RegisterFunction("S4B", OAPI_KEY_D, &ApolloRTCCMFD::set_svtarget);
 	RegisterFunction("CLC", OAPI_KEY_C, &ApolloRTCCMFD::LUNTARCalc);
 	RegisterFunction("", OAPI_KEY_L, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_S, &ApolloRTCCMFD::menuVoid);
@@ -4142,7 +4142,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	RegisterFunction("GINS", OAPI_KEY_G, &ApolloRTCCMFD::menuLWP_GAMINS);
 	RegisterFunction("PHA", OAPI_KEY_Q, &ApolloRTCCMFD::menuLWP_PhaseFlags);
 
-	RegisterFunction("TGT", OAPI_KEY_T, &ApolloRTCCMFD::set_target);
+	RegisterFunction("TGT", OAPI_KEY_T, &ApolloRTCCMFD::set_svtarget);
 	RegisterFunction("NOF", OAPI_KEY_N, &ApolloRTCCMFD::menuLWPCycleDELNOF);
 	RegisterFunction("DNO", OAPI_KEY_M, &ApolloRTCCMFD::menuLWP_DELNO);
 	RegisterFunction("", OAPI_KEY_E, &ApolloRTCCMFD::menuVoid);
