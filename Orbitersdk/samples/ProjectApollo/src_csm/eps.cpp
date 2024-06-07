@@ -135,7 +135,7 @@ void CryoPressureSwitch::SystemTimestep(double simdt)
 		heater2->SetPumpOn();
 	}
 	//ON
-	else if (htrswitch1->GetState() == THREEPOSSWITCH_DOWN)
+	else if (htrswitch2->GetState() == THREEPOSSWITCH_DOWN)
 	{
 		heater2->SetPumpOn();
 	}
