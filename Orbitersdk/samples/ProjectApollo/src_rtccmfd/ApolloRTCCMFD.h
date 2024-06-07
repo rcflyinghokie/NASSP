@@ -70,6 +70,10 @@ public:
 	void menuDKINCCDHInput();
 	void SPQDHdialogue();
 	void set_SPQDH(double DH);
+	void set_Vessel();
+	void set_CSMVessel();
+	void set_LMVessel();
+	void CycleThroughVessels(VESSEL **v) const;
 	void set_target();
 	void menuSLVLaunchTargetingPad();
 	void menuSLVLaunchTargeting();
@@ -407,16 +411,6 @@ public:
 	void menuDAPPADCalc();
 	void menuSetLVDCPage();
 	void menuLaunchAzimuthCalc();
-	void menuSetAGCEphemerisPage();
-	void menuCycleAGCEphemOpt();
-	void menuCycleAGCEphemAGCType();
-	void menuSetAGCEphemMission();
-	void menuSetAGCEphemBRCSEpoch();
-	void menuSetAGCEphemTEphemZero();
-	void menuSetAGCEphemTEPHEM();
-	void menuSetAGCEphemTIMEM0();
-	void menuSetAGCEphemTLAND();
-	void menuGenerateAGCEphemeris();
 	void cycleVECPOINTOpt();
 	void menuSetLMAscentPADPage();
 	void menuAscentPADCalc();
@@ -823,6 +817,7 @@ public:
 	void menuAGOPCalc();
 	void menuAGOPSaveREFSMMAT();
 	void menuSetRTACFPage();
+	void CycleCSMOrLMSelection();
 	void GenericGETInput(double *get, char *message);
 	void GenericDoubleInput(double *val, char* message, double factor = 1.0);
 	void GenericDouble2Input(double *val1, double *val2, char* message, double factor1 = 1.0, double factor2 = 1.0);
@@ -862,6 +857,9 @@ private:
 
 	RTCCMFDInputBoxData tempData;
 
+	bool IsCSM; //Chooses if the CSM or LM vessel in the RTCC is selected
+	int ErrorMessage;
+
 	//Additional display functions
 	void AGOPDisplay(oapi::Sketchpad*skp);
 	void AGOPDisplayOption1(oapi::Sketchpad*skp);
@@ -873,6 +871,9 @@ private:
 	void AGOPDisplayOption7(oapi::Sketchpad*skp);
 	void AGOPDisplayOption8(oapi::Sketchpad*skp);
 	void AGOPDisplayOption9(oapi::Sketchpad*skp);
+
+	void CSMOrLMSelection(oapi::Sketchpad*skp);
+	void CSMOrLMSelectionErrorMessage(oapi::Sketchpad*skp);
 };
 
 #endif // !__ApolloRTCCMFD_H

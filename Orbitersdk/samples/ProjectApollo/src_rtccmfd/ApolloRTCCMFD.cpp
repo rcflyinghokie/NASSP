@@ -83,6 +83,8 @@ ApolloRTCCMFD::ApolloRTCCMFD (DWORD w, DWORD h, VESSEL *vessel, UINT im)
 
 	marker = 0;
 	markermax = 0;
+	IsCSM = false;
+	ErrorMessage = false;
 }
 
 // Destructor
@@ -870,11 +872,6 @@ void ApolloRTCCMFD::menuSetLVDCPage()
 	{
 		SelectPage(121); //Saturn IB LWP
 	}
-}
-
-void ApolloRTCCMFD::menuSetAGCEphemerisPage()
-{
-	SelectPage(37);
 }
 
 void ApolloRTCCMFD::menuSetLunarAscentPage()
@@ -5271,6 +5268,64 @@ void ApolloRTCCMFD::menuSLVTLITargetingUplink()
 	G->SaturnVTLITargetUplink();
 }
 
+void ApolloRTCCMFD::set_Vessel()
+{
+	if (IsCSM)
+	{
+		set_CSMVessel();
+	}
+	else
+	{
+		set_LMVessel();
+	}
+}
+
+void ApolloRTCCMFD::set_CSMVessel()
+{
+	CycleThroughVessels(&GC->rtcc->pCSM);
+}
+
+void ApolloRTCCMFD::set_LMVessel()
+{
+	CycleThroughVessels(&GC->rtcc->pLM);
+}
+
+void ApolloRTCCMFD::CycleThroughVessels(VESSEL **v) const
+{
+	VESSEL *pVessel;
+	OBJHANDLE hVessel;
+	int vesselcount, i;
+
+	i = -1;
+	vesselcount = oapiGetVesselCount();
+
+	//Get current vessel number
+	if (v != NULL)
+	{
+		for (i = 0; i < vesselcount; i++)
+		{
+			hVessel = oapiGetVesselByIndex(i);
+			if (hVessel)
+			{
+				pVessel = oapiGetVesselInterface(hVessel);
+
+				if (*v == pVessel) break;
+			}
+		}
+	}
+
+	if (i < vesselcount - 1)
+	{
+		i++;
+	}
+	else
+	{
+		i = 0;
+	}
+
+	*v = oapiGetVesselInterface(oapiGetVesselByIndex(i));
+}
+
 void ApolloRTCCMFD::set_target()
 {
 	if (!G->SVSlot || screen != 7)
@@ -7613,65 +7668,6 @@ void ApolloRTCCMFD::menuLaunchAzimuthCalc()
 	}
 }
 
-void ApolloRTCCMFD::menuCycleAGCEphemOpt()
-{
-	if (G->AGCEphemOption < 1)
-	{
-		G->AGCEphemOption++;
-	}
-	else
-	{
-		G->AGCEphemOption = 0;
-	}
-}
-
-void ApolloRTCCMFD::menuCycleAGCEphemAGCType()
-{
-	G->AGCEphemIsCMC = !G->AGCEphemIsCMC;
-}
-
-void ApolloRTCCMFD::menuSetAGCEphemMission()
-{
-	GenericIntInput(&G->AGCEphemMission, "Choose the mission number:");
-}
-
-void ApolloRTCCMFD::menuSetAGCEphemBRCSEpoch()
-{
-	GenericIntInput(&G->AGCEphemBRCSEpoch, "Year of BRCS epoch:");
-}
-
-void ApolloRTCCMFD::menuSetAGCEphemTEphemZero()
-{
-	GenericDoubleInput(&G->AGCEphemTEphemZero, "MJD of previous July 1st, midnight:");
-}
-
-void ApolloRTCCMFD::menuSetAGCEphemTEPHEM()
-{
-	GenericDoubleInput(&G->AGCEphemTEPHEM, "MJD of launch:");
-}
-
-void ApolloRTCCMFD::menuSetAGCEphemTIMEM0()
-{
-	GenericDoubleInput(&G->AGCEphemTIMEM0, "MJD of ephemeris time reference:");
-}
-
-void ApolloRTCCMFD::menuSetAGCEphemTLAND()
-{
-	GenericDoubleInput(&G->AGCEphemTLAND, "Calculate lunar libration vector to (in days):");
-}
-
-void ApolloRTCCMFD::menuGenerateAGCEphemeris()
-{
-	if (G->AGCEphemOption == 0)
-	{
-		G->GenerateAGCEphemeris();
-	}
-	else
-	{
-		G->GenerateAGCCorrectionVectors();
-	}
-}
-
 void ApolloRTCCMFD::menuAscentPADCalc()
 {
 	if (G->vesseltype == 1 && G->vessel->GroundContact() && G->target != NULL)
@@ -8991,7 +8987,7 @@ void ApolloRTCCMFD::UpdateLOSTDisplay()
 
 void ApolloRTCCMFD::menuCalculateIMUComparison()
 {
-	G->menuCalculateIMUComparison();
+	ErrorMessage = G->menuCalculateIMUComparison(IsCSM);
 }
 
 void ApolloRTCCMFD::menuSLVNavigationUpdateCalc()
@@ -9639,4 +9635,9 @@ void ApolloRTCCMFD::GMPManeuverCodeName(char *buffer, int code)
 void ApolloRTCCMFD::Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax, int ymax)
 {
 	skp->Text(x * W / xmax, y * H / ymax, message.c_str(), message.size());
+}
+
+void ApolloRTCCMFD::CycleCSMOrLMSelection()
+{
+	IsCSM = !IsCSM;
 }

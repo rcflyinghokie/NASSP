@@ -67,19 +67,19 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			skp->Text(1 * W / 8, 2 * H / 14, "Second Fixed", 12);
 		}
 
+		if (GC->rtcc->med_k30.Vehicle == 1)
+		{
+			skp->Text(1 * W / 8, 4 * H / 14, "Chaser: CSM", 11);
+			skp->Text(1 * W / 8, 5 * H / 14, "Target: LEM", 11);
+		}
+		else
+		{
+			skp->Text(1 * W / 8, 4 * H / 14, "Chaser: LEM", 11);
+			skp->Text(1 * W / 8, 5 * H / 14, "Target: CSM", 11);
+		}
+
 		if (GC->MissionPlanningActive)
 		{
-			if (GC->rtcc->med_k30.Vehicle == 1)
-			{
-				skp->Text(1 * W / 8, 4 * H / 14, "Chaser: CSM", 11);
-				skp->Text(1 * W / 8, 5 * H / 14, "Target: LEM", 11);
-			}
-			else
-			{
-				skp->Text(1 * W / 8, 4 * H / 14, "Chaser: LEM", 11);
-				skp->Text(1 * W / 8, 5 * H / 14, "Target: CSM", 11);
-			}
-
 			skp->Text(1 * W / 8, 6 * H / 14, "CHA:", 4);
 			if (GC->rtcc->med_k30.ChaserVectorTime > 0)
 			{
@@ -2078,7 +2078,6 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		skp->Text(5 * W / 8, 2 * H / 14, "LVDC", 4);
 		skp->Text(5 * W / 8, 4 * H / 14, "Terrain Model", 13);
-		skp->Text(5 * W / 8, 6 * H / 14, "AGC Ephemeris", 13);
 		skp->Text(5 * W / 8, 8 * H / 14, "Lunar Impact", 12);
 		skp->Text(5 * W / 8, 10 * H / 14, "Debug", 5);
 		skp->Text(5 * W / 8, 12 * H / 14, "Previous Page", 13);
@@ -3107,46 +3106,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 	}
 	else if (screen == 37)
 	{
-		if (G->AGCEphemOption == 0)
-		{
-			skp->Text(4 * W / 8, (int)(0.5 * H / 14), "AGC Ephemeris Generator", 23);
-
-			skp->Text(1 * W / 8, 2 * H / 14, "Epoch of BRCS:", 14);
-			skp->Text(1 * W / 8, 4 * H / 14, "TEphemZero:", 11);
-			skp->Text(1 * W / 8, 8 * H / 14, "TIMEM0:", 7);
-
-			sprintf(Buffer, "%d", G->AGCEphemBRCSEpoch);
-			skp->Text(4 * W / 8, 2 * H / 14, Buffer, strlen(Buffer));
-			sprintf(Buffer, "%f", G->AGCEphemTEphemZero);
-			skp->Text(4 * W / 8, 4 * H / 14, Buffer, strlen(Buffer));
-			sprintf(Buffer, "%f", G->AGCEphemTIMEM0);
-			skp->Text(4 * W / 8, 8 * H / 14, Buffer, strlen(Buffer));
-		}
-		else
-		{
-			skp->Text(4 * W / 8, (int)(0.5 * H / 14), "AGC Correction Vectors", 23);
-
-			skp->Text(1 * W / 8, 6 * H / 14, "TEPHEM:", 7);
-			sprintf(Buffer, "%.4f", G->AGCEphemTEPHEM);
-			skp->Text(4 * W / 8, 6 * H / 14, Buffer, strlen(Buffer));
-
-			skp->Text(1 * W / 8, 10 * H / 14, "TLAND:", 6);
-			sprintf(Buffer, "%+.2f Days", G->AGCEphemTLAND);
-			skp->Text(4 * W / 8, 10 * H / 14, Buffer, strlen(Buffer));
-
-			skp->Text(1 * W / 8, 12 * H / 14, "Mission:", 8);
-			sprintf(Buffer, "%d", G->AGCEphemMission);
-			skp->Text(4 * W / 8, 12 * H / 14, Buffer, strlen(Buffer));
-
-			if (G->AGCEphemIsCMC)
-			{
-				skp->Text(7 * W / 8, 6 * H / 14, "CMC", 3);
-			}
-			else
-			{
-				skp->Text(7 * W / 8, 6 * H / 14, "LGC", 3);
-			}
-		}
+		//Spare
 	}
 	else if (screen == 38)
 	{
@@ -10584,6 +10544,8 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 	{
 		skp->Text(3 * W / 8, 2 * H / 32, "DEBUG", 5);
 
+		CSMOrLMSelection(skp);
+
 		skp->Text((int)(0.5 * W / 8), 9 * H / 21, "Current REFSMMAT:", 17);
 		REFSMMATName(Buffer, G->REFSMMATcur);
 		skp->Text((int)(0.5 * W / 8), 10 * H / 21, Buffer, strlen(Buffer));
@@ -11165,4 +11127,54 @@ void ApolloRTCCMFD::AGOPDisplayOption8(oapi::Sketchpad*skp)
 void ApolloRTCCMFD::AGOPDisplayOption9(oapi::Sketchpad*skp)
 {
 	//TBD
+}
+
+void ApolloRTCCMFD::CSMOrLMSelection(oapi::Sketchpad*skp)
+{
+	if (IsCSM)
+	{
+		skp->Text(1 * W / 16, 2 * H / 14, "CSM", 3);
+
+		if (GC->rtcc->pCSM != NULL)
+		{
+			sprintf_s(Buffer, GC->rtcc->pCSM->GetName());
+		}
+		else
+		{
+			sprintf_s(Buffer, "No CSM!");
+		}
+	}
+	else
+	{
+		skp->Text(1 * W / 16, 2 * H / 14, "LM", 2);
+
+		if (GC->rtcc->pLM != NULL)
+		{
+			sprintf_s(Buffer, GC->rtcc->pLM->GetName());
+		}
+		else
+		{
+			sprintf_s(Buffer, "No LM!");
+		}
+	}
+
+	skp->Text(10 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
+
+	CSMOrLMSelectionErrorMessage(skp);
+}
+
+void ApolloRTCCMFD::CSMOrLMSelectionErrorMessage(oapi::Sketchpad*skp)
+{
+	if (ErrorMessage == 1)
+	{
+		sprintf_s(Buffer, "No vessel selected!");
+	}
+	else if (ErrorMessage == 2)
+	{
+		sprintf_s(Buffer, "Wrong vessel type!");
+	}
+	else return;
+
+	skp->SetTextAlign(oapi::Sketchpad::CENTER);
+	skp->Text(1 * W / 2, 21 * H / 22, Buffer, strlen(Buffer));
 }

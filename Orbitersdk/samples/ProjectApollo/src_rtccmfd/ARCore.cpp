@@ -491,7 +491,6 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	target = NULL;
 	//screen = 0;
 	targetnumber = -1;
-	AGCEphemTEphemZero = 40038.0;
 	REFSMMAT_LVLH_Time = 0.0;
 	REFSMMATopt = 4;
 	REFSMMATcur = 4;
@@ -513,8 +512,6 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	{
 		vesseltype = 2;
 	}
-
-	AGCEphemTEphemZero = GC->rtcc->SystemParameters.TEPHEM0;
 
 	vesselisdocked = false;
 	if (vessel->DockingStatus(0) == 1)
@@ -546,16 +543,19 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	g_Data.uplinkBufferSimt = 0;
 	g_Data.connStatus = 0;
 	g_Data.uplinkState = 0;
-	if (vesseltype == 1)
+	if (GC->rtcc->pLM)
 	{
-		LEM *lem = (LEM *)vessel;
-		if (lem->GetStage() < 2)
+		if (utils::IsVessel(GC->rtcc->pLM, utils::LEM))
 		{
-			lemdescentstage = true;
-		}
-		else
-		{
-			lemdescentstage = false;
+			LEM *lem = (LEM *)GC->rtcc->pLM;
+			if (lem->GetStage() < 2)
+			{
+				lemdescentstage = true;
+			}
+			else
+			{
+				lemdescentstage = false;
+			}
 		}
 	}
 	for (int i = 0; i < 24; i++)
@@ -724,14 +724,6 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	EMPUplinkMaxNumber = 0;
 
 	LVDCLaunchAzimuth = 0.0;
-
-	AGCEphemOption = 0;
-	AGCEphemBRCSEpoch = GC->rtcc->SystemParameters.AGCEpoch;
-	AGCEphemTIMEM0 = floor(GC->rtcc->CalcGETBase()) + 6.75;
-	AGCEphemTEPHEM = floor(GC->rtcc->CalcGETBase() - 0.5) + 0.5; //Noon before launch
-	AGCEphemTLAND = 4.5;
-	AGCEphemMission = 11; // GC->mission; TBD
-	AGCEphemIsCMC = vesseltype != 1;
 
 	earthentrypad.Att400K[0] = _V(0, 0, 0);
 	earthentrypad.BankAN[0] = 0;
@@ -1181,16 +1173,6 @@ void ARCore::DAPPADCalc()
 	{
 		GC->rtcc->LMDAPUpdate(vessel, DAP_PAD, vesselisdocked, lemdescentstage == false);
 	}
-}
-
-void ARCore::GenerateAGCEphemeris()
-{
-	AGCEphemeris(AGCEphemTIMEM0, AGCEphemBRCSEpoch, AGCEphemTEphemZero);
-}
-
-void ARCore::GenerateAGCCorrectionVectors()
-{
-	AGCCorrectionVectors(AGCEphemTEPHEM, -0.5, AGCEphemTLAND, AGCEphemMission, AGCEphemIsCMC);
 }
 
 void ARCore::EntryPAD()
@@ -5502,317 +5484,6 @@ void ARCore::DetermineGMPCode()
 	GMPManeuverCode = code;
 }
 
-void ARCore::AGCCorrectionVectors(double mjd_launchday, double dt_UNITW, double dt_504LM, int mission, bool isCMC)
-{
-	//INPUTS:
-	//mjd_launchday: MJD of noon (GMT) preceeding the launch
-	//dt_UNITW: //Time in days from mjd_launchday to calculate the Earth correction vector UNITW
-	//dt_504LM: //Time in days from mjd_launchday to calculate the Moon correction vector 504LM
-
-	MATRIX3 R, Rot2, J2000, R2, R3, M, M_AGC;
-	VECTOR3 UNITW;
-	double mjd_UNITW, mjd_504LM, brcsmjd, w_E, t0, B_0, Omega_I0, F_0, B_dot, Omega_I_dot, F_dot, cosI, sinI;
-	double A_Z, A_Z0;
-	int mem, epoch;
-	char AGC[64];
-
-	mjd_UNITW = mjd_launchday + dt_UNITW;
-	mjd_504LM = mjd_launchday + dt_504LM;
-
-	Rot2 = _M(1., 0., 0., 0., 0., 1., 0., 1., 0.);
-	R = OrbMech::GetRotationMatrix(BODY_EARTH, mjd_UNITW);
-
-	if (isCMC)
-	{
-		if (mission < 11)
-		{
-			epoch = 1969;    //Nearest Besselian Year 1969
-			w_E = 7.29211515e-5;
-			B_0 = 0.409164173;              
-			Omega_I0 = -6.03249419;
-			F_0 = 2.61379488;
-			B_dot = -7.19756666e-14;
-			Omega_I_dot = -1.07047016e-8;
-			F_dot = 2.67240019e-6;
-			cosI = 0.99964115;
-			sinI = 0.02678760;
-			t0 = 40038;
-			if (mission < 9)
-			{
-				sprintf(AGC, "Colossus237");
-			}
-			else if (mission < 10)
-			{
-				sprintf(AGC, "Colossus249");
-			}
-			else
-			{
-				sprintf(AGC, "Comanche044");
-			}
-		}
-		else if (mission < 14)
-		{
-			epoch = 1970;				//Nearest Besselian Year 1970
-			w_E = 7.29211319606104e-5;	//Comanche 055 (Apollo 11 CM AGC)
-			B_0 = 0.40916190299;
-			Omega_I0 = 6.1965366255107;
-			F_0 = 5.20932947411685;
-			B_dot = -7.19757301e-14;
-			Omega_I_dot = -1.07047011e-8;
-			F_dot = 2.67240410e-6;
-			cosI = 0.99964173;
-			sinI = 0.02676579;
-			t0 = 40403;
-			sprintf(AGC, "Comanche055");
-		}
-		//Use this when we get Comanche 67:
-		/*
-		else if (mission < 14)
-		{
-			epoch = 1970;			//Nearest Besselian Year 1970
-			w_E = 7.292115145489943e-05;
-			B_0 = 0.4091619030;
-			Omega_I0 = 6.196536640;
-			F_0 = 5.209327056;
-			B_dot = -7.197573418e-14;
-			Omega_I_dot = -1.070470170e-8;
-			F_dot = 2.672404256e-6;
-			cosI = 0.9996417320;
-			sinI = 0.02676579050;
-			t0 = 40403;
-			if (mission < 13)
-			{
-				sprintf(AGC, "Comanche067");
-			}
-			else
-			{
-				sprintf(AGC, "Comanche072");
-			}
-		}
-		*/
-		else if (mission < 15)
-		{
-			epoch = 1971;			//Nearest Besselian Year 1971
-			w_E = 7.292115147e-5;	//Comanche 108 (Apollo 14 CM AGC)
-			B_0 = 0.40915963316;
-			Omega_I0 = 5.859196887;
-			F_0 = 1.5216749598;
-			B_dot = -7.1975797907e-14;
-			Omega_I_dot = -1.070470151e-8;
-			F_dot = 2.6724042552e-6;
-			cosI = 0.999641732;
-			sinI = 0.0267657905;
-			t0 = 40768;
-			sprintf(AGC, "Comanche108");
-		}
-		else
-		{
-			epoch = 1972;			//Nearest Besselian Year 1972
-			w_E = 7.29211514667e-5; //Artemis 072 (Apollo 15 CM AGC)
-			B_0 = 0.409157363336;
-			Omega_I0 = 5.52185714700;
-			F_0 = 4.11720655556;
-			B_dot = -7.19758599677e-14;
-			Omega_I_dot = -1.07047013100e-8;
-			F_dot = 2.67240425480e-6;
-			cosI = 0.999641732;
-			sinI = 0.0267657905;
-			t0 = 41133;
-			sprintf(AGC, "Artemis072");
-		}
-	}
-	else
-	{
-		if (mission < 11)
-		{
-			epoch = 1969;		    //Nearest Besselian Year 1969
-			w_E = 7.29211515e-5;    //Luminary 069 (Apollo 10 LM AGC)
-			B_0 = 0.409164173;
-			Omega_I0 = -6.03249419;
-			F_0 = 2.61379488;
-			B_dot = -7.19756666e-14;
-			Omega_I_dot = -1.07047016e-8;
-			F_dot = 2.67240019e-6;
-			cosI = 0.99964115;
-			sinI = 0.02678760;
-			t0 = 40038;
-			sprintf(AGC, "Luminary069");
-		}
-		else if (mission < 12)
-		{
-			epoch = 1970;				//Nearest Besselian Year 1970
-			w_E = 7.29211319606104e-5;  //Luminary 099 (Apollo 11 LM AGC)
-			B_0 = 0.40916190299;
-			Omega_I0 = 6.1965366255107;
-			F_0 = 5.20932947411685;
-			B_dot = -7.19757301e-14;
-			Omega_I_dot = -1.07047011e-8;
-			F_dot = 2.67240410e-6;
-			cosI = 0.99964173;
-			sinI = 0.02676579;
-			t0 = 40403;
-			sprintf(AGC, "Luminary099");
-		}
-		else if (mission < 14)
-		{
-			epoch = 1970;			//Nearest Besselian Year 1970
-			w_E = 7.292115145489943e-05;
-			B_0 = 0.4091619030;
-			Omega_I0 = 6.196536640;
-			F_0 = 5.209327056;
-			B_dot = -7.197573418e-14;
-			Omega_I_dot = -1.070470170e-8;
-			F_dot = 2.672404256e-6;
-			cosI = 0.9996417320;
-			sinI = 0.02676579050;
-			t0 = 40403;
-			if (mission < 13)
-			{
-				sprintf(AGC, "Luminary116");
-			}
-			else
-			{
-				sprintf(AGC, "Luminary131");
-			}
-		}
-		else if (mission < 15)
-		{
-			epoch = 1971;			//Nearest Besselian Year 1971
-			w_E = 7.292115147e-5;	//Luminary 178 (Apollo 14 LM AGC)
-			B_0 = 0.40915963316;
-			Omega_I0 = 5.859196887;
-			F_0 = 1.5216749598;
-			B_dot = -7.1975797907e-14;
-			Omega_I_dot = -1.070470151e-8;
-			F_dot = 2.6724042552e-6;
-			cosI = 0.999641732;
-			sinI = 0.0267657905;
-			t0 = 40768;
-			sprintf(AGC, "Luminary178");
-		}
-		else
-		{
-			epoch = 1972;			//Nearest Besselian Year 1972
-			w_E = 7.29211514667e-5; //Luminary 210 (Apollo 15 LM AGC)
-			B_0 = 0.409157363336;
-			Omega_I0 = 5.52185714700;
-			F_0 = 4.11720655556;
-			B_dot = -7.19758599677e-14;
-			Omega_I_dot = -1.07047013100e-8;
-			F_dot = 2.67240425480e-6;
-			cosI = 0.999641732;
-			sinI = 0.0267657905;
-			t0 = 41133;
-			sprintf(AGC, "Luminary210");
-		}
-	}
-
-	//EARTH ROTATIONS
-	brcsmjd = OrbMech::MJDOfNBYEpoch(epoch);
-	J2000 = OrbMech::J2000EclToBRCSMJD(brcsmjd);
-	R2 = mul(OrbMech::tmat(Rot2), mul(R, Rot2));
-	R3 = mul(J2000, R2);
-
-	UNITW = mul(R3, _V(0, 0, 1));
-
-	A_Z = atan2(R3.m21, R3.m11);
-	if (mission < 14)
-	{
-		A_Z0 = fmod((A_Z - w_E * (mjd_UNITW - t0) * 24.0 * 3600.0), PI2);  //AZ0 for mission
-		if (A_Z0 < 0) A_Z0 += PI2;
-	}
-	else if (mission < 15)
-	{
-		A_Z0 = 4.8631512705;   //Hardcoded in Comanche 108 and Luminary 178
-	}
-	else
-	{
-		A_Z0 = 4.85898502016;  //Hardcoded in Artemis 072 and Luminary 210
-	}
-
-	M = _M(cos(A_Z), sin(A_Z), 0., -sin(A_Z), cos(A_Z), 0., 0., 0., 1.);
-	M_AGC = mul(R3, M);
-
-	mem = 01711;
-
-	//TBD: Print stuff here
-	FILE *file = fopen("PrecessionData.txt", "w");
-	fprintf(file, "------- AGC Correction Vectors for Apollo %d using %s -------\n", mission, AGC);
-	fprintf(file, "Epoch   = %d (Year) Epoch of Basic Reference Coordinate System\n", epoch);
-	fprintf(file, "Epoch   = %6.6f (MJD) Epoch of Basic Reference Coordinate System\n", brcsmjd);
-	fprintf(file, "TEphem0 = %6.6f (MJD) Ephemeris Time Zero\n", t0);
-	fprintf(file, "T0      = %6.6f (MJD) Mission start time\n", mjd_launchday);
-	fprintf(file, "UNITW computed to %+.2lf Days\n", dt_UNITW);
-	fprintf(file, "504LM computed to %+.2lf Days\n\n", dt_504LM);
-	fprintf(file, "------- Earth Orientation -------\n");
-	if (mission < 14)
-	{
-		fprintf(file, "AZO %.10f DEG\n", A_Z0*DEG);
-	}
-	fprintf(file, "-AYO %.10f DEG\n", UNITW.x*DEG);
-	fprintf(file, "AXO %.10f DEG\n", UNITW.y*DEG);
-	if (mission < 14)
-	{
-		fprintf(file, "EMEM%o %d\n", mem, OrbMech::DoubleToBuffer(A_Z0 / PI2, 0, 1)); mem++;
-		fprintf(file, "EMEM%o %d\n", mem, OrbMech::DoubleToBuffer(A_Z0 / PI2, 0, 0)); mem++;
-	}	
-	fprintf(file, "EMEM%o %d\n", mem, OrbMech::DoubleToBuffer(UNITW.x, 0, 1)); mem++;
-	fprintf(file, "EMEM%o %d\n", mem, OrbMech::DoubleToBuffer(UNITW.x, 0, 0)); mem++;
-	fprintf(file, "EMEM%o %d\n", mem, OrbMech::DoubleToBuffer(UNITW.y, 0, 1)); mem++;
-	fprintf(file, "EMEM%o %d\n", mem, OrbMech::DoubleToBuffer(UNITW.y, 0, 0)); mem++;
-	if (isCMC)
-	{
-		fprintf(file, "EMEM%o %d\n", mem, OrbMech::DoubleToBuffer(UNITW.z, 0, 1)); mem++;
-		fprintf(file, "EMEM%o %d\n", mem, OrbMech::DoubleToBuffer(UNITW.z, 0, 0)); mem++;
-	}
-
-	//MOON ROTATIONS
-	MATRIX3 M1, M2, M3, M4, MM, M_AGC_M, RM, R2M, R3M;
-	VECTOR3 lm;
-	double t_M, B, Omega_I, F;
-
-	t_M = (mjd_504LM - t0) * 24.0 * 3600.0;
-	RM = OrbMech::GetRotationMatrix(BODY_MOON, mjd_504LM);
-
-	B = B_0 + B_dot * t_M;
-	Omega_I = Omega_I0 + Omega_I_dot * t_M;
-	F = F_0 + F_dot * t_M;
-	M1 = _M(1., 0., 0., 0., cos(B), sin(B), 0., -sin(B), cos(B));
-	M2 = _M(cos(Omega_I), sin(Omega_I), 0., -sin(Omega_I), cos(Omega_I), 0., 0., 0., 1.);
-	M3 = _M(1., 0., 0., 0., cosI, -sinI, 0., sinI, cosI);
-	M4 = _M(-cos(F), -sin(F), 0., sin(F), -cos(F), 0., 0., 0., 1.);
-	MM = mul(M4, mul(M3, mul(M2, M1)));
-	R2M = mul(OrbMech::tmat(Rot2), mul(RM, Rot2));
-	R3M = mul(J2000, R2M);
-	M_AGC_M = mul(MM, R3M);
-
-	lm.x = atan2(M_AGC_M.m32, M_AGC_M.m33);
-	lm.y = atan2(-M_AGC_M.m31, sqrt(M_AGC_M.m32*M_AGC_M.m32 + M_AGC_M.m33*M_AGC_M.m33));
-	lm.z = atan2(M_AGC_M.m21, M_AGC_M.m11);
-
-	if (isCMC)
-	{
-		mem = 02011;
-	}
-	else
-	{
-		mem = 02012;
-	}
-	fprintf(file, "------- Moon Orientation -------\n");
-	fprintf(file, "504LM %.10f DEG\n", lm.x*DEG);
-	fprintf(file, "504LM+2 %.10f DEG\n", lm.y*DEG);
-	fprintf(file, "504LM+4 %.10f DEG\n", lm.z*DEG);
-	fprintf(file, "EMEM%o %d\n", mem, OrbMech::DoubleToBuffer(lm.x, 0, 1)); mem++;
-	fprintf(file, "EMEM%o %d\n", mem, OrbMech::DoubleToBuffer(lm.x, 0, 0)); mem++;
-	fprintf(file, "EMEM%o %d\n", mem, OrbMech::DoubleToBuffer(lm.y, 0, 1)); mem++;
-	fprintf(file, "EMEM%o %d\n", mem, OrbMech::DoubleToBuffer(lm.y, 0, 0)); mem++;
-	fprintf(file, "EMEM%o %d\n", mem, OrbMech::DoubleToBuffer(lm.z, 0, 1)); mem++;
-	fprintf(file, "EMEM%o %d\n", mem, OrbMech::DoubleToBuffer(lm.z, 0, 0)); mem++;
-
-	if (file) fclose(file);
-}
-
-
 int ARCore::GetVesselParameters(int Thruster, int &Config, int &TVC, double &CSMMass, double &LMMass)
 {
 	//Error checking
@@ -5847,7 +5518,7 @@ int ARCore::GetVesselParameters(int Thruster, int &Config, int &TVC, double &CSM
 	return 0;
 }
 
-void ARCore::menuCalculateIMUComparison()
+int ARCore::menuCalculateIMUComparison(bool IsCSM)
 {
 	MATRIX3 M_BRCS_SM; //BRCS to stable member, right handed
 	MATRIX3 M_NB_ECL; //Local vessel to global ecliptic
@@ -5855,28 +5526,43 @@ void ARCore::menuCalculateIMUComparison()
 	MATRIX3 M_SM_NB_act; //Stable member to navigation base, actual
 	MATRIX3 M_ECL_BRCS; //Ecliptic to BRCS
 	VECTOR3 IMUAngles;
+	VESSEL *v;
 
-	if (vesseltype == 0)
+	if (IsCSM)
 	{
+		v = GC->rtcc->pCSM;
+	}
+	else
+	{
+		v = GC->rtcc->pLM;
+	}
+
+	if (v == NULL) return 1;
+
+	if (IsCSM)
+	{
+		if (utils::IsVessel(v, utils::Saturn) == false) return 2;
+
 		M_BRCS_SM = GC->rtcc->EZJGMTX1.data[0].REFSMMAT;
-		IMUAngles = ((Saturn*)vessel)->imu.GetTotalAttitude();
+		IMUAngles = ((Saturn*)v)->imu.GetTotalAttitude();
 
 		//Get actual orientation (left handed)
-		vessel->GetRotationMatrix(M_NB_ECL);
+		v->GetRotationMatrix(M_NB_ECL);
 		//Convert to right-handed CSM coordinates
 		M_NB_ECL = mul(MatrixRH_LH(M_NB_ECL), _M(0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, -1.0));
 	}
-	else if (vesseltype == 1)
+	else
 	{
+		if (utils::IsVessel(v, utils::LEM) == false) return 2;
+
 		M_BRCS_SM = GC->rtcc->EZJGMTX3.data[0].REFSMMAT;
-		IMUAngles = ((LEM*)vessel)->imu.GetTotalAttitude();
+		IMUAngles = ((LEM*)v)->imu.GetTotalAttitude();
 
 		//Get actual orientation (left handed)
-		vessel->GetRotationMatrix(M_NB_ECL);
+		v->GetRotationMatrix(M_NB_ECL);
 		//Convert to right-handed LM coordinates
 		M_NB_ECL = mul(MatrixRH_LH(M_NB_ECL), _M(0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0));
 	}
-	else return;
 
 	//Stable member to navigation base conversion with current IMU alignment
 	M_SM_NB_est = OrbMech::CALCSMSC(IMUAngles);
@@ -5886,4 +5572,6 @@ void ARCore::menuCalculateIMUComparison()
 	M_SM_NB_act = OrbMech::tmat(mul(M_BRCS_SM, mul(M_ECL_BRCS, M_NB_ECL)));
 	//Torquing angles that would be required
 	DebugIMUTorquingAngles = OrbMech::CALCGTA(mul(OrbMech::tmat(M_SM_NB_act), M_SM_NB_est));
+
+	return 0;
 }

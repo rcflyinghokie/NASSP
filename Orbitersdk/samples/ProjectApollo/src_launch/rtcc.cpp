@@ -1475,6 +1475,8 @@ RTCC::RTCC() :
 	calcParams.SVSTORE1.R = _V(0, 0, 0);
 	calcParams.SVSTORE1.V = _V(0, 0, 0);
 
+	pCSM = pLM = NULL;
+
 	EZJGMTX1.data[RTCC_REFSMMAT_TYPE_CUR - 1].REFSMMAT = _M(1, 0, 0, 0, 1, 0, 0, 0, 1);
 	EZJGMTX3.data[RTCC_REFSMMAT_TYPE_CUR - 1].REFSMMAT = _M(1, 0, 0, 0, 1, 0, 0, 0, 1);
 	EZJGMTX3.data[RTCC_REFSMMAT_TYPE_AGS - 1].REFSMMAT = _M(1, 0, 0, 0, 1, 0, 0, 0, 1);
@@ -7217,6 +7219,15 @@ void RTCC::SaveState(FILEHANDLE scn) {
 	PZMPTLEM.SaveState(scn, "MPTLEM_BEGIN", "MPTLEM_END");
 	RZDBSC1.SaveState(scn, "RZDBSC1_BEGIN", "RZDBSC1_END");
 
+	if (pCSM)
+	{
+		oapiWriteScenario_string(scn, "RTCCMFD_CSM", pCSM->GetName());
+	}
+	if (pLM)
+	{
+		oapiWriteScenario_string(scn, "RTCCMFD_LM", pLM->GetName());
+	}
+
 	oapiWriteLine(scn, RTCC_END_STRING);
 }
 
@@ -7467,7 +7478,22 @@ void RTCC::LoadState(FILEHANDLE scn) {
 		else if (!strnicmp(line, "RZDBSC1_BEGIN", sizeof("RZDBSC1_BEGIN"))) {
 			RZDBSC1.LoadState(scn, "RZDBSC1_END");
 		}
-
+		else if (papiReadScenario_string(line, "RTCCMFD_CSM", Buff))
+		{
+			OBJHANDLE hVessel = oapiGetObjectByName(Buff);
+			if (hVessel)
+			{
+				pCSM = oapiGetVesselInterface(hVessel);
+			}
+		}
+		else if (papiReadScenario_string(line, "RTCCMFD_LM", Buff))
+		{
+			OBJHANDLE hVessel = oapiGetObjectByName(Buff);
+			if (hVessel)
+			{
+				pLM = oapiGetVesselInterface(hVessel);
+			}
+		}
 	}
 
 	//PMSVCT might need to use RTCC GMT

@@ -180,18 +180,10 @@ public:
 	void TLIProcessorCalc();
 	void SaturnVTLITargetUplink();
 	int GetVesselParameters(int Thruster, int &Config, int &TVC, double &CSMMass, double &LMMass);
-	void menuCalculateIMUComparison();
+	int menuCalculateIMUComparison(bool IsCSM);
 
 	int startSubthread(int fcn);
 	int subThread();
-
-	//EPHEM PROGRAM
-	void GenerateAGCEphemeris();
-	int agcCelBody_RH(CELBODY *Cel, double mjd, int Flags, VECTOR3 *Pos = NULL, VECTOR3 *Vel = NULL);
-	int agcCelBody_LH(CELBODY *Cel, double mjd, int Flags, VECTOR3 *Pos = NULL, VECTOR3 *Vel = NULL);
-	void AGCEphemeris(double T0, int Epoch, double TEphem0);
-	void AGCCorrectionVectors(double mjd_launchday, double dt_UNITW, double dt_504LM, int mission, bool isCMC);
-	void GenerateAGCCorrectionVectors();
 
 	// SUBTHREAD MANAGEMENT
 	KillableWorker subThreadWorker;
@@ -364,16 +356,6 @@ public:
 
 	//LVDC PAGE
 	double LVDCLaunchAzimuth;
-
-	//AGC EPHEMERIS
-	int AGCEphemOption;	//0 = AGC ephemerides, 1 = AGC precession/nutation/libration correction vectors
-	int AGCEphemBRCSEpoch;
-	double AGCEphemTEphemZero;
-	double AGCEphemTIMEM0;
-	double AGCEphemTEPHEM;
-	double AGCEphemTLAND;
-	int AGCEphemMission;
-	bool AGCEphemIsCMC;
 
 	//NODAL TARGET CONVERSION
 	bool NodeConvOpt; //false = EMP to selenographc, true = selenographic to EMP

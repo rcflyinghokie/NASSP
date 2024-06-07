@@ -4995,6 +4995,9 @@ protected:
 
 public:
 
+	//Vessel pointers to be used exclusively by the RTCC MFD
+	VESSEL *pCSM, *pLM;
+
 	RTCCSystemParameters SystemParameters;
 };
 
