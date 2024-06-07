@@ -261,9 +261,9 @@ void ApolloRTCCMFD::ReadStatus(FILEHANDLE scn)
 	}
 }
 
-bool ApolloRTCCMFD::Text(oapi::Sketchpad *skp, int x, int y, const std::string & str)
+void ApolloRTCCMFD::Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax, int ymax)
 {
-	return skp->Text(x, y, str.c_str(), str.length());
+	skp->Text(x * W / xmax, y * H / ymax, message.c_str(), message.size());
 }
 
 void ApolloRTCCMFD::menuEntryUpdateUpload()
@@ -9636,7 +9636,266 @@ void ApolloRTCCMFD::GMPManeuverCodeName(char *buffer, int code)
 	}
 }
 
-void ApolloRTCCMFD::Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax, int ymax)
+void ApolloRTCCMFD::SetMEDInputPageP13()
 {
-	skp->Text(x * W / xmax, y * H / ymax, message.c_str(), message.size());
+	SetMEDInputPage("P13");
+}
+
+void ApolloRTCCMFD::SetMEDInputPageP14()
+{
+	SetMEDInputPage("P14");
+}
+
+void ApolloRTCCMFD::SetMEDInputPage(std::string med)
+{
+	MEDInput temp;
+
+	MEDInputData.table.clear();
+
+	if (med == "P13")
+	{
+		MEDInputData.Title = "P13: Enter Vector in Spherical Coordinates";
+		MEDInputData.MEDCode = "P13";
+
+		temp.Label = "VEH:";
+		temp.Description = "Vehicle (CSM or LEM):";
+		temp.Data = "CSM";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Velocity:";
+		temp.Description = "Velocity in ft/s:";
+		temp.Data = "0.0";
+		temp.Unit = "ft/s";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Flight Path Angle:";
+		temp.Description = "Flight Path Angle in degrees:";
+		temp.Data = "0.0";
+		temp.Unit = "degrees";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Azimuth:";
+		temp.Description = "Azimuth in degrees:";
+		temp.Data = "0.0";
+		temp.Unit = "degrees";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Latitude:";
+		temp.Description = "Geocentric latitude in degrees:";
+		temp.Data = "0.0";
+		temp.Unit = "degrees";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Longitude:";
+		temp.Description = "Longitude in degrees:";
+		temp.Data = "0.0";
+		temp.Unit = "degrees";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Height:";
+		temp.Description = "Height above spherical planet in nautical miles:";
+		temp.Data = "0.0";
+		temp.Unit = "NM";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Time:";
+		temp.Description = "State vector time (format HHH:MM:SS.TH):";
+		temp.Data = "000:00:00.00";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Vector Action Code:";
+		temp.Description = "Vector Action Code (L = Live Ephem, S = Static Ephem, G = put in targeting slot of GZLTRA only, B = put in GZLTRA & generate static ephem):";
+		temp.Data = "L";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Co-ord System Ind:";
+		temp.Description = "Coordinate System Indicator (ECT or MCT):";
+		temp.Data = "ECT";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+	}
+	else if (med == "P14")
+	{
+		MEDInputData.Title = "P14: Initialize Trajectory with a Vector";
+		MEDInputData.MEDCode = "P14";
+
+		temp.Label = "VEH:";
+		temp.Description = "Vehicle (CSM or LEM):";
+		temp.Data = "CSM";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "X:";
+		temp.Description = "Position in Earth radii:";
+		temp.Data = "0.0";
+		temp.Unit = "ER";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Y:";
+		temp.Description = "Position in Earth radii:";
+		temp.Data = "0.0";
+		temp.Unit = "ER";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Z:";
+		temp.Description = "Position in Earth radii:";
+		temp.Data = "0.0";
+		temp.Unit = "ER";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "XDOT:";
+		temp.Description = "Velocity in Earth radii per hour:";
+		temp.Data = "0.0";
+		temp.Unit = "ER/hr";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "YDOT:";
+		temp.Description = "Velocity in Earth radii per hour:";
+		temp.Data = "0.0";
+		temp.Unit = "ER/hr";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "ZDOT:";
+		temp.Description = "Velocity in Earth radii per hour:";
+		temp.Data = "0.0";
+		temp.Unit = "ER/hr";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Time:";
+		temp.Description = "GET of vector (format HHH:MM:SS.TH):";
+		temp.Data = "000:00:00.00";
+		temp.Unit = "GMT";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Vector Action Code:";
+		temp.Description = "Vector Action Code (L = Live Ephem, S = Static Ephem, G = put in targeting slot of GZLTRA only, B = put in GZLTRA & generate static ephem):";
+		temp.Data = "L";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Co-ord System Ind:";
+		temp.Description = "Coordinate system of vector (ECI, ECT, MCI, MCT, EMP or PLUM)";
+		temp.Data = "ECI";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+	}
+	else if (med == "S84")
+	{
+		MEDInputData.Title = "S84: Vector Panel Summary Entry";
+		MEDInputData.MEDCode = "S84";
+
+		temp.Label = "VEH:";
+		temp.Description = "Vehicle (CSM or LEM):";
+		temp.Data = "CSM";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "X:";
+		temp.Description = "Position in Earth radii:";
+		temp.Data = "0.0";
+		temp.Unit = "ER";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Y:";
+		temp.Description = "Position in Earth radii:";
+		temp.Data = "0.0";
+		temp.Unit = "ER";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Z:";
+		temp.Description = "Position in Earth radii:";
+		temp.Data = "0.0";
+		temp.Unit = "ER";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "XDOT:";
+		temp.Description = "Velocity in Earth radii per hour:";
+		temp.Data = "0.0";
+		temp.Unit = "ER/hr";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "YDOT:";
+		temp.Description = "Velocity in Earth radii per hour:";
+		temp.Data = "0.0";
+		temp.Unit = "ER/hr";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "ZDOT:";
+		temp.Description = "Velocity in Earth radii per hour:";
+		temp.Data = "0.0";
+		temp.Unit = "ER/hr";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "GMT:";
+		temp.Description = "GMT of vector (format HHH:MM:SS.TH):";
+		temp.Data = "000:00:00.00";
+		temp.Unit = "GMT";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Reference:";
+		temp.Description = "Coordinate system of vector (ECI, ECT, MCI, MCT or EMP)";
+		temp.Data = "ECI";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Lunar Surf.:";
+		temp.Description = "Lunar Surface Indicator (S if vector is on the surface of Moon):";
+		temp.Data = "";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+	}
+
+	marker = 0;
+	markermax = (int)MEDInputData.table.size();
+	if (markermax > 0) markermax--;
+	SelectPage(130);
+}
+
+void ApolloRTCCMFD::menuMEDInputCalc()
+{
+	if (MEDInputData.table.size() == 0U) return;
+
+	std::string med;
+
+	med = MEDInputData.MEDCode;
+
+	for (unsigned i = 0; i < MEDInputData.table.size(); i++)
+	{
+		med += ",";
+		med += MEDInputData.table[i].Data;
+	}
+
+	med += ";";
+
+	sprintf_s(GC->rtcc->RTCCMEDBUFFER, 256, med.c_str());
+	G->GeneralMEDRequest();
+}
+
+void ApolloRTCCMFD::menuInputMEDData()
+{
+	if (MEDInputData.table.size() <= (unsigned)marker) return;
+
+	MEDInput data = MEDInputData.table[(unsigned)marker];
+
+	char Buffer[256];
+	sprintf(Buffer, "%s", data.Description.c_str());
+
+	bool InputMEDDataInput(void* id, char *str, void *data);
+	oapiOpenInputBox(Buffer, InputMEDDataInput, 0, 20, (void*)this);
+}
+
+bool InputMEDDataInput(void* id, char *str, void *data)
+{
+	((ApolloRTCCMFD*)data)->set_MEDData(str);
+	return true;
+}
+
+void ApolloRTCCMFD::set_MEDData(char *str)
+{
+	MEDInput *data = &MEDInputData.table[(unsigned)marker];
+
+	data->Data.assign(str);
 }
