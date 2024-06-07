@@ -90,7 +90,7 @@ public:
 	void TLCCCalc();
 	void EntryUpdateCalc();
 	void StateVectorCalc(int type);
-	void AGSStateVectorCalc();
+	void AGSStateVectorCalc(bool IsCSM);
 	void LandingSiteUpdate();
 	void CSMLSUplinkCalc();
 	void LMLSUplinkCalc();
@@ -153,7 +153,7 @@ public:
 	void ErasableMemoryFileLoad(int blocknum);
 	void ErasableMemoryUpdateUplink(int blocknum);
 
-	void ManeuverPAD();
+	void ManeuverPAD(bool IsCSM);
 	void EntryPAD();
 	void TPIPAD();
 	void TLI_PAD();
@@ -286,7 +286,7 @@ public:
 	AP11LMMNV lmmanpad;
 	bool HeadsUp;
 	AP7TPI TPI_PAD;
-	int manpadopt; //0 = Maneuver PAD, 1 = TPI PAD, 2 = TLI PAD
+	int manpadopt; //0 = CSM Maneuver PAD, 1 = LM Maneuver PAD, 2 = TPI PAD, 3 = TLI PAD, 4 = PDI PAD
 	double sxtstardtime;
 	double manpad_ullage_dt;
 	bool manpad_ullage_opt; //true = 4 jets, false = 2 jets

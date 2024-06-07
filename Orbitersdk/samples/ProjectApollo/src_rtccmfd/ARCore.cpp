@@ -1156,9 +1156,9 @@ void ARCore::EntryPAD()
 	startSubthread(31);
 }
 
-void ARCore::ManeuverPAD()
+void ARCore::ManeuverPAD(bool IsCSM)
 {
-	startSubthread(9);
+	startSubthread(9, IsCSM);
 }
 
 void ARCore::TPIPAD()
@@ -1619,17 +1619,29 @@ void ARCore::StateVectorCalc(int type)
 	}
 }
 
-void ARCore::AGSStateVectorCalc()
+void ARCore::AGSStateVectorCalc(bool IsCSM)
 {
 	AGSSVOpt opt;
 	EphemerisData sv;
+	VESSEL *v;
 
-	sv = GC->rtcc->StateVectorCalcEphem(svtarget);
+	if (IsCSM)
+	{
+		v = GC->rtcc->pCSM;
+	}
+	else
+	{
+		v = GC->rtcc->pLM;
+	}
 
-	opt.csm = SVSlot;
+	if (v == NULL) return;
+
+	sv = GC->rtcc->StateVectorCalcEphem(v);
+
+	opt.csm = IsCSM;
 	opt.REFSMMAT = GC->rtcc->EZJGMTX3.data[0].REFSMMAT;
 	opt.sv = sv;
-	opt.landed = svtarget->GroundContact();
+	opt.landed = v->GroundContact();
 
 	GC->rtcc->AGSStateVectorPAD(opt, agssvpad);
 }
@@ -3080,12 +3092,18 @@ int ARCore::subThread()
 	break;
 	case 6: //TPI PAD
 	{
+		if (GC->rtcc->pCSM == NULL || GC->rtcc->pLM == NULL)
+		{
+			Result = DONE;
+			break;
+		}
+
 		AP7TPIPADOpt opt;
 
 		opt.dV_LVLH = dV_LVLH;
 		opt.TIG = P30TIG;
-		opt.sv_A = GC->rtcc->StateVectorCalcEphem(vessel);
-		opt.sv_P = GC->rtcc->StateVectorCalcEphem(target);
+		opt.sv_A = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pCSM);
+		opt.sv_P = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pLM);
 		opt.mass = vessel->GetMass();
 
 		GC->rtcc->AP7TPIPAD(opt, TPI_PAD);
@@ -3121,10 +3139,16 @@ int ARCore::subThread()
 	break;
 	case 8: //TLI PAD
 	{
-		LVDCSV *lvdc = NULL;
-		if (utils::IsVessel(vessel, utils::SaturnV))
+		if (GC->rtcc->pCSM == NULL)
 		{
-			SaturnV * SatV = (SaturnV *)vessel;
+			Result = DONE;
+			break;
+		}
+
+		LVDCSV *lvdc = NULL;
+		if (utils::IsVessel(GC->rtcc->pCSM, utils::SaturnV))
+		{
+			SaturnV * SatV = (SaturnV *)GC->rtcc->pCSM;
 			if (SatV->iu)
 			{
 				lvdc = (LVDCSV*)SatV->iu->GetLVDC();
@@ -3138,7 +3162,7 @@ int ARCore::subThread()
 
 		TLIPADOpt opt;
 
-		opt.ConfigMass = vessel->GetMass();
+		opt.ConfigMass = GC->rtcc->pCSM->GetMass();
 		if (lvdc->first_op)
 		{
 			opt.InjOpp = 1;
@@ -3149,7 +3173,7 @@ int ARCore::subThread()
 		}
 		opt.REFSMMAT= GC->rtcc->EZJGMTX1.data[0].REFSMMAT;
 		opt.SeparationAttitude = lvdc->XLunarAttitude;
-		opt.sv0 = GC->rtcc->StateVectorCalcEphem(vessel);
+		opt.sv0 = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pCSM);
 
 		GC->rtcc->TLI_PAD(opt, tlipad);
 
@@ -3163,9 +3187,14 @@ int ARCore::subThread()
 
 		if (GC->MissionPlanningActive)
 		{
-			double GMT = GC->rtcc->GMTfromGET(P30TIG);
+			double GMT;
 			EphemerisData EPHEM;
-			if (GC->rtcc->EMSFFV(GMT, mptveh, sv_A))
+			int mpt;
+
+			GMT = GC->rtcc->GMTfromGET(P30TIG);
+			mpt = IsCSMCalculation ? RTCC_MPT_CSM : RTCC_MPT_LM;
+
+			if (GC->rtcc->EMSFFV(GMT, mpt, sv_A))
 			{
 				Result = DONE;
 				break;
@@ -3173,16 +3202,32 @@ int ARCore::subThread()
 
 			PLAWDTInput pin;
 			pin.T_UP = GMT;
-			pin.TableCode = mptveh;
+			pin.TableCode = mpt;
 			GC->rtcc->PLAWDT(pin, WeightsTable);
 		}
 		else
 		{
-			sv_A = GC->rtcc->StateVectorCalcEphem(vessel);
-			WeightsTable = GC->rtcc->GetWeightsTable(vessel, vesseltype == 0, vesselisdocked);
+			VESSEL *v;
+			if (IsCSMCalculation)
+			{
+				v = GC->rtcc->pCSM;
+			}
+			else
+			{
+				v = GC->rtcc->pLM;
+			}
+
+			if (v == NULL)
+			{
+				Result = DONE;
+				break;
+			}
+
+			sv_A = GC->rtcc->StateVectorCalcEphem(v);
+			WeightsTable = GC->rtcc->GetWeightsTable(v, IsCSMCalculation, vesselisdocked);
 		}
 
-		if (vesseltype == 0)
+		if (IsCSMCalculation)
 		{
 			AP11ManPADOpt opt;
 
@@ -3483,7 +3528,13 @@ int ARCore::subThread()
 		}
 		else
 		{
-			opt.sv0 = GC->rtcc->StateVectorCalc(vessel);
+			if (GC->rtcc->pLM == NULL)
+			{
+				Result = DONE;
+				break;
+			}
+
+			opt.sv0 = GC->rtcc->StateVectorCalc(GC->rtcc->pLM);
 		}
 
 		opt.direct = true;

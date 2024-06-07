@@ -240,6 +240,7 @@ public:
 	void menuChangeVesselStatus();
 	void menuCycleLMStage();
 	void menuUpdateLiftoffTime();
+	void set_LiftoffTime(bool cmc);
 	void set_svtarget();
 	void TwoImpulseOffset();
 	void GetREFSMMATfromAGC();

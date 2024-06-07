@@ -5862,7 +5862,7 @@ void ApolloRTCCMFD::menuAGSSVCalc()
 {
 	if (G->svtarget != NULL)
 	{
-		G->AGSStateVectorCalc();
+		G->AGSStateVectorCalc(IsCSM);
 	}
 }
 
@@ -5996,27 +5996,23 @@ void ApolloRTCCMFD::menuSwitchHeadsUp()
 
 void ApolloRTCCMFD::menuCalcManPAD()
 {
-	if (G->manpadopt == 0)
+	switch (G->manpadopt)
 	{
-		G->ManeuverPAD();
-	}
-	else if (G->manpadopt == 1)
-	{
-		if (G->target != NULL)
-		{
-			G->TPIPAD();
-		}
-	}
-	else
-	{
-		if (G->vesseltype == 0)
-		{
-			G->TLI_PAD();
-		}
-		else
-		{
-			G->PDI_PAD();
-		}
+	case 0:
+		G->ManeuverPAD(true);
+		break;
+	case 1:
+		G->ManeuverPAD(false);
+		break;
+	case 2:
+		G->TPIPAD();
+		break;
+	case 3:
+		G->TLI_PAD();
+		break;
+	case 4:
+		G->PDI_PAD();
+		break;
 	}
 }
 
@@ -6077,7 +6073,7 @@ void ApolloRTCCMFD::CycleThrusterOption(int &thruster)
 
 void ApolloRTCCMFD::menuSwitchManPADopt()
 {
-	if (G->manpadopt < 2)
+	if (G->manpadopt < 4)
 	{
 		G->manpadopt++;
 	}
@@ -6192,7 +6188,7 @@ void ApolloRTCCMFD::set_LaunchTime(int hours, int minutes, double seconds)
 
 void ApolloRTCCMFD::menuChangeVesselStatus()
 {
-	if (G->vesselisdocked == false && G->vessel->DockingStatus(0) == 1)
+	if (G->vesselisdocked == false)
 	{
 		G->vesselisdocked = true;
 	}
@@ -6209,27 +6205,74 @@ void ApolloRTCCMFD::menuCycleLMStage()
 
 void ApolloRTCCMFD::menuUpdateLiftoffTime()
 {
-	if (G->vesseltype < 0 || G->vesseltype > 1) return;
+	bool UpdateLiftoffTimeInput(void *id, char *str, void *data);
+	oapiOpenInputBox("Update RTCC liftoff time from CMC or LGC. Choose CMC or LGC:", UpdateLiftoffTimeInput, 0, 20, (void*)this);
 
-	double LaunchMJD;
+}
 
-	agc_t *agc;
+bool UpdateLiftoffTimeInput(void *id, char *str, void *data)
+{
+	std::string comp(str);
+	bool IsCMC;
 
-	if (G->vesseltype == 0)
+	if (comp == "CMC")
 	{
-		saturn = (Saturn *)G->vessel;
-
-		agc = &saturn->agc.vagc;
+		IsCMC = true;
+	}
+	else if (comp == "LGC")
+	{
+		IsCMC = false;
 	}
 	else
 	{
-		lem = (LEM *)G->vessel;
-
-		agc = &lem->agc.vagc;
+		return false;
 	}
 
+	((ApolloRTCCMFD*)data)->set_LiftoffTime(IsCMC);
+	return true;
+}
+
+void ApolloRTCCMFD::set_LiftoffTime(bool IsCMC)
+{
+	VESSEL *v;
+
+	if (IsCMC)
+	{
+		v = GC->rtcc->pCSM;
+	}
+	else
+	{
+		v = GC->rtcc->pLM;
+	}
+
+	if (v == NULL) return;
+
+	agc_t *agc = NULL;
+
+	if (IsCMC)
+	{
+		if (utils::IsVessel(v, utils::Saturn))
+		{
+			Saturn *sat = (Saturn *)v;
+			agc = &sat->agc.vagc;
+		}
+	}
+	else
+	{
+
+		if (utils::IsVessel(v, utils::LEM))
+		{
+			LEM *lem = (LEM *)v;
+			agc = &lem->agc.vagc;
+		}
+	}
+
+	if (agc == NULL) return;
+
+	double LaunchMJD;
+
 	//Get TEPHEM in centiseconds
-	double tephem = GC->rtcc->GetTEPHEMFromAGC(agc, G->vesseltype == 0);
+	double tephem = GC->rtcc->GetTEPHEMFromAGC(agc, IsCMC);
 
 	//Calculate MJD of TEPHEM
 	LaunchMJD = (tephem / 8640000.) + GC->rtcc->SystemParameters.TEPHEM0;
@@ -6254,7 +6297,7 @@ void ApolloRTCCMFD::menuUpdateLiftoffTime()
 	GC->rtcc->GMGMED(Buff);
 
 	//Also update IU, if possible
-	G->UpdateGRRTime(G->vessel);
+	G->UpdateGRRTime(v);
 }
 
 void ApolloRTCCMFD::cycleREFSMMATHeadsUp()
@@ -6340,27 +6383,26 @@ ApolloRTCCMFD::ScreenData ApolloRTCCMFD::screenData = { 0 };
 
 void ApolloRTCCMFD::GetREFSMMATfromAGC()
 {
-	if (G->vesseltype < 0 || G->vesseltype > 1) return;
-
 	agc_t* vagc;
-	bool cmc;
 
-	if (G->vesseltype == 0)
+	if (IsCSM)
 	{
-		saturn = (Saturn *)G->vessel;
+		if (utils::IsVessel(GC->rtcc->pCSM, utils::ClassNames::Saturn) == false) return;
+
+		saturn = (Saturn *)GC->rtcc->pCSM;
 		vagc = &saturn->agc.vagc;
-		cmc = true;
 	}
 	else
 	{
-		lem = (LEM *)G->vessel;
+		if (utils::IsVessel(GC->rtcc->pLM, utils::ClassNames::LEM) == false) return;
+
+		lem = (LEM *)GC->rtcc->pLM;
 		vagc = &lem->agc.vagc;
-		cmc = false;
 	}
 
-	MATRIX3 REFSMMAT = GC->rtcc->GetREFSMMATfromAGC(vagc, cmc);
+	MATRIX3 REFSMMAT = GC->rtcc->GetREFSMMATfromAGC(vagc, IsCSM);
 
-	if (G->vesseltype == 0)
+	if (IsCSM)
 	{
 		GC->rtcc->BZSTLM.CMC_REFSMMAT = REFSMMAT;
 		GC->rtcc->BZSTLM.CMCRefsPresent = true;

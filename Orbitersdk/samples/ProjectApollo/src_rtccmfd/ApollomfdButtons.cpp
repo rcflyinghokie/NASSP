@@ -245,12 +245,12 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 
 	static const MFDBUTTONMENU mnu7[] =
 	{
-		{ "", 0, ' ' },
-		{ "", 0, ' ' },
-		{ "Set Target", 0, 'T' },
 		{ "State Vector Slot", 0, 'D' },
-		{ "AGS K Factor", 0, 'A' },
+		{ "Set Target", 0, 'T' },
 		{ "", 0, ' ' },
+		{ "", 0, ' ' },
+		{ "Set AGS K Factor", 0, 'A' },
+		{ "Get AGS K Factor", 0, 'U' },
 
 		{ "Calculate State Vector", 0, 'C' },
 		{ "", 0, ' ' },
@@ -262,10 +262,10 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 
 	RegisterPage(mnu7, sizeof(mnu7) / sizeof(MFDBUTTONMENU));
 
+	RegisterFunction("SLT", OAPI_KEY_D, &ApolloRTCCMFD::CycleCSMOrLMSelection);
+	RegisterFunction("TGT", OAPI_KEY_T, &ApolloRTCCMFD::set_Vessel);
 	RegisterFunction("", OAPI_KEY_N, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_G, &ApolloRTCCMFD::menuVoid);
-	RegisterFunction("TGT", OAPI_KEY_T, &ApolloRTCCMFD::set_svtarget);
-	RegisterFunction("SLT", OAPI_KEY_D, &ApolloRTCCMFD::menuSwitchSVSlot);
 	RegisterFunction("AGS", OAPI_KEY_A, &ApolloRTCCMFD::menuSetAGSKFactor);
 	RegisterFunction("KFA", OAPI_KEY_U, &ApolloRTCCMFD::menuGetAGSKFactor);
 
@@ -279,11 +279,12 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	static const MFDBUTTONMENU mnu8[] =
 	{
 		{ "RTCC files", 0, 'G' },
+		{ "Choose CSM", 0, 'D' },
+		{ "Choose LM", 0, 'A' },
 		{ "Vessel status", 0, 'V' },
 		{ "LM stage", 0, 'T' },
-		{ "", 0, ' ' },
 		{ "Sextant Star Time", 0, 'S' },
-		{ "", 0, ' ' },
+		
 
 		{ "Set launch day", 0, 'M' },
 		{ "Set launch time", 0, 'K' },
@@ -296,11 +297,11 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	RegisterPage(mnu8, sizeof(mnu8) / sizeof(MFDBUTTONMENU));
 
 	RegisterFunction("MIS", OAPI_KEY_G, &ApolloRTCCMFD::menuSetRTCCFilesPage);
+	RegisterFunction("CSM", OAPI_KEY_D, &ApolloRTCCMFD::set_CSMVessel);
+	RegisterFunction("LM", OAPI_KEY_A, &ApolloRTCCMFD::set_LMVessel);
 	RegisterFunction("TYP", OAPI_KEY_V, &ApolloRTCCMFD::menuChangeVesselStatus);
 	RegisterFunction("STA", OAPI_KEY_T, &ApolloRTCCMFD::menuCycleLMStage);
-	RegisterFunction("", OAPI_KEY_D, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("SXT", OAPI_KEY_S, &ApolloRTCCMFD::menusextantstartime);
-	RegisterFunction("", OAPI_KEY_A, &ApolloRTCCMFD::menuVoid);
 
 	RegisterFunction("DAT", OAPI_KEY_M, &ApolloRTCCMFD::menuSetLaunchDate);
 	RegisterFunction("TIM", OAPI_KEY_K, &ApolloRTCCMFD::menuSetLaunchTime);
