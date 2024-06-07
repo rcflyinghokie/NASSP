@@ -83,7 +83,7 @@ ApolloRTCCMFD::ApolloRTCCMFD (DWORD w, DWORD h, VESSEL *vessel, UINT im)
 
 	marker = 0;
 	markermax = 0;
-	IsCSM = false;
+	IsCSM = true;
 	ErrorMessage = false;
 }
 
@@ -4908,7 +4908,7 @@ void ApolloRTCCMFD::set_lambertelev(double elev)
 
 void ApolloRTCCMFD::calcREFSMMAT()
 {
-	G->REFSMMATCalc();
+	G->startSubthread(4, IsCSM);
 }
 
 void ApolloRTCCMFD::menuLSLat()

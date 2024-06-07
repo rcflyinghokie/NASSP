@@ -176,14 +176,15 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 
 	static const MFDBUTTONMENU mnu5[] =
 	{
+		{ "CSM or LM", 0, 'K' },
+		{ "Option", 0, 'O' },
 		{ "Time of Alignment", 0, 'G' },
-		{ "Target for LS REFS", 0, 'K' },
 		{ "Heads up/down for P30", 0, 'H' },
 		{ "Attitude input", 0, 'A' },
 		{ "REFSMMAT from AGC", 0, 'D' },
-		{ "", 0, ' ' },
+		
 
-		{ "Option", 0, 'O' },
+		{ "Select vessel", 0, 'S' },
 		{ "Calculate", 0, 'C' },
 		{ "Move REFSMMAT", 0, 'U' },
 		{ "", 0, ' ' },
@@ -193,18 +194,19 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 
 	RegisterPage(mnu5, sizeof(mnu5) / sizeof(MFDBUTTONMENU));
 
+	RegisterFunction("VES", OAPI_KEY_K, &ApolloRTCCMFD::CycleCSMOrLMSelection);
+	RegisterFunction("OPT", OAPI_KEY_O, &ApolloRTCCMFD::CycleREFSMMATopt);
 	RegisterFunction("TIM", OAPI_KEY_T, &ApolloRTCCMFD::REFSMMATTimeDialogue);
-	RegisterFunction("TGT", OAPI_KEY_K, &ApolloRTCCMFD::set_target);
 	RegisterFunction("HEA", OAPI_KEY_H, &ApolloRTCCMFD::cycleREFSMMATHeadsUp);
 	RegisterFunction("ATT", OAPI_KEY_A, &ApolloRTCCMFD::menuREFSMMATAtt);
 	RegisterFunction("DWN", OAPI_KEY_D, &ApolloRTCCMFD::GetREFSMMATfromAGC);
-	RegisterFunction("", OAPI_KEY_E, &ApolloRTCCMFD::menuVoid);
 
-	RegisterFunction("OPT", OAPI_KEY_O, &ApolloRTCCMFD::CycleREFSMMATopt);
+
+	RegisterFunction("SEL", OAPI_KEY_S, &ApolloRTCCMFD::set_Vessel);
 	RegisterFunction("CLC", OAPI_KEY_C, &ApolloRTCCMFD::calcREFSMMAT);
 	RegisterFunction("G00", OAPI_KEY_U, &ApolloRTCCMFD::menuREFSMMATLockerMovement);
-	RegisterFunction("", OAPI_KEY_S, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_L, &ApolloRTCCMFD::menuVoid);
+	RegisterFunction("", OAPI_KEY_E, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("BCK", OAPI_KEY_B, &ApolloRTCCMFD::menuSetUtilityMenu);
 
 	static const MFDBUTTONMENU mnu6[] =

@@ -666,6 +666,7 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 
 	subThreadMode = 0;
 	subThreadStatus = DONE;
+	IsCSMCalculation = false;
 
 	LmkLat = 0;
 	LmkLng = 0;
@@ -913,11 +914,6 @@ void ARCore::EntryCalc()
 void ARCore::DeorbitCalc()
 {
 	startSubthread(17);
-}
-
-void ARCore::REFSMMATCalc()
-{
-	startSubthread(4);
 }
 
 void ARCore::TLI_PAD()
@@ -2524,11 +2520,12 @@ void ARCore::SendNodeToSFP()
 	GC->rtcc->PZSFPTAB.blocks[1].h_nd = NodeConvHeight;
 }
 
-int ARCore::startSubthread(int fcn) {
+int ARCore::startSubthread(int fcn, bool IsCSM) {
 	if (IsReady(subThreadStatus)) {
 		// Punt thread
 		subThreadMode = fcn;
 		subThreadStatus = SCHEDULED;
+		IsCSMCalculation = IsCSM;
 		subThreadWorker.Start([this] { subThread(); });
 	}
 	else {
@@ -2883,23 +2880,31 @@ int ARCore::subThread()
 			opt.REFSMMATTime = GC->REFSMMAT_PTC_MJD;
 		}
 
-		//For LS REFSMMAT use target vessel, if we are not in the CSM
-		if (GC->MissionPlanningActive == false && vesseltype != 0 && REFSMMATopt == 5)
+		//For LS REFSMMAT use CSM vessel
+		if (GC->MissionPlanningActive == false && REFSMMATopt == 5)
 		{
-			if (target == NULL)
-			{
-				Result = DONE;
-				break;
-			}
-
-			opt.vessel = target;
+			opt.vessel = GC->rtcc->pCSM;
 		}
 		else
 		{
-			opt.vessel = vessel;
+			if (IsCSMCalculation)
+			{
+				opt.vessel = GC->rtcc->pCSM;
+			}
+			else
+			{
+				opt.vessel = GC->rtcc->pLM;
+			}
 		}
 
-		if (vesseltype == 0)
+		//Error check on vessel
+		if (opt.vessel == NULL)
+		{
+			Result = DONE;
+			break;
+		}
+
+		if (IsCSMCalculation)
 		{
 			if (vesselisdocked)
 			{
@@ -2923,7 +2928,7 @@ int ARCore::subThread()
 		}
 
 		opt.HeadsUp = REFSMMATHeadsUp;
-		if (vesseltype == 0)
+		if (IsCSMCalculation)
 		{
 			opt.PresentREFSMMAT = GC->rtcc->EZJGMTX1.data[0].REFSMMAT;
 		}
@@ -3013,7 +3018,7 @@ int ARCore::subThread()
 		}
 
 		MATRIX3 REFSMMAT = GC->rtcc->REFSMMATCalc(&opt);
-		if (vesseltype == 0)
+		if (IsCSMCalculation)
 		{
 			GC->rtcc->EMGSTSTM(1, REFSMMAT, RTCC_REFSMMAT_TYPE_CUR, GC->rtcc->RTCCPresentTimeGMT());
 		}

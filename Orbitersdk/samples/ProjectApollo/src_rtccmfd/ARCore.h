@@ -80,7 +80,6 @@ class ARCore {
 public:
 	ARCore(VESSEL* v, AR_GCore* gcin);
 	~ARCore();
-	void REFSMMATCalc();
 	void LunarLaunchTargetingCalc();
 	void LDPPalc();
 	void LunarLiftoffCalc();
@@ -178,13 +177,14 @@ public:
 	int GetVesselParameters(bool IsCSM, int docked, int Thruster, int &Config, int &TVC, double &CSMMass, double &LMMass);
 	int menuCalculateIMUComparison(bool IsCSM);
 
-	int startSubthread(int fcn);
+	int startSubthread(int fcn, bool IsCSM = true);
 	int subThread();
 
 	// SUBTHREAD MANAGEMENT
 	KillableWorker subThreadWorker;
 	int subThreadMode;										// What should the subthread do?
 	std::atomic<ThreadStatus> subThreadStatus;
+	bool IsCSMCalculation;									// Vessel selected for calculation
 
 	ApolloRTCCMFDData g_Data;
 

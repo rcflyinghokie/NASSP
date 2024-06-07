@@ -637,21 +637,23 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 	}
 	else if (screen == 5)
 	{
-		skp->Text(6 * W / 8, (int)(0.5 * H / 14), "REFSMMAT", 8);
+		skp->Text(6 * W / 8, 1 * H / 28, "REFSMMAT", 8);
+
+		CSMOrLMSelection(skp);
 
 		if (G->REFSMMATopt == 0) //P30 Maneuver
 		{
 			if (G->REFSMMATHeadsUp)
 			{
-				skp->Text(5 * W / 8, 2 * H / 14, "P30 (Heads up)", 14);
+				skp->Text(1 * W / 16, 4 * H / 14, "P30 (Heads up)", 14);
 			}
 			else
 			{
-				skp->Text(5 * W / 8, 2 * H / 14, "P30 (Heads down)", 16);
+				skp->Text(1 * W / 16, 4 * H / 14, "P30 (Heads down)", 16);
 			}
 
 			GET_Display(Buffer, G->P30TIG);
-			skp->Text((int)(0.5 * W / 8), 2 * H / 14, Buffer, strlen(Buffer));
+			skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
 
 			skp->Text(6 * W / 8, 4 * H / 14, "DV Vector", 9);
 			AGC_Display(Buffer, G->dV_LVLH.x / 0.3048);
@@ -663,10 +665,10 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		}
 		else if (G->REFSMMATopt == 1)//Retrofire
 		{
-			skp->Text(5 * W / 8, 2 * H / 14, "P30 Retro", 9);
+			skp->Text(1 * W / 16, 4 * H / 14, "P30 Retro", 9);
 
 			GET_Display(Buffer, G->P30TIG);
-			skp->Text((int)(0.5 * W / 8), 2 * H / 14, Buffer, strlen(Buffer));
+			skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
 
 			skp->Text(6 * W / 8, 4 * H / 14, "DV Vector", 9);
 			AGC_Display(Buffer, G->dV_LVLH.x / 0.3048);
@@ -679,23 +681,23 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		}
 		else if (G->REFSMMATopt == 2)
 		{
-			skp->Text(5 * W / 8, 2 * H / 14, "LVLH", 4);
+			skp->Text(1 * W / 16, 4 * H / 14, "LVLH", 4);
 
 			GET_Display(Buffer, G->REFSMMAT_LVLH_Time);
-			skp->Text((int)(0.5 * W / 8), 2 * H / 14, Buffer, strlen(Buffer));
+			skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
 		}
 		else if (G->REFSMMATopt == 3)
 		{
-			skp->Text(5 * W / 8, 2 * H / 14, "Lunar Entry", 11);
+			skp->Text(1 * W / 16, 4 * H / 14, "Lunar Entry", 11);
 		}
 		else if (G->REFSMMATopt == 4)
 		{
-			skp->Text(5 * W / 8, 2 * H / 14, "Launch", 6);
+			skp->Text(1 * W / 16, 4 * H / 14, "Launch", 6);
 		}
 		else if (G->REFSMMATopt == 5 || G->REFSMMATopt == 8)
 		{
 			GET_Display(Buffer, GC->rtcc->CZTDTGTU.GETTD);
-			skp->Text((int)(0.5 * W / 8), 2 * H / 14, Buffer, strlen(Buffer));
+			skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
 
 			sprintf(Buffer, "%f°", GC->rtcc->BZLAND.lat[RTCC_LMPOS_BEST] * DEG);
 			skp->Text((int)(5.5 * W / 8), 8 * H / 14, Buffer, strlen(Buffer));
@@ -704,7 +706,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 			if (G->REFSMMATopt == 8)
 			{
-				skp->Text(5 * W / 8, 2 * H / 14, "LS during TLC", 13);
+				skp->Text(1 * W / 16, 4 * H / 14, "LS during TLC", 13);
 
 				skp->Text((int)(5.5 * W / 8), 11 * H / 14, "Azimuth:", 8);
 				sprintf(Buffer, "%f°", GC->rtcc->med_k18.psi_DS);
@@ -712,34 +714,28 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			}
 			else
 			{
-				skp->Text(5 * W / 8, 2 * H / 14, "Landing Site", 12);
+				skp->Text(1 * W / 16, 4 * H / 14, "Landing Site", 12);
 
-				if (G->vesseltype != 0 && GC->MissionPlanningActive == false)
+				if (GC->MissionPlanningActive == false && IsCSM == false)
 				{
-					if (G->target != NULL)
-					{
-						sprintf_s(Buffer, "CSM: %s", G->target->GetName());
-					}
-					else
-					{
-						sprintf_s(Buffer, "No Target!");
-					}
-					skp->Text(1 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
+					skp->Text(1 * W / 16, 3 * H / 14, "CSM:", 4);
+					PrintCSMVessel(Buffer);
+					skp->Text(4 * W / 16, 3 * H / 14, Buffer, strlen(Buffer));
 				}
 			}
 
 		}
 		else if (G->REFSMMATopt == 6)
 		{
-			skp->Text(5 * W / 8, 2 * H / 14, "PTC", 3);
+			skp->Text(1 * W / 16, 4 * H / 14, "PTC", 3);
 
-			skp->Text(1 * W / 16, 2 * H / 14, "Average time of TEI:", 20);
+			skp->Text(1 * W / 16, 6 * H / 14, "Average time of TEI:", 20);
 			sprintf(Buffer, "MJD %lf", GC->REFSMMAT_PTC_MJD);
-			skp->Text(1 * W / 16, 3 * H / 14, Buffer, strlen(Buffer));
+			skp->Text(1 * W / 16, 7 * H / 14, Buffer, strlen(Buffer));
 		}
 		else if (G->REFSMMATopt == 7)
 		{
-			skp->Text(5 * W / 8, 2 * H / 14, "REFS from Attitude", 18);
+			skp->Text(1 * W / 16, 4 * H / 14, "REFS from Attitude", 18);
 
 			skp->Text((int)(0.5 * W / 8), 9 * H / 21, "Current REFSMMAT:", 17);
 			REFSMMATName(Buffer, G->REFSMMATcur);
@@ -755,7 +751,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		}
 
 		REFSMMATData *refsdata;
-		if (G->vesseltype == 0)
+		if (IsCSM)
 		{
 			refsdata = &GC->rtcc->EZJGMTX1.data[0];
 		}
