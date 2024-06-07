@@ -825,49 +825,49 @@ void IMU::LoadState(FILEHANDLE scn)
 			Caged = (state.u.Caged != 0);
 		}
 		else if (!strnicmp(line, "NBD_X", 5)) {
-			scanf(line + 5, "%lf", &imuDriftRates.NBD_X);
+			sscanf(line + 5, "%lf", &imuDriftRates.NBD_X);
 		}
 		else if (!strnicmp(line, "NBD_Y", 5)) {
-			scanf(line + 5, "%lf", &imuDriftRates.NBD_Y);
+			sscanf(line + 5, "%lf", &imuDriftRates.NBD_Y);
 		}
 		else if (!strnicmp(line, "NBD_Z", 5)) {
-			scanf(line + 5, "%lf", &imuDriftRates.NBD_Z);
+			sscanf(line + 5, "%lf", &imuDriftRates.NBD_Z);
 		}
 		else if (!strnicmp(line, "ADIA_X", 6)) {
-			scanf(line + 5, "%lf", &imuDriftRates.ADIA_X);
+			sscanf(line + 5, "%lf", &imuDriftRates.ADIA_X);
 		}
 		else if (!strnicmp(line, "ADIA_Y", 6)) {
-			scanf(line + 5, "%lf", &imuDriftRates.ADIA_Y);
+			sscanf(line + 5, "%lf", &imuDriftRates.ADIA_Y);
 		}
 		else if (!strnicmp(line, "ADIA_Z", 6)) {
-			scanf(line + 5, "%lf", &imuDriftRates.ADIA_Z);
+			sscanf(line + 5, "%lf", &imuDriftRates.ADIA_Z);
 		}
 		else if (!strnicmp(line, "ADSRA_X", 7)) {
-			scanf(line + 5, "%lf", &imuDriftRates.ADSRA_X);
+			sscanf(line + 5, "%lf", &imuDriftRates.ADSRA_X);
 		}
 		else if (!strnicmp(line, "ADSRA_Y", 7)) {
-			scanf(line + 5, "%lf", &imuDriftRates.ADSRA_Y);
+			sscanf(line + 5, "%lf", &imuDriftRates.ADSRA_Y);
 		}
 		else if (!strnicmp(line, "ADSRA_Z", 7)) {
-			scanf(line + 5, "%lf", &imuDriftRates.ADSRA_Z);
+			sscanf(line + 5, "%lf", &imuDriftRates.ADSRA_Z);
 		}
 		else if (!strnicmp(line, "PBIAS_X", 7)) {
-			scanf(line + 5, "%lf", &pipaBiasScale.PIPA_BiasX);
+			sscanf(line + 5, "%lf", &pipaBiasScale.PIPA_BiasX);
 		}
 		else if (!strnicmp(line, "PBIAS_Y", 7)) {
-			scanf(line + 5, "%lf", &pipaBiasScale.PIPA_BiasY);
+			sscanf(line + 5, "%lf", &pipaBiasScale.PIPA_BiasY);
 		}
 		else if (!strnicmp(line, "PBIAS_Z", 7)) {
-			scanf(line + 5, "%lf", &pipaBiasScale.PIPA_BiasZ);
+			sscanf(line + 5, "%lf", &pipaBiasScale.PIPA_BiasZ);
 		}
 		else if (!strnicmp(line, "PSCALE_X", 8)) {
-			scanf(line + 5, "%lf", &pipaBiasScale.PIPA_ScalePPM_X);
+			sscanf(line + 5, "%lf", &pipaBiasScale.PIPA_ScalePPM_X);
 		}
 		else if (!strnicmp(line, "PSCALE_Y", 8)) {
-			scanf(line + 5, "%lf", &pipaBiasScale.PIPA_ScalePPM_Y);
+			sscanf(line + 5, "%lf", &pipaBiasScale.PIPA_ScalePPM_Y);
 		}
 		else if (!strnicmp(line, "PSCALE_Z", 8)) {
-			scanf(line + 5, "%lf", &pipaBiasScale.PIPA_ScalePPM_Z);
+			sscanf(line + 5, "%lf", &pipaBiasScale.PIPA_ScalePPM_Z);
 		}
 	}
 }
