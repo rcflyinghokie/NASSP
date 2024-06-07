@@ -126,6 +126,7 @@ public:
 	void menuCycleMarkerUp();
 	void menuCycleMarkerDown();
 	void menuSetGMPInput();
+	void menuGPMCycleVessel();
 	void SPQcalc();
 	void lambertcalc();
 	void Angle_Display(char *Buff, double angle, bool DispPlus = true);
@@ -897,6 +898,8 @@ private:
 
 	void CSMOrLMSelection(oapi::Sketchpad*skp);
 	void CSMOrLMSelectionErrorMessage(oapi::Sketchpad*skp);
+	void PrintCSMVessel(char *Buffer);
+	void PrintLMVessel(char *Buffer);
 };
 
 #endif // !__ApolloRTCCMFD_H

@@ -915,21 +915,6 @@ void ARCore::DeorbitCalc()
 	startSubthread(17);
 }
 
-void ARCore::SPQcalc()
-{
-	startSubthread(2);
-}
-
-void ARCore::lambertcalc()
-{
-	startSubthread(1);
-}
-
-void ARCore::GPMPCalc()
-{
-	startSubthread(3);
-}
-
 void ARCore::REFSMMATCalc()
 {
 	startSubthread(4);
@@ -948,11 +933,6 @@ void ARCore::TLCCCalc()
 void ARCore::PDI_PAD()
 {
 	startSubthread(16);
-}
-
-void ARCore::DKICalc()
-{
-	startSubthread(19);
 }
 
 void ARCore::LAPCalc()
@@ -2627,8 +2607,26 @@ int ARCore::subThread()
 		}
 		else
 		{
-			sv_A = GC->rtcc->StateVectorCalcEphem(vessel);
-			sv_P = GC->rtcc->StateVectorCalcEphem(target);
+			if (GC->rtcc->pCSM == NULL || GC->rtcc->pLM == NULL)
+			{
+				Result = DONE;
+				break;
+			}
+
+			VESSEL *chaser, *tgt;
+			if (GC->rtcc->med_k30.Vehicle == 1)
+			{
+				chaser = GC->rtcc->pCSM;
+				tgt = GC->rtcc->pLM;
+			}
+			else
+			{
+				chaser = GC->rtcc->pLM;
+				tgt = GC->rtcc->pCSM;
+			}
+
+			sv_A = GC->rtcc->StateVectorCalcEphem(chaser);
+			sv_P = GC->rtcc->StateVectorCalcEphem(tgt);
 		}
 
 		opt.mode = 2;
@@ -2715,14 +2713,26 @@ int ARCore::subThread()
 		}
 		else
 		{
-			if (target == NULL)
+			if (GC->rtcc->pCSM == NULL || GC->rtcc->pLM == NULL)
 			{
 				Result = DONE;
 				break;
 			}
 
-			sv_A = GC->rtcc->StateVectorCalc(vessel);
-			sv_P = GC->rtcc->StateVectorCalc(target);
+			VESSEL *chaser, *tgt;
+			if (GC->rtcc->med_k01.ChaserVehicle == RTCC_MPT_CSM)
+			{
+				chaser = GC->rtcc->pCSM;
+				tgt = GC->rtcc->pLM;
+			}
+			else
+			{
+				chaser = GC->rtcc->pLM;
+				tgt = GC->rtcc->pCSM;
+			}
+
+			sv_A = GC->rtcc->StateVectorCalc(chaser);
+			sv_P = GC->rtcc->StateVectorCalc(tgt);
 		}
 
 		opt.DH = GC->rtcc->GZGENCSN.SPQDeltaH;
@@ -2730,21 +2740,8 @@ int ARCore::subThread()
 		opt.sv_A = sv_A;
 		opt.sv_P = sv_P;
 		opt.WT = GC->rtcc->GZGENCSN.SPQTerminalPhaseAngle;
-		if (GC->MissionPlanningActive)
-		{
-			opt.ChaserID = GC->rtcc->med_k01.ChaserVehicle;
-		}
-		else
-		{
-			if (vesseltype == 0)
-			{
-				opt.ChaserID = 1;
-			}
-			else
-			{
-				opt.ChaserID = 3;
-			}
-		}
+		opt.ChaserID = GC->rtcc->med_k01.ChaserVehicle;
+
 		if (SPQMode != 1)
 		{
 			opt.t_CSI = CSItime;
@@ -2817,7 +2814,23 @@ int ARCore::subThread()
 		}
 		else
 		{
-			sv0 = GC->rtcc->StateVectorCalcEphem(vessel);
+			VESSEL *v;
+			if (GC->rtcc->med_k20.Vehicle == RTCC_MPT_CSM)
+			{
+				v = GC->rtcc->pCSM;
+			}
+			else
+			{
+				v = GC->rtcc->pLM;
+			}
+
+			if (v == NULL)
+			{
+				Result = DONE;
+				break;
+			}
+
+			sv0 = GC->rtcc->StateVectorCalcEphem(v);
 		}
 
 		opt.ManeuverCode = GMPManeuverCode;
@@ -3570,26 +3583,14 @@ int ARCore::subThread()
 		}
 		else
 		{
-			if (target == NULL)
+			if (GC->rtcc->pCSM == NULL || GC->rtcc->pLM == NULL)
 			{
 				Result = DONE;
 				break;
 			}
 
-			EphemerisData sv[2];
-			sv[0] = GC->rtcc->StateVectorCalcEphem(vessel);
-			sv[1] = GC->rtcc->StateVectorCalcEphem(target);
-
-			if (utils::IsVessel(vessel, utils::Saturn))
-			{
-				opt.sv_CSM = sv[0];
-				opt.sv_LM = sv[1];
-			}
-			else
-			{
-				opt.sv_CSM = sv[1];
-				opt.sv_LM = sv[0];
-			}
+			opt.sv_CSM = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pCSM);
+			opt.sv_LM = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pLM);
 
 			//Coast to threshold time
 			opt.sv_CSM = GC->rtcc->coast(opt.sv_CSM, GMT - opt.sv_CSM.GMT);
@@ -4295,7 +4296,7 @@ int ARCore::subThread()
 			PMMMPTInput in;
 
 			//Get all required data for PMMMPT and error checking
-			if (GetVesselParameters(GC->rtcc->med_m72.Thruster, in.CONFIG, in.VC, in.CSMWeight, in.LMWeight))
+			if (GetVesselParameters(GC->rtcc->PZMYSAVE.plan[0] == RTCC_MPT_CSM, vesselisdocked, GC->rtcc->med_m72.Thruster, in.CONFIG, in.VC, in.CSMWeight, in.LMWeight))
 			{
 				//Error
 				Result = DONE;
@@ -4343,12 +4344,29 @@ int ARCore::subThread()
 			SV sv_pre, sv_post, sv_tig;
 			double attachedMass = 0.0;
 
-			SV sv_now = GC->rtcc->StateVectorCalc(vessel);
+			//Was CSM or LM the chaser vehicle?
+			VESSEL *v;
+			if (GC->rtcc->PZDKIT.Block[0].Display[0].VEH == RTCC_MPT_CSM)
+			{
+				v = GC->rtcc->pCSM;
+			}
+			else
+			{
+				v = GC->rtcc->pLM;
+			}
+
+			if (v == NULL)
+			{
+				Result = DONE;
+				break;
+			}
+
+			SV sv_now = GC->rtcc->StateVectorCalc(v);
 			sv_tig = GC->rtcc->coast(sv_now, SPQTIG - OrbMech::GETfromMJD(sv_now.MJD, GC->rtcc->CalcGETBase()));
 
 			if (vesselisdocked)
 			{
-				attachedMass = GC->rtcc->GetDockedVesselMass(vessel);
+				attachedMass = GC->rtcc->GetDockedVesselMass(v);
 			}
 			else
 			{
@@ -4372,7 +4390,7 @@ int ARCore::subThread()
 			PMMMPTInput in;
 
 			//Get all required data for PMMMPT and error checking
-			if (GetVesselParameters(GC->rtcc->med_m70.Thruster, in.CONFIG, in.VC, in.CSMWeight, in.LMWeight))
+			if (GetVesselParameters(GC->rtcc->PZDKIT.Block[0].Display[0].VEH == RTCC_MPT_CSM, vesselisdocked, GC->rtcc->med_m70.Thruster, in.CONFIG, in.VC, in.CSMWeight, in.LMWeight))
 			{
 				//Error
 				Result = DONE;
@@ -4494,7 +4512,7 @@ int ARCore::subThread()
 			PMMMPTInput in;
 
 			//Get all required data for PMMMPT and error checking
-			if (GetVesselParameters(GC->rtcc->med_m65.Thruster, in.CONFIG, in.VC, in.CSMWeight, in.LMWeight))
+			if (GetVesselParameters(GC->rtcc->med_m65.Table == 1, vesselisdocked, GC->rtcc->med_m65.Thruster, in.CONFIG, in.VC, in.CSMWeight, in.LMWeight))
 			{
 				//Error
 				Result = DONE;
@@ -5484,20 +5502,37 @@ void ARCore::DetermineGMPCode()
 	GMPManeuverCode = code;
 }
 
-int ARCore::GetVesselParameters(int Thruster, int &Config, int &TVC, double &CSMMass, double &LMMass)
+int ARCore::GetVesselParameters(bool IsCSM, int docked, int Thruster, int &Config, int &TVC, double &CSMMass, double &LMMass)
 {
+	//Select vessel type
+	VESSEL *v;
+	int vestype;
+
+	if (IsCSM)
+	{
+		v = GC->rtcc->pCSM;
+		vestype = 0;
+	}
+	else
+	{
+		v = GC->rtcc->pLM;
+		vestype = 1;
+	}
+
+	if (v == NULL) return 1;
+
 	//Error checking
 	if (Thruster == RTCC_ENGINETYPE_CSMSPS || Thruster == RTCC_ENGINETYPE_CSMRCSMINUS2 || Thruster == RTCC_ENGINETYPE_CSMRCSPLUS2 || Thruster == RTCC_ENGINETYPE_CSMRCSMINUS4 || Thruster == RTCC_ENGINETYPE_CSMRCSPLUS4)
 	{
 		//CSM thruster
-		if (vesseltype != 0) return 1;
+		if (vestype != 0) return 1;
 
 		TVC = 1;
 	}
 	else
 	{
 		//LM thruster
-		if (vesseltype != 1) return 1;
+		if (vestype != 1) return 1;
 
 		TVC = 3;
 	}
@@ -5506,7 +5541,7 @@ int ARCore::GetVesselParameters(int Thruster, int &Config, int &TVC, double &CSM
 	MED_M55 m55;
 	MED_M49 m49;
 
-	GC->rtcc->MPTMassUpdate(vessel, m50, m55, m49, vesselisdocked);
+	GC->rtcc->MPTMassUpdate(v, m50, m55, m49, docked);
 
 	std::bitset<4> cfg;
 	GC->rtcc->MPTGetConfigFromString(m55.ConfigCode, cfg);

@@ -80,9 +80,6 @@ class ARCore {
 public:
 	ARCore(VESSEL* v, AR_GCore* gcin);
 	~ARCore();
-	void lambertcalc();
-	void SPQcalc();
-	void GPMPCalc();
 	void REFSMMATCalc();
 	void LunarLaunchTargetingCalc();
 	void LDPPalc();
@@ -102,7 +99,6 @@ public:
 	void LMLandingSiteUplink();
 	void VecPointCalc();
 	void TerrainModelCalc();
-	void DKICalc();
 	void LAPCalc();
 	void DAPPADCalc();
 	void AscentPADCalc();
@@ -179,7 +175,7 @@ public:
 	void LUNTARCalc();
 	void TLIProcessorCalc();
 	void SaturnVTLITargetUplink();
-	int GetVesselParameters(int Thruster, int &Config, int &TVC, double &CSMMass, double &LMMass);
+	int GetVesselParameters(bool IsCSM, int docked, int Thruster, int &Config, int &TVC, double &CSMMass, double &LMMass);
 	int menuCalculateIMUComparison(bool IsCSM);
 
 	int startSubthread(int fcn);

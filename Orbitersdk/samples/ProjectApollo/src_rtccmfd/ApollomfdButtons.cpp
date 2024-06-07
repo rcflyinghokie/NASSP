@@ -116,7 +116,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 		{ "Time Mode", 0, 'T' },
 
 		{ "Maneuver Time", 0, 'M' },
-		{ "Target vehicle", 0, 'O' },
+		{ "", 0, ' ' },
 		{ "Calculate burn", 0, 'C' },
 		{ "Rendezvous Display", 0, 'D'},
 		{ "Choose engine", 0, 'L' },
@@ -133,7 +133,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	RegisterFunction("TIM", OAPI_KEY_T, &ApolloRTCCMFD::set_CDHtimemode);
 
 	RegisterFunction("TIG", OAPI_KEY_N, &ApolloRTCCMFD::SPQtimedialogue);
-	RegisterFunction("TGT", OAPI_KEY_O, &ApolloRTCCMFD::set_target);
+	RegisterFunction("", OAPI_KEY_O, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("CLC", OAPI_KEY_C, &ApolloRTCCMFD::SPQcalc);
 	RegisterFunction("DIS", OAPI_KEY_D, &ApolloRTCCMFD::menuSetRendezvousEvaluationDisplayPage);
 	RegisterFunction("ENG", OAPI_KEY_L, &ApolloRTCCMFD::menuSetSPQorDKIRTransferPage);
@@ -167,7 +167,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	RegisterFunction("", OAPI_KEY_A, &ApolloRTCCMFD::menuVoid);
 
 	RegisterFunction("CLC", OAPI_KEY_C, &ApolloRTCCMFD::GPMPCalc);
-	RegisterFunction("", OAPI_KEY_E, &ApolloRTCCMFD::menuVoid);
+	RegisterFunction("VES", OAPI_KEY_E, &ApolloRTCCMFD::menuGPMCycleVessel);
 	RegisterFunction("", OAPI_KEY_F, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_G, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("ENG", OAPI_KEY_T, &ApolloRTCCMFD::menuSetGPMTransferPage);
@@ -1131,11 +1131,10 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 		{ "NC1 maneuver point", 0, 'T' },
 		{ "NH maneuver point", 0, 'L' },
 		{ "NSR maneuver point", 0, 'D' },
-
 		{ "TPI maneuver point", 0, 'P' },
 
 		{ "Go to displayr", 0, 'C' },
-		{ "Target name", 0, 'V' },
+		{ "", 0, ' ' },
 		{ "NPC maneuver point", 0, 'N' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
@@ -1152,7 +1151,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	RegisterFunction("MI", OAPI_KEY_P, &ApolloRTCCMFD::menuDKIMILine);
 	
 	RegisterFunction("DIS", OAPI_KEY_C, &ApolloRTCCMFD::menuSetRendezvousPlanningDisplayPage);
-	RegisterFunction("TGT", OAPI_KEY_V, &ApolloRTCCMFD::set_target);
+	RegisterFunction("", OAPI_KEY_V, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("NPC", OAPI_KEY_N, &ApolloRTCCMFD::menuDKINPCLine);
 	RegisterFunction("", OAPI_KEY_R, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_U, &ApolloRTCCMFD::menuVoid);
@@ -1171,8 +1170,8 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 		{ "Terminal phase definition", 0, 'E' },
 		{ "Terminal phase definition value", 0, 'V' },
 		{ "", 0, ' ' },
-		{ "", 0, ' ' },
-		{ "", 0, ' ' },
+		{ "Choose CSM", 0, 'N' },
+		{ "Choose LM", 0, 'U' },
 		{ "Back to DKI page", 0, 'B' },
 	};
 
@@ -1188,8 +1187,8 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	RegisterFunction("TPD", OAPI_KEY_E, &ApolloRTCCMFD::menuCycleDKITerminalPhaseOption);
 	RegisterFunction("TPV", OAPI_KEY_V, &ApolloRTCCMFD::menuDKITerminalPhaseDefinitionValue);
 	RegisterFunction("", OAPI_KEY_Q, &ApolloRTCCMFD::menuVoid);
-	RegisterFunction("", OAPI_KEY_N, &ApolloRTCCMFD::menuVoid);
-	RegisterFunction("", OAPI_KEY_U, &ApolloRTCCMFD::menuVoid);
+	RegisterFunction("CSM", OAPI_KEY_N, &ApolloRTCCMFD::set_CSMVessel);
+	RegisterFunction("LM", OAPI_KEY_U, &ApolloRTCCMFD::set_LMVessel);
 	RegisterFunction("BCK", OAPI_KEY_B, &ApolloRTCCMFD::menuSetDKIPage);
 
 

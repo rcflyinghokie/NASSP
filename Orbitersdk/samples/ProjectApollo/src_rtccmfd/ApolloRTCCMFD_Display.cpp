@@ -56,31 +56,33 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		if (GC->rtcc->med_k30.IVFlag == 0)
 		{
-			skp->Text(1 * W / 8, 2 * H / 14, "Both Fixed", 10);
+			skp->Text(1 * W / 16, 2 * H / 14, "Both Fixed", 10);
 		}
 		else if (GC->rtcc->med_k30.IVFlag == 1)
 		{
-			skp->Text(1 * W / 8, 2 * H / 14, "First Fixed", 11);
+			skp->Text(1 * W / 16, 2 * H / 14, "First Fixed", 11);
 		}
 		else
 		{
-			skp->Text(1 * W / 8, 2 * H / 14, "Second Fixed", 12);
+			skp->Text(1 * W / 16, 2 * H / 14, "Second Fixed", 12);
 		}
 
 		if (GC->rtcc->med_k30.Vehicle == 1)
 		{
-			skp->Text(1 * W / 8, 4 * H / 14, "Chaser: CSM", 11);
-			skp->Text(1 * W / 8, 5 * H / 14, "Target: LEM", 11);
+			skp->Text(1 * W / 16, 4 * H / 14, "Chaser: CSM", 11);
+			skp->Text(1 * W / 16, 5 * H / 14, "Target: LEM", 11);
 		}
 		else
 		{
-			skp->Text(1 * W / 8, 4 * H / 14, "Chaser: LEM", 11);
-			skp->Text(1 * W / 8, 5 * H / 14, "Target: CSM", 11);
+			skp->Text(1 * W / 16, 4 * H / 14, "Chaser: LEM", 11);
+			skp->Text(1 * W / 16, 5 * H / 14, "Target: CSM", 11);
 		}
+
+		skp->Text(1 * W / 16, 6 * H / 14, "CHA:", 4);
+		skp->Text(1 * W / 16, 8 * H / 14, "TGT:", 4);
 
 		if (GC->MissionPlanningActive)
 		{
-			skp->Text(1 * W / 8, 6 * H / 14, "CHA:", 4);
 			if (GC->rtcc->med_k30.ChaserVectorTime > 0)
 			{
 				GET_Display(Buffer, GC->rtcc->med_k30.ChaserVectorTime);
@@ -89,9 +91,22 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			{
 				sprintf_s(Buffer, "Present time");
 			}
-			skp->Text(2 * W / 8, 6 * H / 14, Buffer, strlen(Buffer));
+		}
+		else
+		{
+			if(GC->rtcc->med_k30.Vehicle == 1)
+			{
+				PrintCSMVessel(Buffer);
+			}
+			else
+			{
+				PrintLMVessel(Buffer);
+			}
+		}
+		skp->Text(2 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
 
-			skp->Text(1 * W / 8, 8 * H / 14, "TGT:", 4);
+		if (GC->MissionPlanningActive)
+		{
 			if (GC->rtcc->med_k30.TargetVectorTime > 0)
 			{
 				GET_Display(Buffer, GC->rtcc->med_k30.TargetVectorTime);
@@ -100,20 +115,19 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			{
 				sprintf_s(Buffer, "Present time");
 			}
-			skp->Text(2 * W / 8, 8 * H / 14, Buffer, strlen(Buffer));
 		}
 		else
 		{
-			if (G->target != NULL)
+			if (GC->rtcc->med_k30.Vehicle == 1)
 			{
-				sprintf(Buffer, G->target->GetName());
+				PrintLMVessel(Buffer);
 			}
 			else
 			{
-				sprintf_s(Buffer, "No Target!");
+				PrintCSMVessel(Buffer);
 			}
-			skp->Text(1 * W / 8, 4 * H / 14, Buffer, strlen(Buffer));
 		}
+		skp->Text(2 * W / 16, 8 * H / 14, Buffer, strlen(Buffer));
 
 		if (GC->rtcc->med_k30.StartTime >= 0)
 		{
@@ -123,7 +137,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		{
 			sprintf(Buffer, "E = %.2f°", GC->rtcc->GZGENCSN.TIElevationAngle*DEG);
 		}
-		skp->Text(1 * W / 8, 10 * H / 14, Buffer, strlen(Buffer));
+		skp->Text(1 * W / 16, 10 * H / 14, Buffer, strlen(Buffer));
 
 		if (GC->rtcc->med_k30.EndTime >= 0)
 		{
@@ -133,7 +147,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		{
 			sprintf(Buffer, "WT = %.2f°", GC->rtcc->GZGENCSN.TITravelAngle*DEG);
 		}
-		skp->Text(1 * W / 8, 12 * H / 14, Buffer, strlen(Buffer));
+		skp->Text(1 * W / 16, 12 * H / 14, Buffer, strlen(Buffer));
 
 		skp->Text(9 * W / 16, 8 * H / 21, "PHASE", 5);
 		skp->Text(9 * W / 16, 9 * H / 21, "DEL H", 5);
@@ -256,19 +270,19 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		skp->Text(1 * W / 16, 2 * H / 14, "SPQ Initialization", 18);
 
+		if (GC->rtcc->med_k01.ChaserVehicle == 1)
+		{
+			skp->Text(1 * W / 16, 4 * H / 14, "Chaser: CSM", 11);
+			skp->Text(1 * W / 16, 5 * H / 14, "Target: LEM", 11);
+		}
+		else
+		{
+			skp->Text(1 * W / 16, 4 * H / 14, "Chaser: LEM", 11);
+			skp->Text(1 * W / 16, 5 * H / 14, "Target: CSM", 11);
+		}
+
 		if (GC->MissionPlanningActive)
 		{
-			if (GC->rtcc->med_k01.ChaserVehicle == 1)
-			{
-				skp->Text(1 * W / 16, 4 * H / 14, "Chaser: CSM", 11);
-				skp->Text(1 * W / 16, 5 * H / 14, "Target: LEM", 11);
-			}
-			else
-			{
-				skp->Text(1 * W / 16, 4 * H / 14, "Chaser: LEM", 11);
-				skp->Text(1 * W / 16, 5 * H / 14, "Target: CSM", 11);
-			}
-
 			if (GC->rtcc->med_k01.ChaserThresholdGET < 0)
 			{
 				sprintf_s(Buffer, "Present Time");
@@ -277,7 +291,22 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			{
 				GET_Display(Buffer, GC->rtcc->med_k01.ChaserThresholdGET);
 			}
-			skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
+		}
+		else
+		{
+			if (GC->rtcc->med_k01.ChaserVehicle == 1)
+			{
+				PrintCSMVessel(Buffer);
+			}
+			else
+			{
+				PrintLMVessel(Buffer);
+			}
+		}
+		skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
+
+		if (GC->MissionPlanningActive)
+		{
 			if (GC->rtcc->med_k01.TargetThresholdGET < 0)
 			{
 				sprintf_s(Buffer, "Present Time");
@@ -286,22 +315,19 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			{
 				GET_Display(Buffer, GC->rtcc->med_k01.TargetThresholdGET);
 			}
-			skp->Text(1 * W / 16, 8 * H / 14, Buffer, strlen(Buffer));
 		}
 		else
 		{
-			sprintf_s(Buffer, "Chaser: %s", G->vessel->GetName());
-			skp->Text(1 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
-			if (G->target)
+			if (GC->rtcc->med_k01.ChaserVehicle == 1)
 			{
-				sprintf_s(Buffer, "Target: %s", G->target->GetName());
+				PrintLMVessel(Buffer);
 			}
 			else
 			{
-				sprintf_s(Buffer, "Target: Not set!");
+				PrintCSMVessel(Buffer);
 			}
-			skp->Text(1 * W / 16, 5 * H / 14, Buffer, strlen(Buffer));
 		}
+		skp->Text(1 * W / 16, 8 * H / 14, Buffer, strlen(Buffer));
 
 		if (G->SPQMode != 1)
 		{
@@ -367,17 +393,27 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		GMPManeuverCodeName(Buffer, G->GMPManeuverCode);
 		skp->Text(5 * W / 22, 2 * H / 22, Buffer, strlen(Buffer));
 
-		if (GC->MissionPlanningActive)
+		skp->Text(2 * W / 22, 3 * H / 22, "VEH", 3);
+		if (GC->rtcc->med_k20.Vehicle == RTCC_MPT_CSM)
 		{
-			skp->Text(2 * W / 22, 3 * H / 22, "VEH", 3);
+			skp->Text(5 * W / 22, 3 * H / 22, "CSM", 3);
+		}
+		else
+		{
+			skp->Text(5 * W / 22, 3 * H / 22, "LM", 2);
+		}
+
+		if (GC->MissionPlanningActive == false)
+		{
 			if (GC->rtcc->med_k20.Vehicle == RTCC_MPT_CSM)
 			{
-				skp->Text(5 * W / 22, 3 * H / 22, "CSM", 3);
+				PrintCSMVessel(Buffer);
 			}
 			else
 			{
-				skp->Text(5 * W / 22, 3 * H / 22, "LM", 2);
+				PrintLMVessel(Buffer);
 			}
+			skp->Text(8 * W / 22, 3 * H / 22, Buffer, strlen(Buffer));
 		}
 
 		skp->Text(2 * W / 22, 4 * H / 22, "TYP", 3);
@@ -2957,16 +2993,6 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		sprintf(Buffer, "%.0f", GC->rtcc->med_k00.MI);
 		skp->Text(1 * W / 16, 12 * H / 14, Buffer, strlen(Buffer));
 
-		if (G->target != NULL)
-		{
-			sprintf(Buffer, G->target->GetName());
-			skp->Text(10 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
-		}
-		else
-		{
-			skp->Text(10 * W / 16, 4 * H / 14, "No Target!", 10);
-		}
-
 		if (GC->rtcc->med_k00.NPC > 0)
 		{
 			sprintf(Buffer, "%.2f", GC->rtcc->med_k00.NPC);
@@ -3081,6 +3107,20 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 				sprintf(Buffer, "%.0lf min", GC->rtcc->GZGENCSN.DKI_TPDefinitionValue);
 				skp->Text(10 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
 			}
+		}
+
+		if (GC->MissionPlanningActive)
+		{
+			//TBD: Chaser and target vector IDs
+		}
+		else
+		{
+			//TBD: Chaser vs. target instead of CSM and LM?
+			PrintCSMVessel(Buffer);
+			skp->Text(10 * W / 16, 8 * H / 14, Buffer, strlen(Buffer));
+
+			PrintLMVessel(Buffer);
+			skp->Text(10 * W / 16, 10 * H / 14, Buffer, strlen(Buffer));
 		}
 	}
 	else if (screen == 35)
@@ -11154,27 +11194,13 @@ void ApolloRTCCMFD::CSMOrLMSelection(oapi::Sketchpad*skp)
 	{
 		skp->Text(1 * W / 16, 2 * H / 14, "CSM", 3);
 
-		if (GC->rtcc->pCSM != NULL)
-		{
-			sprintf_s(Buffer, GC->rtcc->pCSM->GetName());
-		}
-		else
-		{
-			sprintf_s(Buffer, "No CSM!");
-		}
+		PrintCSMVessel(Buffer);
 	}
 	else
 	{
 		skp->Text(1 * W / 16, 2 * H / 14, "LM", 2);
 
-		if (GC->rtcc->pLM != NULL)
-		{
-			sprintf_s(Buffer, GC->rtcc->pLM->GetName());
-		}
-		else
-		{
-			sprintf_s(Buffer, "No LM!");
-		}
+		PrintLMVessel(Buffer);
 	}
 
 	skp->Text(10 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
@@ -11196,4 +11222,27 @@ void ApolloRTCCMFD::CSMOrLMSelectionErrorMessage(oapi::Sketchpad*skp)
 
 	skp->SetTextAlign(oapi::Sketchpad::CENTER);
 	skp->Text(1 * W / 2, 21 * H / 22, Buffer, strlen(Buffer));
+}
+
+void ApolloRTCCMFD::PrintCSMVessel(char *Buffer)
+{
+	if (GC->rtcc->pCSM != NULL)
+	{
+		sprintf_s(Buffer, 127, GC->rtcc->pCSM->GetName());
+	}
+	else
+	{
+		sprintf_s(Buffer, 127, "No CSM!");
+	}
+}
+void ApolloRTCCMFD::PrintLMVessel(char *Buffer)
+{
+	if (GC->rtcc->pLM != NULL)
+	{
+		sprintf_s(Buffer, 127, GC->rtcc->pLM->GetName());
+	}
+	else
+	{
+		sprintf_s(Buffer, 127, "No LM!");
+	}
 }

@@ -3180,6 +3180,8 @@ public:
 		int MLDOption = 1; //1 = input time, 2 = apoapsis, 3 = inactive vehicle apsis
 		double MLDTime = 0.0;
 		double MLDValue = 1.0;
+		std::string ChaserVectorID;
+		std::string TargetVectorID;
 	} med_k10;
 
 	//Generate Launch Window

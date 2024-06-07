@@ -3029,11 +3029,23 @@ void ApolloRTCCMFD::menuSetGMPInput()
 	}
 }
 
+void ApolloRTCCMFD::menuGPMCycleVessel()
+{
+	if (GC->rtcc->med_k20.Vehicle == 1)
+	{
+		set_CSMVessel();
+	}
+	else
+	{
+		set_LMVessel();
+	}
+}
+
 void ApolloRTCCMFD::GPMPCalc()
 {
 	if (G->GMPManeuverCode > 0)
 	{
-		G->GPMPCalc();
+		G->startSubthread(3);
 	}
 }
 
@@ -3149,6 +3161,17 @@ void ApolloRTCCMFD::menuTIChaserVectorTime()
 	{
 		GenericGETInput(&GC->rtcc->med_k30.ChaserVectorTime, "Choose the chaser vector GET (Format: hhh:mm:ss), 0 or smaller for present time");
 	}
+	else
+	{
+		if (GC->rtcc->med_k30.Vehicle == 1)
+		{
+			set_CSMVessel();
+		}
+		else
+		{
+			set_LMVessel();
+		}
+	}
 }
 
 void ApolloRTCCMFD::menuTITargetVectorTime()
@@ -3156,6 +3179,17 @@ void ApolloRTCCMFD::menuTITargetVectorTime()
 	if (GC->MissionPlanningActive)
 	{
 		GenericGETInput(&GC->rtcc->med_k30.TargetVectorTime, "Choose the target vector GET (Format: hhh:mm:ss), 0 or smaller for present time");
+	}
+	else
+	{
+		if (GC->rtcc->med_k30.Vehicle == 1)
+		{
+			set_LMVessel();
+		}
+		else
+		{
+			set_CSMVessel();
+		}
 	}
 }
 
@@ -3191,12 +3225,40 @@ void ApolloRTCCMFD::OrbAdjRevDialogue()
 
 void ApolloRTCCMFD::menuSetSPQChaserThresholdTime()
 {
-	GenericGETInput(&GC->rtcc->med_k01.ChaserThresholdGET, "Choose the SPQ chaser threshold (Format: hhh:mm:ss)");
+	if (GC->MissionPlanningActive)
+	{
+		GenericGETInput(&GC->rtcc->med_k01.ChaserThresholdGET, "Choose the SPQ chaser threshold (Format: hhh:mm:ss)");
+	}
+	else
+	{
+		if (GC->rtcc->med_k01.ChaserVehicle == 1)
+		{
+			set_CSMVessel();
+		}
+		else
+		{
+			set_LMVessel();
+		}
+	}
 }
 
 void ApolloRTCCMFD::menuSetSPQTargetThresholdTime()
 {
-	GenericGETInput(&GC->rtcc->med_k01.TargetThresholdGET, "Choose the SPQ target threshold (Format: hhh:mm:ss)");
+	if (GC->MissionPlanningActive)
+	{
+		GenericGETInput(&GC->rtcc->med_k01.TargetThresholdGET, "Choose the SPQ target threshold (Format: hhh:mm:ss)");
+	}
+	else
+	{
+		if (GC->rtcc->med_k01.ChaserVehicle == 1)
+		{
+			set_LMVessel();
+		}
+		else
+		{
+			set_CSMVessel();
+		}
+	}
 }
 
 void ApolloRTCCMFD::SPQtimedialogue()
@@ -5224,20 +5286,13 @@ void ApolloRTCCMFD::menuGetAGSKFactor()
 
 void ApolloRTCCMFD::menuCycleK30Vehicle()
 {
-	if (GC->MissionPlanningActive)
+	if (GC->rtcc->med_k30.Vehicle == 1)
 	{
-		if (GC->rtcc->med_k30.Vehicle == 1)
-		{
-			GC->rtcc->med_k30.Vehicle = 3;
-		}
-		else
-		{
-			GC->rtcc->med_k30.Vehicle = 1;
-		}
+		GC->rtcc->med_k30.Vehicle = 3;
 	}
 	else
 	{
-		set_target();
+		GC->rtcc->med_k30.Vehicle = 1;
 	}
 }
 
@@ -5367,15 +5422,12 @@ void ApolloRTCCMFD::set_svtarget()
 
 void ApolloRTCCMFD::SPQcalc()
 {
-	G->SPQcalc();
+	G->startSubthread(2);
 }
 
 void ApolloRTCCMFD::lambertcalc()
 {
-	if (GC->MissionPlanningActive || G->target != NULL)
-	{
-		G->lambertcalc();
-	}
+	G->startSubthread(1);
 }
 
 void ApolloRTCCMFD::menuDeorbitCalc()
@@ -7344,7 +7396,7 @@ void  ApolloRTCCMFD::menuCycleDKIChaserVehicle()
 
 void ApolloRTCCMFD::menuDKICalc()
 {
-	G->DKICalc();
+	G->startSubthread(19);
 }
 
 void ApolloRTCCMFD::menuLAPCalc()
@@ -9647,6 +9699,23 @@ void ApolloRTCCMFD::SetMEDInputPageP14()
 	SetMEDInputPage("P14");
 }
 
+void AddMEDInputTitle(MEDInputPage &MEDInputData, std::string MEDCode, std::string Title)
+{
+	MEDInputData.MEDCode = MEDCode;
+	MEDInputData.Title = MEDCode + ": " + Title;
+}
+
+void AddMEDInput(std::vector<MEDInput> &table, std::string Label, std::string Description, std::string Data, std::string Unit)
+{
+	MEDInput temp;
+
+	temp.Label = Label;
+	temp.Description = Description;
+	temp.Data = Data;
+	temp.Unit = Unit;
+	table.push_back(temp);
+}
+
 void ApolloRTCCMFD::SetMEDInputPage(std::string med)
 {
 	MEDInput temp;
@@ -9655,198 +9724,48 @@ void ApolloRTCCMFD::SetMEDInputPage(std::string med)
 
 	if (med == "P13")
 	{
-		MEDInputData.Title = "P13: Enter Vector in Spherical Coordinates";
-		MEDInputData.MEDCode = "P13";
+		AddMEDInputTitle(MEDInputData, "P13", "Enter Vector in Spherical Coordinates");
 
-		temp.Label = "VEH:";
-		temp.Description = "Vehicle (CSM or LEM):";
-		temp.Data = "CSM";
-		temp.Unit = "";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "Velocity:";
-		temp.Description = "Velocity in ft/s:";
-		temp.Data = "0.0";
-		temp.Unit = "ft/s";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "Flight Path Angle:";
-		temp.Description = "Flight Path Angle in degrees:";
-		temp.Data = "0.0";
-		temp.Unit = "degrees";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "Azimuth:";
-		temp.Description = "Azimuth in degrees:";
-		temp.Data = "0.0";
-		temp.Unit = "degrees";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "Latitude:";
-		temp.Description = "Geocentric latitude in degrees:";
-		temp.Data = "0.0";
-		temp.Unit = "degrees";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "Longitude:";
-		temp.Description = "Longitude in degrees:";
-		temp.Data = "0.0";
-		temp.Unit = "degrees";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "Height:";
-		temp.Description = "Height above spherical planet in nautical miles:";
-		temp.Data = "0.0";
-		temp.Unit = "NM";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "Time:";
-		temp.Description = "State vector time (format HHH:MM:SS.TH):";
-		temp.Data = "000:00:00.00";
-		temp.Unit = "";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "Vector Action Code:";
-		temp.Description = "Vector Action Code (L = Live Ephem, S = Static Ephem, G = put in targeting slot of GZLTRA only, B = put in GZLTRA & generate static ephem):";
-		temp.Data = "L";
-		temp.Unit = "";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "Co-ord System Ind:";
-		temp.Description = "Coordinate System Indicator (ECT or MCT):";
-		temp.Data = "ECT";
-		temp.Unit = "";
-		MEDInputData.table.push_back(temp);
+		AddMEDInput(MEDInputData.table, "VEH:", "Vehicle (CSM or LEM):", "CSM", "");
+		AddMEDInput(MEDInputData.table, "Velocity:", "Velocity in ft/s:", "0.0", "ft/s");
+		AddMEDInput(MEDInputData.table, "Flight Path Angle:", "Flight Path Angle in degrees:", "0.0", "degrees");
+		AddMEDInput(MEDInputData.table, "Azimuth:", "Azimuth in degrees:", "0.0", "degrees");
+		AddMEDInput(MEDInputData.table, "Latitude:", "Geocentric latitude in degrees:", "0.0", "degrees");
+		AddMEDInput(MEDInputData.table, "Longitude:", "Longitude in degrees:", "0.0", "degrees");
+		AddMEDInput(MEDInputData.table, "Height:", "Height above spherical planet in nautical miles:", "0.0", "NM");
+		AddMEDInput(MEDInputData.table, "Time:", "State vector time (format HHH:MM:SS.TH):", "000:00:00.00", "");
+		AddMEDInput(MEDInputData.table, "Vector Action Code:", "Vector Action Code (L = Live Ephem, S = Static Ephem, G = put in targeting slot of GZLTRA only, B = put in GZLTRA & generate static ephem):", "L", "");
+		AddMEDInput(MEDInputData.table, "Co-ord System Ind:", "Coordinate System Indicator (ECT or MCT):", "ECT", "");
 	}
 	else if (med == "P14")
 	{
-		MEDInputData.Title = "P14: Initialize Trajectory with a Vector";
-		MEDInputData.MEDCode = "P14";
+		AddMEDInputTitle(MEDInputData, "P14", "Initialize Trajectory with a Vector");
 
-		temp.Label = "VEH:";
-		temp.Description = "Vehicle (CSM or LEM):";
-		temp.Data = "CSM";
-		temp.Unit = "";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "X:";
-		temp.Description = "Position in Earth radii:";
-		temp.Data = "0.0";
-		temp.Unit = "ER";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "Y:";
-		temp.Description = "Position in Earth radii:";
-		temp.Data = "0.0";
-		temp.Unit = "ER";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "Z:";
-		temp.Description = "Position in Earth radii:";
-		temp.Data = "0.0";
-		temp.Unit = "ER";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "XDOT:";
-		temp.Description = "Velocity in Earth radii per hour:";
-		temp.Data = "0.0";
-		temp.Unit = "ER/hr";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "YDOT:";
-		temp.Description = "Velocity in Earth radii per hour:";
-		temp.Data = "0.0";
-		temp.Unit = "ER/hr";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "ZDOT:";
-		temp.Description = "Velocity in Earth radii per hour:";
-		temp.Data = "0.0";
-		temp.Unit = "ER/hr";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "Time:";
-		temp.Description = "GET of vector (format HHH:MM:SS.TH):";
-		temp.Data = "000:00:00.00";
-		temp.Unit = "GMT";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "Vector Action Code:";
-		temp.Description = "Vector Action Code (L = Live Ephem, S = Static Ephem, G = put in targeting slot of GZLTRA only, B = put in GZLTRA & generate static ephem):";
-		temp.Data = "L";
-		temp.Unit = "";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "Co-ord System Ind:";
-		temp.Description = "Coordinate system of vector (ECI, ECT, MCI, MCT, EMP or PLUM)";
-		temp.Data = "ECI";
-		temp.Unit = "";
-		MEDInputData.table.push_back(temp);
+		AddMEDInput(MEDInputData.table, "VEH:", "Vehicle (CSM or LEM):", "CSM", "");
+		AddMEDInput(MEDInputData.table, "X:", "Position in Earth radii:", "0.0", "ER");
+		AddMEDInput(MEDInputData.table, "Y:", "Position in Earth radii:", "0.0", "ER");
+		AddMEDInput(MEDInputData.table, "Z:", "Position in Earth radii:", "0.0", "ER");
+		AddMEDInput(MEDInputData.table, "XDOT:", "Velocity in Earth radii per hour:", "0.0", "ER/hr");
+		AddMEDInput(MEDInputData.table, "YDOT:", "Velocity in Earth radii per hour:", "0.0", "ER/hr");
+		AddMEDInput(MEDInputData.table, "ZDOT:", "Velocity in Earth radii per hour:", "0.0", "ER/hr");
+		AddMEDInput(MEDInputData.table, "Time:", "State vector time (format HHH:MM:SS.TH):", "000:00:00.00", "");
+		AddMEDInput(MEDInputData.table, "Vector Action Code:", "Vector Action Code (L = Live Ephem, S = Static Ephem, G = put in targeting slot of GZLTRA only, B = put in GZLTRA & generate static ephem):", "L", "");
+		AddMEDInput(MEDInputData.table, "Co-ord System Ind:", "Coordinate system of vector (ECI, ECT, MCI, MCT, EMP or PLUM)", "ECI", "");
 	}
 	else if (med == "S84")
 	{
-		MEDInputData.Title = "S84: Vector Panel Summary Entry";
-		MEDInputData.MEDCode = "S84";
+		AddMEDInputTitle(MEDInputData, "S84", "Vector Panel Summary Entry");
 
-		temp.Label = "VEH:";
-		temp.Description = "Vehicle (CSM or LEM):";
-		temp.Data = "CSM";
-		temp.Unit = "";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "X:";
-		temp.Description = "Position in Earth radii:";
-		temp.Data = "0.0";
-		temp.Unit = "ER";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "Y:";
-		temp.Description = "Position in Earth radii:";
-		temp.Data = "0.0";
-		temp.Unit = "ER";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "Z:";
-		temp.Description = "Position in Earth radii:";
-		temp.Data = "0.0";
-		temp.Unit = "ER";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "XDOT:";
-		temp.Description = "Velocity in Earth radii per hour:";
-		temp.Data = "0.0";
-		temp.Unit = "ER/hr";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "YDOT:";
-		temp.Description = "Velocity in Earth radii per hour:";
-		temp.Data = "0.0";
-		temp.Unit = "ER/hr";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "ZDOT:";
-		temp.Description = "Velocity in Earth radii per hour:";
-		temp.Data = "0.0";
-		temp.Unit = "ER/hr";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "GMT:";
-		temp.Description = "GMT of vector (format HHH:MM:SS.TH):";
-		temp.Data = "000:00:00.00";
-		temp.Unit = "GMT";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "Reference:";
-		temp.Description = "Coordinate system of vector (ECI, ECT, MCI, MCT or EMP)";
-		temp.Data = "ECI";
-		temp.Unit = "";
-		MEDInputData.table.push_back(temp);
-
-		temp.Label = "Lunar Surf.:";
-		temp.Description = "Lunar Surface Indicator (S if vector is on the surface of Moon):";
-		temp.Data = "";
-		temp.Unit = "";
-		MEDInputData.table.push_back(temp);
+		AddMEDInput(MEDInputData.table, "VEH:", "Vehicle (CSM or LEM):", "CSM", "");
+		AddMEDInput(MEDInputData.table, "X:", "Position in Earth radii:", "0.0", "ER");
+		AddMEDInput(MEDInputData.table, "Y:", "Position in Earth radii:", "0.0", "ER");
+		AddMEDInput(MEDInputData.table, "Z:", "Position in Earth radii:", "0.0", "ER");
+		AddMEDInput(MEDInputData.table, "XDOT:", "Velocity in Earth radii per hour:", "0.0", "ER/hr");
+		AddMEDInput(MEDInputData.table, "YDOT:", "Velocity in Earth radii per hour:", "0.0", "ER/hr");
+		AddMEDInput(MEDInputData.table, "ZDOT:", "Velocity in Earth radii per hour:", "0.0", "ER/hr");
+		AddMEDInput(MEDInputData.table, "GMT:", "GMT of vector (format HHH:MM:SS.TH):", "000:00:00.00", "GMT");
+		AddMEDInput(MEDInputData.table, "Reference:", "Coordinate system of vector (ECI, ECT, MCI, MCT or EMP)", "ECI", "");
+		AddMEDInput(MEDInputData.table, "Lunar Surf.:", "Lunar Surface Indicator (S if vector is on the surface of Moon):", "", "");
 	}
 
 	marker = 0;
