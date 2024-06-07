@@ -93,7 +93,7 @@ public:
 	void LMLSUplinkCalc();
 	void CSMLandingSiteUplink();
 	void LMLandingSiteUplink();
-	void VecPointCalc();
+	void VecPointCalc(bool IsCSM);
 	void TerrainModelCalc();
 	void LAPCalc();
 	void DAPPADCalc(bool IsCSM);
@@ -155,7 +155,7 @@ public:
 	void TPIPAD();
 	void TLI_PAD();
 	void PDI_PAD();
-	void MapUpdate();
+	void MapUpdate(bool IsCSM);
 	void NavCheckPAD(bool IsCSM);
 	void AP11AbortCoefUplink();
 	void AP12AbortCoefUplink();
@@ -268,7 +268,7 @@ public:
 	//STATE VECTOR PAGE
 	bool SVSlot; //true = CSM, false = LEM
 	double SVDesiredGET;
-	VESSEL* svtarget;
+	VESSEL* svtarget; //Also used as a target vessel
 	int svtargetnumber;
 
 	//AGS STATE VECTOR

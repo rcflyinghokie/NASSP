@@ -5974,7 +5974,7 @@ void ApolloRTCCMFD::menuCalcEntryPAD()
 
 void ApolloRTCCMFD::menuCalcMapUpdate()
 {
-	G->MapUpdate();
+	G->MapUpdate(IsCSM);
 }
 
 void ApolloRTCCMFD::menuSwitchEntryPADOpt()
@@ -7758,6 +7758,17 @@ void ApolloRTCCMFD::menuSpaceDigitalsInit()
 	{
 		bool SpaceDigitalsInitInput(void* id, char *str, void *data);
 		oapiOpenInputBox("Format: U00, CSM or LEM, E or M (optional);", SpaceDigitalsInitInput, 0, 20, (void*)this);
+	}
+	else
+	{
+		if (GC->rtcc->EZETVMED.SpaceDigVehID == RTCC_MPT_CSM)
+		{
+			GC->rtcc->EZETVMED.SpaceDigVehID = RTCC_MPT_LM;
+		}
+		else
+		{
+			GC->rtcc->EZETVMED.SpaceDigVehID = RTCC_MPT_CSM;
+		}
 	}
 }
 
