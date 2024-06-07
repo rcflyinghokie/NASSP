@@ -18,28 +18,8 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 	//sprintf(Buffer, "%d", G->screen);
 	//skp->Text(7.5 * W / 8,(int)(0.5 * H / 14), Buffer, strlen(Buffer));
 
-
-	if (G->vesseltype < 0)
-	{
-		skp->Text(3 * W / 8, 7 * H / 14, "Unsupported Vessel", 18);
-		return true;
-	}
-
 	if (screen == 0)
 	{
-		if (G->vesseltype == 0)
-		{
-			skp->Text(7 * W / 8, (int)(0.5 * H / 14), "CSM", 3);
-		}
-		else if(G->vesseltype == 1)
-		{
-			skp->Text(7 * W / 8, (int)(0.5 * H / 14), "LM", 2);
-		}
-		else
-		{
-			skp->Text(7 * W / 8, (int)(0.5 * H / 14), "MCC", 3);
-		}
-
 		skp->Text(1 * W / 8, 2 * H / 14, "Maneuver Targeting", 18);
 		skp->Text(1 * W / 8, 4 * H / 14, "Pre-Advisory Data", 17);
 		skp->Text(1 * W / 8, 6 * H / 14, "Utility", 7);
@@ -2974,6 +2954,8 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 	{
 		skp->Text(5 * W / 8, (int)(0.5 * H / 14), "DAP PAD", 7);
 
+		CSMOrLMSelection(skp);
+
 		sprintf(Buffer, "%+06.0f WT N47", G->DAP_PAD.ThisVehicleWeight);
 		skp->Text((int)(3.5 * W / 8), 5 * H / 21, Buffer, strlen(Buffer));
 		sprintf(Buffer, "%+06.0f", G->DAP_PAD.OtherVehicleWeight);
@@ -3025,15 +3007,8 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		if (!GC->MissionPlanningActive)
 		{
-			if (G->target != NULL)
-			{
-				sprintf(Buffer, G->target->GetName());
-				skp->Text(5 * W / 8, 2 * H / 14, Buffer, strlen(Buffer));
-			}
-			else
-			{
-				skp->Text(5 * W / 8, 2 * H / 14, "No Target!", 10);
-			}
+			PrintCSMVessel(Buffer);
+			skp->Text(5 * W / 8, 2 * H / 14, Buffer, strlen(Buffer));
 		}
 
 		sprintf(Buffer, "%f", GC->rtcc->JZLAI.sv_Insertion.R.x);
@@ -3067,15 +3042,8 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		}
 		skp->Text(1 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
 
-		if (G->target != NULL)
-		{
-			sprintf(Buffer, G->target->GetName());
-		}
-		else
-		{
-			sprintf(Buffer, "No Target!");
-		}
-		skp->Text((int)(5.5 * W / 8), 4 * H / 14, Buffer, strlen(Buffer));
+		PrintCSMVessel(Buffer);
+		skp->Text(11 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
 
 		int hh, mm;
 		double secs;
@@ -3202,14 +3170,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		sprintf(Buffer, "%+06d", G->DEDA227);
 		skp->Text(3 * W / 8, 19 * H / 21, Buffer, strlen(Buffer));
 
-		if (G->target != NULL)
-		{
-			sprintf(Buffer, G->target->GetName());
-		}
-		else
-		{
-			sprintf(Buffer, "No Target!");
-		}
+		PrintCSMVessel(Buffer);
 		skp->Text((int)(5.5 * W / 8), 4 * H / 14, Buffer, strlen(Buffer));
 
 		skp->Text(5 * W / 8, 15 * H / 21, "Landing Site:", 13);
@@ -5565,13 +5526,13 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			skp->Text(10 * W / 16, 8 * H / 16, Buffer, strlen(Buffer));
 		}
 
-		if (GC->pMPTVessel != NULL)
+		if (GC->rtcc->med_m49.Table == RTCC_MPT_CSM)
 		{
-			sprintf(Buffer, "Vessel: %s", GC->pMPTVessel->GetName());
+			PrintCSMVessel(Buffer);
 		}
 		else
 		{
-			sprintf(Buffer, "Vessel: None");
+			PrintLMVessel(Buffer);
 		}
 		skp->Text(9 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
 

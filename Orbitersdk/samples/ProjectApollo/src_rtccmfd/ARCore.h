@@ -40,9 +40,6 @@ public:
 
 	bool MissionPlanningActive;
 
-	VESSEL *pMPTVessel;
-	int MPTVesselNumber;
-
 	int mptInitError;
 
 	double REFSMMAT_PTC_MJD;
@@ -99,7 +96,7 @@ public:
 	void VecPointCalc();
 	void TerrainModelCalc();
 	void LAPCalc();
-	void DAPPADCalc();
+	void DAPPADCalc(bool IsCSM);
 	void AscentPADCalc();
 	void PDAPCalc();
 	void CycleFIDOOrbitDigitals1();
@@ -197,7 +194,6 @@ public:
 	//GENERAL PARAMETERS
 	double P30TIG;				//Maneuver GET
 	VECTOR3 dV_LVLH;			//LVLH maneuver vector
-	int vesseltype;				// 0 = CSM, 1 = LM, 2 = MCC
 	bool vesselisdocked;		// false = undocked, true = docked
 	bool lemdescentstage;		//0 = ascent stage, 1 = descent stage
 	bool PADSolGood;

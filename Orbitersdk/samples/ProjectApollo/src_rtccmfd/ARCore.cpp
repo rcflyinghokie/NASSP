@@ -30,8 +30,6 @@ static char debugWinsock[100];
 AR_GCore::AR_GCore(VESSEL* v)
 {
 	MissionPlanningActive = false;
-	MPTVesselNumber = -1;
-	pMPTVessel = NULL;
 	mptInitError = 0;
 
 	AGOP_Page = 1;
@@ -414,9 +412,20 @@ int AR_GCore::MPTTrajectoryUpdate(VESSEL *ves, bool csm)
 void AR_GCore::MPTMassUpdate()
 {
 	//Mass Update
-	if (pMPTVessel == NULL) return;
+	VESSEL *v;
 
-	rtcc->MPTMassUpdate(pMPTVessel, rtcc->med_m50, rtcc->med_m55, rtcc->med_m49);
+	if (rtcc->med_m49.Table == RTCC_MPT_CSM)
+	{
+		v = rtcc->pCSM;
+	}
+	else
+	{
+		v = rtcc->pLM;
+	}
+
+	if (v == NULL) return;
+
+	rtcc->MPTMassUpdate(v, rtcc->med_m50, rtcc->med_m55, rtcc->med_m49);
 }
 
 bool AR_GCore::AGOP_CSM_REFSMMAT_Required()
@@ -498,23 +507,7 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	lemdescentstage = true;
 	mptinitmode = 3;
 
-	vesseltype = -1;
-
-	if (utils::IsVessel(v,utils::Saturn))
-	{
-		vesseltype = 0;
-	}
-	else if (utils::IsVessel(v, utils::LEM))
-	{
-		vesseltype = 1;
-	}
-	else if (utils::IsVessel(v, utils::MCC) || utils::IsVessel(v, utils::SaturnIB_SIVB) || utils::IsVessel(v, utils::SaturnV_SIVB))
-	{
-		vesseltype = 2;
-	}
-
 	vesselisdocked = false;
-
 	//For now, CSM or LM being docked will set this flag
 	if (GC->rtcc->pCSM)
 	{
@@ -908,10 +901,14 @@ void ARCore::LunarLiftoffCalc()
 
 void ARCore::EntryUpdateCalc()
 {
+	VESSEL *v = GC->rtcc->pCSM;
+
+	if (v == NULL) return;
+
 	SV sv0;
 	EntryResults res;
 
-	sv0 = GC->rtcc->StateVectorCalc(vessel);
+	sv0 = GC->rtcc->StateVectorCalc(v);
 	GC->rtcc->EntryUpdateCalc(sv0, entryrange, true, &res);
 
 	GC->rtcc->RZDBSC1.lat_T = res.latitude;
@@ -1151,15 +1148,28 @@ void ARCore::TransferRTEToMPT()
 	startSubthread(49);
 }
 
-void ARCore::DAPPADCalc()
+void ARCore::DAPPADCalc(bool IsCSM)
 {
-	if (vesseltype == 0)
+	VESSEL*v;
+
+	if (IsCSM)
 	{
-		GC->rtcc->CSMDAPUpdate(vessel, DAP_PAD, vesselisdocked);
+		v = GC->rtcc->pCSM;
 	}
-	else if (vesseltype == 1)
+	else
 	{
-		GC->rtcc->LMDAPUpdate(vessel, DAP_PAD, vesselisdocked, lemdescentstage == false);
+		v = GC->rtcc->pLM;
+	}
+
+	if (v == NULL) return;
+
+	if (IsCSM)
+	{
+		GC->rtcc->CSMDAPUpdate(v, DAP_PAD, vesselisdocked);
+	}
+	else
+	{
+		GC->rtcc->LMDAPUpdate(v, DAP_PAD, vesselisdocked, lemdescentstage == false);
 	}
 }
 
@@ -1326,14 +1336,15 @@ void ARCore::GetStateVectorFromIU()
 
 void ARCore::GetStateVectorsFromAGS()
 {
-	//Are we a LM?
-	if (vesseltype != 1) return;
+	VESSEL *v = GC->rtcc->pLM;
+
+	if (v == NULL) return;
 
 	//0-6: pos and vel
 	int csmvecoct[6], lmvecoct[6];
 	int timeoct[2];
 
-	LEM *lem = (LEM *)vessel;
+	LEM *lem = (LEM *)v;
 
 	//Get Data
 	lmvecoct[0] = lem->aea.vags.Memory[0340];
@@ -1393,7 +1404,8 @@ void ARCore::GetStateVectorsFromAGS()
 	sv_CSM.R = tmul(Rot, R_CSM);
 	sv_CSM.V = tmul(Rot, V_CSM);
 	sv_CSM.GMT = sv_LM.GMT = T_SV + GC->rtcc->GetAGSClockZero();
-	if (GC->rtcc->AGCGravityRef(vessel) == oapiGetObjectByName("Moon"))
+
+	if (GC->rtcc->AGCGravityRef(v) == oapiGetObjectByName("Moon"))
 	{
 		sv_CSM.RBI = sv_LM.RBI = BODY_MOON;
 	}
@@ -2160,12 +2172,10 @@ void ARCore::ErasableMemoryUpdateUplink(int blocknum)
 	if (blocknum <= 1)
 	{
 		IsCMC = true;
-		if (vesseltype != 0) return; //Not a CSM
 	}
 	else
 	{
 		IsCMC = false;
-		if (vesseltype != 1) return; //Not a LM
 	}
 
 	RTCC::AGCErasableMemoryUpdateMakeupBlock *block = &GC->rtcc->CZERAMEM.Blocks[blocknum];
@@ -2602,17 +2612,6 @@ int ARCore::subThread()
 {
 	ThreadStatus Result = DONE;
 
-	int mptveh;
-
-	if (vesseltype == 0)
-	{
-		mptveh = RTCC_MPT_CSM;
-	}
-	else
-	{
-		mptveh = RTCC_MPT_LM;
-	}
-
 	subThreadStatus = RUNNING;
 	switch (subThreadMode) {
 	case 0: // Test
@@ -2918,6 +2917,16 @@ int ARCore::subThread()
 	case 4:	//REFSMMAT Calculation
 	{
 		REFSMMATOpt opt;
+		int mptveh;
+
+		if (IsCSMCalculation)
+		{
+			mptveh = RTCC_MPT_CSM;
+		}
+		else
+		{
+			mptveh = RTCC_MPT_LM;
+		}
 
 		opt.dV_LVLH = dV_LVLH;
 		opt.LSAzi = GC->rtcc->med_k18.psi_DS*RAD;
@@ -3166,16 +3175,24 @@ int ARCore::subThread()
 		}
 		else
 		{
+			VESSEL *v = GC->rtcc->pCSM;
+
+			if (v == NULL)
+			{
+				Result = DONE;
+				break;
+			}
+
 			MED_M50 med1;
 			MED_M55 med2;
 			MED_M49 med3;
 			//This doesn't work in debug mode (with only RTCC MFD and MCC modules build), so below are some fake masses
-			GC->rtcc->MPTMassUpdate(vessel, med1, med2, med3);
+			GC->rtcc->MPTMassUpdate(v, med1, med2, med3);
 
 			GC->rtcc->VEHDATABUF.csmmass = med1.CSMWT;//vessel->GetMass();//
 			GC->rtcc->VEHDATABUF.lmascmass = med1.LMASCWT;//0.0;10000.0*0.453;//
 			GC->rtcc->VEHDATABUF.lmdscmass = med1.LMWT - med1.LMASCWT;//0.0;25000.0*0.453;//
-			GC->rtcc->VEHDATABUF.sv = GC->rtcc->StateVectorCalcEphem(vessel);
+			GC->rtcc->VEHDATABUF.sv = GC->rtcc->StateVectorCalcEphem(v);
 			GC->rtcc->VEHDATABUF.config = med2.ConfigCode;//"CL";//"C";//
 
 			GC->rtcc->PMMREDIG(false);
@@ -3828,13 +3845,13 @@ int ARCore::subThread()
 		}
 		else
 		{
-			if (target == NULL)
+			if (GC->rtcc->pCSM == NULL || GC->rtcc->pLM == NULL)
 			{
 				Result = DONE;
 				break;
 			}
-			sv_CSM = GC->rtcc->StateVectorCalc(target);
-			LEM *l = (LEM *)vessel;
+			sv_CSM = GC->rtcc->StateVectorCalc(GC->rtcc->pCSM);
+			LEM *l = (LEM *)GC->rtcc->pLM;
 			m0 = l->GetAscentStageMass();
 		}
 
@@ -3862,7 +3879,9 @@ int ARCore::subThread()
 	break;
 	case 21: //LM Ascent PAD
 	{
-		if (target == NULL)
+		//TBD: MPT compatibility
+
+		if (GC->rtcc->pCSM == NULL || GC->rtcc->pLM == NULL)
 		{
 			Result = DONE;
 			break;
@@ -3871,9 +3890,9 @@ int ARCore::subThread()
 		ASCPADOpt opt;
 		EphemerisData sv_CSM;
 
-		sv_CSM = GC->rtcc->StateVectorCalcEphem(target);
+		sv_CSM = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pCSM);
 
-		opt.Rot_VL = OrbMech::GetVesselToLocalRotMatrix(vessel);
+		opt.Rot_VL = OrbMech::GetVesselToLocalRotMatrix(GC->rtcc->pLM);
 		opt.R_LS = OrbMech::r_from_latlong(GC->rtcc->BZLAND.lat[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.lng[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.rad[RTCC_LMPOS_BEST]);
 		opt.sv_CSM = sv_CSM;
 		opt.TIG = t_LunarLiftoff;
@@ -3891,8 +3910,19 @@ int ARCore::subThread()
 		PDAPResults res;
 		SV sv_LM, sv_CSM;
 
-		LEM *l = (LEM *)vessel;
+		if (GC->rtcc->pCSM == NULL || GC->rtcc->pLM == NULL)
+		{
+			Result = DONE;
+			break;
+		}
 
+		if (utils::IsVessel(GC->rtcc->pLM, utils::LEM) == false)
+		{
+			Result = DONE;
+			break;
+		}
+
+		LEM *l = (LEM *)GC->rtcc->pLM;
 
 		if (GC->MissionPlanningActive)
 		{
@@ -3912,17 +3942,11 @@ int ARCore::subThread()
 		}
 		else
 		{
-			if (vesseltype != 1 || target == NULL)
-			{
-				Result = DONE;
-				break;
-			}
-
 			opt.W_TAPS = l->GetAscentStageMass();
-			opt.W_TDRY = opt.sv_A.mass - vessel->GetPropellantMass(vessel->GetPropellantHandleByIndex(0));
+			opt.W_TDRY = opt.sv_A.mass - vessel->GetPropellantMass(l->GetPropellantHandleByIndex(0));
 
-			sv_LM = GC->rtcc->StateVectorCalc(vessel);
-			sv_CSM = GC->rtcc->StateVectorCalc(target);
+			sv_LM = GC->rtcc->StateVectorCalc(GC->rtcc->pLM);
+			sv_CSM = GC->rtcc->StateVectorCalc(GC->rtcc->pCSM);
 		}
 
 		if (PDAPEngine == 0)
@@ -4325,13 +4349,15 @@ int ARCore::subThread()
 	break;
 	case 35: //AGS Clock Sync
 	{
-		if (vesseltype != 1)
+		VESSEL *v = GC->rtcc->pLM;
+
+		if (v == NULL || utils::IsVessel(v, utils::LEM) == false)
 		{
 			Result = DONE;
 			break;
 		}
 
-		LEM *l = (LEM*)vessel;
+		LEM *l = (LEM*)v;
 
 		double KFactor;
 		bool res = GC->rtcc->CalculateAGSKFactor(&l->agc.vagc, &l->aea.vags, KFactor);

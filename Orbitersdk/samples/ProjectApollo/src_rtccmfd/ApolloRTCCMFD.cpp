@@ -4860,20 +4860,14 @@ void ApolloRTCCMFD::menuMPTInitAutoUpdate()
 
 void ApolloRTCCMFD::menuMPTInitM50M55Vehicle()
 {
-	int vesselcount;
-
-	vesselcount = oapiGetVesselCount();
-
-	if (GC->MPTVesselNumber < vesselcount - 1)
+	if (GC->rtcc->med_m49.Table == RTCC_MPT_CSM)
 	{
-		GC->MPTVesselNumber++;
+		set_CSMVessel();
 	}
 	else
 	{
-		GC->MPTVesselNumber = 0;
+		set_LMVessel();
 	}
-
-	GC->pMPTVessel = oapiGetVesselInterface(oapiGetVesselByIndex(GC->MPTVesselNumber));
 }
 
 void ApolloRTCCMFD::CheckoutMonitorCalc()
@@ -7411,10 +7405,7 @@ void ApolloRTCCMFD::menuDKICalc()
 
 void ApolloRTCCMFD::menuLAPCalc()
 {
-	if (GC->MissionPlanningActive || (G->target != NULL && G->vesseltype == 1))
-	{
-		G->LAPCalc();
-	}
+	G->LAPCalc();
 }
 
 void ApolloRTCCMFD::menuSetLAPLiftoffTime()
@@ -7693,14 +7684,18 @@ void ApolloRTCCMFD::TPIDTDialogue()
 
 void ApolloRTCCMFD::menuDAPPADCalc()
 {
-	G->DAPPADCalc();
+	G->DAPPADCalc(IsCSM);
 }
 
 void ApolloRTCCMFD::menuLaunchAzimuthCalc()
 {
-	if (utils::IsVessel(G->vessel, utils::SaturnV)) {
+	VESSEL *v = GC->rtcc->pCSM;
 
-		SaturnV *SatV = (SaturnV*)G->vessel;
+	if (v == NULL) return;
+
+	if (utils::IsVessel(v, utils::SaturnV)) {
+
+		SaturnV *SatV = (SaturnV*)v;
 		if (SatV->iu)
 		{
 			LVDCSV *lvdc = (LVDCSV*)SatV->iu->GetLVDC();
@@ -7732,10 +7727,7 @@ void ApolloRTCCMFD::menuLaunchAzimuthCalc()
 
 void ApolloRTCCMFD::menuAscentPADCalc()
 {
-	if (G->vesseltype == 1 && G->vessel->GroundContact() && G->target != NULL)
-	{
-		G->AscentPADCalc();
-	}
+	G->AscentPADCalc();
 }
 
 void ApolloRTCCMFD::menuCycleAscentPADVersion()
@@ -7752,10 +7744,7 @@ void ApolloRTCCMFD::menuCycleAscentPADVersion()
 
 void ApolloRTCCMFD::menuPDAPCalc()
 {
-	if (G->vesseltype == 1 && G->target != NULL)
-	{
-		G->PDAPCalc();
-	}
+	G->PDAPCalc();
 }
 
 void ApolloRTCCMFD::menuCyclePDAPSegments()
@@ -7777,16 +7766,17 @@ void ApolloRTCCMFD::menuCyclePDAPEngine()
 
 void ApolloRTCCMFD::menuAP11AbortCoefUplink()
 {
-	if (G->vesseltype == 1)
+	VESSEL *v = GC->rtcc->pLM;
+
+	if (v == NULL || utils::IsVessel(v, utils::LEM) == false) return;
+
+	if (G->PDAPTwoSegment == false)
 	{
-		if (G->PDAPTwoSegment == false)
-		{
-			G->AP11AbortCoefUplink();
-		}
-		else
-		{
-			G->AP12AbortCoefUplink();
-		}
+		G->AP11AbortCoefUplink();
+	}
+	else
+	{
+		G->AP12AbortCoefUplink();
 	}
 }
 
@@ -9077,10 +9067,10 @@ void ApolloRTCCMFD::menuAGCTimeUpdateComparison()
 	int i;
 	switch (screen)
 	{
-	case 111:
+	case 111: //CMC
 		i = 0;
 		break;
-	case 112:
+	case 112: //LGC
 		i = 1;
 		break;
 	default:
@@ -9092,26 +9082,28 @@ void ApolloRTCCMFD::menuAGCTimeUpdateComparison()
 
 	if (i == 0)
 	{
-		if (G->vesseltype == 0)
-		{
-			agc = &((Saturn *)G->vessel)->agc.vagc;
-		}
-		else
+		//CMC
+		VESSEL *v = GC->rtcc->pCSM;
+
+		if (v == NULL || utils::IsVessel(v, utils::Saturn) == false)
 		{
 			return;
 		}
+
+		agc = &((Saturn *)v)->agc.vagc;
 		ClockZero = GC->rtcc->GetCMCClockZero();
 	}
 	else
 	{
-		if (G->vesseltype == 1)
-		{
-			agc = &((LEM *)G->vessel)->agc.vagc;
-		}
-		else
+		//LGC
+		VESSEL *v = GC->rtcc->pLM;
+
+		if (v == NULL || utils::IsVessel(v, utils::LEM) == false)
 		{
 			return;
 		}
+
+		agc = &((LEM *)G->vessel)->agc.vagc;
 		ClockZero = GC->rtcc->GetLGCClockZero();
 	}
 
