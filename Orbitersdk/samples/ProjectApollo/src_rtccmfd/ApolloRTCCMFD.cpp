@@ -840,16 +840,14 @@ void ApolloRTCCMFD::menuSetDAPPADPage()
 	SelectPage(35);
 }
 
-void ApolloRTCCMFD::menuSetLVDCPage()
+void ApolloRTCCMFD::menuSetSaturnIBLVDCPage()
 {
-	if (utils::IsVessel(G->vessel, utils::SaturnV) || utils::IsVessel(G->vessel, utils::SaturnV_SIVB))
-	{
-		SelectPage(36); //Saturn V launch azimuth
-	}
-	else if (utils::IsVessel(G->vessel, utils::SaturnIB) || utils::IsVessel(G->vessel, utils::SaturnIB_SIVB))
-	{
-		SelectPage(121); //Saturn IB LWP
-	}
+	SelectPage(121);
+}
+
+void ApolloRTCCMFD::menuSetSaturnVLVDCPage()
+{
+	SelectPage(36);
 }
 
 void ApolloRTCCMFD::menuSetLunarAscentPage()
@@ -5317,6 +5315,11 @@ void ApolloRTCCMFD::set_LMVessel()
 	CycleThroughVessels(&GC->rtcc->pLM);
 }
 
+void ApolloRTCCMFD::set_IUVessel()
+{
+	CycleThroughVessels(&G->iuvessel);
+}
+
 void ApolloRTCCMFD::CycleThroughVessels(VESSEL **v) const
 {
 	VESSEL *pVessel;
@@ -5368,7 +5371,7 @@ void ApolloRTCCMFD::set_svtarget()
 		G->svtargetnumber = 0;
 	}
 
-		G->svtarget = oapiGetVesselInterface(oapiGetVesselByIndex(G->svtargetnumber));
+	G->svtarget = oapiGetVesselInterface(oapiGetVesselByIndex(G->svtargetnumber));
 }
 
 void ApolloRTCCMFD::SPQcalc()
@@ -5830,11 +5833,6 @@ void ApolloRTCCMFD::menuRevertRLSToPrelaunch()
 	GeneralMEDRequest("S72,BEST,MED;");
 }
 
-void ApolloRTCCMFD::menuSwitchSVSlot()
-{
-	G->SVSlot = !G->SVSlot;
-}
-
 void ApolloRTCCMFD::menuSVUpload()
 {
 	int type;
@@ -6280,7 +6278,7 @@ void ApolloRTCCMFD::set_vecbody(OBJHANDLE body)
 
 void ApolloRTCCMFD::menuVECPOINTCalc()
 {
-	G->VecPointCalc();
+	G->VecPointCalc(IsCSM);
 }
 
 void ApolloRTCCMFD::StoreStatus(void) const
@@ -9071,7 +9069,7 @@ void ApolloRTCCMFD::menuAGCTimeUpdateComparison()
 			return;
 		}
 
-		agc = &((LEM *)G->vessel)->agc.vagc;
+		agc = &((LEM *)v)->agc.vagc;
 		ClockZero = GC->rtcc->GetLGCClockZero();
 	}
 

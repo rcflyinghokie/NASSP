@@ -88,6 +88,7 @@ public:
 	void set_Vessel();
 	void set_CSMVessel();
 	void set_LMVessel();
+	void set_IUVessel();
 	void CycleThroughVessels(VESSEL **v) const;
 	void menuSLVLaunchTargetingPad();
 	void menuSLVLaunchTargeting();
@@ -189,7 +190,6 @@ public:
 	void GeneralMEDRequest(char *str);
 	void EntryRangeDialogue();
 	void menuSVCalc();
-	void menuSwitchSVSlot();
 	void menuSVUpload();
 	void menuLSCalc();
 	void menuRevertRLSToPrelaunch();
@@ -425,7 +425,8 @@ public:
 	void menuSetLAPLiftoffTime();
 	void menuSetDAPPADPage();
 	void menuDAPPADCalc();
-	void menuSetLVDCPage();
+	void menuSetSaturnIBLVDCPage();
+	void menuSetSaturnVLVDCPage();
 	void menuLaunchAzimuthCalc();
 	void cycleVECPOINTOpt();
 	void menuSetLMAscentPADPage();

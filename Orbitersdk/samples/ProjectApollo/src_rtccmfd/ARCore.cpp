@@ -493,7 +493,6 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	CDHtime = 0.0;
 	SPQTIG = 0.0;
 	CDHtimemode = 0;
-	this->vessel = v;
 	t_TPI = 0.0;
 
 	SPQDeltaV = _V(0, 0, 0);
@@ -581,7 +580,6 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	RTETradeoffMode = 0;
 	RTEASTType = 76;
 
-	SVSlot = true; //true = CSM; false = Other
 	SVDesiredGET = -1;
 	manpad.Trun = 0.0;
 	manpad.Shaft = 0.0;
@@ -648,6 +646,7 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	PADSolGood = true;
 	svtarget = NULL;
 	svtargetnumber = -1;
+	iuvessel = NULL;
 	TLCCSolGood = true;
 
 	landingzone = 0;
@@ -685,8 +684,6 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	VECdirection = 0;
 	VECbody = NULL;
 	VECangles = _V(0, 0, 0);
-
-	DOI_dV_LVLH = _V(0, 0, 0);
 
 	TPI_Mode = 0;
 	dt_TPI_sunrise = 16.0*60.0;
@@ -3434,25 +3431,15 @@ int ARCore::subThread()
 	{
 		EphemerisData state;
 		PLAWDTOutput WeightsTable;
-		VESSEL *v;
 
-		if (GC->rtcc->PZTLIPLN.Vehicle == RTCC_MPT_CSM)
-		{
-			v = GC->rtcc->pCSM;
-		}
-		else
-		{
-			v = GC->rtcc->pLM;
-		}
-
-		if (v == NULL)
+		if (iuvessel == NULL)
 		{
 			Result = DONE;
 			break;
 		}
 
-		state = GC->rtcc->StateVectorCalcEphem(v);
-		WeightsTable = GC->rtcc->GetWeightsTable(v, true, false);
+		state = GC->rtcc->StateVectorCalcEphem(iuvessel);
+		WeightsTable = GC->rtcc->GetWeightsTable(iuvessel, true, false);
 
 		GC->rtcc->TranslunarInjectionProcessor(state, WeightsTable);
 
@@ -5119,7 +5106,23 @@ int ARCore::subThread()
 			EphemerisData sv;
 			bool TimesNotRequired;
 
-			sv = GC->rtcc->StateVectorCalcEphem(vessel);
+			VESSEL *v;
+			if (GC->AGOP_AttIsCSM)
+			{
+				v = GC->rtcc->pCSM;
+			}
+			else
+			{
+				v = GC->rtcc->pLM;
+			}
+
+			if (v == NULL)
+			{
+				Result = DONE;
+				break;
+			}
+
+			sv = GC->rtcc->StateVectorCalcEphem(v);
 
 			TimesNotRequired = false;
 
@@ -5368,14 +5371,14 @@ int ARCore::subThread()
 
 		IU *iu;
 
-		if (utils::IsVessel(vessel, utils::SaturnIB))
+		if (utils::IsVessel(iuvessel, utils::SaturnIB))
 		{
-			Saturn *iuv = (Saturn *)vessel;
+			Saturn *iuv = (Saturn *)iuvessel;
 			iu = iuv->GetIU();
 		}
-		else if (utils::IsVessel(vessel, utils::SaturnIB_SIVB))
+		else if (utils::IsVessel(iuvessel, utils::SaturnIB_SIVB))
 		{
-			SIVB *iuv = (SIVB *)vessel;
+			SIVB *iuv = (SIVB *)iuvessel;
 			iu = iuv->GetIU();
 		}
 		else
@@ -5472,9 +5475,9 @@ int ARCore::subThread()
 
 		IU *iu;
 
-		if (utils::IsVessel(vessel, utils::SaturnV))
+		if (utils::IsVessel(iuvessel, utils::SaturnV))
 		{
-			Saturn *iuv = (Saturn *)vessel;
+			Saturn *iuv = (Saturn *)iuvessel;
 			iu = iuv->GetIU();
 		}
 		else

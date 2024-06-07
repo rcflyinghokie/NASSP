@@ -3727,8 +3727,6 @@ public:
 	struct TLIPlanningTable
 	{
 		//INPUT
-		//Vehicle
-		int Vehicle = RTCC_MPT_CSM;
 		//4 = E-type mission ellipse
 		int Mode = 4;
 		//TLI ignition for mode 4

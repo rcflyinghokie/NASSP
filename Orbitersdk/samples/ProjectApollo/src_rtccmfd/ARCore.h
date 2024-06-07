@@ -186,9 +186,6 @@ public:
 
 	ApolloRTCCMFDData g_Data;
 
-	//TARGETING VESSELS
-	VESSEL* vessel;
-
 	//GENERAL PARAMETERS
 	double P30TIG;				//Maneuver GET
 	VECTOR3 dV_LVLH;			//LVLH maneuver vector
@@ -266,7 +263,6 @@ public:
 	int RTEASTType; //75 = unspecified, 76 = specific site, 77 = lunar search
 
 	//STATE VECTOR PAGE
-	bool SVSlot; //true = CSM, false = LEM
 	double SVDesiredGET;
 	VESSEL* svtarget; //Also used as a target vessel
 	int svtargetnumber;
@@ -314,9 +310,6 @@ public:
 	int VECdirection;	//0 = +X, 1 = -X, 2 = +Y,3 = -Y,4 = +Z, 5 = -Z
 	OBJHANDLE VECbody;	//handle for the desired body
 	VECTOR3 VECangles;	//IMU angles
-
-	//DOI Page
-	VECTOR3 DOI_dV_LVLH;				//Integrated DV Vector
 
 	//Terrain Model
 	double TMLat, TMLng, TMAzi, TMDistance, TMStepSize, TMAlt;
@@ -366,6 +359,8 @@ public:
 	double RTCCClockTime[2];
 	double DeltaClockTime[2];
 	double DesiredRTCCLiftoffTime[2];
+
+	VESSEL *iuvessel;
 	int iuUplinkResult; //0 = no uplink, 1 = uplink accepted, 2 = vessel has no IU, 3 = uplink rejected, 4 = No targeting parameters
 
 	//LUNAR TARGETING PROGRAM

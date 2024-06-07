@@ -2,7 +2,7 @@
 #include "ApolloRTCCMFD.h"
 #include "iu.h"
 
-char Buffer[100];
+char Buffer[128];
 
 // Repaint the MFD
 bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
@@ -2046,8 +2046,9 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		skp->Text(1 * W / 8, 10 * H / 14, "Nodal Target Conversion", 23);
 		skp->Text(1 * W / 8, 12 * H / 14, "Descent Abort", 13);
 
-		skp->Text(5 * W / 8, 2 * H / 14, "LVDC", 4);
-		skp->Text(5 * W / 8, 4 * H / 14, "Terrain Model", 13);
+		skp->Text(5 * W / 8, 2 * H / 14, "Saturn IB LVDC", 14);
+		skp->Text(5 * W / 8, 4 * H / 14, "Saturn V LVDC", 13);
+		skp->Text(5 * W / 8, 6 * H / 14, "Terrain Model", 13);
 		skp->Text(5 * W / 8, 8 * H / 14, "Lunar Impact", 12);
 		skp->Text(5 * W / 8, 10 * H / 14, "Debug", 5);
 		skp->Text(5 * W / 8, 12 * H / 14, "Previous Page", 13);
@@ -5847,8 +5848,11 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 	{
 		if (oapiGetSimTime() > GC->rtcc->fdolaunchanalog1tab.LastUpdateTime + 0.5)
 		{
-			EphemerisData sv = GC->rtcc->StateVectorCalcEphem(G->vessel);
-			GC->rtcc->FDOLaunchAnalog1(sv);
+			if (GC->rtcc->pCSM)
+			{
+				EphemerisData sv = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pCSM);
+				GC->rtcc->FDOLaunchAnalog1(sv);
+			}
 		}
 
 		skp->SetTextAlign(oapi::Sketchpad::CENTER);
@@ -5956,8 +5960,11 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 	{
 		if (oapiGetSimTime() > GC->rtcc->fdolaunchanalog2tab.LastUpdateTime + 0.5)
 		{
-			EphemerisData sv = GC->rtcc->StateVectorCalcEphem(G->vessel);
-			GC->rtcc->FDOLaunchAnalog2(sv);
+			if (GC->rtcc->pCSM)
+			{
+				EphemerisData sv = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pCSM);
+				GC->rtcc->FDOLaunchAnalog2(sv);
+			}
 		}
 
 		skp->SetTextAlign(oapi::Sketchpad::CENTER);
@@ -6970,20 +6977,30 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 	{
 		skp->Text(2 * W / 8, 1 * H / 14, "TLI PLANNING DISPLAY (MSK 0080)", 31);
 
-		if (GC->rtcc->PZTLIPLN.Mode == 4)
+		if (G->iuvessel == NULL)
 		{
-			skp->Text(1 * W / 16, 2 * H / 14, "Ellipse", 7);
+			sprintf_s(Buffer, 127, "No IU!");
 		}
 		else
 		{
-			skp->Text(1 * W / 16, 2 * H / 14, "TBD", 3);
+			sprintf_s(Buffer, 127, G->iuvessel->GetName());
+		}
+		skp->Text(1 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
+
+		if (GC->rtcc->PZTLIPLN.Mode == 4)
+		{
+			skp->Text(1 * W / 16, 4 * H / 14, "Ellipse", 7);
+		}
+		else
+		{
+			skp->Text(1 * W / 16, 4 * H / 14, "TBD", 3);
 		}
 		
 		GET_Display(Buffer, GC->rtcc->PZTLIPLN.GET_TLI, false);
-		skp->Text(1 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
+		skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
 
 		sprintf_s(Buffer, "%.0lf NM", GC->rtcc->PZTLIPLN.h_ap);
-		skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
+		skp->Text(1 * W / 16, 8 * H / 14, Buffer, strlen(Buffer));
 
 		skp->Text(9 * W / 16, 4 * H / 14, "GET RP", 6);
 		skp->Text(9 * W / 16, 5 * H / 14, "GET TIG", 7);
@@ -9941,6 +9958,16 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		skp->Text(18 * W / 32, 30 * H / 32, "DN TARGET", 9);
 		skp->Text(18 * W / 32, 31 * H / 32, "BIAS", 4);
 
+		if (G->iuvessel == NULL)
+		{
+			sprintf_s(Buffer, 127, "No IU!");
+		}
+		else
+		{
+			sprintf_s(Buffer, 127, G->iuvessel->GetName());
+		}
+		skp->Text(2 * W / 32, 12 * H / 14, Buffer, strlen(Buffer));
+
 		switch (G->iuUplinkResult)
 		{
 		case 1:
@@ -9959,7 +9986,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			sprintf(Buffer, "No Uplink");
 			break;
 		}
-		skp->Text(2 * W / 32, 28 * H / 32, Buffer, strlen(Buffer));
+		skp->Text(2 * W / 32, 13 * H / 14, Buffer, strlen(Buffer));
 
 		skp->SetTextAlign(oapi::Sketchpad::RIGHT);
 
