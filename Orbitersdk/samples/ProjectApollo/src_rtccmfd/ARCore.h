@@ -264,8 +264,6 @@ public:
 
 	//STATE VECTOR PAGE
 	double SVDesiredGET;
-	VESSEL* svtarget; //Also used as a target vessel
-	int svtargetnumber;
 
 	//AGS STATE VECTOR
 	double AGSEpochTime;
@@ -353,6 +351,9 @@ public:
 	//SPACE DIGITALS
 	int SpaceDigitalsOption;
 	double SpaceDigitalsGET;
+
+	//SATURN IB LAUNCH TARGETING
+	VESSEL* LWP_Target; //Target vessel in orbit for LWP
 
 	//UPLINK
 	double AGCClockTime[2];

@@ -644,8 +644,7 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	GSAOSGET = 0.0;
 	GSLOSGET = 0.0;
 	PADSolGood = true;
-	svtarget = NULL;
-	svtargetnumber = -1;
+	LWP_Target = NULL;
 	iuvessel = NULL;
 	TLCCSolGood = true;
 
@@ -1593,8 +1592,12 @@ void ARCore::NavCheckPAD(bool IsCSM)
 
 void ARCore::LandingSiteUpdate()
 {
+	VESSEL *v = GC->rtcc->pLM;
+
+	if (v == NULL) return;
+
 	double lat, lng, rad;
-	svtarget->GetEquPos(lng, lat, rad);
+	v->GetEquPos(lng, lat, rad);
 
 	GC->rtcc->BZLAND.lat[RTCC_LMPOS_BEST] = lat;
 	GC->rtcc->BZLAND.lng[RTCC_LMPOS_BEST] = lng;
@@ -1643,14 +1646,20 @@ void ARCore::StateVectorCalc(int type)
 	{
 		uplveh = 2;
 	}
+
+	VESSEL *v;
 	if (type == 0 || type == 21)
 	{
 		mptveh = RTCC_MPT_CSM;
+		v = GC->rtcc->pCSM;
 	}
 	else
 	{
 		mptveh = RTCC_MPT_LM;
+		v = GC->rtcc->pLM;
 	}
+
+	//Check on v not being NULL is already in the calling function!
 
 	if (GC->MissionPlanningActive)
 	{
@@ -1669,7 +1678,7 @@ void ARCore::StateVectorCalc(int type)
 	else
 	{
 		EphemerisData sv0, sv1;
-		sv0 = GC->rtcc->StateVectorCalcEphem(svtarget);
+		sv0 = GC->rtcc->StateVectorCalcEphem(v);
 		if (SVDesiredGET < 0)
 		{
 			sv1 = sv0;
@@ -4092,13 +4101,13 @@ int ARCore::subThread()
 	break;
 	case 27: //SLV Navigation Update Calculation
 	{
-		if (svtarget == NULL)
+		if (iuvessel == NULL)
 		{
 			Result = DONE;
 			break;
 		}
 
-		EphemerisData sv = GC->rtcc->StateVectorCalcEphem(svtarget);
+		EphemerisData sv = GC->rtcc->StateVectorCalcEphem(iuvessel);
 		EphemerisData sv2;
 		if (SVDesiredGET < 0)
 		{
@@ -4124,7 +4133,7 @@ int ARCore::subThread()
 			Result = DONE;
 			break;
 		}
-		if (svtarget == NULL)
+		if (iuvessel == NULL)
 		{
 			iuUplinkResult = 2;
 			Result = DONE;
@@ -4133,14 +4142,14 @@ int ARCore::subThread()
 
 		IU *iu = NULL;
 
-		if (utils::IsVessel(svtarget, utils::Saturn))
+		if (utils::IsVessel(iuvessel, utils::Saturn))
 		{
-			Saturn *iuv = (Saturn *)svtarget;
+			Saturn *iuv = (Saturn *)iuvessel;
 			iu = iuv->GetIU();
 		}
-		else if (utils::IsVessel(svtarget, utils::SIVB))
+		else if (utils::IsVessel(iuvessel, utils::SIVB))
 		{
-			SIVB *iuv = (SIVB *)svtarget;
+			SIVB *iuv = (SIVB *)iuvessel;
 			iu = iuv->GetIU();
 		}
 		else
@@ -5017,7 +5026,7 @@ int ARCore::subThread()
 	break;
 	case 50: //Lunar Targeting Program (S-IVB Lunar Impact)
 	{
-		if (svtarget == NULL)
+		if (iuvessel == NULL)
 		{
 			Result = DONE;
 			break;
@@ -5028,15 +5037,15 @@ int ARCore::subThread()
 
 		bool uplinkaccepted = false;
 
-		if (utils::IsVessel(svtarget, utils::SaturnV))
+		if (utils::IsVessel(iuvessel, utils::SaturnV))
 		{
-			Saturn *iuv = (Saturn *)svtarget;
+			Saturn *iuv = (Saturn *)iuvessel;
 
 			iu = iuv->GetIU();
 		}
-		else if (utils::IsVessel(svtarget, utils::SaturnV_SIVB))
+		else if (utils::IsVessel(iuvessel, utils::SaturnV_SIVB))
 		{
-			SIVB *iuv = (SIVB *)svtarget;
+			SIVB *iuv = (SIVB *)iuvessel;
 
 			iu = iuv->GetIU();
 		}
@@ -5063,8 +5072,8 @@ int ARCore::subThread()
 
 		LunarTargetingProgramInput in;
 		
-		in.sv_in = GC->rtcc->StateVectorCalcEphem(svtarget);
-		in.mass = svtarget->GetMass();
+		in.sv_in = GC->rtcc->StateVectorCalcEphem(iuvessel);
+		in.mass = iuvessel->GetMass();
 		in.lat_tgt = LUNTAR_lat;
 		in.lng_tgt = LUNTAR_lng;
 		in.bt_guess = LUNTAR_bt_guess;
@@ -5341,7 +5350,7 @@ int ARCore::subThread()
 	break;
 	case 54: //Skylab Saturn IB Launch Targeting
 	{
-		if (svtarget == NULL || GC->rtcc->GetGMTBase() == 0.0)
+		if (LWP_Target == NULL || GC->rtcc->GetGMTBase() == 0.0)
 		{
 			Result = DONE;
 			break;
@@ -5349,7 +5358,7 @@ int ARCore::subThread()
 		
 		EphemerisData sv, sv_ECT;
 
-		sv = GC->rtcc->StateVectorCalcEphem(svtarget);
+		sv = GC->rtcc->StateVectorCalcEphem(LWP_Target);
 
 		GC->rtcc->ELVCNV(sv, 1, sv_ECT);
 

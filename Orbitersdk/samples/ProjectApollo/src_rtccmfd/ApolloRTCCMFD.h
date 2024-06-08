@@ -189,6 +189,7 @@ public:
 	void menuGeneralMEDRequest(char *message);
 	void GeneralMEDRequest(char *str);
 	void EntryRangeDialogue();
+	void set_SVPageTarget();
 	void menuSVCalc();
 	void menuSVUpload();
 	void menuLSCalc();
@@ -240,7 +241,7 @@ public:
 	void menuCycleLMStage();
 	void menuUpdateLiftoffTime();
 	bool set_LiftoffTime(bool cmc);
-	void set_svtarget();
+	void set_LWPTarget();
 	void TwoImpulseOffset();
 	void GetREFSMMATfromAGC();
 	void menuCycleLunarEntryPADSxtOption();
@@ -901,6 +902,7 @@ private:
 	void CSMOrLMSelectionErrorMessage(oapi::Sketchpad*skp);
 	void PrintCSMVessel(char *Buffer);
 	void PrintLMVessel(char *Buffer);
+	void PrintIUVessel(char *Buffer);
 };
 
 #endif // !__ApolloRTCCMFD_H

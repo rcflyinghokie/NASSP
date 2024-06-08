@@ -5222,7 +5222,7 @@ void ApolloRTCCMFD::set_SVtime(double SVtime)
 
 void ApolloRTCCMFD::menuUpdateGRRTime()
 {
-	G->UpdateGRRTime(G->svtarget);
+	G->UpdateGRRTime(G->iuvessel);
 }
 
 void ApolloRTCCMFD::menuSetAGSKFactor()
@@ -5356,22 +5356,9 @@ void ApolloRTCCMFD::CycleThroughVessels(VESSEL **v) const
 	*v = oapiGetVesselInterface(oapiGetVesselByIndex(i));
 }
 
-void ApolloRTCCMFD::set_svtarget()
+void ApolloRTCCMFD::set_LWPTarget()
 {
-	int vesselcount;
-
-	vesselcount = oapiGetVesselCount();
-
-	if (G->svtargetnumber < vesselcount - 1)
-	{
-		G->svtargetnumber++;
-	}
-	else
-	{
-		G->svtargetnumber = 0;
-	}
-
-	G->svtarget = oapiGetVesselInterface(oapiGetVesselByIndex(G->svtargetnumber));
+	CycleThroughVessels(&G->LWP_Target);
 }
 
 void ApolloRTCCMFD::SPQcalc()
@@ -5785,28 +5772,47 @@ void ApolloRTCCMFD::EntryRangeDialogue()
 	GenericDoubleInput(&G->entryrange, "Choose the Entry Range in NM:", 1.0);
 }
 
+void ApolloRTCCMFD::set_SVPageTarget()
+{
+	if (GC->MissionPlanningActive == false)
+	{
+		if (subscreen == 0 || subscreen == 2)
+		{
+			//CSM
+			set_CSMVessel();
+		}
+		else
+		{
+			//LM
+			set_LMVessel();
+		}
+	}
+}
+
+int AGCSVUplinkType(int subscreen)
+{
+	//Small utility function to convert
+	if (subscreen == 0) return 0;
+	else if (subscreen == 1) return 9;
+	else if (subscreen == 2) return 21;
+	else return 20;
+}
+
 void ApolloRTCCMFD::menuSVCalc()
 {
-	if (GC->MissionPlanningActive || (G->svtarget != NULL && !G->svtarget->GroundContact()))
+	VESSEL *v;
+	if (subscreen == 0 || subscreen == 2)
 	{
-		int type;
-		switch (screen)
-		{
-		case 48:
-			type = 0;
-			break;
-		case 99:
-			type = 9;
-			break;
-		case 100:
-			type = 21;
-			break;
-		case 101:
-			type = 20;
-			break;
-		default:
-			return;
-		}
+		v = GC->rtcc->pCSM;
+	}
+	else
+	{
+		v = GC->rtcc->pLM;
+	}
+
+	if (GC->MissionPlanningActive || (v != NULL && !v->GroundContact()))
+	{
+		int type = AGCSVUplinkType(subscreen);
 		G->StateVectorCalc(type);
 	}
 }
@@ -5814,18 +5820,12 @@ void ApolloRTCCMFD::menuSVCalc()
 
 void ApolloRTCCMFD::menuAGSSVCalc()
 {
-	if (G->svtarget != NULL)
-	{
-		G->AGSStateVectorCalc(IsCSM);
-	}
+	G->AGSStateVectorCalc(IsCSM);
 }
 
 void ApolloRTCCMFD::menuLSCalc()
 {
-	if (G->svtarget != NULL && G->svtarget->GroundContact())
-	{
-		G->LandingSiteUpdate();
-	}
+	G->LandingSiteUpdate();
 }
 
 void ApolloRTCCMFD::menuRevertRLSToPrelaunch()
@@ -5835,24 +5835,7 @@ void ApolloRTCCMFD::menuRevertRLSToPrelaunch()
 
 void ApolloRTCCMFD::menuSVUpload()
 {
-	int type;
-	switch (screen)
-	{
-	case 48:
-		type = 0;
-		break;
-	case 99:
-		type = 9;
-		break;
-	case 100:
-		type = 21;
-		break;
-	case 101:
-		type = 20;
-		break;
-	default:
-		return;
-	}
+	int type = AGCSVUplinkType(subscreen);
 	G->StateVectorUplink(type);
 }
 
@@ -9197,6 +9180,7 @@ void ApolloRTCCMFD::SelectUplinkScreen(int num)
 	switch (num)
 	{
 	case 0: //CMC CSM State Vector
+		subscreen = 0;
 		screen = 48;
 		break;
 	case 6: //CMC Landing Site Vector
@@ -9209,7 +9193,8 @@ void ApolloRTCCMFD::SelectUplinkScreen(int num)
 		screen = 113;
 		break;
 	case 9: //CMC LM State Vector
-		screen = 99;
+		subscreen = 1;
+		screen = 48;
 		break;
 	case 10: //CMC External DV Update
 		screen = 51;
@@ -9232,10 +9217,12 @@ void ApolloRTCCMFD::SelectUplinkScreen(int num)
 		subscreen = 1;
 		break;
 	case 20: //LGC LM State Vector
-		screen = 101;
+		subscreen = 3;
+		screen = 48;
 		break;
 	case 21: //LGC CSM State Vector
-		screen = 100;
+		subscreen = 2;
+		screen = 48;
 		break;
 	case 22: //LGC External DV Update
 		screen = 102;

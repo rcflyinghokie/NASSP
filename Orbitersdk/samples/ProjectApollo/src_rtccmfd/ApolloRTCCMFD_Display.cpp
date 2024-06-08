@@ -4089,22 +4089,22 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		skp->Text(9 * W / 16, 4 * H / 28, "49: LVDC Navigation Update", 26);
 	}
-	else if (screen == 48 || screen == 99 || screen == 100 || screen == 101)
+	else if (screen == 48)
 	{
 		skp->SetTextAlign(oapi::Sketchpad::CENTER);
 
 		RTCC::NavUpdateMakeupBuffer * tab;
-		if (screen == 48)
+		if (subscreen == 0)
 		{
 			skp->Text(4 * W / 8, 1 * H / 14, "CSM NAV UPDATE TO CMC (276)", 27);
 			tab = &GC->rtcc->CZNAVGEN.CMCCSMUpdate;
 		}
-		else if (screen == 99)
+		else if (subscreen == 1)
 		{
 			skp->Text(4 * W / 8, 1 * H / 14, "LM NAV UPDATE TO CMC (270)", 26);
 			tab = &GC->rtcc->CZNAVGEN.CMCLEMUpdate;
 		}
-		else if (screen == 100)
+		else if (subscreen == 2)
 		{
 			skp->Text(4 * W / 8, 1 * H / 14, "LGC CSM NAV UPDATE (278)", 24);
 			tab = &GC->rtcc->CZNAVGEN.LGCCSMUpdate;
@@ -4143,13 +4143,13 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		if (GC->MissionPlanningActive == false)
 		{
-			if (G->svtarget != NULL)
+			if (subscreen == 0 || subscreen == 2)
 			{
-				sprintf(Buffer, G->svtarget->GetName());
+				PrintCSMVessel(Buffer);
 			}
 			else
 			{
-				sprintf(Buffer, "No Vehicle");
+				PrintLMVessel(Buffer);
 			}
 			skp->Text(5 * W / 8, 2 * H / 14, Buffer, strlen(Buffer));
 		}
@@ -4216,15 +4216,8 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 	{
 		skp->Text(5 * W / 8, (int)(0.5 * H / 14), "Landing Site Update", 19);
 
-		if (G->svtarget != NULL)
-		{
-			sprintf(Buffer, G->svtarget->GetName());
-			skp->Text(1 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
-		}
-		else
-		{
-			skp->Text(1 * W / 16, 2 * H / 14, "No Target!", 10);
-		}
+		PrintLMVessel(Buffer);
+		skp->Text(1 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
 
 		sprintf(Buffer, "%.3f°", GC->rtcc->BZLAND.lat[RTCC_LMPOS_BEST] * DEG);
 		skp->Text(1 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
@@ -8613,15 +8606,8 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		skp->Text(4 * W / 32, 23 * H / 32, "Y POS", 5);
 		skp->Text(4 * W / 32, 25 * H / 32, "TIME", 4);
 
-		if (G->svtarget != NULL)
-		{
-			sprintf(Buffer, G->svtarget->GetName());
-			skp->Text(6 * W / 8, 2 * H / 14, Buffer, strlen(Buffer));
-		}
-		else
-		{
-			skp->Text(6 * W / 8, 2 * H / 14, "No Target!", 10);
-		}
+		PrintIUVessel(Buffer);
+		skp->Text(6 * W / 8, 2 * H / 14, Buffer, strlen(Buffer));
 
 		if (G->SVDesiredGET < 0)
 		{
@@ -8785,6 +8771,10 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			skp->Text((22 * i + 12) * W / 44, 29 * H / 32, "GMTBO", 5);
 			Text(skp, GC->rtcc->VectorPanelSummaryBuffer.LastManGMTBO[i], 22 * i + 17, 29, 44, 32);
 		}
+	}
+	else if (screen == 99 || screen == 100 || screen == 101)
+	{
+		//Spare
 	}
 	else if (screen == 103)
 	{
@@ -9502,15 +9492,8 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			skp->Text(1 * W / 16, 2 * H / 14, "Trajectory Evaluation", 21);
 		}
 
-		if (G->svtarget != NULL)
-		{
-			sprintf(Buffer, G->svtarget->GetName());
-			skp->Text(10 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
-		}
-		else
-		{
-			skp->Text(10 * W / 16, 2 * H / 14, "No S-IVB!", 9);
-		}
+		PrintIUVessel(Buffer);
+		skp->Text(10 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
 
 		skp->Text(10 * W / 16, 9 * H / 20, "Burn Data:", 10);
 		sprintf_s(Buffer, "TIG: TB8 + %.0lf s", G->LUNTAR_Output.tig);
@@ -9871,9 +9854,9 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		}
 		skp->Text(1 * W / 16, 12 * H / 14, Buffer, strlen(Buffer));
 
-		if (G->svtarget != NULL)
+		if (G->LWP_Target != NULL)
 		{
-			sprintf(Buffer, G->svtarget->GetName());
+			sprintf(Buffer, G->LWP_Target->GetName());
 			skp->Text(5 * W / 8, 2 * H / 14, Buffer, strlen(Buffer));
 		}
 		else
@@ -11056,6 +11039,7 @@ void ApolloRTCCMFD::PrintCSMVessel(char *Buffer)
 		sprintf_s(Buffer, 127, "No CSM!");
 	}
 }
+
 void ApolloRTCCMFD::PrintLMVessel(char *Buffer)
 {
 	if (GC->rtcc->pLM != NULL)
@@ -11065,5 +11049,17 @@ void ApolloRTCCMFD::PrintLMVessel(char *Buffer)
 	else
 	{
 		sprintf_s(Buffer, 127, "No LM!");
+	}
+}
+
+void ApolloRTCCMFD::PrintIUVessel(char *Buffer)
+{
+	if (G->iuvessel != NULL)
+	{
+		sprintf_s(Buffer, 127, G->iuvessel->GetName());
+	}
+	else
+	{
+		sprintf_s(Buffer, 127, "No IU Vessel!");
 	}
 }
