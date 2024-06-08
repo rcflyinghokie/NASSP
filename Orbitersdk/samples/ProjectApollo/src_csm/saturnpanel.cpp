@@ -2401,7 +2401,7 @@ void Saturn::SetSwitches(int panel) {
 
 	EcsGlycolPumpsSwitchRow.Init(AID_ECSGLYCOLPUMPSSWITCH, MainPanel);
 	EcsGlycolPumpsSwitch.Init(0, 0, 90, 90, srf[SRF_ECSGLYCOLPUMPROTARY], srf[SRF_BORDER_90x90], EcsGlycolPumpsSwitchRow,
-		                      (Pump *) Panelsdk.GetPointerByString("ELECTRIC:PRIMGLYCOLPUMP"),
+		                      (Pump *) Panelsdk.GetPointerByString("ELECTRIC:PRIMGLYCOLPUMP1"),
 							  &ECSGlycolPumpsAc1ACircuitBraker, &ECSGlycolPumpsAc1BCircuitBraker, &ECSGlycolPumpsAc1CCircuitBraker,
 							  &ECSGlycolPumpsAc2ACircuitBraker, &ECSGlycolPumpsAc2BCircuitBraker, &ECSGlycolPumpsAc2CCircuitBraker);
 
@@ -2834,22 +2834,22 @@ void Saturn::SetSwitches(int panel) {
 	FuelCell3BusContCB.Init		 (205, 182, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 10.);
 	FuelCell3PurgeCB.Init		 (205, 121, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusB);
 	FuelCell3RadCB.Init			 (205,  82, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &BatteryRelayBus, 5.);
-	CryogenicQTYAmpl1CB.Init	 (205,  43, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus1, 2.);
-	CryogenicQTYAmpl2CB.Init	 (205,   4, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus2, 2.);
-	CryogenicFanMotorsAC1ACB.Init(297, 305, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	CryogenicFanMotorsAC1BCB.Init(297, 266, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	CryogenicFanMotorsAC1CCB.Init(297, 227, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	CryogenicFanMotorsAC2ACB.Init(297, 188, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	CryogenicFanMotorsAC2BCB.Init(297, 121, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	CryogenicFanMotorsAC2CCB.Init(297,  82, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
+	CryogenicQTYAmpl1CB.Init	 (205,  43, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus1PhaseC, 2.0);
+	CryogenicQTYAmpl2CB.Init	 (205,   4, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus2PhaseC, 2.0);
+	CryogenicFanMotorsAC1ACB.Init(297, 305, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus1PhaseA, 2.0);
+	CryogenicFanMotorsAC1BCB.Init(297, 266, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus1PhaseB, 2.0);
+	CryogenicFanMotorsAC1CCB.Init(297, 227, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus1PhaseC, 2.0);
+	CryogenicFanMotorsAC2ACB.Init(297, 188, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus2PhaseA, 2.0);
+	CryogenicFanMotorsAC2BCB.Init(297, 121, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus2PhaseB, 2.0);
+	CryogenicFanMotorsAC2CCB.Init(297,  82, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus2PhaseC, 2.0);
 	LightingRndzMNACB.Init		 (297,  43, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, MainBusA, 5.);
 	LightingRndzMNBCB.Init		 (297,   4, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
 	LightingFloodMNACB.Init		 (393, 311, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
 	LightingFloodMNBCB.Init		 (393, 268, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
 	LightingFloodFLTPLCB.Init	 (393, 225, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
-	LightingNumIntLEBCB.Init	 (393, 182, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus2);
-	LightingNumIntLMDCCB.Init	 (393, 129, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus1);
-	LightingNumIntRMDCCB.Init	 (393,  86, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow);
+	LightingNumIntLEBCB.Init	 (393, 182, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus2PhaseA, 2.0);
+	LightingNumIntLMDCCB.Init	 (393, 129, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus1PhaseA, 2.0);
+	LightingNumIntRMDCCB.Init	 (393,  86, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus1PhaseB, 2.0);
 	RunEVATRGTAC1CB.Init		 (393,  43, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus1PhaseA, 2.0);
 	RunEVATRGTAC2CB.Init		 (393,   0, 29, 29, srf[SRF_CIRCUITBRAKER], srf[SRF_BORDER_29x29], Panel226CircuitBreakersRow, &ACBus2PhaseB, 2.0);
 	
@@ -3831,40 +3831,7 @@ bool Saturn::clbkPanelMouseEvent (int id, int event, int mx, int my)
 
 void Saturn::PanelSwitchToggled(TwoPositionSwitch *s) {
 
-	if (s == &O2Heater1Switch) {
-		CryoTankHeaterSwitchToggled(s,
-			(int*) Panelsdk.GetPointerByString("ELECTRIC:O2TANK1HEATER:PUMP"));
-
-	} else if (s == &O2Heater2Switch) {
-		CryoTankHeaterSwitchToggled(s,
-			(int*) Panelsdk.GetPointerByString("ELECTRIC:O2TANK2HEATER:PUMP"));
-
-	} else if (s == &H2Heater1Switch) {
-		CryoTankHeaterSwitchToggled(s,
-			(int*) Panelsdk.GetPointerByString("ELECTRIC:H2TANK1HEATER:PUMP"));
-
-	} else if (s == &H2Heater2Switch) {
-		CryoTankHeaterSwitchToggled(s,
-			(int*) Panelsdk.GetPointerByString("ELECTRIC:H2TANK2HEATER:PUMP"));
-
-	} else if (s == &O2Fan1Switch) {
-		CryoTankHeaterSwitchToggled(s,
-			(int*) Panelsdk.GetPointerByString("ELECTRIC:O2TANK1FAN:PUMP"));
-
-	} else if (s == &O2Fan2Switch) {
-		CryoTankHeaterSwitchToggled(s,
-			(int*) Panelsdk.GetPointerByString("ELECTRIC:O2TANK2FAN:PUMP"));
-
-	} else if (s == &H2Fan1Switch) {
-		CryoTankHeaterSwitchToggled(s,
-			(int*) Panelsdk.GetPointerByString("ELECTRIC:H2TANK1FAN:PUMP"));
-
-	} else if (s == &H2Fan2Switch) {
-		CryoTankHeaterSwitchToggled(s,
-			(int*) Panelsdk.GetPointerByString("ELECTRIC:H2TANK2FAN:PUMP"));
-
-
-	} else if (s == &FuelCellRadiators1Switch) {
+	if (s == &FuelCellRadiators1Switch) {
 		if (FuelCell1RadCB.IsPowered()) {
 			if (FuelCellRadiators1Switch.IsUp())
 				FuelCellCoolingBypass(1, false);
@@ -4166,16 +4133,6 @@ void Saturn::PanelRotationalSwitchChanged(RotationalSwitch *s) {
 	}
 }
 
-void Saturn::CryoTankHeaterSwitchToggled(TwoPositionSwitch *s, int *pump) {
-
-	if (s->IsUp())
-		*pump = SP_PUMP_AUTO;
-	else if (s->IsCenter())
-		*pump = SP_PUMP_OFF;
-	else if (s->IsDown())
-		*pump = SP_PUMP_ON;
-}
-
 void Saturn::FuelCellHeaterSwitchToggled(TwoPositionSwitch *s, int *pump) {
 
 	if (s->IsUp())
@@ -4302,15 +4259,11 @@ void Saturn::CabinFanSound()
 	//
 
 	if (CabinFan1Switch.IsUp()) {
-		volume += ECSCabinFanAC1ACircuitBraker.Voltage();
-		volume += ECSCabinFanAC1BCircuitBraker.Voltage();
-		volume += ECSCabinFanAC1CCircuitBraker.Voltage();
+		volume = (CabinFan1Feeder.Voltage() * 3);
 	}
 
 	if (CabinFan2Switch.IsUp()) {
-		volume += ECSCabinFanAC2ACircuitBraker.Voltage();
-		volume += ECSCabinFanAC2BCircuitBraker.Voltage();
-		volume += ECSCabinFanAC2CCircuitBraker.Voltage();
+		volume = (CabinFan2Feeder.Voltage() * 3);
 	}
 
 	//
