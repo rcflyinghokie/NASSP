@@ -1249,6 +1249,11 @@ void ApolloRTCCMFD::menuSetRTACFPage()
 	SelectPage(129);
 }
 
+void ApolloRTCCMFD::menuSetIMUParkingAnglesPage()
+{
+	SelectPage(131);
+}
+
 void ApolloRTCCMFD::menuPerigeeAdjustCalc()
 {
 	G->PerigeeAdjustCalc();
@@ -8986,6 +8991,15 @@ void ApolloRTCCMFD::UpdateLOSTDisplay()
 void ApolloRTCCMFD::menuCalculateIMUComparison()
 {
 	ErrorMessage = G->menuCalculateIMUComparison(IsCSM);
+}
+
+void ApolloRTCCMFD::menuCalculateIMUParkingAngles()
+{
+	agc_t *vagc = G->GetAGCPointer(false);
+
+	if (vagc == NULL) return;
+
+	G->menuCalculateIMUParkingAngles(vagc);
 }
 
 void ApolloRTCCMFD::menuSLVNavigationUpdateCalc()

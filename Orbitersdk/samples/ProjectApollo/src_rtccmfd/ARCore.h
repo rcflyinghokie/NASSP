@@ -174,6 +174,7 @@ public:
 	void SaturnVTLITargetUplink();
 	int GetVesselParameters(bool IsCSM, int docked, int Thruster, int &Config, int &TVC, double &CSMMass, double &LMMass);
 	int menuCalculateIMUComparison(bool IsCSM);
+	void menuCalculateIMUParkingAngles(agc_t* agc);
 
 	int startSubthread(int fcn, bool IsCSM = true);
 	int subThread();
@@ -375,6 +376,10 @@ public:
 
 	//DEBUG
 	VECTOR3 DebugIMUTorquingAngles;
+
+	//IMU PARKING ANGLES
+	unsigned int GravVec[6];
+	VECTOR3 IMUParkingAngles;
 
 private:
 

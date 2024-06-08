@@ -843,6 +843,12 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	LUNTAR_TIG = 0.0;
 
 	DebugIMUTorquingAngles = _V(0, 0, 0);
+
+	for (int i = 0; i < 6; i++)
+	{
+		GravVec[i] = 0;
+	}
+	IMUParkingAngles = _V(0, 0, 0);
 }
 
 ARCore::~ARCore()
@@ -5955,4 +5961,36 @@ int ARCore::menuCalculateIMUComparison(bool IsCSM)
 	DebugIMUTorquingAngles = OrbMech::CALCGTA(mul(OrbMech::tmat(M_SM_NB_act), M_SM_NB_est));
 
 	return 0;
+}
+
+void ARCore::menuCalculateIMUParkingAngles(agc_t* agc)
+{
+	//Hardcoded address for Luminary1E
+	int GravVecAddr = 145;
+	double GravVecDec[3];
+	double IG, MG, OG;
+
+	for (int i = 0; i < 6; i++)
+	{
+		GravVec[i] = agc->Erasable[4][GravVecAddr + i];
+	}
+
+	//Convert 6 signed octal values into 3 decimal values
+	for (int i = 0; i < 3; i++)
+	{
+		if (GravVec[2 * i] & 040000)
+		{
+			GravVecDec[i] = -((((GravVec[2 * i] ^ 077777) << 14) | (GravVec[2 * i + 1] ^ 077777)) / pow(2, 28)) * 2;
+		}
+		else {
+			GravVecDec[i] = (((GravVec[2 * i] << 14) | GravVec[2 * i + 1]) / pow(2, 28)) * 2;
+		}
+
+	}
+
+	IG = 0.0;
+	MG = asin(GravVecDec[0]);
+	OG = fmod(atan2(GravVecDec[1] / cos(MG), (-GravVecDec[2]) / cos(MG)) + 2 * PI, 2 * PI); //fmod needed to keep range between 0 and 360 deg
+
+	IMUParkingAngles = _V(OG, IG, MG);
 }

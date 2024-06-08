@@ -720,6 +720,8 @@ public:
 	void CalculateLOSTDOKOption();
 	void menuSetDebugPage();
 	void menuCalculateIMUComparison();
+	void menuSetIMUParkingAnglesPage();
+	void menuCalculateIMUParkingAngles();
 	void menuSLVNavigationUpdateCalc();
 	void menuSLVNavigationUpdateUplink();
 	void menuVectorPanelSummaryPage();
