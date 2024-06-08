@@ -411,6 +411,8 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	SCSLogicBus4Feeder("SCS-Logic-Bus-4-Feeder", Panelsdk),
 	SwitchPower("Switch-Power", Panelsdk),
 	GaugePower("Gauge-Power", Panelsdk),
+	CryoFanMotorsTank1Feeder("Cryo-Fan-Motors-Tank-1-Feeder", Panelsdk),
+	CryoFanMotorsTank2Feeder("Cryo-Fan-Motors-Tank-2-Feeder", Panelsdk),
 	SMQuadARCS(ph_rcs0, Panelsdk),
 	SMQuadBRCS(ph_rcs1, Panelsdk),
 	SMQuadCRCS(ph_rcs2, Panelsdk),
@@ -433,9 +435,15 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	MainChutesDeployPyrosFeeder("Main-Chutes-Deploy-Pyros-Feeder", Panelsdk),
 	MainChutesReleasePyros("Main-Chutes-Release-Pyros", Panelsdk),
 	MainChutesReleasePyrosFeeder("Main-Chutes-Release-Pyros-Feeder", Panelsdk),
+	CabinFan1Feeder("Cabin-Fan-1-Feeder", Panelsdk),
+	CabinFan2Feeder("Cabin-Fan-2-Feeder", Panelsdk),
 	EcsGlycolPumpsSwitch(Panelsdk),
+	GlycolPump1Feeder("Glycol-Pump-1-Feeder", Panelsdk),
+	GlycolPump2Feeder("Glycol-Pump-2-Feeder", Panelsdk),
 	SuitCompressor1Switch(Panelsdk),
 	SuitCompressor2Switch(Panelsdk),
+	SuitCompressor1Feeder("Suit-Compressor-1-Feeder", Panelsdk),
+	SuitCompressor2Feeder("Suit-Compressor-2-Feeder", Panelsdk),
 	BatteryCharger("BatteryCharger", Panelsdk),
 	timedSounds(soundlib),
 	iuCommandConnector(agc, this),
@@ -1874,6 +1882,8 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	CrewStatus.SaveState(scn);
 	ForwardHatch.SaveState(scn);
 	SideHatch.SaveState(scn);
+	H2CryoPressureSwitch.SaveState(scn, "H2PRESSSWITCHES");
+	O2CryoPressureSwitch.SaveState(scn, "O2PRESSSWITCHES");
 	usb.SaveState(scn);
 	if (pMission->CSMHasHGA()) hga.SaveState(scn);
 	vhftransceiver.SaveState(scn);
@@ -2569,6 +2579,12 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	    else if (!strnicmp (line, "SIDEHATCH", 9)) {
 		    SideHatch.LoadState(line);
 	    }
+		else if (!strnicmp(line, "H2PRESSSWITCHES", 15)) {
+			H2CryoPressureSwitch.LoadState(line, 15);
+		}
+		else if (!strnicmp(line, "O2PRESSSWITCHES", 15)) {
+			O2CryoPressureSwitch.LoadState(line, 15);
+		}
 	    else if (!strnicmp (line, "UNIFIEDSBAND", 12)) {
 		    usb.LoadState(line);
 	    }
