@@ -38,6 +38,21 @@ struct RTCCMFDInputBoxData
 	void (ApolloRTCCMFD::*func)(void) = NULL;
 };
 
+struct MEDInput
+{
+	std::string Label;			//Short description on MFD page
+	std::string Description;	//Detailed description in MFD input box
+	std::string Unit;			//Unit displayed on MFD page
+	std::string Data;
+};
+
+struct MEDInputPage
+{
+	std::string Title;			//Title displayed on MFD page
+	std::string MEDCode;
+	std::vector<MEDInput> table;
+};
+
 class ApolloRTCCMFD: public MFD2 {
 public:
 	ApolloRTCCMFD (DWORD w, DWORD h, VESSEL *vessel, UINT im);
@@ -52,7 +67,7 @@ public:
 	void StoreStatus(void) const;
 	void RecallStatus(void);
 
-	bool Text(oapi::Sketchpad *skp, int x, int y, const std::string & str);
+	void Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax = 1024, int ymax = 1024);
 
 	void SelectPage(int page);
 	void menuTIChaserVectorTime();
@@ -823,6 +838,14 @@ public:
 	void menuAGOPCalc();
 	void menuAGOPSaveREFSMMAT();
 	void menuSetRTACFPage();
+
+	void SetMEDInputPageP13();
+	void SetMEDInputPageP14();
+	void SetMEDInputPage(std::string med);
+	void menuMEDInputCalc();
+	void menuInputMEDData();
+	void set_MEDData(char *str);
+
 	void GenericGETInput(double *get, char *message);
 	void GenericDoubleInput(double *val, char* message, double factor = 1.0);
 	void GenericDouble2Input(double *val1, double *val2, char* message, double factor1 = 1.0, double factor2 = 1.0);
@@ -830,7 +853,6 @@ public:
 	void GenericInt2Input(int *val1, int *val2, char* message, int min1, int max1, int min2, int max2, void (ApolloRTCCMFD::*func)(void) = NULL);
 	void GenericVectorInput(VECTOR3 *val, char* message, double factor = 1.0, void (ApolloRTCCMFD::*func)(void) = NULL);
 	void GenericStringInput(std::string *val, char* message, void (ApolloRTCCMFD::*func)(void) = NULL);
-	void Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax = 1024, int ymax = 1024);
 protected:
 	oapi::Font *font;
 	oapi::Font *font2;
@@ -861,6 +883,8 @@ private:
 	ApolloRTCCMFDButtons coreButtons;
 
 	RTCCMFDInputBoxData tempData;
+
+	MEDInputPage MEDInputData;
 
 	//Additional display functions
 	void AGOPDisplay(oapi::Sketchpad*skp);
