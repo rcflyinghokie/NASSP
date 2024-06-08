@@ -89,6 +89,7 @@ public:
 	void set_CSMVessel();
 	void set_LMVessel();
 	void set_IUVessel();
+	void set_TargetVessel();
 	void CycleThroughVessels(VESSEL **v) const;
 	void menuSLVLaunchTargetingPad();
 	void menuSLVLaunchTargeting();
@@ -241,7 +242,6 @@ public:
 	void menuCycleLMStage();
 	void menuUpdateLiftoffTime();
 	bool set_LiftoffTime(bool cmc);
-	void set_LWPTarget();
 	void TwoImpulseOffset();
 	void GetREFSMMATfromAGC();
 	void menuCycleLunarEntryPADSxtOption();
@@ -905,6 +905,7 @@ private:
 	void PrintCSMVessel(char *Buffer);
 	void PrintLMVessel(char *Buffer);
 	void PrintIUVessel(char *Buffer);
+	void PrintTargetVessel(char *Buffer);
 };
 
 #endif // !__ApolloRTCCMFD_H

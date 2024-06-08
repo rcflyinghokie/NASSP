@@ -58,9 +58,6 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			skp->Text(1 * W / 16, 5 * H / 14, "Target: CSM", 11);
 		}
 
-		skp->Text(1 * W / 16, 6 * H / 14, "CHA:", 4);
-		skp->Text(1 * W / 16, 8 * H / 14, "TGT:", 4);
-
 		if (GC->MissionPlanningActive)
 		{
 			if (GC->rtcc->med_k30.ChaserVectorTime > 0)
@@ -83,7 +80,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 				PrintLMVessel(Buffer);
 			}
 		}
-		skp->Text(2 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
+		skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
 
 		if (GC->MissionPlanningActive)
 		{
@@ -107,7 +104,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 				PrintCSMVessel(Buffer);
 			}
 		}
-		skp->Text(2 * W / 16, 8 * H / 14, Buffer, strlen(Buffer));
+		skp->Text(1 * W / 16, 8 * H / 14, Buffer, strlen(Buffer));
 
 		if (GC->rtcc->med_k30.StartTime >= 0)
 		{
@@ -8038,7 +8035,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		skp->Text(4 * W / 8, 2 * H / 32, "TPI TIMES", 9);
 		skp->SetTextAlign(oapi::Sketchpad::LEFT);
 
-		PrintCSMVessel(Buffer);
+		PrintTargetVessel(Buffer);
 		skp->Text(1 * W / 8, 2 * H / 14, Buffer, strlen(Buffer));
 
 		if (G->TPI_Mode == 0)
@@ -9855,15 +9852,8 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		}
 		skp->Text(1 * W / 16, 12 * H / 14, Buffer, strlen(Buffer));
 
-		if (G->LWP_Target != NULL)
-		{
-			sprintf(Buffer, G->LWP_Target->GetName());
-			skp->Text(5 * W / 8, 2 * H / 14, Buffer, strlen(Buffer));
-		}
-		else
-		{
-			skp->Text(5 * W / 8, 2 * H / 14, "No Target!", 10);
-		}
+		PrintTargetVessel(Buffer);
+		skp->Text(5 * W / 8, 2 * H / 14, Buffer, strlen(Buffer));
 
 		if (GC->rtcc->PZSLVCON.DELNOF)
 		{
@@ -10449,7 +10439,6 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			sprintf(Buffer, "%05o", G->GravVec[i]);
 			skp->Text((int)(0.5 * W / 8), (5 + i) * H / 14, Buffer, strlen(Buffer));
 		}
-
 
 		skp->Text(10 * W / 16, 5 * H / 14, "IMU Angles:", 11);
 
@@ -11058,7 +11047,7 @@ void ApolloRTCCMFD::PrintCSMVessel(char *Buffer)
 {
 	if (GC->rtcc->pCSM != NULL)
 	{
-		sprintf_s(Buffer, 127, GC->rtcc->pCSM->GetName());
+		sprintf_s(Buffer, 127, "CSM: %s", GC->rtcc->pCSM->GetName());
 	}
 	else
 	{
@@ -11070,7 +11059,7 @@ void ApolloRTCCMFD::PrintLMVessel(char *Buffer)
 {
 	if (GC->rtcc->pLM != NULL)
 	{
-		sprintf_s(Buffer, 127, GC->rtcc->pLM->GetName());
+		sprintf_s(Buffer, 127, "LM: %s", GC->rtcc->pLM->GetName());
 	}
 	else
 	{
@@ -11082,10 +11071,22 @@ void ApolloRTCCMFD::PrintIUVessel(char *Buffer)
 {
 	if (G->iuvessel != NULL)
 	{
-		sprintf_s(Buffer, 127, G->iuvessel->GetName());
+		sprintf_s(Buffer, 127, "IU: %s", G->iuvessel->GetName());
 	}
 	else
 	{
 		sprintf_s(Buffer, 127, "No IU Vessel!");
+	}
+}
+
+void ApolloRTCCMFD::PrintTargetVessel(char *Buffer)
+{
+	if (G->Rendezvous_Target != NULL)
+	{
+		sprintf_s(Buffer, 127, "TGT: %s", G->Rendezvous_Target->GetName());
+	}
+	else
+	{
+		sprintf_s(Buffer, 127, "No Target!");
 	}
 }

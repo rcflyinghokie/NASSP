@@ -354,7 +354,7 @@ public:
 	double SpaceDigitalsGET;
 
 	//SATURN IB LAUNCH TARGETING
-	VESSEL* LWP_Target; //Target vessel in orbit for LWP
+	VESSEL* Rendezvous_Target; //Target vessel in orbit
 
 	//UPLINK
 	double AGCClockTime[2];

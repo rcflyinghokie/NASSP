@@ -644,7 +644,7 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	GSAOSGET = 0.0;
 	GSLOSGET = 0.0;
 	PADSolGood = true;
-	LWP_Target = NULL;
+	Rendezvous_Target = NULL;
 	iuvessel = NULL;
 	TLCCSolGood = true;
 
@@ -4074,14 +4074,12 @@ int ARCore::subThread()
 	break;
 	case 23: //Calculate TPI times
 	{
-		VESSEL *v = GC->rtcc->pCSM;
-
-		if (v == NULL)
+		if (Rendezvous_Target == NULL)
 		{
 			Result = DONE;
 			break;
 		}
-		SV sv0 = GC->rtcc->StateVectorCalc(v);
+		SV sv0 = GC->rtcc->StateVectorCalc(Rendezvous_Target);
 		t_TPI = GC->rtcc->CalculateTPITimes(sv0, TPI_Mode, t_TPIguess, dt_TPI_sunrise);
 
 		Result = DONE;
@@ -5356,7 +5354,7 @@ int ARCore::subThread()
 	break;
 	case 54: //Skylab Saturn IB Launch Targeting
 	{
-		if (LWP_Target == NULL || GC->rtcc->GetGMTBase() == 0.0)
+		if (Rendezvous_Target == NULL || GC->rtcc->GetGMTBase() == 0.0)
 		{
 			Result = DONE;
 			break;
@@ -5364,7 +5362,7 @@ int ARCore::subThread()
 		
 		EphemerisData sv, sv_ECT;
 
-		sv = GC->rtcc->StateVectorCalcEphem(LWP_Target);
+		sv = GC->rtcc->StateVectorCalcEphem(Rendezvous_Target);
 
 		GC->rtcc->ELVCNV(sv, 1, sv_ECT);
 

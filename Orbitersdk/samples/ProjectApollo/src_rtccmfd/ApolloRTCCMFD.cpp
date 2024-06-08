@@ -5325,6 +5325,11 @@ void ApolloRTCCMFD::set_IUVessel()
 	CycleThroughVessels(&G->iuvessel);
 }
 
+void ApolloRTCCMFD::set_TargetVessel()
+{
+	CycleThroughVessels(&G->Rendezvous_Target);
+}
+
 void ApolloRTCCMFD::CycleThroughVessels(VESSEL **v) const
 {
 	VESSEL *pVessel;
@@ -5359,11 +5364,6 @@ void ApolloRTCCMFD::CycleThroughVessels(VESSEL **v) const
 	}
 
 	*v = oapiGetVesselInterface(oapiGetVesselByIndex(i));
-}
-
-void ApolloRTCCMFD::set_LWPTarget()
-{
-	CycleThroughVessels(&G->LWP_Target);
 }
 
 void ApolloRTCCMFD::SPQcalc()
