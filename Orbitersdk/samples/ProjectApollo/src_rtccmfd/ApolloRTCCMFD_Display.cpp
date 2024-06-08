@@ -1758,11 +1758,11 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		if (G->VECoption == 0)
 		{
-			skp->Text(1 * W / 8, 4 * H / 14, "Point SC at body", 16);
+			skp->Text(1 * W / 16, 4 * H / 14, "Point SC at body", 16);
 		}
 		else
 		{
-			skp->Text(1 * W / 8, 4 * H / 14, "Open hatch thermal control", 26);
+			skp->Text(1 * W / 16, 4 * H / 14, "Open hatch thermal control", 26);
 		}
 
 		if (G->VECoption == 0)
@@ -1770,32 +1770,32 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			if (G->VECbody != NULL)
 			{
 				oapiGetObjectName(G->VECbody, Buffer, 20);
-				skp->Text(1 * W / 8, 6 * H / 14, Buffer, strlen(Buffer));
+				skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
 			}
 
 			if (G->VECdirection == 0)
 			{
-				skp->Text(1 * W / 8, 8 * H / 14, "+X", 2);
+				skp->Text(1 * W / 16, 8 * H / 14, "+X", 2);
 			}
 			else if (G->VECdirection == 1)
 			{
-				skp->Text(1 * W / 8, 8 * H / 14, "-X", 2);
+				skp->Text(1 * W / 16, 8 * H / 14, "-X", 2);
 			}
 			else if (G->VECdirection == 2)
 			{
-				skp->Text(1 * W / 8, 8 * H / 14, "+Y", 2);
+				skp->Text(1 * W / 16, 8 * H / 14, "+Y", 2);
 			}
 			else if (G->VECdirection == 3)
 			{
-				skp->Text(1 * W / 8, 8 * H / 14, "-Y", 2);
+				skp->Text(1 * W / 16, 8 * H / 14, "-Y", 2);
 			}
 			else if (G->VECdirection == 4)
 			{
-				skp->Text(1 * W / 8, 8 * H / 14, "+Z", 2);
+				skp->Text(1 * W / 16, 8 * H / 14, "+Z", 2);
 			}
 			else if (G->VECdirection == 5)
 			{
-				skp->Text(1 * W / 8, 8 * H / 14, "-Z", 2);
+				skp->Text(1 * W / 16, 8 * H / 14, "-Z", 2);
 			}
 		}
 
@@ -7948,7 +7948,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		}
 		else
 		{
-			PrintCSMVessel(Buffer);
+			PrintCSMVessel(Buffer, false);
 			skp->Text(12 * W / 32, 4 * H / 32, Buffer, strlen(Buffer));
 		}
 
@@ -11043,11 +11043,18 @@ void ApolloRTCCMFD::CSMOrLMSelectionErrorMessage(oapi::Sketchpad*skp)
 	skp->Text(1 * W / 2, 21 * H / 22, Buffer, strlen(Buffer));
 }
 
-void ApolloRTCCMFD::PrintCSMVessel(char *Buffer)
+void ApolloRTCCMFD::PrintCSMVessel(char *Buffer, bool ShowCSM)
 {
 	if (GC->rtcc->pCSM != NULL)
 	{
-		sprintf_s(Buffer, 127, "CSM: %s", GC->rtcc->pCSM->GetName());
+		if (ShowCSM)
+		{
+			sprintf_s(Buffer, 127, "CSM: %s", GC->rtcc->pCSM->GetName());
+		}
+		else
+		{
+			sprintf_s(Buffer, 127, GC->rtcc->pCSM->GetName());
+		}
 	}
 	else
 	{

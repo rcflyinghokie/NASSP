@@ -902,7 +902,7 @@ private:
 
 	void CSMOrLMSelection(oapi::Sketchpad*skp);
 	void CSMOrLMSelectionErrorMessage(oapi::Sketchpad*skp);
-	void PrintCSMVessel(char *Buffer);
+	void PrintCSMVessel(char *Buffer, bool ShowCSM = true);
 	void PrintLMVessel(char *Buffer);
 	void PrintIUVessel(char *Buffer);
 	void PrintTargetVessel(char *Buffer);

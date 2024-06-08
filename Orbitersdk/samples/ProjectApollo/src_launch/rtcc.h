@@ -3009,6 +3009,7 @@ public:
 
 	void SaveState(FILEHANDLE scn);							// Save state
 	void LoadState(FILEHANDLE scn);							// Load state
+	void clbkPostCreation();
 
 	MCC *mcc;
 	struct calculationParameters calcParams;
@@ -5001,6 +5002,8 @@ public:
 
 	//Vessel pointers to be used exclusively by the RTCC MFD
 	VESSEL *pCSM, *pLM;
+	char CSMName[64];
+	char LEMName[64];
 
 	RTCCSystemParameters SystemParameters;
 };
