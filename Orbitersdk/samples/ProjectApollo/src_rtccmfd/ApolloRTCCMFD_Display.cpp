@@ -3169,7 +3169,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		sprintf(Buffer, "%+06d", G->DEDA227);
 		skp->Text(3 * W / 8, 19 * H / 21, Buffer, strlen(Buffer));
 
-		PrintCSMVessel(Buffer);
+		PrintCSMVessel(Buffer, false);
 		skp->Text((int)(5.5 * W / 8), 4 * H / 14, Buffer, strlen(Buffer));
 
 		skp->Text(5 * W / 8, 15 * H / 21, "Landing Site:", 13);
