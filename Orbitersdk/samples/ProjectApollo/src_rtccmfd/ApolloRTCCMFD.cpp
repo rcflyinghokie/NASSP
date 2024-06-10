@@ -2349,6 +2349,10 @@ void ApolloRTCCMFD::menuASTVectorTime()
 		bool ASTVectorTimeInput(void *id, char *str, void *data);
 		oapiOpenInputBox("Choose the vector GET (Format: hhh:mm:ss)", ASTVectorTimeInput, 0, 25, (void*)this);
 	}
+	else
+	{
+		set_CSMVessel();
+	}
 }
 
 bool ASTVectorTimeInput(void *id, char *str, void *data)

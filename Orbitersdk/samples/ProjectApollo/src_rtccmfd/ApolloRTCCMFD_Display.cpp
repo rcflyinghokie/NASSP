@@ -695,9 +695,8 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 				if (GC->MissionPlanningActive == false && IsCSM == false)
 				{
-					skp->Text(1 * W / 16, 3 * H / 14, "CSM:", 4);
 					PrintCSMVessel(Buffer);
-					skp->Text(4 * W / 16, 3 * H / 14, Buffer, strlen(Buffer));
+					skp->Text(1 * W / 16, 3 * H / 14, Buffer, strlen(Buffer));
 				}
 			}
 
@@ -871,7 +870,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		if (G->lemdescentstage)
 		{
-			skp->Text(1 * W / 16, 10 * H / 14, "Descent Stage", 13);
+			skp->Text(1 * W / 16, 10 * H / 14, "Full LM", 7);
 		}
 		else
 		{
@@ -2955,15 +2954,33 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		CSMOrLMSelection(skp);
 
+		if (G->vesselisdocked)
+		{
+			skp->Text(1 * W / 16, 4 * H / 14, "Docked", 6);
+		}
+		else
+		{
+			skp->Text(1 * W / 16, 4 * H / 14, "Undocked", 8);
+		}
+
+		if (G->lemdescentstage)
+		{
+			skp->Text(1 * W / 16, 6 * H / 14, "Full LM", 7);
+		}
+		else
+		{
+			skp->Text(1 * W / 16, 6 * H / 14, "Ascent Stage", 12);
+		}
+
 		sprintf(Buffer, "%+06.0f WT N47", G->DAP_PAD.ThisVehicleWeight);
-		skp->Text((int)(3.5 * W / 8), 5 * H / 21, Buffer, strlen(Buffer));
+		skp->Text((int)(3.5 * W / 8), 12 * H / 21, Buffer, strlen(Buffer));
 		sprintf(Buffer, "%+06.0f", G->DAP_PAD.OtherVehicleWeight);
-		skp->Text((int)(3.5 * W / 8), 6 * H / 21, Buffer, strlen(Buffer));
+		skp->Text((int)(3.5 * W / 8), 13 * H / 21, Buffer, strlen(Buffer));
 
 		sprintf(Buffer, "%+07.2f GMBL N48", G->DAP_PAD.PitchTrim);
-		skp->Text((int)(3.5 * W / 8), 7 * H / 21, Buffer, strlen(Buffer));
+		skp->Text((int)(3.5 * W / 8), 14 * H / 21, Buffer, strlen(Buffer));
 		sprintf(Buffer, "%+07.2f", G->DAP_PAD.YawTrim);
-		skp->Text((int)(3.5 * W / 8), 8 * H / 21, Buffer, strlen(Buffer));
+		skp->Text((int)(3.5 * W / 8), 15 * H / 21, Buffer, strlen(Buffer));
 	}
 	else if (screen == 36)
 	{
@@ -9096,8 +9113,12 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		if (GC->MissionPlanningActive)
 		{
 			GET_Display(Buffer, GC->rtcc->med_f75_f77.T_V, false);
-			skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
 		}
+		else
+		{
+			PrintCSMVessel(Buffer);
+		}
+		skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
 
 		GET_Display(Buffer, GC->rtcc->med_f75_f77.T_0_min, false);
 		skp->Text(1 * W / 16, 8 * H / 14, Buffer, strlen(Buffer));

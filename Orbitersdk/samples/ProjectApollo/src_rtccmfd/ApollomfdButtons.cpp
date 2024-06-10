@@ -1197,8 +1197,8 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	static const MFDBUTTONMENU mnu35[] =
 	{
 		{ "Choose vessel type", 0, 'P' },
-		{ "", 0, ' ' },
-		{ "", 0, ' ' },
+		{ "Docked or undocked", 0, 'L' },
+		{ "Full LM or ascent stage", 0, 'O' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
@@ -1214,8 +1214,8 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	RegisterPage(mnu35, sizeof(mnu35) / sizeof(MFDBUTTONMENU));
 
 	RegisterFunction("VES", OAPI_KEY_P, &ApolloRTCCMFD::CycleCSMOrLMSelection);
-	RegisterFunction("", OAPI_KEY_L, &ApolloRTCCMFD::menuVoid);
-	RegisterFunction("", OAPI_KEY_O, &ApolloRTCCMFD::menuVoid);
+	RegisterFunction("TYP", OAPI_KEY_L, &ApolloRTCCMFD::menuChangeVesselStatus);
+	RegisterFunction("STA", OAPI_KEY_O, &ApolloRTCCMFD::menuCycleLMStage);
 	RegisterFunction("", OAPI_KEY_A, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_S, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_E, &ApolloRTCCMFD::menuVoid);
@@ -3645,14 +3645,14 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	{
 		{ "Cycle AST type", 0, 'T' },
 		{ "Enter AST site or area", 0, 'E' },
-		{ "Enter vector time", 0, 'D' },
+		{ "CSM or vector time", 0, 'D' },
 		{ "Enter abort time", 0, 'G' },
 		{ "Enter desired DV", 0, 'A' },
 		{ "Enter landing time", 0, 'V' },
 
 		{ "Go to AST display", 0, 'C' },
 		{ "Entry profile", 0, 'F' },
-		{ "Maximum miss distance", 0, 'P' },
+		{ "Max. miss distance", 0, 'P' },
 		{ "Desired inclination", 0, 'S' },
 		{ "", 0, ' ' },
 		{ "Back to menu", 0, 'B' },
