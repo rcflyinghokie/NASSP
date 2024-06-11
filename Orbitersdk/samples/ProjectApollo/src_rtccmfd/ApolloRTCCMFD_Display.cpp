@@ -2073,6 +2073,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		skp->Text(1 * W / 8, 2 * H / 14, "Landing Site", 12);
 		skp->Text(1 * W / 8, 4 * H / 14, "REFSMMAT", 8);
 		skp->Text(1 * W / 8, 6 * H / 14, "RTACF", 5);
+		skp->Text(1 * W / 8, 8 * H / 14, "IMU Parking Angles", 18);
 		skp->Text(1 * W / 8, 10 * H / 14, "Nodal Target Conversion", 23);
 		skp->Text(1 * W / 8, 12 * H / 14, "Descent Abort", 13);
 
@@ -10627,6 +10628,28 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		skp->SetTextAlign(oapi::Sketchpad::CENTER);
 		Text(skp, GC->rtcc->RTCCONLINEMON.LastMEDMessage, 1, 21, 2, 22);
+	}
+	else if (screen == 131)
+	{
+		skp->Text((int)(2.5 * W / 8), 2 * H / 32, "IMU Parking Angles", 18);
+
+		skp->Text((int)(0.5 * W / 8), 4 * H / 14, "Octal Values:", 13);
+
+		for (int i = 0; i < 6; i++)
+		{
+			sprintf(Buffer, "%05o", G->GravVec[i]);
+			skp->Text((int)(0.5 * W / 8), (5 + i) * H / 14, Buffer, strlen(Buffer));
+		}
+
+
+		skp->Text(10 * W / 16, 5 * H / 14, "IMU Angles:", 11);
+
+		sprintf(Buffer, "OGA: %+.2lf°", G->IMUParkingAngles.x * DEG);
+		skp->Text(10 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
+		sprintf(Buffer, "IGA:   %+.2lf°", G->IMUParkingAngles.y * DEG);
+		skp->Text(10 * W / 16, 7 * H / 14, Buffer, strlen(Buffer));
+		sprintf(Buffer, "MGA: %+.2lf°", G->IMUParkingAngles.z * DEG);
+		skp->Text(10 * W / 16, 8 * H / 14, Buffer, strlen(Buffer));
 	}
 	return true;
 }
