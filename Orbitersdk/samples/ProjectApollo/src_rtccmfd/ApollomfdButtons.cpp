@@ -150,7 +150,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 		{ "", 0, ' ' },
 
 		{ "Calculate", 0, 'C' },
-		{ "", 0, ' ' },
+		{ "Set vessel", 0, 'E' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
 		{ "Choose engine", 0, 'T' },
@@ -4221,7 +4221,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	static const MFDBUTTONMENU mnu124[] =
 	{
 		{ "Vehicle", 0, 'V' },
-		{ "Vector time", 0, 'W' },
+		{ "Vehicle or vector time", 0, 'W' },
 		{ "Threshold time", 0, 'T' },
 		{ "Time increment", 0, 'I' },
 		{ "Perigee height", 0, 'P' },

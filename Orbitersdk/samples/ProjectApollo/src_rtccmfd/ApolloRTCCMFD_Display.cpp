@@ -384,11 +384,11 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		{
 			if (GC->rtcc->med_k20.Vehicle == RTCC_MPT_CSM)
 			{
-				PrintCSMVessel(Buffer);
+				PrintCSMVessel(Buffer, false);
 			}
 			else
 			{
-				PrintLMVessel(Buffer);
+				PrintLMVessel(Buffer, false);
 			}
 			skp->Text(8 * W / 22, 3 * H / 22, Buffer, strlen(Buffer));
 		}
@@ -4231,7 +4231,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 	{
 		skp->Text(5 * W / 8, (int)(0.5 * H / 14), "Landing Site Update", 19);
 
-		PrintLMVessel(Buffer);
+		PrintLMVessel(Buffer, false);
 		skp->Text(1 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
 
 		sprintf(Buffer, "%.3f°", GC->rtcc->BZLAND.lat[RTCC_LMPOS_BEST] * DEG);
@@ -10134,23 +10134,34 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 	}
 	else if (screen == 124)
 	{
-		skp->Text(4 * W / 8, 2 * H / 32, "PERIGEE ADJUST INPUTS (K28)", 27);
+		skp->Text(2 * W / 8, 2 * H / 32, "PERIGEE ADJUST INPUTS (K28)", 27);
+
+		if (GC->rtcc->med_k28.VEH == RTCC_MPT_CSM)
+		{
+			sprintf(Buffer, "CSM");
+		}
+		else
+		{
+			sprintf(Buffer, "LEM");
+		}
+		skp->Text(1 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
 
 		if (GC->MissionPlanningActive)
 		{
+			GET_Display(Buffer, GC->rtcc->med_k28.VectorTime, false);
+		}
+		else
+		{
 			if (GC->rtcc->med_k28.VEH == RTCC_MPT_CSM)
 			{
-				sprintf(Buffer, "CSM");
+				PrintCSMVessel(Buffer, false);
 			}
-				else
+			else
 			{
-				sprintf(Buffer, "LEM");
+				PrintLMVessel(Buffer, false);
 			}
-			skp->Text(1 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
-
-			GET_Display(Buffer, GC->rtcc->med_k28.VectorTime, false);
-			skp->Text(1 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
 		}
+		skp->Text(1 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
 
 		GET_Display(Buffer, GC->rtcc->med_k28.ThresholdTime, false);
 		skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
@@ -10450,7 +10461,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 	{
 		skp->Text((int)(2.5 * W / 8), 2 * H / 32, "IMU Parking Angles", 18);
 
-		PrintLMVessel(Buffer);
+		PrintLMVessel(Buffer, false);
 		skp->Text(1 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
 
 		skp->Text((int)(0.5 * W / 8), 4 * H / 14, "Octal Values:", 13);
@@ -11083,11 +11094,18 @@ void ApolloRTCCMFD::PrintCSMVessel(char *Buffer, bool ShowCSM)
 	}
 }
 
-void ApolloRTCCMFD::PrintLMVessel(char *Buffer)
+void ApolloRTCCMFD::PrintLMVessel(char *Buffer, bool ShowLM)
 {
 	if (GC->rtcc->pLM != NULL)
 	{
-		sprintf_s(Buffer, 127, "LM: %s", GC->rtcc->pLM->GetName());
+		if (ShowLM)
+		{
+			sprintf_s(Buffer, 127, "LM: %s", GC->rtcc->pLM->GetName());
+		}
+		else
+		{
+			sprintf_s(Buffer, 127, GC->rtcc->pLM->GetName());
+		}
 	}
 	else
 	{
