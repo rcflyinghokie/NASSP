@@ -261,9 +261,9 @@ void ApolloRTCCMFD::ReadStatus(FILEHANDLE scn)
 	}
 }
 
-bool ApolloRTCCMFD::Text(oapi::Sketchpad *skp, int x, int y, const std::string & str)
+void ApolloRTCCMFD::Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax, int ymax)
 {
-	return skp->Text(x, y, str.c_str(), str.length());
+	skp->Text(x * W / xmax, y * H / ymax, message.c_str(), message.size());
 }
 
 void ApolloRTCCMFD::menuEntryUpdateUpload()
@@ -1267,13 +1267,18 @@ void ApolloRTCCMFD::menuSetDebugPage()
 void ApolloRTCCMFD::menuSetAGOPPage()
 {
 	marker = 0;
-	markermax = 16;
+	markermax = 17;
 	SelectPage(128);
 }
 
 void ApolloRTCCMFD::menuSetRTACFPage()
 {
 	SelectPage(129);
+}
+
+void ApolloRTCCMFD::menuSetIMUParkingAnglesPage()
+{
+	SelectPage(131);
 }
 
 void ApolloRTCCMFD::menuPerigeeAdjustCalc()
@@ -1315,13 +1320,13 @@ void ApolloRTCCMFD::menuPerigeeAdjustHeight()
 
 void ApolloRTCCMFD::menuCycleAGOPPage()
 {
-	if (G->AGOP_Page == 1)
+	if (GC->AGOP_Page == 1)
 	{
-		G->AGOP_Page = 2;
+		GC->AGOP_Page = 2;
 	}
 	else
 	{
-		G->AGOP_Page = 1;
+		GC->AGOP_Page = 1;
 	}
 }
 
@@ -1330,117 +1335,240 @@ void ApolloRTCCMFD::menuSetAGOPInput()
 	switch (marker)
 	{
 	case 0: //Cycle option
-		G->AGOP_Mode = 1;
-		if (G->AGOP_Option < 6)
+		GC->AGOP_Mode = 1;
+		GC->AGOP_AdditionalOption = 0;
+		if (GC->AGOP_Option < 7)
 		{
-			G->AGOP_Option++;
+			GC->AGOP_Option++;
 		}
 		else
 		{
-			G->AGOP_Option = 1;
+			GC->AGOP_Option = 1;
 		}
 		break;
 	case 1: //Cycle mode
-		switch (G->AGOP_Option)
+		GC->AGOP_AdditionalOption = 0;
+		switch (GC->AGOP_Option)
 		{
 		case 1:
-			if (G->AGOP_Mode < 4)
+			if (GC->AGOP_Mode < 4)
 			{
-				G->AGOP_Mode++;
+				GC->AGOP_Mode++;
 			}
 			else
 			{
-				G->AGOP_Mode = 1;
+				GC->AGOP_Mode = 1;
 			}
 			break;
 		case 2:
 		case 4:
-			if (G->AGOP_Mode < 6)
+			if (GC->AGOP_Mode < 6)
 			{
-				G->AGOP_Mode++;
+				GC->AGOP_Mode++;
 			}
 			else
 			{
-				G->AGOP_Mode = 1;
+				GC->AGOP_Mode = 1;
 			}
 			break;
 		case 6:
-			if (G->AGOP_Mode < 2)
+			if (GC->AGOP_Mode < 2)
 			{
-				G->AGOP_Mode++;
+				GC->AGOP_Mode++;
 			}
 			else
 			{
-				G->AGOP_Mode = 1;
+				GC->AGOP_Mode = 1;
+			}
+			break;
+		case 7:
+			if (GC->AGOP_Mode < 6)
+			{
+				GC->AGOP_Mode++;
+			}
+			else
+			{
+				GC->AGOP_Mode = 1;
+			}
+			break;
+		case 8:
+			if (GC->AGOP_Mode < 5)
+			{
+				GC->AGOP_Mode++;
+			}
+			else
+			{
+				GC->AGOP_Mode = 1;
 			}
 			break;
 		}
 		break;
-	case 2: //Input start time
-		GenericGETInput(&G->AGOP_StartTime, "Enter desired start GET (Format: HH:MM:SS)");
+	case 2:
+		if (GC->AGOP_Option == 7 && (GC->AGOP_Mode == 3 || GC->AGOP_Mode == 4))
+		{
+			//Additional option
+			if (GC->AGOP_Mode == 3)
+			{
+				if (GC->AGOP_AdditionalOption < 1)
+				{
+					GC->AGOP_AdditionalOption++;
+				}
+				else
+				{
+					GC->AGOP_AdditionalOption = 0;
+				}
+			}
+			else
+			{
+				if (GC->AGOP_AdditionalOption < 3)
+				{
+					GC->AGOP_AdditionalOption++;
+				}
+				else
+				{
+					GC->AGOP_AdditionalOption = 0;
+				}
+			}
+		}
+		else
+		{
+			//Input start time
+			GenericGETInput(&GC->AGOP_StartTime, "Enter desired start GET (Format: HH:MM:SS)");
+		}
 		break;
-	case 3: //Input start time
-		GenericGETInput(&G->AGOP_StopTime, "Enter desired stop GET (Format: HH:MM:SS)");
+	case 3: //Input stop time
+		GenericGETInput(&GC->AGOP_StopTime, "Enter desired stop GET (Format: HH:MM:SS)");
 		break;
-	case 4: //Input start time
-		GenericDoubleInput(&G->AGOP_TimeStep, "Enter desired time step in minutes");
+	case 4: //Input time step
+		GenericDoubleInput(&GC->AGOP_TimeStep, "Enter desired time step in minutes");
 		break;
 	case 5: //CSM REFSMMAT
+		if (GC->AGOP_CSM_REFSMMAT < 11)
+		{
+			GC->AGOP_CSM_REFSMMAT++;
+		}
+		else
+		{
+			GC->AGOP_CSM_REFSMMAT = 1;
+		}
 		break;
 	case 6: //LM REFSMMAT
+		if (GC->AGOP_LM_REFSMMAT < 11)
+		{
+			GC->AGOP_LM_REFSMMAT++;
+		}
+		else
+		{
+			GC->AGOP_LM_REFSMMAT = 1;
+		}
 		break;
 	case 7: //Input star
-		if (G->AGOP_Option == 1 || G->AGOP_Option == 3)
+		if (GC->AGOP_Option == 1 || GC->AGOP_Option == 3 || (GC->AGOP_Option == 7 && GC->AGOP_Mode == 5))
 		{
-			GenericIntInput(&G->AGOP_Star, "Enter star ID in decimal format (1-400):", NULL, 1, 400);
+			GenericIntInput(&GC->AGOP_Stars[0], "Enter star ID in decimal format (1-400):", NULL, 1, 400);
 		}
-		else if (G->AGOP_Option == 6)
+		else if (GC->AGOP_Option == 6)
 		{
-			G->AGOP_HeadsUp = !G->AGOP_HeadsUp;
+			GC->AGOP_HeadsUp = !GC->AGOP_HeadsUp;
+		}
+		else if (GC->AGOP_Option == 7 && GC->AGOP_Mode == 3)
+		{
+			GenericInt2Input(&GC->AGOP_Stars[0], &GC->AGOP_Stars[1], "Enter two star IDs in decimal format (1-400):", 1, 400, 1, 400, NULL);
 		}
 		break;
 	case 8: //Landmark latitude
-		if ((G->AGOP_Option == 1 && (G->AGOP_Mode == 3 || G->AGOP_Mode == 4)) || G->AGOP_Option == 4)
+		if ((GC->AGOP_Option == 1 && (GC->AGOP_Mode == 3 || GC->AGOP_Mode == 4)) || GC->AGOP_Option == 4)
 		{
-			GenericDoubleInput(&G->AGOP_Lat, "Enter landmark latitude in degrees:", RAD);
+			GenericDoubleInput(&GC->AGOP_Lat, "Enter landmark latitude in degrees:", RAD);
 		}
 		break;
 	case 9: //Landmark longitude
-		if ((G->AGOP_Option == 1 && (G->AGOP_Mode == 3 || G->AGOP_Mode == 4)) || G->AGOP_Option == 4)
+		if ((GC->AGOP_Option == 1 && (GC->AGOP_Mode == 3 || GC->AGOP_Mode == 4)) || GC->AGOP_Option == 4)
 		{
-			GenericDoubleInput(&G->AGOP_Lng, "Enter landmark longitude in degrees:", RAD);
+			GenericDoubleInput(&GC->AGOP_Lng, "Enter landmark longitude in degrees:", RAD);
 		}
 		break;
 	case 10: //Landmark altitude
-		if ((G->AGOP_Option == 1 && (G->AGOP_Mode == 3 || G->AGOP_Mode == 4)) || G->AGOP_Option == 4)
+		if ((GC->AGOP_Option == 1 && (GC->AGOP_Mode == 3 || GC->AGOP_Mode == 4)) || GC->AGOP_Option == 4)
 		{
-			GenericDoubleInput(&G->AGOP_Alt, "Enter landmark height in nautical miles:", 1852.0);
+			GenericDoubleInput(&GC->AGOP_Alt, "Enter landmark height in nautical miles:", 1852.0);
 		}
 		break;
 	case 11: //CSM vs LM IMU
-		if (G->AGOP_Option == 4)
+		if (GC->AGOP_Option == 4 || GC->AGOP_Option == 7)
 		{
-			G->AGOP_AttIsCSM = !G->AGOP_AttIsCSM;
+			GC->AGOP_AttIsCSM = !GC->AGOP_AttIsCSM;
 		}
 		break;
 	case 12: //IMU Angles
-	case 13:
-	case 14:
-		GenericDoubleInput(&G->AGOP_Attitude.data[marker - 12], "Input IMU angle in degrees:", RAD);
+		GenericVectorInput(&GC->AGOP_Attitudes[0], "Input IMU angles in degrees:", RAD, NULL);
 		break;
-	case 15: //Antenna Pitch
-		GenericDoubleInput(&G->AGOP_AntennaPitch, "Input antenna pitch angle in degrees:", RAD);
+	case 13: //IMU Angles (second set for option 7, mode 3)
+		GenericVectorInput(&GC->AGOP_Attitudes[1], "Input IMU angles in degrees:", RAD, NULL);
 		break;
-	case 16: //Antenna Yaw
-		GenericDoubleInput(&G->AGOP_AntennaYaw, "Input antenna yaw angle in degrees:", RAD);
+	case 14: //Antenna Pitch
+		if (GC->AGOP_Option == 7 && GC->AGOP_Mode == 3)
+		{
+			GenericDouble2Input(&GC->AGOP_InstrumentAngles1[0], &GC->AGOP_InstrumentAngles1[1], "Input instrument angles:", RAD, RAD);
+		}
+		else
+		{
+			GenericDoubleInput(&GC->AGOP_AntennaPitch, "Input antenna pitch angle in degrees:", RAD);
+		}
+		break;
+	case 15: //Antenna Yaw
+		if (GC->AGOP_Option == 7 && GC->AGOP_Mode == 3)
+		{
+			GenericDouble2Input(&GC->AGOP_InstrumentAngles2[0], &GC->AGOP_InstrumentAngles2[1], "Input instrument angles:", RAD, RAD);
+		}
+		else
+		{
+			GenericDoubleInput(&GC->AGOP_AntennaYaw, "Input antenna yaw angle in degrees:", RAD);
+		}
+		break;
+	case 16: //Instrument
+		if (GC->AGOP_Instrument < 3)
+		{
+			GC->AGOP_Instrument++;
+		}
+		else
+		{
+			GC->AGOP_Instrument = 0;
+		}
+		break;
+	case 17: //LM COAS Axis
+		if (GC->AGOP_Instrument == 1)
+		{
+			GC->AGOP_LMCOASAxis = !GC->AGOP_LMCOASAxis;
+		}
+		else if (GC->AGOP_Instrument == 2)
+		{
+			if (GC->AGOP_LMAOTDetent < 6)
+			{
+				GC->AGOP_LMAOTDetent++;
+			}
+			else
+			{
+				GC->AGOP_LMAOTDetent = 1;
+			}
+		}
 		break;
 	}
 }
 
 void ApolloRTCCMFD::menuAGOPCalc()
 {
-	G->AGOP_Page = 2;
+	GC->AGOP_Page = 2;
 	G->startSubthread(51);
+}
+
+void ApolloRTCCMFD::menuAGOPSaveREFSMMAT()
+{
+	//If it is still zero then a REFSMMAT hasn't been saved yet
+	if (GC->AGOP_REFSMMAT_Vehicle == 0) return;
+
+	//Call RTCC function to save the REFSMMAT in the OST slot
+	GC->rtcc->EMGSTSTM(GC->AGOP_REFSMMAT_Vehicle, GC->AGOP_REFSMMAT, RTCC_REFSMMAT_TYPE_OST, GC->rtcc->RTCCPresentTimeGMT());
 }
 
 void ApolloRTCCMFD::menuLWPLiftoffTimeOption()
@@ -1657,6 +1785,34 @@ bool GenericDoubleInputBox(void *id, char *str, void *data)
 	if (sscanf(str, "%lf", &val) == 1)
 	{
 		*arr->dVal = val * arr->factor;
+		return true;
+	}
+	return false;
+}
+
+void ApolloRTCCMFD::GenericDouble2Input(double *val1, double *val2, char* message, double factor1, double factor2)
+{
+	void *data2;
+
+	tempData.dVal = val1;
+	tempData.dVal2 = val2;
+	tempData.factor = factor1;
+	tempData.factor2 = factor2;
+	data2 = &tempData;
+
+	bool GenericDouble2InputBox(void *id, char *str, void *data);
+	oapiOpenInputBox(message, GenericDouble2InputBox, 0, 30, data2);
+}
+
+bool GenericDouble2InputBox(void *id, char *str, void *data)
+{
+	RTCCMFDInputBoxData *arr = static_cast<RTCCMFDInputBoxData*>(data);
+	double val1, val2;
+
+	if (sscanf(str, "%lf %lf", &val1, &val2) == 2)
+	{
+		*arr->dVal = val1 * arr->factor;
+		*arr->dVal2 = val2 * arr->factor2;
 		return true;
 	}
 	return false;
@@ -5846,6 +6002,11 @@ void ApolloRTCCMFD::menuSetMapUpdateGET()
 	GenericGETInput(&G->mapUpdateGET, "Choose the GET for the anchor vector (Format: hhh:mm:ss)");
 }
 
+void ApolloRTCCMFD::menuCycleMapUpdatePM()
+{
+	G->mapUpdatePM = !G->mapUpdatePM;
+}
+
 void ApolloRTCCMFD::menuCycleSPQMode()
 {
 	if (G->SPQMode < 2)
@@ -6624,6 +6785,13 @@ void ApolloRTCCMFD::menuSetLmkLat()
 void ApolloRTCCMFD::menuSetLmkLng()
 {
 	GenericDoubleInput(&G->LmkLng, "Choose the landmark longitude:", RAD);
+}
+
+void ApolloRTCCMFD::menuLmkUseLandingSite()
+{
+	//Load RTCC stored landing site coordinates into input for P22 PAD
+	G->LmkLat = GC->rtcc->BZLAND.lat[0];
+	G->LmkLng = GC->rtcc->BZLAND.lng[0];
 }
 
 void ApolloRTCCMFD::menuSetLDPPVectorTime()
@@ -8831,6 +8999,18 @@ void ApolloRTCCMFD::menuCalculateIMUComparison()
 	G->menuCalculateIMUComparison();
 }
 
+void ApolloRTCCMFD::menuCalculateIMUParkingAngles()
+{
+	//Only calculate for LM
+	if (G->vesseltype != 1) return;
+
+	agc_t* vagc;
+	lem = (LEM*)G->vessel;
+	vagc = &lem->agc.vagc;
+
+	G->menuCalculateIMUParkingAngles(vagc);
+}
+
 void ApolloRTCCMFD::menuSLVNavigationUpdateCalc()
 {
 	G->SLVNavigationUpdateCalc();
@@ -9473,7 +9653,266 @@ void ApolloRTCCMFD::GMPManeuverCodeName(char *buffer, int code)
 	}
 }
 
-void ApolloRTCCMFD::Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax, int ymax)
+void ApolloRTCCMFD::SetMEDInputPageP13()
 {
-	skp->Text(x * W / xmax, y * H / ymax, message.c_str(), message.size());
+	SetMEDInputPage("P13");
+}
+
+void ApolloRTCCMFD::SetMEDInputPageP14()
+{
+	SetMEDInputPage("P14");
+}
+
+void ApolloRTCCMFD::SetMEDInputPage(std::string med)
+{
+	MEDInput temp;
+
+	MEDInputData.table.clear();
+
+	if (med == "P13")
+	{
+		MEDInputData.Title = "P13: Enter Vector in Spherical Coordinates";
+		MEDInputData.MEDCode = "P13";
+
+		temp.Label = "VEH:";
+		temp.Description = "Vehicle (CSM or LEM):";
+		temp.Data = "CSM";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Velocity:";
+		temp.Description = "Velocity in ft/s:";
+		temp.Data = "0.0";
+		temp.Unit = "ft/s";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Flight Path Angle:";
+		temp.Description = "Flight Path Angle in degrees:";
+		temp.Data = "0.0";
+		temp.Unit = "degrees";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Azimuth:";
+		temp.Description = "Azimuth in degrees:";
+		temp.Data = "0.0";
+		temp.Unit = "degrees";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Latitude:";
+		temp.Description = "Geocentric latitude in degrees:";
+		temp.Data = "0.0";
+		temp.Unit = "degrees";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Longitude:";
+		temp.Description = "Longitude in degrees:";
+		temp.Data = "0.0";
+		temp.Unit = "degrees";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Height:";
+		temp.Description = "Height above spherical planet in nautical miles:";
+		temp.Data = "0.0";
+		temp.Unit = "NM";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Time:";
+		temp.Description = "State vector time (format HHH:MM:SS.TH):";
+		temp.Data = "000:00:00.00";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Vector Action Code:";
+		temp.Description = "Vector Action Code (L = Live Ephem, S = Static Ephem, G = put in targeting slot of GZLTRA only, B = put in GZLTRA & generate static ephem):";
+		temp.Data = "L";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Co-ord System Ind:";
+		temp.Description = "Coordinate System Indicator (ECT or MCT):";
+		temp.Data = "ECT";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+	}
+	else if (med == "P14")
+	{
+		MEDInputData.Title = "P14: Initialize Trajectory with a Vector";
+		MEDInputData.MEDCode = "P14";
+
+		temp.Label = "VEH:";
+		temp.Description = "Vehicle (CSM or LEM):";
+		temp.Data = "CSM";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "X:";
+		temp.Description = "Position in Earth radii:";
+		temp.Data = "0.0";
+		temp.Unit = "ER";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Y:";
+		temp.Description = "Position in Earth radii:";
+		temp.Data = "0.0";
+		temp.Unit = "ER";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Z:";
+		temp.Description = "Position in Earth radii:";
+		temp.Data = "0.0";
+		temp.Unit = "ER";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "XDOT:";
+		temp.Description = "Velocity in Earth radii per hour:";
+		temp.Data = "0.0";
+		temp.Unit = "ER/hr";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "YDOT:";
+		temp.Description = "Velocity in Earth radii per hour:";
+		temp.Data = "0.0";
+		temp.Unit = "ER/hr";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "ZDOT:";
+		temp.Description = "Velocity in Earth radii per hour:";
+		temp.Data = "0.0";
+		temp.Unit = "ER/hr";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Time:";
+		temp.Description = "GET of vector (format HHH:MM:SS.TH):";
+		temp.Data = "000:00:00.00";
+		temp.Unit = "GMT";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Vector Action Code:";
+		temp.Description = "Vector Action Code (L = Live Ephem, S = Static Ephem, G = put in targeting slot of GZLTRA only, B = put in GZLTRA & generate static ephem):";
+		temp.Data = "L";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Co-ord System Ind:";
+		temp.Description = "Coordinate system of vector (ECI, ECT, MCI, MCT, EMP or PLUM)";
+		temp.Data = "ECI";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+	}
+	else if (med == "S84")
+	{
+		MEDInputData.Title = "S84: Vector Panel Summary Entry";
+		MEDInputData.MEDCode = "S84";
+
+		temp.Label = "VEH:";
+		temp.Description = "Vehicle (CSM or LEM):";
+		temp.Data = "CSM";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "X:";
+		temp.Description = "Position in Earth radii:";
+		temp.Data = "0.0";
+		temp.Unit = "ER";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Y:";
+		temp.Description = "Position in Earth radii:";
+		temp.Data = "0.0";
+		temp.Unit = "ER";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Z:";
+		temp.Description = "Position in Earth radii:";
+		temp.Data = "0.0";
+		temp.Unit = "ER";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "XDOT:";
+		temp.Description = "Velocity in Earth radii per hour:";
+		temp.Data = "0.0";
+		temp.Unit = "ER/hr";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "YDOT:";
+		temp.Description = "Velocity in Earth radii per hour:";
+		temp.Data = "0.0";
+		temp.Unit = "ER/hr";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "ZDOT:";
+		temp.Description = "Velocity in Earth radii per hour:";
+		temp.Data = "0.0";
+		temp.Unit = "ER/hr";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "GMT:";
+		temp.Description = "GMT of vector (format HHH:MM:SS.TH):";
+		temp.Data = "000:00:00.00";
+		temp.Unit = "GMT";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Reference:";
+		temp.Description = "Coordinate system of vector (ECI, ECT, MCI, MCT or EMP)";
+		temp.Data = "ECI";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+
+		temp.Label = "Lunar Surf.:";
+		temp.Description = "Lunar Surface Indicator (S if vector is on the surface of Moon):";
+		temp.Data = "";
+		temp.Unit = "";
+		MEDInputData.table.push_back(temp);
+	}
+
+	marker = 0;
+	markermax = (int)MEDInputData.table.size();
+	if (markermax > 0) markermax--;
+	SelectPage(130);
+}
+
+void ApolloRTCCMFD::menuMEDInputCalc()
+{
+	if (MEDInputData.table.size() == 0U) return;
+
+	std::string med;
+
+	med = MEDInputData.MEDCode;
+
+	for (unsigned i = 0; i < MEDInputData.table.size(); i++)
+	{
+		med += ",";
+		med += MEDInputData.table[i].Data;
+	}
+
+	med += ";";
+
+	sprintf_s(GC->rtcc->RTCCMEDBUFFER, 256, med.c_str());
+	G->GeneralMEDRequest();
+}
+
+void ApolloRTCCMFD::menuInputMEDData()
+{
+	if (MEDInputData.table.size() <= (unsigned)marker) return;
+
+	MEDInput data = MEDInputData.table[(unsigned)marker];
+
+	char Buffer[256];
+	sprintf(Buffer, "%s", data.Description.c_str());
+
+	bool InputMEDDataInput(void* id, char *str, void *data);
+	oapiOpenInputBox(Buffer, InputMEDDataInput, 0, 20, (void*)this);
+}
+
+bool InputMEDDataInput(void* id, char *str, void *data)
+{
+	((ApolloRTCCMFD*)data)->set_MEDData(str);
+	return true;
+}
+
+void ApolloRTCCMFD::set_MEDData(char *str)
+{
+	MEDInput *data = &MEDInputData.table[(unsigned)marker];
+
+	data->Data.assign(str);
 }

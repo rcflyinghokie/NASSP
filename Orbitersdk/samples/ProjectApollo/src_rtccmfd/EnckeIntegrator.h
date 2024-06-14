@@ -38,6 +38,9 @@ struct EMMENIInputTable
 	double MinEphemDT = 0.0;
 	//Integration direction indicator (+X-forward, -X-backward)
 	double IsForwardIntegration = 1.0;
+	//Fixed integration step length
+	bool UseFixedStepLength = false;
+	double FixedStepLength = 10.0;
 	//Desired value of stopping parameter relative to the Earth
 	double EarthRelStopParam = 0.0;
 	//Desired value of stopping parameter relative to the Moon
@@ -149,6 +152,9 @@ private:
 	double r_SPH;
 	//Direction control and step size multiplier
 	double HMULT;
+	//Fixed integration step length
+	bool UseFixedStepLength;
+	double FixedStepLength;
 	//Divisor for termination control
 	double DEV;
 	//Density multiplier (0 if no drag)
