@@ -7818,31 +7818,43 @@ void RTCC::LunarOrbitMapUpdate(EphemerisData sv0, AP10MAPUPDATE &pad, double pm)
 	pad.PMGET = (MJD - GETbase)*24.0*3600.0 + ttoPM;
 }
 
-void RTCC::LandmarkTrackingPAD(LMARKTRKPADOpt *opt, AP11LMARKTRKPAD &pad)
+void RTCC::LandmarkTrackingPAD(const LMARKTRKPADOpt &opt, AP11LMARKTRKPAD &pad)
 {
-	SV sv1;
+	EphemerisData sv1;
 	VECTOR3 R_P, u;
-	double GETbase, dt1, dt2, MJDguess, sinl, gamma, r_0, LmkRange;
+	double gmt, dt1, dt2, sinl, gamma, r_0, LmkRange, R_E, MJDguess;
+	OBJHANDLE gravref; //temporary
 
-	GETbase = CalcGETBase();
-
-	for (int i = 0;i < opt->entries;i++)
+	for (int i = 0;i < opt.entries;i++)
 	{
-		MJDguess = GETbase + opt->LmkTime[i] / 24.0 / 3600.0;
-		sv1 = coast(opt->sv0, (MJDguess - opt->sv0.MJD)*24.0*3600.0);
+		gmt = GMTfromGET(opt.LmkTime[i]);
+		MJDguess = GetGMTBase() + gmt / 24.0 / 3600.0;
 
-		R_P = unit(_V(cos(opt->lng[i])*cos(opt->lat[i]), sin(opt->lng[i])*cos(opt->lat[i]), sin(opt->lat[i])))*(oapiGetSize(sv1.gravref) + opt->alt[i]);
+		sv1 = coast(opt.sv0, gmt - opt.sv0.GMT);
 
-		dt1 = OrbMech::findelev_gs(SystemParameters.AGCEpoch, SystemParameters.MAT_J2000_BRCS, sv1.R, sv1.V, R_P, MJDguess, 180.0*RAD, sv1.gravref, LmkRange);
-		dt2 = OrbMech::findelev_gs(SystemParameters.AGCEpoch, SystemParameters.MAT_J2000_BRCS, sv1.R, sv1.V, R_P, MJDguess, 145.0*RAD, sv1.gravref, LmkRange);
+		if (sv1.RBI == BODY_EARTH)
+		{
+			R_E = OrbMech::R_Earth;
+			gravref = hEarth;
+		}
+		else
+		{
+			R_E = OrbMech::R_Moon;
+			gravref = hMoon;
+		}
 
-		pad.T1[i] = dt1 + (MJDguess - GETbase) * 24.0 * 60.0 * 60.0;
-		pad.T2[i] = dt2 + (MJDguess - GETbase) * 24.0 * 60.0 * 60.0;
+		R_P = unit(_V(cos(opt.lng[i])*cos(opt.lat[i]), sin(opt.lng[i])*cos(opt.lat[i]), sin(opt.lat[i])))*(R_E + opt.alt[i]);
+
+		dt1 = OrbMech::findelev_gs(SystemParameters.AGCEpoch, SystemParameters.MAT_J2000_BRCS, sv1.R, sv1.V, R_P, MJDguess, 180.0*RAD, gravref, LmkRange);
+		dt2 = OrbMech::findelev_gs(SystemParameters.AGCEpoch, SystemParameters.MAT_J2000_BRCS, sv1.R, sv1.V, R_P, MJDguess, PI - opt.Elevation, gravref, LmkRange);
+
+		pad.T1[i] = GETfromGMT(gmt + dt1);
+		pad.T2[i] = GETfromGMT(gmt + dt2);
 
 		u = unit(R_P);
 		sinl = u.z;
 
-		if (sv1.gravref == hEarth)
+		if (gravref == hEarth)
 		{
 			double a, b, r_F;
 			a = 6378166;
@@ -7861,10 +7873,10 @@ void RTCC::LandmarkTrackingPAD(LMARKTRKPADOpt *opt, AP11LMARKTRKPAD &pad)
 		pad.CRDist[i] = LmkRange / 1852.0;
 
 		pad.Lat[i] = atan2(u.z, gamma*sqrt(u.x*u.x + u.y*u.y))*DEG;
-		pad.Lng05[i] = opt->lng[i] / 2.0*DEG;
+		pad.Lng05[i] = opt.lng[i] / 2.0*DEG;
 	}
 
-	pad.entries = opt->entries;
+	pad.entries = opt.entries;
 }
 
 SV RTCC::coast(SV sv0, double dt)

@@ -5983,13 +5983,13 @@ void ApolloRTCCMFD::menuCalcMapUpdate()
 
 void ApolloRTCCMFD::menuSwitchEntryPADOpt()
 {
-	if (G->entrypadopt < 1)
+	if (GC->entrypadopt < 1)
 	{
-		G->entrypadopt++;
+		GC->entrypadopt++;
 	}
 	else
 	{
-		G->entrypadopt = 0;
+		GC->entrypadopt = 0;
 	}
 }
 
@@ -6334,9 +6334,9 @@ void ApolloRTCCMFD::GetREFSMMATfromAGC()
 
 void ApolloRTCCMFD::menuCycleLunarEntryPADSxtOption()
 {
-	if (G->entrypadopt == 1)
+	if (GC->entrypadopt == 1)
 	{
-		G->EntryPADSxtStarCheckAttOpt = !G->EntryPADSxtStarCheckAttOpt;
+		GC->EntryPADSxtStarCheckAttOpt = !GC->EntryPADSxtStarCheckAttOpt;
 	}
 }
 
@@ -6836,24 +6836,29 @@ void ApolloRTCCMFD::menuLmkPADCalc()
 
 void ApolloRTCCMFD::menuSetLmkTime()
 {
-	GenericGETInput(&G->LmkTime, "Choose the guess for T1:");
+	GenericGETInput(&GC->LmkTime, "Choose the guess for T1:");
+}
+
+void ApolloRTCCMFD::menuSetLmkElevation()
+{
+	GenericDoubleInput(&GC->LmkElevation, "Choose the T2 elevation in degrees (0-90°):", RAD);
 }
 
 void ApolloRTCCMFD::menuSetLmkLat()
 {
-	GenericDoubleInput(&G->LmkLat, "Choose the landmark latitude:", RAD);
+	GenericDoubleInput(&GC->LmkLat, "Choose the landmark latitude:", RAD);
 }
 
 void ApolloRTCCMFD::menuSetLmkLng()
 {
-	GenericDoubleInput(&G->LmkLng, "Choose the landmark longitude:", RAD);
+	GenericDoubleInput(&GC->LmkLng, "Choose the landmark longitude:", RAD);
 }
 
 void ApolloRTCCMFD::menuLmkUseLandingSite()
 {
 	//Load RTCC stored landing site coordinates into input for P22 PAD
-	G->LmkLat = GC->rtcc->BZLAND.lat[0];
-	G->LmkLng = GC->rtcc->BZLAND.lng[0];
+	GC->LmkLat = GC->rtcc->BZLAND.lat[0];
+	GC->LmkLng = GC->rtcc->BZLAND.lng[0];
 }
 
 void ApolloRTCCMFD::menuSetLDPPVectorTime()

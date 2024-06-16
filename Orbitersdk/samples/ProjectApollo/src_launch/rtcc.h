@@ -717,8 +717,9 @@ struct ASCPADOpt
 
 struct LMARKTRKPADOpt
 {
-	SV sv0; //Input state vector
-	double LmkTime[4]; //initial guess for time over landmark
+	EphemerisData sv0; //Input state vector
+	double Elevation = 35.0*RAD; //Elevation angle at acquisition
+	double LmkTime[4]; //initial guess for time over landmark (GET)
 	double lat[4];		//landmark latitude
 	double lng[4];		//landmark longitude
 	double alt[4] = { 0,0,0,0 };	//landmark altitude
@@ -2480,7 +2481,7 @@ public:
 	void LMDAPUpdate(VESSEL *v, AP10DAPDATA &pad, bool docked, bool asc = false);
 	void RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res);
 	void LunarOrbitMapUpdate(EphemerisData sv0, AP10MAPUPDATE &pad, double pm = -150.0*RAD);
-	void LandmarkTrackingPAD(LMARKTRKPADOpt *opt, AP11LMARKTRKPAD &pad);
+	void LandmarkTrackingPAD(const LMARKTRKPADOpt &opt, AP11LMARKTRKPAD &pad);
 	//S-IVB TLI IGM Pre-Thrust Targeting Module
 	int PMMSPT(PMMSPTInput &in);
 	int PCMSP2(TLITargetingParametersTable *tlitab, int J, double t_D, double &cos_sigma, double &C3, double &e_N, double &RA, double &DEC);

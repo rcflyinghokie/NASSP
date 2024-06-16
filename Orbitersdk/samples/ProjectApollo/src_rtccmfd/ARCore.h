@@ -46,6 +46,25 @@ public:
 
 	RTCC* rtcc;
 
+	//MANEUVER PAD PAGE
+	AP11MNV manpad;
+	AP11LMMNV lmmanpad;
+	AP7TPI TPI_PAD;
+	TLIPAD tlipad;
+	AP11PDIPAD pdipad;
+
+	//ENTRY PAD PAGE
+	AP11ENT lunarentrypad;
+	AP7ENT earthentrypad;
+	int entrypadopt; //0 = Earth Entry Update, 1 = Lunar Entry
+	bool EntryPADSxtStarCheckAttOpt; //true = sextant star attitude check at entry attitude, false = sextant star check at horizon check attitude
+
+	//LANDMARK TRACKING PAGE
+	AP11LMARKTRKPAD landmarkpad;
+	double LmkLat, LmkLng;
+	double LmkTime;
+	double LmkElevation;
+
 	//APOLLO GENERALIZED OPTICS PROGRAM
 	int AGOP_Page;
 	int AGOP_Option;
@@ -272,22 +291,11 @@ public:
 	AP11AGSSVPAD agssvpad;
 
 	//MANEUVER PAD PAGE
-	AP11MNV manpad;
-	AP11LMMNV lmmanpad;
 	bool HeadsUp;
-	AP7TPI TPI_PAD;
 	int manpadopt; //0 = CSM Maneuver PAD, 1 = LM Maneuver PAD, 2 = TPI PAD, 3 = TLI PAD, 4 = PDI PAD
 	double sxtstardtime;
 	double manpad_ullage_dt;
 	bool manpad_ullage_opt; //true = 4 jets, false = 2 jets
-	TLIPAD tlipad;
-	AP11PDIPAD pdipad;
-
-	//ENTRY PAD PAGE
-	AP11ENT lunarentrypad;
-	AP7ENT earthentrypad;
-	int entrypadopt; //0 = Earth Entry Update, 1 = Lunar Entry
-	bool EntryPADSxtStarCheckAttOpt; //true = sextant star attitude check at entry attitude, false = sextant star check at horizon check attitude
 
 	//MAP UPDATE PAGE
 	AP10MAPUPDATE mapupdate;
@@ -298,11 +306,6 @@ public:
 
 	//TLCC PAGE
 	int TLCCSolGood;
-
-	//LANDMARK TRACKING PAGE
-	AP11LMARKTRKPAD landmarkpad;
-	double LmkLat, LmkLng;
-	double LmkTime;
 
 	//VECPOINT PAGE
 	int VECoption;		//0 = Point SC at body, 1 = Open hatch thermal control
