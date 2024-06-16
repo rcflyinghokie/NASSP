@@ -2924,10 +2924,22 @@ void MCC::drawPad(bool writetofile){
 		sprintf(buffer, "MAP UPDATE REV %d\n", form->Rev);
 		OrbMech::SStoHHMMSS(form->LOSGET, hh, mm, ss);
 		sprintf(buffer, "%sLOS: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
-		if (form->type == 0)
+		if (form->type == 0 || form->type == 4 || form->type == 6)
 		{
 			OrbMech::SStoHHMMSS(form->PMGET, hh, mm, ss);
-			sprintf(buffer, "%sPM: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
+			if (form->type == 0)
+			{
+				sprintf(buffer, "%sPM: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
+			}
+			else if (form->type == 4)
+			{
+				sprintf(buffer, "%s180°: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
+			}
+			else
+			{
+				sprintf(buffer, "%s150°: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
+			}
+
 			OrbMech::SStoHHMMSS(form->AOSGET, hh, mm, ss);
 			sprintf(buffer, "%sAOS: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
 		}
@@ -2968,13 +2980,6 @@ void MCC::drawPad(bool writetofile){
 			OrbMech::SStoHHMMSS(form->SSGET2, hh, mm, ss);
 			sprintf(buffer, "%sSS: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
 		}
-		else if (form->type == 4)
-		{
-			OrbMech::SStoHHMMSS(form->PMGET, hh, mm, ss);
-			sprintf(buffer, "%s180°: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
-			OrbMech::SStoHHMMSS(form->AOSGET, hh, mm, ss);
-			sprintf(buffer, "%sAOS: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
-		}
 		else if (form->type == 5)
 		{
 			OrbMech::SStoHHMMSS(form->PMGET, hh, mm, ss);
@@ -2983,6 +2988,13 @@ void MCC::drawPad(bool writetofile){
 			sprintf(buffer, "%sAOS WITH TEI: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
 			OrbMech::SStoHHMMSS(form->AOSGET, hh, mm, ss);
 			sprintf(buffer, "%sAOS WITHOUT TEI: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
+		}
+		else if (form->type == 7)
+		{
+			OrbMech::SStoHHMMSS(form->AOSGET2, hh, mm, ss);
+			sprintf(buffer, "%sAOS (W/TEI): %d:%02d:%02.0f\n", buffer, hh, mm, ss);
+			OrbMech::SStoHHMMSS(form->AOSGET, hh, mm, ss);
+			sprintf(buffer, "%sAOS (NO TEI): %d:%02d:%02.0f\n", buffer, hh, mm, ss);
 		}
 
 		oapiAnnotationSetText(NHpad, buffer);
