@@ -3023,8 +3023,11 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		if (!GC->MissionPlanningActive)
 		{
-			PrintCSMVessel(Buffer);
+			PrintLMVessel(Buffer);
 			skp->Text(5 * W / 8, 2 * H / 14, Buffer, strlen(Buffer));
+
+			PrintCSMVessel(Buffer);
+			skp->Text(5 * W / 8, 3 * H / 14, Buffer, strlen(Buffer));
 		}
 
 		sprintf(Buffer, "%f", GC->rtcc->JZLAI.sv_Insertion.R.x);

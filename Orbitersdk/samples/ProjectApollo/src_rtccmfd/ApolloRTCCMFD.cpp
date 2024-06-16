@@ -1273,7 +1273,21 @@ void ApolloRTCCMFD::CyclePerigeeAdjustVehicle()
 
 void ApolloRTCCMFD::menuPerigeeAdjustVectorTime()
 {
-	GenericGETInput(&GC->rtcc->med_k28.VectorTime, "Enter desired vector GET (Format: HH:MM:SS)");
+	if (GC->MissionPlanningActive)
+	{
+		GenericGETInput(&GC->rtcc->med_k28.VectorTime, "Enter desired vector GET (Format: HH:MM:SS)");
+	}
+	else
+	{
+		if (GC->rtcc->med_k28.VEH == RTCC_MPT_CSM)
+		{
+			set_CSMVessel();
+		}
+		else
+		{
+			set_LMVessel();
+		}
+	}
 }
 
 void ApolloRTCCMFD::menuPerigeeAdjustThresholdTime()
@@ -6946,7 +6960,14 @@ void ApolloRTCCMFD::menuSetLiftoffguess()
 
 void ApolloRTCCMFD::menuLLWPVectorTime()
 {
-	GenericGETInput(&GC->rtcc->med_k15.CSMVectorTime, "Choose the CSM vector time (Format: hhh:mm:ss)");
+	if (GC->MissionPlanningActive)
+	{
+		GenericGETInput(&GC->rtcc->med_k15.CSMVectorTime, "Choose the CSM vector time (Format: hhh:mm:ss)");
+	}
+	else
+	{
+		set_CSMVessel();
+	}
 }
 
 void ApolloRTCCMFD::menuSetLLWPCSIFlag()

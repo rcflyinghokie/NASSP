@@ -490,7 +490,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 		{ "Deorbit", 0, 'T' },
 
 		{ "DOI Targeting", 0, 'D' },
-		{ "Lunar Launch Winodw", 0, 'W' },
+		{ "Lunar Launch Window", 0, 'W' },
 		{ "Lunar Launch Targeting", 0, 'L' },
 		{ "Lunar Ascent", 0, 'A' },
 		{ "Perigee Adjust", 0, 'P' },
@@ -1305,8 +1305,8 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
 
-		{ "Choose CSM", 0, 'A' },
 		{ "Calculate lunar ascent", 0, 'C' },
+		{ "", 0, ' ' },
 		{ "", 0, ' ' },
 		{ "Transfer insertion SV to CMC uplink", 0, 'R' },
 		{ "Transfer maneuver to MPT", 0, 'U' },
@@ -1322,8 +1322,8 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	RegisterFunction("", OAPI_KEY_S, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_E, &ApolloRTCCMFD::menuVoid);
 
-	RegisterFunction("CSM", OAPI_KEY_A, &ApolloRTCCMFD::set_CSMVessel);
 	RegisterFunction("CLC", OAPI_KEY_C, &ApolloRTCCMFD::menuLAPCalc);
+	RegisterFunction("", OAPI_KEY_A, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_Q, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("UPL", OAPI_KEY_R, &ApolloRTCCMFD::menuLunarLiftoffSaveInsertionSV);
 	RegisterFunction("MPT", OAPI_KEY_U, &ApolloRTCCMFD::menuTransferPoweredAscentToMPT);
