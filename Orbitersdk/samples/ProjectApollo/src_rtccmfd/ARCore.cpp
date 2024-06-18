@@ -3704,7 +3704,7 @@ int ARCore::subThread()
 		opt.R_LS = OrbMech::r_from_latlong(GC->rtcc->BZLAND.lat[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.lng[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.rad[RTCC_LMPOS_BEST]);
 		opt.t_land = GC->rtcc->CZTDTGTU.GETTD;
 
-		PADSolGood = GC->rtcc->PDI_PAD(&opt, temppdipad);
+		PADSolGood = GC->rtcc->PDI_PAD(opt, temppdipad);
 
 		if (PADSolGood)
 		{
@@ -4289,7 +4289,7 @@ int ARCore::subThread()
 				opt.REFSMMAT = GC->rtcc->EZJGMTX1.data[0].REFSMMAT;
 				opt.SxtStarCheckAttitudeOpt = GC->EntryPADSxtStarCheckAttOpt;
 
-				GC->rtcc->LunarEntryPAD(&opt, GC->lunarentrypad);
+				GC->rtcc->LunarEntryPAD(opt, GC->lunarentrypad);
 			}
 		}
 

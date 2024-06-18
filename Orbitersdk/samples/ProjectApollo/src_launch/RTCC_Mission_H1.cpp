@@ -2186,7 +2186,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		opt.sv0 = sv;
 		opt.t_land = CZTDTGTU.GETTD;
 
-		PDI_PAD(&opt, *form);
+		PDI_PAD(opt, *form);
 	}
 	break;
 	case 71: //PDI ABORT PAD
@@ -3003,13 +3003,14 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 
 		opt.dV_LVLH = calcParams.DVSTORE1;
 		opt.enginetype = RTCC_ENGINETYPE_LMRCSPLUS4;
-		opt.KFactor = GETfromGMT(GetAGSClockZero());
 		opt.REFSMMAT = EZJGMTX3.data[RTCC_REFSMMAT_TYPE_LLD - 1].REFSMMAT;
-		opt.sv0 = calcParams.SVSTORE1;
+		opt.sv0 = ConvertSVtoEphemData(calcParams.SVSTORE1);
 		opt.t_CSI = calcParams.CSI;
 		opt.t_TPI = calcParams.TPI;
+		opt.WeightsTable.CC[RTCC_CONFIG_A] = true;
+		opt.WeightsTable.ConfigWeight = opt.WeightsTable.LMAscWeight = calcParams.SVSTORE1.mass;
 
-		AP10CSIPAD(&opt, *form);
+		AP10CSIPAD(opt, *form);
 		form->type = 1;
 	}
 	break;
@@ -3599,7 +3600,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		entopt.REFSMMAT = REFSMMAT;
 		entopt.sv0 = sv;
 
-		LunarEntryPAD(&entopt, *form);
+		LunarEntryPAD(entopt, *form);
 		sprintf(form->Area[0], "MIDPAC");
 		if (entopt.direct == false)
 		{
