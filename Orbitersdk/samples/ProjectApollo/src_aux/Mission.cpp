@@ -122,6 +122,7 @@ namespace mission {
 		bCrossPointerReversePolarity = false;
 		bCrossPointerShades = false;
 		iLMNumber = 5; //LM-5
+		bLMEventTimerReverseAtZero = false;
 		strCDRName = "CDR";
 		strCMPName = "CMP";
 		strLMPName = "LMP";
@@ -285,6 +286,10 @@ namespace mission {
 			}
 			else if (!_strnicmp(line, "LMNumber=", 9)) {
 				sscanf(line + 9, "%d", &iLMNumber);
+			}
+			else if (!_strnicmp(line, "LMEventTimerReverseAtZero=", 26)) {
+				strncpy(buffer, line + 26, 255);
+				bLMEventTimerReverseAtZero = !_strnicmp(buffer, "TRUE", 4);
 			}
 			else if (!_strnicmp(line, "CDRVesselName=", 14)) {
 				strncpy(buffer, line + 14, 255);
@@ -744,5 +749,10 @@ namespace mission {
 	const std::string& Mission::GetLMPSuitName() const
 	{
 		return strLMPSuitName;
+	}
+
+	bool Mission::IsLMEventTimerReversingAtZero() const
+	{
+		return bLMEventTimerReverseAtZero;
 	}
 }
