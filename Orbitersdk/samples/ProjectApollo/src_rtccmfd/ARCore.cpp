@@ -4299,20 +4299,19 @@ int ARCore::subThread()
 	case 32: //Map Update
 	{
 		EphemerisData sv0;
+		double gmt;
+
+		if (mapUpdateGET <= 0.0)
+		{
+			gmt = GC->rtcc->RTCCPresentTimeGMT();
+		}
+		else
+		{
+			gmt = GC->rtcc->GMTfromGET(mapUpdateGET);
+		}
 
 		if (GC->MissionPlanningActive)
 		{
-			double gmt;
-
-			if (mapUpdateGET <= 0.0)
-			{
-				gmt = GC->rtcc->RTCCPresentTimeGMT();
-			}
-			else
-			{
-				gmt = GC->rtcc->GMTfromGET(mapUpdateGET);
-			}
-
 			if (GC->rtcc->EMSFFV(gmt, RTCC_MPT_CSM, sv0))
 			{
 				Result = DONE;
@@ -4338,11 +4337,10 @@ int ARCore::subThread()
 			}
 
 			sv0 = GC->rtcc->StateVectorCalcEphem(v);
-			if (mapUpdateGET > 0)
-			{
-				sv0 = GC->rtcc->coast(sv0, GC->rtcc->GMTfromGET(mapUpdateGET) - sv0.GMT);
-			}
 		}
+
+		//Coast to desired GMT
+		sv0 = GC->rtcc->coast(sv0, gmt - sv0.GMT);
 
 		if (mappage == 0)
 		{
