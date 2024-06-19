@@ -2468,6 +2468,7 @@ void LEM::CreateMissionSpecificSystems()
 	{
 		aeaa = new LEM_AEAA();
 	}
+	EventTimerDisplay.SetReverseAtZero(pMission->IsLMEventTimerReversingAtZero());
 }
 
 // SYSTEMS COMPONENTS
