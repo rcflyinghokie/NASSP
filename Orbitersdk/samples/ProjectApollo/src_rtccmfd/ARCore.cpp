@@ -62,6 +62,89 @@ AR_GCore::AR_GCore(VESSEL* v)
 	AGOP_REFSMMAT = _M(1, 0, 0, 0, 1, 0, 0, 0, 1);
 	AGOP_REFSMMAT_Vehicle = 0;
 
+	tlipad.TB6P = 0.0;
+	tlipad.BurnTime = 0.0;
+	tlipad.dVC = 0.0;
+	tlipad.VI = 0.0;
+	tlipad.SepATT = _V(0.0, 0.0, 0.0);
+	tlipad.IgnATT = _V(0.0, 0.0, 0.0);
+	tlipad.ExtATT = _V(0.0, 0.0, 0.0);
+
+	pdipad.Att = _V(0, 0, 0);
+	pdipad.CR = 0.0;
+	pdipad.DEDA231 = 0.0;
+	pdipad.GETI = 0.0;
+	pdipad.t_go = 0.0;
+
+	earthentrypad.Att400K[0] = _V(0, 0, 0);
+	earthentrypad.BankAN[0] = 0;
+	earthentrypad.DRE[0] = 0;
+	earthentrypad.dVTO[0] = 0;
+	earthentrypad.Lat[0] = 0;
+	earthentrypad.Lng[0] = 0;
+	earthentrypad.PB_BankAN[0] = 0;
+	earthentrypad.PB_DRE[0] = 0;
+	earthentrypad.PB_R400K[0] = 0;
+	earthentrypad.PB_Ret05[0] = 0;
+	earthentrypad.PB_Ret2[0] = 0;
+	earthentrypad.PB_RetBBO[0] = 0;
+	earthentrypad.PB_RetDrog[0] = 0;
+	earthentrypad.PB_RetEBO[0] = 0;
+	earthentrypad.PB_RetRB[0] = 0;
+	earthentrypad.PB_RTGO[0] = 0;
+	earthentrypad.PB_VIO[0] = 0;
+	earthentrypad.Ret05[0] = 0;
+	earthentrypad.Ret2[0] = 0;
+	earthentrypad.RetBBO[0] = 0;
+	earthentrypad.RetDrog[0] = 0;
+	earthentrypad.RetEBO[0] = 0;
+	earthentrypad.RetRB[0] = 0;
+	earthentrypad.RTGO[0] = 0;
+	earthentrypad.VIO[0] = 0;
+
+	lunarentrypad.Att05[0] = _V(0, 0, 0);
+	lunarentrypad.BSS[0] = 0;
+	lunarentrypad.DO[0] = 0.0;
+	lunarentrypad.Gamma400K[0] = 0.0;
+	lunarentrypad.GETHorCheck[0] = 0.0;
+	lunarentrypad.Lat[0] = 0.0;
+	lunarentrypad.LiftVector[0][0] = 0;
+	lunarentrypad.Lng[0] = 0.0;
+	lunarentrypad.MaxG[0] = 0.0;
+	lunarentrypad.PitchHorCheck[0] = 0.0;
+	lunarentrypad.RET05[0] = 0.0;
+	lunarentrypad.RRT[0] = 0.0;
+	lunarentrypad.RTGO[0] = 0.0;
+	lunarentrypad.SFT[0] = 0.0;
+	lunarentrypad.SPA[0] = 0.0;
+	lunarentrypad.SXP[0] = 0.0;
+	lunarentrypad.SXTS[0] = 0;
+	lunarentrypad.TRN[0] = 0;
+	lunarentrypad.V400K[0] = 0.0;
+	lunarentrypad.VIO[0] = 0.0;
+	lunarentrypad.RETBBO[0] = 0.0;
+	lunarentrypad.RETEBO[0] = 0.0;
+	lunarentrypad.RETDRO[0] = 0.0;
+	lunarentrypad.RETVCirc[0] = 0.0;
+	lunarentrypad.DLMax[0] = 0.0;
+	lunarentrypad.DLMin[0] = 0.0;
+	lunarentrypad.VLMax[0] = 0.0;
+	lunarentrypad.VLMin[0] = 0.0;
+
+	entrypadopt = 0;
+	EntryPADSxtStarCheckAttOpt = true;
+
+	LmkLat = 0;
+	LmkLng = 0;
+	LmkTime = 0;
+	LmkElevation = 35.0*RAD;
+	landmarkpad.T1[0] = 0;
+	landmarkpad.T2[0] = 0;
+	landmarkpad.CRDist[0] = 0;
+	landmarkpad.Alt[0] = 0;
+	landmarkpad.Lat[0] = 0;
+	landmarkpad.Lng05[0] = 0;
+
 	int mission = 0;
 
 	if (strcmp(v->GetName(), "AS-205") == 0)
@@ -581,56 +664,14 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	RTEASTType = 76;
 
 	SVDesiredGET = -1;
-	manpad.Trun = 0.0;
-	manpad.Shaft = 0.0;
-	manpad.Star = 0;
-	manpad.BSSStar = 0;
-	manpad.SPA = 0.0;
-	manpad.SXP = 0.0;
-	manpad.Att = _V(0, 0, 0);
-	manpad.GDCangles = _V(0, 0, 0);
-	//GDCset = 0;
-	manpad.SetStars[0] = 0;
-	manpad.SetStars[1] = 0;
 	HeadsUp = false;
-	manpad.HA = 0.0;
-	manpad.HP = 0.0;
-	manpad.Weight = 0.0;
-	manpad.burntime = 0.0;
-	manpad.Vt = 0.0;
-	manpad.Vc = 0.0;
-	manpad.pTrim = 0.0;
-	manpad.yTrim = 0.0;
-	manpad.LMWeight = 0.0;
-	lmmanpad.Att = _V(0, 0, 0);
-	lmmanpad.BSSStar = 0;
-	lmmanpad.burntime = 0.0;
-	lmmanpad.CSMWeight = 0.0;
-	lmmanpad.dV = _V(0, 0, 0);
-	lmmanpad.dVR = 0.0;
-	lmmanpad.dV_AGS = _V(0, 0, 0);
-	lmmanpad.GETI = 0.0;
-	lmmanpad.HA = 0.0;
-	lmmanpad.HP = 0.0;
-	lmmanpad.LMWeight = 0.0;
-	lmmanpad.SPA = 0.0;
-	lmmanpad.SXP = 0.0;
-	lmmanpad.IMUAtt = _V(0, 0, 0);
-	sprintf(lmmanpad.remarks, "");
-	entrypadopt = 0;
-	EntryPADSxtStarCheckAttOpt = true;
+
 	manpadenginetype = RTCC_ENGINETYPE_CSMSPS;
-	TPI_PAD.AZ = 0.0;
-	TPI_PAD.dH_TPI = 0.0;
-	TPI_PAD.Backup_dV = _V(0.0, 0.0, 0.0);
-	TPI_PAD.EL = 0.0;
-	TPI_PAD.R = 0.0;
-	TPI_PAD.Rdot = 0.0;
-	TPI_PAD.dH_Max = 0.0;
-	TPI_PAD.Backup_bT = _V(0.0, 0.0, 0.0);
 	sxtstardtime = -30.0*60.0;
 	manpad_ullage_dt = 0.0;
 	manpad_ullage_opt = true;
+	ManPADMPT = 1;
+	ManPADMPTManeuver = 1;
 
 	mapupdate.LOSGET = 0.0;
 	mapupdate.AOSGET = 0.0;
@@ -650,34 +691,10 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 
 	landingzone = 0;
 	entryprecision = -1;
-	
-	tlipad.TB6P = 0.0;
-	tlipad.BurnTime = 0.0;
-	tlipad.dVC = 0.0;
-	tlipad.VI = 0.0;
-	tlipad.SepATT = _V(0.0, 0.0, 0.0);
-	tlipad.IgnATT = _V(0.0, 0.0, 0.0);
-	tlipad.ExtATT = _V(0.0, 0.0, 0.0);
-
-	pdipad.Att = _V(0, 0, 0);
-	pdipad.CR = 0.0;
-	pdipad.DEDA231 = 0.0;
-	pdipad.GETI = 0.0;
-	pdipad.t_go = 0.0;
 
 	subThreadMode = 0;
 	subThreadStatus = DONE;
 	IsCSMCalculation = false;
-
-	LmkLat = 0;
-	LmkLng = 0;
-	LmkTime = 0;
-	landmarkpad.T1[0] = 0;
-	landmarkpad.T2[0] = 0;
-	landmarkpad.CRDist[0] = 0;
-	landmarkpad.Alt[0] = 0;
-	landmarkpad.Lat[0] = 0;
-	landmarkpad.Lng05[0] = 0;
 
 	VECoption = 0;
 	VECdirection = 0;
@@ -724,61 +741,6 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	EMPUplinkMaxNumber = 0;
 
 	LVDCLaunchAzimuth = 0.0;
-
-	earthentrypad.Att400K[0] = _V(0, 0, 0);
-	earthentrypad.BankAN[0] = 0;
-	earthentrypad.DRE[0] = 0;
-	earthentrypad.dVTO[0] = 0;
-	earthentrypad.Lat[0] = 0;
-	earthentrypad.Lng[0] = 0;
-	earthentrypad.PB_BankAN[0] = 0;
-	earthentrypad.PB_DRE[0] = 0;
-	earthentrypad.PB_R400K[0] = 0;
-	earthentrypad.PB_Ret05[0] = 0;
-	earthentrypad.PB_Ret2[0] = 0;
-	earthentrypad.PB_RetBBO[0] = 0;
-	earthentrypad.PB_RetDrog[0] = 0;
-	earthentrypad.PB_RetEBO[0] = 0;
-	earthentrypad.PB_RetRB[0] = 0;
-	earthentrypad.PB_RTGO[0] = 0;
-	earthentrypad.PB_VIO[0] = 0;
-	earthentrypad.Ret05[0] = 0;
-	earthentrypad.Ret2[0] = 0;
-	earthentrypad.RetBBO[0] = 0;
-	earthentrypad.RetDrog[0] = 0;
-	earthentrypad.RetEBO[0] = 0;
-	earthentrypad.RetRB[0] = 0;
-	earthentrypad.RTGO[0] = 0;
-	earthentrypad.VIO[0] = 0;
-
-	lunarentrypad.Att05[0] = _V(0, 0, 0);
-	lunarentrypad.BSS[0] = 0;
-	lunarentrypad.DO[0] = 0.0;
-	lunarentrypad.Gamma400K[0] = 0.0;
-	lunarentrypad.GETHorCheck[0] = 0.0;
-	lunarentrypad.Lat[0] = 0.0;
-	lunarentrypad.LiftVector[0][0] = 0;
-	lunarentrypad.Lng[0] = 0.0;
-	lunarentrypad.MaxG[0] = 0.0;
-	lunarentrypad.PitchHorCheck[0] = 0.0;
-	lunarentrypad.RET05[0] = 0.0;
-	lunarentrypad.RRT[0] = 0.0;
-	lunarentrypad.RTGO[0] = 0.0;
-	lunarentrypad.SFT[0] = 0.0;
-	lunarentrypad.SPA[0] = 0.0;
-	lunarentrypad.SXP[0] = 0.0;
-	lunarentrypad.SXTS[0] = 0;
-	lunarentrypad.TRN[0] = 0;
-	lunarentrypad.V400K[0] = 0.0;
-	lunarentrypad.VIO[0] = 0.0;
-	lunarentrypad.RETBBO[0] = 0.0;
-	lunarentrypad.RETEBO[0] = 0.0;
-	lunarentrypad.RETDRO[0] = 0.0;
-	lunarentrypad.RETVCirc[0] = 0.0;
-	lunarentrypad.DLMax[0] = 0.0;
-	lunarentrypad.DLMin[0] = 0.0;
-	lunarentrypad.VLMax[0] = 0.0;
-	lunarentrypad.VLMin[0] = 0.0;
 
 	navcheckpad.alt[0] = 0.0;
 	navcheckpad.lat[0] = 0.0;
@@ -3190,7 +3152,7 @@ int ARCore::subThread()
 		opt.sv_P = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pLM);
 		opt.mass = GC->rtcc->pCSM->GetMass();
 
-		GC->rtcc->AP7TPIPAD(opt, TPI_PAD);
+		GC->rtcc->AP7TPIPAD(opt, GC->TPI_PAD);
 
 		Result = DONE;
 	}
@@ -3267,7 +3229,7 @@ int ARCore::subThread()
 		opt.SeparationAttitude = lvdc->XLunarAttitude;
 		opt.sv0 = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pCSM);
 
-		GC->rtcc->TLI_PAD(opt, tlipad);
+		GC->rtcc->TLI_PAD(opt, GC->tlipad);
 
 		Result = DONE;
 	}
@@ -3279,23 +3241,107 @@ int ARCore::subThread()
 
 		if (GC->MissionPlanningActive)
 		{
-			double GMT;
-			EphemerisData EPHEM;
-			int mpt;
+			//Get pointer to MPT maneuver
+			MissionPlanTable *mpt = GC->rtcc->GetMPTPointer(ManPADMPT);
 
-			GMT = GC->rtcc->GMTfromGET(P30TIG);
-			mpt = IsCSMCalculation ? RTCC_MPT_CSM : RTCC_MPT_LM;
-
-			if (GC->rtcc->EMSFFV(GMT, mpt, sv_A))
+			if (mpt == NULL)
 			{
 				Result = DONE;
 				break;
 			}
 
-			PLAWDTInput pin;
-			pin.T_UP = GMT;
-			pin.TableCode = mpt;
-			GC->rtcc->PLAWDT(pin, WeightsTable);
+			unsigned num = (unsigned)(ManPADMPTManeuver - 1);
+
+			//Does the maneuver exist?
+			if (num >= mpt->mantable.size())
+			{
+				Result = DONE;
+				break;
+			}
+
+			MPTManeuver *man = &mpt->mantable[num];
+
+			if (IsCSMCalculation)
+			{
+				//Is CSM maneuver?
+				if (man->TVC != RTCC_MPT_CSM)
+				{
+					Result = DONE;
+					break;
+				}
+			}
+			else
+			{
+				//Is LM maneuver?
+				if (man->TVC != RTCC_MPT_LM)
+				{
+					Result = DONE;
+					break;
+				}
+			}
+
+			//Also only allow External DV burns
+			if (man->AttitudeCode != RTCC_ATTITUDE_PGNS_EXDV)
+			{
+				Result = DONE;
+				break;
+			}
+
+			MPTVehicleDataBlock *CommonBlock;
+
+			//Load data
+			sv_A.R = man->R_1;
+			sv_A.V = man->V_1;
+			sv_A.GMT = man->GMT_1;
+			sv_A.RBI = man->RefBodyInd;
+
+			if (num == 0)
+			{
+				CommonBlock = &mpt->CommonBlock;
+			}
+			else
+			{
+				CommonBlock = &mpt->mantable[num - 1].CommonBlock;
+			}
+
+			WeightsTable.CC = CommonBlock->ConfigCode;
+			WeightsTable.CSMArea = CommonBlock->CSMArea;
+			WeightsTable.CSMWeight = CommonBlock->CSMMass;
+			WeightsTable.KFactor = mpt->KFactor;
+			WeightsTable.LMAscArea = CommonBlock->LMAscentArea;
+			WeightsTable.LMAscWeight = CommonBlock->LMAscentMass;
+			WeightsTable.LMDscArea = CommonBlock->LMDescentArea;
+			WeightsTable.LMDscWeight = CommonBlock->LMDescentMass;
+			WeightsTable.SIVBArea = CommonBlock->SIVBArea;
+			WeightsTable.SIVBWeight = CommonBlock->SIVBMass;
+
+			if (num == 0)
+			{
+				WeightsTable.ConfigArea = mpt->ConfigurationArea;
+				WeightsTable.ConfigWeight = mpt->TotalInitMass;
+			}
+			else
+			{
+				WeightsTable.ConfigArea = mpt->mantable[num - 1].TotalAreaAfter;
+				WeightsTable.ConfigWeight = mpt->mantable[num - 1].TotalMassAfter;
+			}
+
+			P30TIG = GC->rtcc->GETfromGMT(man->GMT_BI);
+			dV_LVLH = man->dV_LVLH;
+			manpadenginetype = man->Thruster;
+			HeadsUp = man->HeadsUpDownInd;
+			manpad_ullage_dt = man->dt_ullage;
+			manpad_ullage_opt = man->UllageThrusterOpt;
+
+			//Save maneuver code under remarks
+			if (IsCSMCalculation)
+			{
+				sprintf(GC->manpad.remarks, "%s", man->code.c_str());
+			}
+			else
+			{
+				sprintf(GC->lmmanpad.remarks, "%s", man->code.c_str());
+			}
 		}
 		else
 		{
@@ -3334,7 +3380,7 @@ int ARCore::subThread()
 			opt.UllageDT = manpad_ullage_dt;
 			opt.UllageThrusterOpt = manpad_ullage_opt;
 
-			GC->rtcc->AP11ManeuverPAD(opt, manpad);
+			GC->rtcc->AP11ManeuverPAD(opt, GC->manpad);
 		}
 		else
 		{
@@ -3349,7 +3395,7 @@ int ARCore::subThread()
 			opt.RV_MCC = sv_A;
 			opt.WeightsTable = WeightsTable;
 
-			GC->rtcc->AP11LMManeuverPAD(opt, lmmanpad);
+			GC->rtcc->AP11LMManeuverPAD(opt, GC->lmmanpad);
 		}
 
 		Result = DONE;
@@ -3699,11 +3745,11 @@ int ARCore::subThread()
 		opt.R_LS = OrbMech::r_from_latlong(GC->rtcc->BZLAND.lat[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.lng[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.rad[RTCC_LMPOS_BEST]);
 		opt.t_land = GC->rtcc->CZTDTGTU.GETTD;
 
-		PADSolGood = GC->rtcc->PDI_PAD(&opt, temppdipad);
+		PADSolGood = GC->rtcc->PDI_PAD(opt, temppdipad);
 
 		if (PADSolGood)
 		{
-			pdipad = temppdipad;
+			GC->pdipad = temppdipad;
 		}
 
 		Result = DONE;
@@ -4213,7 +4259,7 @@ int ARCore::subThread()
 		hEarth = oapiGetObjectByName("Earth");
 		mu = GGRAV * oapiGetMass(hEarth);
 
-		if (entrypadopt == 0)
+		if (GC->entrypadopt == 0)
 		{
 			EarthEntryPADOpt opt;
 
@@ -4246,12 +4292,12 @@ int ARCore::subThread()
 			if (peri < oapiGetSize(gravref) + 50 * 1852.0)
 			{
 				opt.preburn = false;
-				GC->rtcc->EarthOrbitEntry(opt, earthentrypad);
+				GC->rtcc->EarthOrbitEntry(opt, GC->earthentrypad);
 			}
 			else
 			{
 				opt.preburn = true;
-				GC->rtcc->EarthOrbitEntry(opt, earthentrypad);
+				GC->rtcc->EarthOrbitEntry(opt, GC->earthentrypad);
 			}
 		}
 		else
@@ -4282,9 +4328,9 @@ int ARCore::subThread()
 				opt.lat = GC->rtcc->RZDBSC1.lat_T;
 				opt.lng = GC->rtcc->RZDBSC1.lng_T;
 				opt.REFSMMAT = GC->rtcc->EZJGMTX1.data[0].REFSMMAT;
-				opt.SxtStarCheckAttitudeOpt = EntryPADSxtStarCheckAttOpt;
+				opt.SxtStarCheckAttitudeOpt = GC->EntryPADSxtStarCheckAttOpt;
 
-				GC->rtcc->LunarEntryPAD(&opt, lunarentrypad);
+				GC->rtcc->LunarEntryPAD(opt, GC->lunarentrypad);
 			}
 		}
 
@@ -4294,20 +4340,19 @@ int ARCore::subThread()
 	case 32: //Map Update
 	{
 		EphemerisData sv0;
+		double gmt;
 
-		if (GC->MissionPlanningActive && GC->rtcc->MPTHasManeuvers(RTCC_MPT_CSM))
+		if (mapUpdateGET <= 0.0)
 		{
-			double gmt;
+			gmt = GC->rtcc->RTCCPresentTimeGMT();
+		}
+		else
+		{
+			gmt = GC->rtcc->GMTfromGET(mapUpdateGET);
+		}
 
-			if (mapUpdateGET <= 0.0)
-			{
-				gmt = GC->rtcc->RTCCPresentTimeGMT();
-			}
-			else
-			{
-				gmt = GC->rtcc->GMTfromGET(mapUpdateGET);
-			}
-
+		if (GC->MissionPlanningActive)
+		{
 			if (GC->rtcc->EMSFFV(gmt, RTCC_MPT_CSM, sv0))
 			{
 				Result = DONE;
@@ -4333,11 +4378,10 @@ int ARCore::subThread()
 			}
 
 			sv0 = GC->rtcc->StateVectorCalcEphem(v);
-			if (mapUpdateGET > 0)
-			{
-				sv0 = GC->rtcc->coast(sv0, GC->rtcc->GMTfromGET(mapUpdateGET) - sv0.GMT);
-			}
 		}
+
+		//Coast to desired GMT
+		sv0 = GC->rtcc->coast(sv0, gmt - sv0.GMT);
 
 		if (mappage == 0)
 		{
@@ -4378,26 +4422,28 @@ int ARCore::subThread()
 	case 33: //Landmark Tracking PAD
 	{
 		LMARKTRKPADOpt opt;
-		SV sv0;
+		EphemerisData sv0, sv1;
 
-		if (GC->MissionPlanningActive && GC->rtcc->MPTHasManeuvers(RTCC_MPT_CSM))
+		double get, gmt;
+
+		if (GC->LmkTime <= 0.0)
 		{
-			if (LmkTime <= 0.0)
+			gmt = GC->rtcc->RTCCPresentTimeGMT();
+			get = GC->rtcc->GETfromGMT(gmt);
+		}
+		else
+		{
+			get = GC->LmkTime;
+			gmt = GC->rtcc->GMTfromGET(get);
+		}
+
+		if (GC->MissionPlanningActive)
+		{
+			EphemerisData sv;
+			if (GC->rtcc->EMSFFV(gmt, RTCC_MPT_CSM, sv0))
 			{
-				GC->rtcc->NewMPTTrajectory(RTCC_MPT_CSM, sv0);
-			}
-			else
-			{
-				EphemerisData sv;
-				if (GC->rtcc->EMSFFV(GC->rtcc->GMTfromGET(LmkTime), RTCC_MPT_CSM, sv))
-				{
-					Result = DONE;
-					break;
-				}
-				sv0.R = sv.R;
-				sv0.V = sv.V;
-				sv0.MJD = OrbMech::MJDfromGET(sv.GMT, GC->rtcc->GetGMTBase());
-				sv0.gravref = GC->rtcc->GetGravref(sv.RBI);
+				Result = DONE;
+				break;
 			}
 		}
 		else
@@ -4410,16 +4456,17 @@ int ARCore::subThread()
 				break;
 			}
 
-			sv0 = GC->rtcc->StateVectorCalc(v);
+			sv0 = GC->rtcc->StateVectorCalcEphem(v);
 		}
 
-		opt.lat[0] = LmkLat;
-		opt.LmkTime[0] = LmkTime;
-		opt.lng[0] = LmkLng;
+		opt.lat[0] = GC->LmkLat;
+		opt.LmkTime[0] = get;
+		opt.lng[0] = GC->LmkLng;
 		opt.sv0 = sv0;
+		opt.Elevation = GC->LmkElevation;
 		opt.entries = 1;
 
-		GC->rtcc->LandmarkTrackingPAD(&opt, landmarkpad);
+		GC->rtcc->LandmarkTrackingPAD(opt, GC->landmarkpad);
 
 		Result = DONE;
 	}
@@ -4574,7 +4621,7 @@ int ARCore::subThread()
 			PMMMPTInput in;
 
 			//Get all required data for PMMMPT and error checking
-			if (GetVesselParameters(GC->rtcc->PZMYSAVE.plan[0] == RTCC_MPT_CSM, vesselisdocked, GC->rtcc->med_m72.Thruster, in.CONFIG, in.VC, in.CSMWeight, in.LMWeight))
+			if (GetVesselParameters(GC->rtcc->PZTIPREG.MAN_VEH == RTCC_MPT_CSM, vesselisdocked, GC->rtcc->med_m72.Thruster, in.CONFIG, in.VC, in.CSMWeight, in.LMWeight))
 			{
 				//Error
 				Result = DONE;
@@ -4841,7 +4888,7 @@ int ARCore::subThread()
 				dV_LVLH = DV;
 				manpadenginetype = GC->rtcc->med_m65.Thruster;
 				HeadsUp = true;
-				manpad_ullage_dt = GC->rtcc->med_m65.UllageDT;
+				manpad_ullage_dt = in.DETU;
 				manpad_ullage_opt = GC->rtcc->med_m65.UllageQuads;
 			}
 		}

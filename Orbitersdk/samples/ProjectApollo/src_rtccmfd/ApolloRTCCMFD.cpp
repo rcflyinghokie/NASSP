@@ -521,35 +521,35 @@ void ApolloRTCCMFD::ThrusterName(char *Buff, int n)
 	}
 	else if (n == RTCC_ENGINETYPE_CSMRCSPLUS2)
 	{
-		sprintf(Buff, "CSM RCS +X (2 quads)");
+		sprintf(Buff, "SM RCS 2+X");
 	}
 	else if (n == RTCC_ENGINETYPE_LMRCSPLUS2)
 	{
-		sprintf(Buff, "LM RCS +X (2 quads)");
+		sprintf(Buff, "LM RCS 2+X");
 	}
 	else if (n == RTCC_ENGINETYPE_CSMRCSPLUS4)
 	{
-		sprintf(Buff, "CSM RCS +X (4 quads)");
+		sprintf(Buff, "SM RCS 4+X");
 	}
 	else if (n == RTCC_ENGINETYPE_LMRCSPLUS4)
 	{
-		sprintf(Buff, "LM RCS +X (4 quads)");
+		sprintf(Buff, "LM RCS 4+X");
 	}
 	else if (n == RTCC_ENGINETYPE_CSMRCSMINUS2)
 	{
-		sprintf(Buff, "CSM RCS -X (2 quads)");
+		sprintf(Buff, "SM RCS 2-X");
 	}
 	else if (n == RTCC_ENGINETYPE_LMRCSMINUS2)
 	{
-		sprintf(Buff, "LM RCS -X (2 quads)");
+		sprintf(Buff, "LM RCS 2-X");
 	}
 	else if (n == RTCC_ENGINETYPE_CSMRCSMINUS4)
 	{
-		sprintf(Buff, "CSM RCS -X (4 quads)");
+		sprintf(Buff, "SM RCS 4-X");
 	}
 	else if (n == RTCC_ENGINETYPE_LMRCSMINUS4)
 	{
-		sprintf(Buff, "LM RCS -X (4 quads)");
+		sprintf(Buff, "LM RCS 4-X");
 	}
 	else if (n == RTCC_ENGINETYPE_LOX_DUMP)
 	{
@@ -5954,10 +5954,23 @@ void ApolloRTCCMFD::menuCalcManPAD()
 	switch (G->manpadopt)
 	{
 	case 0:
-		G->ManeuverPAD(true);
-		break;
 	case 1:
-		G->ManeuverPAD(false);
+		if (GC->MissionPlanningActive)
+		{
+			bool ManPADMPTInput(void *id, char *str, void *data);
+			oapiOpenInputBox("Enter MPT (CSM or LEM) and maneuver number (1-15):", ManPADMPTInput, 0, 20, (void*)this);
+		}
+		else
+		{
+			if (G->manpadopt == 0)
+			{
+				G->ManeuverPAD(true);
+			}
+			else
+			{
+				G->ManeuverPAD(false);
+			}
+		}
 		break;
 	case 2:
 		G->TPIPAD();
@@ -5968,6 +5981,47 @@ void ApolloRTCCMFD::menuCalcManPAD()
 	case 4:
 		G->PDI_PAD();
 		break;
+	}
+}
+
+bool ManPADMPTInput(void *id, char *str, void *data)
+{
+	std::string mptname;
+	char Buff[128];
+	int mpt, num;
+	if (sscanf(str, "%s %d", Buff, &num) == 2)
+	{
+		mptname.assign(Buff);
+		if (mptname == "CSM")
+		{
+			mpt = RTCC_MPT_CSM;
+		}
+		else if (mptname == "LEM")
+		{
+			mpt = RTCC_MPT_LM;
+		}
+		else return false;
+
+		if (num <= 0 || num > 15) return false;
+
+		((ApolloRTCCMFD*)data)->set_ManPADMPTInput(mpt, num);
+		return true;
+	}
+	return false;
+}
+
+void ApolloRTCCMFD::set_ManPADMPTInput(int mpt, int num)
+{
+	G->ManPADMPT = mpt;
+	G->ManPADMPTManeuver = num;
+
+	if (G->manpadopt == 0)
+	{
+		G->ManeuverPAD(true);
+	}
+	else
+	{
+		G->ManeuverPAD(false);
 	}
 }
 
@@ -5983,13 +6037,13 @@ void ApolloRTCCMFD::menuCalcMapUpdate()
 
 void ApolloRTCCMFD::menuSwitchEntryPADOpt()
 {
-	if (G->entrypadopt < 1)
+	if (GC->entrypadopt < 1)
 	{
-		G->entrypadopt++;
+		GC->entrypadopt++;
 	}
 	else
 	{
-		G->entrypadopt = 0;
+		GC->entrypadopt = 0;
 	}
 }
 
@@ -6334,9 +6388,9 @@ void ApolloRTCCMFD::GetREFSMMATfromAGC()
 
 void ApolloRTCCMFD::menuCycleLunarEntryPADSxtOption()
 {
-	if (G->entrypadopt == 1)
+	if (GC->entrypadopt == 1)
 	{
-		G->EntryPADSxtStarCheckAttOpt = !G->EntryPADSxtStarCheckAttOpt;
+		GC->EntryPADSxtStarCheckAttOpt = !GC->EntryPADSxtStarCheckAttOpt;
 	}
 }
 
@@ -6836,24 +6890,29 @@ void ApolloRTCCMFD::menuLmkPADCalc()
 
 void ApolloRTCCMFD::menuSetLmkTime()
 {
-	GenericGETInput(&G->LmkTime, "Choose the guess for T1:");
+	GenericGETInput(&GC->LmkTime, "Choose the guess for T1:");
+}
+
+void ApolloRTCCMFD::menuSetLmkElevation()
+{
+	GenericDoubleInput(&GC->LmkElevation, "Choose the T2 elevation in degrees (0-90°):", RAD);
 }
 
 void ApolloRTCCMFD::menuSetLmkLat()
 {
-	GenericDoubleInput(&G->LmkLat, "Choose the landmark latitude:", RAD);
+	GenericDoubleInput(&GC->LmkLat, "Choose the landmark latitude:", RAD);
 }
 
 void ApolloRTCCMFD::menuSetLmkLng()
 {
-	GenericDoubleInput(&G->LmkLng, "Choose the landmark longitude:", RAD);
+	GenericDoubleInput(&GC->LmkLng, "Choose the landmark longitude:", RAD);
 }
 
 void ApolloRTCCMFD::menuLmkUseLandingSite()
 {
 	//Load RTCC stored landing site coordinates into input for P22 PAD
-	G->LmkLat = GC->rtcc->BZLAND.lat[0];
-	G->LmkLng = GC->rtcc->BZLAND.lng[0];
+	GC->LmkLat = GC->rtcc->BZLAND.lat[0];
+	GC->LmkLng = GC->rtcc->BZLAND.lng[0];
 }
 
 void ApolloRTCCMFD::menuSetLDPPVectorTime()

@@ -341,13 +341,15 @@ struct AP11LMManPADOpt
 
 struct AP10CSIPADOpt
 {
-	SV sv0;
-	double t_CSI;
-	double t_TPI;
-	VECTOR3 dV_LVLH;
-	MATRIX3 REFSMMAT;
-	int enginetype = RTCC_ENGINETYPE_CSMRCSPLUS4; //Engine type used for the maneuver
-	double KFactor = 0.0;
+	AP10CSIPADOpt();
+
+	EphemerisData sv0;			// State vector of active vehicle
+	double t_CSI;				// Time of CSI (GET)
+	double t_TPI;				// Time of TPI (GET)
+	VECTOR3 dV_LVLH;			// DV of CSI maneuver (LVLH)
+	MATRIX3 REFSMMAT;			// REFSMMAT during the maneuver
+	int enginetype;				//Engine type used for the maneuver
+	PLAWDTOutput WeightsTable;	// Table with spacecraft weights
 };
 
 struct AP7TPIPADOpt
@@ -370,7 +372,9 @@ struct AP9LMTPIPADOpt
 
 struct AP9LMCDHPADOpt
 {
-	SV sv_A; //Chaser state vector
+	AP9LMCDHPADOpt();
+
+	EphemerisData sv_A; //Chaser state vector
 	double TIG; //Time of Ignition
 	VECTOR3 dV_LVLH; //Delta V in LVLH coordinates
 	MATRIX3 REFSMMAT;	//REFSMMAT
@@ -717,8 +721,9 @@ struct ASCPADOpt
 
 struct LMARKTRKPADOpt
 {
-	SV sv0; //Input state vector
-	double LmkTime[4]; //initial guess for time over landmark
+	EphemerisData sv0; //Input state vector
+	double Elevation = 35.0*RAD; //Elevation angle at acquisition
+	double LmkTime[4]; //initial guess for time over landmark (GET)
 	double lat[4];		//landmark latitude
 	double lng[4];		//landmark longitude
 	double alt[4] = { 0,0,0,0 };	//landmark altitude
@@ -2443,13 +2448,13 @@ private:
 	void TimeUpdate();
 public:
 	void AP7TPIPAD(const AP7TPIPADOpt &opt, AP7TPI &pad);
-	void AP9LMTPIPAD(AP9LMTPIPADOpt *opt, AP9LMTPI &pad);
-	void AP9LMCDHPAD(AP9LMCDHPADOpt *opt, AP9LMCDH &pad);
+	void AP9LMTPIPAD(const AP9LMTPIPADOpt &opt, AP9LMTPI &pad);
+	void AP9LMCDHPAD(const AP9LMCDHPADOpt &opt, AP9LMCDH &pad);
 	void TLI_PAD(const TLIPADOpt &opt, TLIPAD &pad);
-	bool PDI_PAD(PDIPADOpt* opt, AP11PDIPAD &pad);
-	void LunarAscentPAD(ASCPADOpt opt, AP11LMASCPAD &pad);
+	bool PDI_PAD(const PDIPADOpt &opt, AP11PDIPAD &pad);
+	void LunarAscentPAD(const ASCPADOpt &opt, AP11LMASCPAD &pad);
 	void EarthOrbitEntry(const EarthEntryPADOpt &opt, AP7ENT &pad);
-	void LunarEntryPAD(LunarEntryPADOpt *opt, AP11ENT &pad);
+	void LunarEntryPAD(const LunarEntryPADOpt &opt, AP11ENT &pad);
 	//Conic Fit
 	int PCZYCF(double R1, double R2, double PHIT, double DELT, double VXI2, double VYI2, double VXF1, double VYF1, double SQRMU, int NREVS, int body, double &a, double &e, double &f_T, double &t_PT);
 	int PMMTIS(EphemerisData sv_A1, EphemerisData sv_P1, double dt, double DH, double theta, EphemerisData &sv_A1_apo, EphemerisData &sv_A2, EphemerisData &sv_A2_apo);
@@ -2475,12 +2480,12 @@ public:
 	void AGSStateVectorPAD(const AGSSVOpt &opt, AP11AGSSVPAD &pad);
 	void AP11LMManeuverPAD(const AP11LMManPADOpt &opt, AP11LMMNV &pad);
 	void AP11ManeuverPAD(const AP11ManPADOpt &opt, AP11MNV &pad);
-	void AP10CSIPAD(AP10CSIPADOpt *opt, AP10CSI &pad);
+	void AP10CSIPAD(const AP10CSIPADOpt &opt, AP10CSI &pad);
 	void CSMDAPUpdate(VESSEL *v, AP10DAPDATA &pad, bool docked);
 	void LMDAPUpdate(VESSEL *v, AP10DAPDATA &pad, bool docked, bool asc = false);
 	void RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res);
 	void LunarOrbitMapUpdate(EphemerisData sv0, AP10MAPUPDATE &pad, double pm = -150.0*RAD);
-	void LandmarkTrackingPAD(LMARKTRKPADOpt *opt, AP11LMARKTRKPAD &pad);
+	void LandmarkTrackingPAD(const LMARKTRKPADOpt &opt, AP11LMARKTRKPAD &pad);
 	//S-IVB TLI IGM Pre-Thrust Targeting Module
 	int PMMSPT(PMMSPTInput &in);
 	int PCMSP2(TLITargetingParametersTable *tlitab, int J, double t_D, double &cos_sigma, double &C3, double &e_N, double &RA, double &DEC);
