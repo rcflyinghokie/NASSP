@@ -223,6 +223,31 @@ struct P27PAD {
 
 // APOLLO 11 - MANEUVER
 struct AP11MNV {
+	AP11MNV()
+	{
+		Trun = 0.0;
+		Shaft = 0.0;
+		Star = 0;
+		BSSStar = 0;
+		SPA = 0.0;
+		SXP = 0.0;
+		Att = _V(0, 0, 0);
+		GDCangles = _V(0, 0, 0);
+		SetStars[0] = 0;
+		SetStars[1] = 0;
+		HA = 0.0;
+		HP = 0.0;
+		Weight = 0.0;
+		burntime = 0.0;
+		Vt = 0.0;
+		Vc = 0.0;
+		pTrim = 0.0;
+		yTrim = 0.0;
+		LMWeight = 0.0;
+		dV = _V(0, 0, 0);
+		GETI = 0.0;
+	}
+
 	char purpose[64];	// PURPOSE
 	char PropGuid[64];	// Propulsion & Guidance System
 	double Weight;		// Vehicle weight
@@ -253,7 +278,25 @@ struct AP11MNV {
 
 // APOLLO 11 LM - MANEUVER
 struct AP11LMMNV {
-	AP11LMMNV() : type(0) {}
+	AP11LMMNV::AP11LMMNV()
+	{
+		type = 0;
+		Att = _V(0, 0, 0);
+		BSSStar = 0;
+		burntime = 0.0;
+		CSMWeight = 0.0;
+		dV = _V(0, 0, 0);
+		dVR = 0.0;
+		dV_AGS = _V(0, 0, 0);
+		GETI = 0.0;
+		HA = 0.0;
+		HP = 0.0;
+		LMWeight = 0.0;
+		SPA = 0.0;
+		SXP = 0.0;
+		IMUAtt = _V(0, 0, 0);
+		sprintf(remarks, "");
+	}
 
 	char purpose[64];	// PURPOSE
 	double GETI;		// TIG

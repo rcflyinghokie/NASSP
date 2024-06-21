@@ -5954,10 +5954,23 @@ void ApolloRTCCMFD::menuCalcManPAD()
 	switch (G->manpadopt)
 	{
 	case 0:
-		G->ManeuverPAD(true);
-		break;
 	case 1:
-		G->ManeuverPAD(false);
+		if (GC->MissionPlanningActive)
+		{
+			bool ManPADMPTInput(void *id, char *str, void *data);
+			oapiOpenInputBox("Enter MPT (CSM or LEM) and maneuver number (1-15):", ManPADMPTInput, 0, 20, (void*)this);
+		}
+		else
+		{
+			if (G->manpadopt == 0)
+			{
+				G->ManeuverPAD(true);
+			}
+			else
+			{
+				G->ManeuverPAD(false);
+			}
+		}
 		break;
 	case 2:
 		G->TPIPAD();
@@ -5968,6 +5981,47 @@ void ApolloRTCCMFD::menuCalcManPAD()
 	case 4:
 		G->PDI_PAD();
 		break;
+	}
+}
+
+bool ManPADMPTInput(void *id, char *str, void *data)
+{
+	std::string mptname;
+	char Buff[128];
+	int mpt, num;
+	if (sscanf(str, "%s %d", Buff, &num) == 2)
+	{
+		mptname.assign(Buff);
+		if (mptname == "CSM")
+		{
+			mpt = RTCC_MPT_CSM;
+		}
+		else if (mptname == "LEM")
+		{
+			mpt = RTCC_MPT_LM;
+		}
+		else return false;
+
+		if (num <= 0 || num > 15) return false;
+
+		((ApolloRTCCMFD*)data)->set_ManPADMPTInput(mpt, num);
+		return true;
+	}
+	return false;
+}
+
+void ApolloRTCCMFD::set_ManPADMPTInput(int mpt, int num)
+{
+	G->ManPADMPT = mpt;
+	G->ManPADMPTManeuver = num;
+
+	if (G->manpadopt == 0)
+	{
+		G->ManeuverPAD(true);
+	}
+	else
+	{
+		G->ManeuverPAD(false);
 	}
 }
 

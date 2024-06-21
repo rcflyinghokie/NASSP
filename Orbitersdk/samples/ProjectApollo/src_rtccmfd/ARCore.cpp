@@ -62,42 +62,6 @@ AR_GCore::AR_GCore(VESSEL* v)
 	AGOP_REFSMMAT = _M(1, 0, 0, 0, 1, 0, 0, 0, 1);
 	AGOP_REFSMMAT_Vehicle = 0;
 
-	manpad.Trun = 0.0;
-	manpad.Shaft = 0.0;
-	manpad.Star = 0;
-	manpad.BSSStar = 0;
-	manpad.SPA = 0.0;
-	manpad.SXP = 0.0;
-	manpad.Att = _V(0, 0, 0);
-	manpad.GDCangles = _V(0, 0, 0);
-	manpad.SetStars[0] = 0;
-	manpad.SetStars[1] = 0;
-	manpad.HA = 0.0;
-	manpad.HP = 0.0;
-	manpad.Weight = 0.0;
-	manpad.burntime = 0.0;
-	manpad.Vt = 0.0;
-	manpad.Vc = 0.0;
-	manpad.pTrim = 0.0;
-	manpad.yTrim = 0.0;
-	manpad.LMWeight = 0.0;
-
-	lmmanpad.Att = _V(0, 0, 0);
-	lmmanpad.BSSStar = 0;
-	lmmanpad.burntime = 0.0;
-	lmmanpad.CSMWeight = 0.0;
-	lmmanpad.dV = _V(0, 0, 0);
-	lmmanpad.dVR = 0.0;
-	lmmanpad.dV_AGS = _V(0, 0, 0);
-	lmmanpad.GETI = 0.0;
-	lmmanpad.HA = 0.0;
-	lmmanpad.HP = 0.0;
-	lmmanpad.LMWeight = 0.0;
-	lmmanpad.SPA = 0.0;
-	lmmanpad.SXP = 0.0;
-	lmmanpad.IMUAtt = _V(0, 0, 0);
-	sprintf(lmmanpad.remarks, "");
-
 	TPI_PAD.AZ = 0.0;
 	TPI_PAD.dH_TPI = 0.0;
 	TPI_PAD.Backup_dV = _V(0.0, 0.0, 0.0);
@@ -715,6 +679,8 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	sxtstardtime = -30.0*60.0;
 	manpad_ullage_dt = 0.0;
 	manpad_ullage_opt = true;
+	ManPADMPT = 1;
+	ManPADMPTManeuver = 1;
 
 	mapupdate.LOSGET = 0.0;
 	mapupdate.AOSGET = 0.0;
@@ -3284,23 +3250,100 @@ int ARCore::subThread()
 
 		if (GC->MissionPlanningActive)
 		{
-			double GMT;
-			EphemerisData EPHEM;
-			int mpt;
+			//Get pointer to MPT maneuver
+			MissionPlanTable *mpt = GC->rtcc->GetMPTPointer(ManPADMPT);
 
-			GMT = GC->rtcc->GMTfromGET(P30TIG);
-			mpt = IsCSMCalculation ? RTCC_MPT_CSM : RTCC_MPT_LM;
-
-			if (GC->rtcc->EMSFFV(GMT, mpt, sv_A))
+			if (mpt == NULL)
 			{
 				Result = DONE;
 				break;
 			}
 
-			PLAWDTInput pin;
-			pin.T_UP = GMT;
-			pin.TableCode = mpt;
-			GC->rtcc->PLAWDT(pin, WeightsTable);
+			unsigned num = (unsigned)(ManPADMPTManeuver - 1);
+
+			MPTManeuver *man = &mpt->mantable[num];
+
+			if (IsCSMCalculation)
+			{
+				//Is CSM maneuver?
+				if (man->TVC != RTCC_MPT_CSM)
+				{
+					Result = DONE;
+					break;
+				}
+			}
+			else
+			{
+				//Is LM maneuver?
+				if (man->TVC != RTCC_MPT_LM)
+				{
+					Result = DONE;
+					break;
+				}
+			}
+
+			//Also only allow External DV burns
+			if (man->AttitudeCode != RTCC_ATTITUDE_PGNS_EXDV)
+			{
+				Result = DONE;
+				break;
+			}
+
+			MPTVehicleDataBlock *CommonBlock;
+
+			//Load data
+			sv_A.R = man->R_1;
+			sv_A.V = man->V_1;
+			sv_A.GMT = man->GMT_1;
+			sv_A.RBI = man->RefBodyInd;
+
+			if (num == 0)
+			{
+				CommonBlock = &mpt->CommonBlock;
+			}
+			else
+			{
+				CommonBlock = &mpt->mantable[num - 1].CommonBlock;
+			}
+
+			WeightsTable.CC = CommonBlock->ConfigCode;
+			WeightsTable.CSMArea = CommonBlock->CSMArea;
+			WeightsTable.CSMWeight = CommonBlock->CSMMass;
+			WeightsTable.KFactor = mpt->KFactor;
+			WeightsTable.LMAscArea = CommonBlock->LMAscentArea;
+			WeightsTable.LMAscWeight = CommonBlock->LMAscentMass;
+			WeightsTable.LMDscArea = CommonBlock->LMDescentArea;
+			WeightsTable.LMDscWeight = CommonBlock->LMDescentMass;
+			WeightsTable.SIVBArea = CommonBlock->SIVBArea;
+			WeightsTable.SIVBWeight = CommonBlock->SIVBMass;
+
+			if (num == 0)
+			{
+				WeightsTable.ConfigArea = mpt->ConfigurationArea;
+				WeightsTable.ConfigWeight = mpt->TotalInitMass;
+			}
+			else
+			{
+				WeightsTable.ConfigArea = mpt->mantable[num - 1].TotalAreaAfter;
+				WeightsTable.ConfigWeight = mpt->mantable[num - 1].TotalMassAfter;
+			}
+
+			P30TIG = GC->rtcc->GETfromGMT(man->GMT_BI);
+			dV_LVLH = man->dV_LVLH;
+			manpadenginetype = man->Thruster;
+			HeadsUp = man->HeadsUpDownInd;
+			manpad_ullage_dt = man->dt_ullage;
+			manpad_ullage_opt = man->UllageThrusterOpt;
+
+			//Save maneuver code under remarks
+			if (IsCSMCalculation)
+			{
+				sprintf(GC->manpad.remarks, "%s", man->code.c_str());
+			}
+			else
+			{
+				sprintf(GC->lmmanpad.remarks, "%s", man->code.c_str());
+			}
 		}
 		else
 		{

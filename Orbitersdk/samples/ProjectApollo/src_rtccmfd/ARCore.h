@@ -296,6 +296,8 @@ public:
 	double sxtstardtime;
 	double manpad_ullage_dt;
 	bool manpad_ullage_opt; //true = 4 jets, false = 2 jets
+	int ManPADMPT; //1 = CSM, 3 = LEM
+	int ManPADMPTManeuver; //1-15
 
 	//MAP UPDATE PAGE
 	AP10MAPUPDATE mapupdate;

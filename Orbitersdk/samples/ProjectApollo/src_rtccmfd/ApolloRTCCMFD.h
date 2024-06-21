@@ -200,6 +200,7 @@ public:
 	void menuCycleTwoImpulseOption();
 	void menuSwitchHeadsUp();
 	void menuCalcManPAD();
+	void set_ManPADMPTInput(int mpt, int num);
 	void menuSetManPADPage();
 	void menuCalcEntryPAD();
 	void menuSetEntryPADPage();
