@@ -2444,6 +2444,23 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		}
 	}
 	break;
+	case 103: //GENERIC CMC CSM STATE VECTOR UPDATE AND V66
+	{
+		EphemerisData sv;
+		char buffer1[1000];
+
+		sv = StateVectorCalcEphem(calcParams.src); //State vector for uplink
+
+		AGCStateVectorUpdate(buffer1, 1, 1, sv, true);
+
+		sprintf(uplinkdata, "%s", buffer1);
+		if (upString != NULL) {
+			// give to mcc
+			strncpy(upString, uplinkdata, 1024 * 3);
+			sprintf(upDesc, "CSM state vector and V66");
+		}
+	}
+	break;
 	}
 
 	return scrubbed;
