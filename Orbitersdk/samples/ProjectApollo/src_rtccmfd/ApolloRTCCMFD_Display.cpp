@@ -982,7 +982,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 				sprintf(Buffer, "%+06.0f WGT", GC->manpad.Weight);
 				skp->Text((int)(3.5 * W / 8), 3 * H / 26, Buffer, strlen(Buffer));
 
-				if (G->manpadenginetype == RTCC_ENGINETYPE_CSMSPS)
+				if (strncmp(GC->manpad.PropGuid, "SPS", 3) == 0)
 				{
 					sprintf(Buffer, "%+07.2f PTRIM", GC->manpad.pTrim);
 					skp->Text((int)(3.5 * W / 8), 4 * H / 26, Buffer, strlen(Buffer));
@@ -1021,7 +1021,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 				sprintf(Buffer, "%+07.1f HP", GC->manpad.HP);
 				skp->Text((int)(3.5 * W / 8), 16 * H / 26, Buffer, strlen(Buffer));
 
-				sprintf(Buffer, "%+07.1f VT", GC->manpad.Vt);// length(G->dV_LVLH) / 0.3048);
+				sprintf(Buffer, "%+07.1f VT", GC->manpad.Vt);
 				skp->Text((int)(3.5 * W / 8), 17 * H / 26, Buffer, strlen(Buffer));
 
 				OrbMech::SStoHHMMSS(GC->manpad.burntime, hh, mm, secs);
@@ -1030,8 +1030,6 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 				skp->Text((int)(3.5 * W / 8), 18 * H / 26, Buffer, strlen(Buffer));
 				sprintf(Buffer, "%+07.1f VC", GC->manpad.Vc);
 				skp->Text((int)(3.5 * W / 8), 19 * H / 26, Buffer, strlen(Buffer));
-
-				//skp->Text(4 * W / 8, 13 * H / 20, "SXT star check", 14);
 
 				if (GC->manpad.Star == 0)
 				{
@@ -1123,7 +1121,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 				sprintf(Buffer, "%+07.1f HP", GC->lmmanpad.HP);
 				skp->Text((int)(3.5 * W / 8), 12 * H / 26, Buffer, strlen(Buffer));
 
-				sprintf(Buffer, "%+07.1f DVR", length(G->dV_LVLH) / 0.3048);
+				sprintf(Buffer, "%+07.1f DVR", length(GC->lmmanpad.dV) / 0.3048);
 				skp->Text((int)(3.5 * W / 8), 13 * H / 26, Buffer, strlen(Buffer));
 
 				OrbMech::SStoHHMMSS(GC->lmmanpad.burntime, hh, mm, secs);
@@ -1170,10 +1168,20 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		{
 			skp->Text(4 * W / 8, (int)(0.5 * H / 14), "Terminal Phase Initiate", 23);
 
+			GET_Display2(Buffer, G->P30TIG);
+			skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
+
+			sprintf(Buffer, "%+07.1f", G->dV_LVLH.x / 0.3048);
+			skp->Text(1 * W / 16, 7 * H / 14, Buffer, strlen(Buffer));
+			sprintf(Buffer, "%+07.1f", G->dV_LVLH.y / 0.3048);
+			skp->Text(1 * W / 16, 8 * H / 14, Buffer, strlen(Buffer));
+			sprintf(Buffer, "%+07.1f", G->dV_LVLH.z / 0.3048);
+			skp->Text(1 * W / 16, 9 * H / 14, Buffer, strlen(Buffer));
+
 			int hh, mm; // ss;
 			double secs;
 
-			OrbMech::SStoHHMMSS(G->P30TIG, hh, mm, secs, 0.01);
+			OrbMech::SStoHHMMSS(GC->TPI_PAD.GETI, hh, mm, secs, 0.01);
 
 			skp->Text(7 * W / 8, 3 * H / 20, "N37", 3);
 
@@ -1184,11 +1192,11 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			sprintf(Buffer, "%+07.2f SEC", secs);
 			skp->Text(3 * W / 8, 5 * H / 20, Buffer, strlen(Buffer));
 
-			sprintf(Buffer, "%+07.1f DVX", G->dV_LVLH.x / 0.3048);
+			sprintf(Buffer, "%+07.1f DVX", GC->TPI_PAD.Vg.x);
 			skp->Text(3 * W / 8, 6 * H / 20, Buffer, strlen(Buffer));
-			sprintf(Buffer, "%+07.1f DVY", G->dV_LVLH.y / 0.3048);
+			sprintf(Buffer, "%+07.1f DVY", GC->TPI_PAD.Vg.y);
 			skp->Text(3 * W / 8, 7 * H / 20, Buffer, strlen(Buffer));
-			sprintf(Buffer, "%+07.1f DVZ", G->dV_LVLH.z / 0.3048);
+			sprintf(Buffer, "%+07.1f DVZ", GC->TPI_PAD.Vg.z);
 			skp->Text(3 * W / 8, 8 * H / 20, Buffer, strlen(Buffer));
 
 			if (GC->TPI_PAD.Backup_dV.x > 0)

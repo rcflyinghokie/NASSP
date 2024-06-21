@@ -70,6 +70,23 @@ struct AP7MNV {
 // APOLLO 7 - TERMINAL PHASE INITIATE
 // (The form doesn't match the field list?)
 struct AP7TPI {
+	AP7TPI::AP7TPI()
+	{
+		GETI = 0.0;
+		Vg = _V(0, 0, 0);
+		Backup_dV = _V(0.0, 0.0, 0.0);
+		dH_TPI = 0.0;
+		R = 0.0;
+		Rdot = 0.0;
+		EL = 0.0;
+		AZ = 0.0;
+		E = 0.0;
+		dTT = 0.0;
+		Backup_bT = _V(0.0, 0.0, 0.0);
+		dH_Max = 0.0;
+		dH_Min = 0.0;
+		GET = 0.0;
+	}
 	// ON THE FORM:
 	double GETI;		// TIG
 	VECTOR3 Vg;			// P40 velocity to be gained
@@ -246,6 +263,7 @@ struct AP11MNV {
 		LMWeight = 0.0;
 		dV = _V(0, 0, 0);
 		GETI = 0.0;
+		sprintf(remarks, "");
 	}
 
 	char purpose[64];	// PURPOSE

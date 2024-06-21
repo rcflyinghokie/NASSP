@@ -62,15 +62,6 @@ AR_GCore::AR_GCore(VESSEL* v)
 	AGOP_REFSMMAT = _M(1, 0, 0, 0, 1, 0, 0, 0, 1);
 	AGOP_REFSMMAT_Vehicle = 0;
 
-	TPI_PAD.AZ = 0.0;
-	TPI_PAD.dH_TPI = 0.0;
-	TPI_PAD.Backup_dV = _V(0.0, 0.0, 0.0);
-	TPI_PAD.EL = 0.0;
-	TPI_PAD.R = 0.0;
-	TPI_PAD.Rdot = 0.0;
-	TPI_PAD.dH_Max = 0.0;
-	TPI_PAD.Backup_bT = _V(0.0, 0.0, 0.0);
-
 	tlipad.TB6P = 0.0;
 	tlipad.BurnTime = 0.0;
 	tlipad.dVC = 0.0;
@@ -4623,7 +4614,7 @@ int ARCore::subThread()
 			PMMMPTInput in;
 
 			//Get all required data for PMMMPT and error checking
-			if (GetVesselParameters(GC->rtcc->PZMYSAVE.plan[0] == RTCC_MPT_CSM, vesselisdocked, GC->rtcc->med_m72.Thruster, in.CONFIG, in.VC, in.CSMWeight, in.LMWeight))
+			if (GetVesselParameters(GC->rtcc->PZTIPREG.MAN_VEH == RTCC_MPT_CSM, vesselisdocked, GC->rtcc->med_m72.Thruster, in.CONFIG, in.VC, in.CSMWeight, in.LMWeight))
 			{
 				//Error
 				Result = DONE;
@@ -4890,7 +4881,7 @@ int ARCore::subThread()
 				dV_LVLH = DV;
 				manpadenginetype = GC->rtcc->med_m65.Thruster;
 				HeadsUp = true;
-				manpad_ullage_dt = GC->rtcc->med_m65.UllageDT;
+				manpad_ullage_dt = in.DETU;
 				manpad_ullage_opt = GC->rtcc->med_m65.UllageQuads;
 			}
 		}
