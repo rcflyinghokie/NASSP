@@ -3252,6 +3252,13 @@ int ARCore::subThread()
 
 			unsigned num = (unsigned)(ManPADMPTManeuver - 1);
 
+			//Does the maneuver exist?
+			if (num >= mpt->mantable.size())
+			{
+				Result = DONE;
+				break;
+			}
+
 			MPTManeuver *man = &mpt->mantable[num];
 
 			if (IsCSMCalculation)

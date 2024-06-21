@@ -521,35 +521,35 @@ void ApolloRTCCMFD::ThrusterName(char *Buff, int n)
 	}
 	else if (n == RTCC_ENGINETYPE_CSMRCSPLUS2)
 	{
-		sprintf(Buff, "CSM RCS +X (2 quads)");
+		sprintf(Buff, "SM RCS 2+X");
 	}
 	else if (n == RTCC_ENGINETYPE_LMRCSPLUS2)
 	{
-		sprintf(Buff, "LM RCS +X (2 quads)");
+		sprintf(Buff, "LM RCS 2+X");
 	}
 	else if (n == RTCC_ENGINETYPE_CSMRCSPLUS4)
 	{
-		sprintf(Buff, "CSM RCS +X (4 quads)");
+		sprintf(Buff, "SM RCS 4+X");
 	}
 	else if (n == RTCC_ENGINETYPE_LMRCSPLUS4)
 	{
-		sprintf(Buff, "LM RCS +X (4 quads)");
+		sprintf(Buff, "LM RCS 4+X");
 	}
 	else if (n == RTCC_ENGINETYPE_CSMRCSMINUS2)
 	{
-		sprintf(Buff, "CSM RCS -X (2 quads)");
+		sprintf(Buff, "SM RCS 2-X");
 	}
 	else if (n == RTCC_ENGINETYPE_LMRCSMINUS2)
 	{
-		sprintf(Buff, "LM RCS -X (2 quads)");
+		sprintf(Buff, "LM RCS 2-X");
 	}
 	else if (n == RTCC_ENGINETYPE_CSMRCSMINUS4)
 	{
-		sprintf(Buff, "CSM RCS -X (4 quads)");
+		sprintf(Buff, "SM RCS 4-X");
 	}
 	else if (n == RTCC_ENGINETYPE_LMRCSMINUS4)
 	{
-		sprintf(Buff, "LM RCS -X (4 quads)");
+		sprintf(Buff, "LM RCS 4-X");
 	}
 	else if (n == RTCC_ENGINETYPE_LOX_DUMP)
 	{
