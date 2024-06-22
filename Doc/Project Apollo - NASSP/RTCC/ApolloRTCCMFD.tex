@@ -1029,9 +1029,23 @@ Option 4 will accept a state vector and IMU gimbal angles and compute the pitch 
 
 Option 5 computes the IMU gimbal angles required to place the spacecraft in a passive thermal control (PTC) attitude, with the +X-axis oriented 90 degrees with respect to the Sun and to the Earth for omnidirectional communication.\\
 
-Option 6 computes the attitude required to orientate the CSM to the forward or aft horizons, either in heads up or down.\
+Option 6 computes the attitude required to orientate the CSM to the forward or aft horizons, either in heads up or down.\\
 
-Options 7-9 will be implemented in the future.\\
+Option 7 (Optics Support Table) will primarily be used to verify the CMC and LGC stable member alignment made by using the onboard optical sighting equipment. This option is divided into 5 modes which are as follows:\\
+
+Mode 1 computes the yaw angle required to place the LM z-axis in the local vertical plane and a pitch angle which will place the horizon on the landing point designator LPD). The necessary inputs are REFSMMAT, gimbal angles, and time.\\
+
+Mode 2 uses an input REFSMMAT, spacecraft attitude, and time interval to compute AOS, LOS, and optics angles for 10 stars.\\
+
+Mode 3 computes a REFSMMAT by specifying star IDs, optics angles, and spacecraft attitude. The capability exists to input two sets of gimbal angles with the above input data and compute the REFSMMAT.\\
+
+Mode 4 uses an input REFSMMAT and spacecraft attitude for both vehicles to compute the second vehicle REFSMMAT. If both REFSMMATs are input, the second vehicle attitude will be computed.\\
+
+Mode 5 computes the CSM gimbal angles required to point the AOT at the desired target. The inputs are REFSMMAT, docking angle, one star ID, and optics angles.\\
+
+Mode 6 computes the attitude for the preferred REFSMMAT. Given a current and a desired REFSMMAT, it computes the gimbal angles for the current REFSMMAT, which define 0, 0, 0 gimbal angles for the preferred REFSMMAT and outputs a set of gimbal angles and FDAI angles which used in conjuction with the current REFSMMAT defines the spacecraft attitude necessary to switch to the preferred REFSMMAT and read 0, 0, 0 gimbal angles.\\
+
+Options 8 and 9 will be implemented in the future.\\
 \newpage
 \subsection{VECPOINT}
 
@@ -1537,6 +1551,65 @@ The procedure to calculate a nominal deorbit maneuver is very similar to the one
 \end{tabbing}
 \newpage
 
+\textbf{MED Code}: P13\\
+\textbf{Purpose}: Enter vector in spherical coordinates\\
+\textbf{Example}: \texttt{P13,CSM,5521.0,0.0,269.0,0.7,23.4,60.0,102:40:00,L,MCT;}
+
+\begin{center}
+\begin{tabular}{|c|*{6}{>{\centering\arraybackslash}m{2.1cm}|} }
+ \hline
+ \diagbox{\textbf{Desc.}}{\textbf{Item}} & \textbf{1} & \textbf{2} & \textbf{3} & \textbf{4} & \textbf{5} & \textbf{6} \\ 
+ \hline
+ \textbf{Item Name} &Vehicle&Velocity&Flight Path Angle&Azimuth&Geocentric Latitude&Longitude\\
+ \hline
+ \textbf{Input Format} &EBCDIC&FLP&FLP&FLP&FLP&FLP\\
+ \hline
+ \textbf{Input Units} &EBCDIC&ft./sec.&degrees&degrees&degrees&degrees\\
+ \hline
+ \textbf{Checking Option}&Note 1&$\geq$0&-90.$\leq$A$\leq$90&0.$\leq$A$\leq$360&-90.$\leq$A$\leq$90&-180.$\leq$A$\leq$180\\
+ \hline
+ \textbf{Missing Item Option}&Error&&&&&\\
+ \hline
+\end{tabular}
+\end{center}
+
+\begin{tabbing}
+\textbf{Notes}: \= (1) Vehicle must be in vehicle name table (CSM, LEM)\\
+\end{tabbing}
+\newpage
+
+\textbf{MED Code}: P13\\
+\textbf{Purpose}: Enter vector in spherical coordinates\\
+\textbf{Example}: \texttt{P13,CSM,5521.0,0.0,269.0,0.7,23.4,60.0,102:40:00,L,MCT;}
+
+\begin{center}
+\begin{tabular}{|c|*{6}{>{\centering\arraybackslash}m{2.1cm}|} }
+ \hline
+ \diagbox{\textbf{Desc.}}{\textbf{Item}} & \textbf{7} & \textbf{8} & \textbf{9} & \textbf{10} &&\\ 
+ \hline
+ \textbf{Item Name} &Height&Time&Live/Static Ephem. Ind.&Coordinate System Ind.&&\\
+ \hline
+ \textbf{Input Format} &FLP&H:M:S.TH&EBCDIC&EBCDIC&&\\
+ \hline
+ \textbf{Input Units} &NM&hours&EBCDIC&EBCDIC&&\\
+ \hline
+ \textbf{Checking Option}&H$\geq$0&T$\geq$0&Exact Note 2&Exact Note 3&&\\
+ \hline
+ \textbf{Missing Item Option}&&&Insert L&Insert ECT&&\\
+ \hline
+\end{tabular}
+\end{center}
+
+\begin{tabbing}
+\textbf{Notes}: \= (2) \= Possible inputs:\\
+\> \>-L - Live ephem. (default)\\
+\> \>-B = put in GZLTRA and STATIC ephem.\\
+\> \>-S = STATIC ephem.\\
+\> \>-G = Put in GZLTRA only.\\
+\> (3) Coord. System Ind. = ECT, MCT\\
+\end{tabbing}
+\newpage
+
 \textbf{MED Code}: P15\\
 \textbf{Purpose}: Update GMTZS for specified vehicle\\
 \textbf{Example}: \texttt{P15,AGC,13:32:00;}
@@ -1671,7 +1744,7 @@ The procedure to calculate a nominal deorbit maneuver is very similar to the one
 
 \begin{tabbing}
 \textbf{Notes}: \= (1) \= Vehicle must be in MHGVNM.\\
-\> (2) Date is checked by internal caldenar on final logic. Then reference day is calculated (Jan 1 =\\
+\> (2) Date is checked by internal calendar on final logic. Then reference day is calculated (Jan 1 =\\
 \> \> day 0) along with days in month, etc. These values are stored in GZGENCSN.\\
 \> (3) On entry, link to EMLAMPNP to rotate P and N matrices and sun/moon tables.\\
 \> (4) If in Nophase, items 1-5 required, 6 may be input (zero inserted if missing). If in \\
@@ -2278,7 +2351,7 @@ MAT GET&An associated GET of any matrix display, such as time computed, time mad
 \end{figure}
 \end{landscape}
 \newpage
-\subsection{Vector Comparison Display (MSK 1591)}
+\subsection{Vector Comparison Display (MSK 1590)}
 
 \subsubsection{Function}
 
@@ -2620,11 +2693,43 @@ EMP 526 (4 Deg)&IMU CDU Transient Monitor (4 Degree Check)&Artemis 72\\
 \hline
 EMP 527 (CDUX)&Monitor Single IMU CDU (CDUX)&Artemis 72\\
 \hline
-EMP 527 CDUY)&Monitor Single IMU CDU (CDUY)&Artemis 72\\
+EMP 527 (CDUY)&Monitor Single IMU CDU (CDUY)&Artemis 72\\
 \hline
 EMP 527 (CDUZ)&Monitor Single IMU CDU (CDUZ)&Artemis 72\\
 \hline
 EMP 528&Monitor Jet-On Failure and Do EMP 526&Artemis 72\\
+\hline
+EMP SL-15&Manual Range Input&Skylark 48\\
+\hline
+EMP SL-23&Monitor Jet-On Failure&Skylark 48\\
+\hline
+EMP SL-26 1 Deg&IMU CDU Transient Monitor (1 Degree Check)&Skylark 48\\
+\hline
+EMP SL-26 2 Deg&IMU CDU Transient Monitor (2 Degree Check)&Skylark 48\\
+\hline
+EMP SL-26 3 Deg&IMU CDU Transient Monitor (3 Degree Check)&Skylark 48\\
+\hline
+EMP SL-26 4 Deg&IMU CDU Transient Monitor (4 Degree Check)&Skylark 48\\
+\hline
+EMP SL-27 CDUX&Monitor Single IMU CDU (CDUX)&Skylark 48\\
+\hline
+EMP SL-27 CDUY&Monitor Single IMU CDU (CDUY)&Skylark 48\\
+\hline
+EMP SL-27 CDUZ&Monitor Single IMU CDU (CDUZ)&Skylark 48\\
+\hline
+EMP SL-28&Monitor Jet-On Failure and Do EMP SL-26&Skylark 48\\
+\hline
+EMP SL-50&Convert Gyro Torquing Angles to CDU Angles for Failed CDU&Skylark 48\\
+\hline
+EMP SL-52A&Checksum for VAC area 4 for EMP SL-23&Skylark 48\\
+\hline
+EMP SL-52B&Checksum for VAC area 4 for EMP SL-28&Skylark 48\\
+\hline
+EMP SL-55&IMU Slip Ring Program&Skylark 48\\
+\hline
+EMP ASTP-75&Compute S-Band Antenna Angles&Skylark 48\\
+\hline
+EMP ASTP-77&Raster Scan&Skylark 48\\
 \hline
 \end{tabular}
 

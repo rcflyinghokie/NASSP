@@ -254,6 +254,8 @@ double RTCC::PIAIES(double hour)
 
 int RTCC::PIATSU(AEGDataBlock AEGIN, AEGDataBlock &AEGOUT, double &isg, double &gsg, double &hsg)
 {
+	//Input AEGIN has to contain orbit-defining elements, a counter (DN, Item10) and a desired selenographic argument of latitude (UD, Item8)
+
 	PMMLAEG aeg(this);
 	AEGHeader header;
 	MATRIX3 Rot;
@@ -279,6 +281,7 @@ RTCC_PIATSU_1A:
 	PIVECT(P_apo, W_apo, isg, gsg, hsg);
 	if (isg < eps_i || isg > PI - eps_i)
 	{
+		//Orbit plane essentially equatorial
 		KE = 2;
 		return KE;
 	}
@@ -542,7 +545,7 @@ void RTCC::PIFAAP(double a, double e, double i, double f, double u, double r, do
 {
 	double a_ref, e_ref, p_ref, p, K1, K2, df, r1, r2;
 
-	a_ref = r + OrbMech::J2_Earth / OrbMech::R_Earth*(1.0 - 3.0 / 2.0*pow(sin(i), 2) + 5.0 / 6.0*pow(sin(i), 2)*cos(2.0*u));
+	a_ref = r + 1.5*OrbMech::J2_Earth * OrbMech::R_Earth*(1.0 - 3.0 / 2.0*pow(sin(i), 2) + 5.0 / 6.0*pow(sin(i), 2)*cos(2.0*u));
 	e_ref = 1.0 - r / a_ref;
 	p_ref = a_ref * (1.0 - e_ref * e_ref);
 	p = a * (1.0 - e * e);

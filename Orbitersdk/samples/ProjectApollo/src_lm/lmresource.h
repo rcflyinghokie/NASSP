@@ -870,6 +870,8 @@
 #define AID_VC_COAS1                     3030
 #define AID_VC_COAS2                     3031
 
+#define AID_VC_WINDOWSHADES              3040
+
 // VC Active Areas (Panel 1)
 #define AID_VC_PANEL_1				    ((id >= 3100) && (id <= 3140))
 #define AID_VC_SWITCH_P1_01		        3101	// Rate/error monitor CDR
@@ -1087,6 +1089,7 @@
 
 #define AID_LMVC_INTEGRAL_LIGHT  3831
 #define AID_LMVC_FLOOD_LIGHT     3832
+#define AID_LMVC_NUMERICS_LIGHT  3833
 
 // VC Active Areas (Panel 11)
 #define AID_VC_PANEL_11			((id >= 4100) && (id <= 4199))

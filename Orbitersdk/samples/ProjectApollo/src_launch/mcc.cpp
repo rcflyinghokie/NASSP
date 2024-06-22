@@ -47,6 +47,7 @@
 #include "LVDC.h"
 #include "iu.h"
 #include "nassputils.h"
+#include "Mission.h"
 
 using namespace nassp;
 
@@ -691,20 +692,23 @@ void MCC::TimeStep(double simdt){
 				case 17:
 					MissionType = MTP_J3;
 					break;
-				case 18: //For now
-					MissionType = MTP_SKYLAB;
-					setState(MST_SL_PRELAUNCH);
-					break;
-				default:
-					// If the ApolloNo is not on this list, you are expected to provide a mission type in the scenario file, which will override the default.
-					if (cm->SaturnType == SAT_SATURNV) {
-						MissionType = MTP_H1;
+				default: // No mission number, look for name
+					if (cm->pMission->GetMissionName() == "SL-2")
+					{
+						MissionType = MTP_SKYLAB;
+						setState(MST_SL_PRELAUNCH);
 					}
-					if (cm->SaturnType == SAT_SATURN1B) {
-						MissionType = MTP_C;
+					else
+					{
+						// If the ApolloNo is not on this list, you are expected to provide a mission type in the scenario file, which will override the default.
+						if (cm->SaturnType == SAT_SATURNV) {
+							MissionType = MTP_H1;
+						}
+						if (cm->SaturnType == SAT_SATURN1B) {
+							MissionType = MTP_C;
+						}
 					}
 					break;
-
 				}
 			}
 			else if (lm)
@@ -1646,13 +1650,10 @@ void MCC::SaveState(FILEHANDLE scn) {
 			SAVE_DOUBLE("MCC_AP10MAPUPDATE_PMGET", form->PMGET);
 			SAVE_DOUBLE("MCC_AP10MAPUPDATE_SRGET", form->SRGET);
 			SAVE_DOUBLE("MCC_AP10MAPUPDATE_SSGET", form->SSGET);
-			if (form->type == 3)
-			{
-				SAVE_DOUBLE("MCC_AP10MAPUPDATE_AOSGET2", form->AOSGET2);
-				SAVE_DOUBLE("MCC_AP10MAPUPDATE_LOSGET2", form->LOSGET2);
-				SAVE_DOUBLE("MCC_AP10MAPUPDATE_PMGET2", form->PMGET2);
-				SAVE_DOUBLE("MCC_AP10MAPUPDATE_SSGET2", form->SSGET2);
-			}
+			SAVE_DOUBLE("MCC_AP10MAPUPDATE_AOSGET2", form->AOSGET2);
+			SAVE_DOUBLE("MCC_AP10MAPUPDATE_LOSGET2", form->LOSGET2);
+			SAVE_DOUBLE("MCC_AP10MAPUPDATE_PMGET2", form->PMGET2);
+			SAVE_DOUBLE("MCC_AP10MAPUPDATE_SSGET2", form->SSGET2);
 		}
 		else if (padNumber == 13)
 		{
@@ -2247,17 +2248,17 @@ void MCC::LoadState(FILEHANDLE scn) {
 		{
 			AP10MAPUPDATE * form = (AP10MAPUPDATE *)padForm;
 
-			LOAD_INT("MCC_AP10MAPUPDATE_REV", form->Rev);
-			LOAD_INT("MCC_AP10MAPUPDATE_type", form->type);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_AOSGET", form->AOSGET);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_LOSGET", form->LOSGET);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_PMGET", form->PMGET);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_SRGET", form->SRGET);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_SSGET", form->SSGET);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_AOSGET2", form->AOSGET2);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_LOSGET2", form->LOSGET2);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_PMGET2", form->PMGET2);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_SSGET2", form->SSGET2);
+			papiReadScenario_int(line, "MCC_AP10MAPUPDATE_REV", form->Rev);
+			papiReadScenario_int(line, "MCC_AP10MAPUPDATE_type", form->type);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_AOSGET", form->AOSGET);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_LOSGET", form->LOSGET);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_PMGET", form->PMGET);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_SRGET", form->SRGET);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_SSGET", form->SSGET);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_AOSGET2", form->AOSGET2);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_LOSGET2", form->LOSGET2);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_PMGET2", form->PMGET2);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_SSGET2", form->SSGET2);
 		}
 		else if (padNumber == 13)
 		{
@@ -2966,6 +2967,22 @@ void MCC::drawPad(bool writetofile){
 			sprintf(buffer, "%sAOS: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
 			OrbMech::SStoHHMMSS(form->SSGET2, hh, mm, ss);
 			sprintf(buffer, "%sSS: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
+		}
+		else if (form->type == 4)
+		{
+			OrbMech::SStoHHMMSS(form->PMGET, hh, mm, ss);
+			sprintf(buffer, "%s180°: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
+			OrbMech::SStoHHMMSS(form->AOSGET, hh, mm, ss);
+			sprintf(buffer, "%sAOS: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
+		}
+		else if (form->type == 5)
+		{
+			OrbMech::SStoHHMMSS(form->PMGET, hh, mm, ss);
+			sprintf(buffer, "%s180°: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
+			OrbMech::SStoHHMMSS(form->AOSGET2, hh, mm, ss);
+			sprintf(buffer, "%sAOS WITH TEI: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
+			OrbMech::SStoHHMMSS(form->AOSGET, hh, mm, ss);
+			sprintf(buffer, "%sAOS WITHOUT TEI: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
 		}
 
 		oapiAnnotationSetText(NHpad, buffer);
@@ -4510,4 +4527,10 @@ void MCC::SetLV(char *lvname)
 			sivb = (SIVB *)v;
 		}
 	}
+}
+
+double MCC::GetMissionTime()
+{
+	if (rtcc) return rtcc->RTCCMissionTime(1);
+	return 0.0;
 }
