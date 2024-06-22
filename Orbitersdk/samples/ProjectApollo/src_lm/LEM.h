@@ -711,9 +711,11 @@ protected:
 	void SetStageSeqRelayLight(int m, bool state);
 
 #ifdef _OPENORBITER
-	void SetLMVCIntegralLight(UINT meshidx, DWORD *matList, MatProp EmissionMode, double state, int cnt);
+	void SetVCLighting(UINT meshidx, DWORD *matList, MatProp EmissionMode, double state, int cnt);
+	void SetVCLighting(UINT meshidx, int material, MatProp EmissionMode, double state, int cnt);
 #else
-	void SetLMVCIntegralLight(UINT meshidx, DWORD *matList, int EmissionMode, double state, int cnt);
+	void SetVCLighting(UINT meshidx, DWORD *matList, int EmissionMode, double state, int cnt);
+	void SetVCLighting(UINT meshidx, int material, int EmissionMode, double state, int cnt);
 #endif
 
 	void InitFDAI(UINT mesh);
