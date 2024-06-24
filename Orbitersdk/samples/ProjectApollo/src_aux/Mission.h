@@ -111,6 +111,8 @@ namespace mission
 		virtual const std::string& GetCMPSuitName() const;
 		//Name of LMP to print on suit
 		virtual const std::string& GetLMPSuitName() const;
+		//false = LM event timer continues to count down through zero, true = when reaching zero it starts counting up
+		virtual bool IsLMEventTimerReversingAtZero() const;
 	protected:
 		bool GetCueCards(const std::vector<CueCardConfig> &cue, unsigned &counter, unsigned &loc, std::string &meshname, VECTOR3 &ofs);
 
@@ -160,6 +162,7 @@ namespace mission
 		std::vector<CueCardConfig> LMCueCards;
 		double dTEPHEM0;
 		int iLMNumber;
+		bool bLMEventTimerReverseAtZero;
 
 		void SetDefaultValues();
 	};

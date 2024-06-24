@@ -200,6 +200,7 @@ public:
 	void menuCycleTwoImpulseOption();
 	void menuSwitchHeadsUp();
 	void menuCalcManPAD();
+	void set_ManPADMPTInput(int mpt, int num);
 	void menuSetManPADPage();
 	void menuCalcEntryPAD();
 	void menuSetEntryPADPage();
@@ -299,6 +300,7 @@ public:
 	void menuLOICalc();
 	void menuSetLandmarkTrkPage();
 	void menuSetLmkTime();
+	void menuSetLmkElevation();
 	void menuSetLmkLat();
 	void menuSetLmkLng();
 	void menuLmkUseLandingSite();
