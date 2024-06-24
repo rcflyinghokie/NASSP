@@ -66,11 +66,23 @@ using namespace nassp;
 void format_time_rtcc(char *buf, double time) {
 	buf[0] = 0; // Clobber
 	int hours, minutes, seconds;
-	if (time < 0) { return; } // don't do that
+	bool negative = false;
+	if (time < 0)
+	{
+		time = abs(time);
+		negative = true;
+	}
 	hours = (int)(time / 3600);
 	minutes = (int)((time / 60) - (hours * 60));
 	seconds = (int)((time - (hours * 3600)) - (minutes * 60));
-	sprintf_s(buf, 64, "%03d:%02d:%02d", hours, minutes, seconds);
+	if (negative)
+	{
+		sprintf_s(buf, 64, "-%03d:%02d:%02d", hours, minutes, seconds);
+	}
+	else
+	{
+		sprintf_s(buf, 64, "%03d:%02d:%02d", hours, minutes, seconds);
+	}
 }
 
 //Ephemeris format 2 to format 1
@@ -19534,6 +19546,20 @@ void RTCC::PMMPAR(VECTOR3 RT, VECTOR3 VT, double TT)
 	PZSLVTAR.HP_C = INFO[9] / 1852.0;
 	PZSLVTAR.TA_C = lwp.svtab.sv_C.coe_osc.l*DEG;
 	PZSLVTAR.DH = lwp.rlott.DH / 1852.0;
+
+	//Save insertion state vector in launch interface table
+	EphemerisData2 sv_ins_ECT, sv_ins_ECI;
+	int err;
+
+	OrbMech::GIMKIC(lwp.svtab.sv_C.coe_osc, OrbMech::mu_Earth, sv_ins_ECT.R, sv_ins_ECT.V);
+	sv_ins_ECT.GMT = lwp.svtab.sv_C.TS;
+
+	err = ELVCNV(sv_ins_ECT, RTCC_COORDINATES_ECT, RTCC_COORDINATES_ECI, sv_ins_ECI);
+	if (err) return;
+
+	GZLTRA.R_T = sv_ins_ECI.R;
+	GZLTRA.V_T = sv_ins_ECI.V;
+	GZLTRA.GMT_T = sv_ins_ECI.GMT;
 }
 
 void RTCC::PMMIEV(int L, double T_L)
@@ -36333,7 +36359,7 @@ void RTCC::BMDVPS()
 		{
 			mpt = &PZMPTLEM;
 		}
-		if (mpt->GMTAV > 0)
+		if (mpt->GMTAV != 0.0)
 		{
 			VectorPanelSummaryBuffer.AnchorVectorID[i] = mpt->StationID;
 			format_time_rtcc(Buff, mpt->GMTAV);
@@ -36370,7 +36396,7 @@ void RTCC::BMDVPS()
 			}
 			VectorPanelSummaryBuffer.CompTelemetryLowGMT[i][j] = ""; //TBD
 		}
-		if (BZUSEVEC.data[6 * i + 4].Vector.GMT > 0)
+		if (BZUSEVEC.data[6 * i + 4].Vector.RBI != -1)
 		{
 			VectorPanelSummaryBuffer.HSRID[i] = BZUSEVEC.data[6 * i + 4].VectorCode;
 			format_time_rtcc(Buff, BZUSEVEC.data[6 * i + 4].Vector.GMT);
@@ -36381,7 +36407,7 @@ void RTCC::BMDVPS()
 			VectorPanelSummaryBuffer.HSRID[i] = "";
 			VectorPanelSummaryBuffer.HSRGMT[i] = "";
 		}
-		if (BZUSEVEC.data[6 * i + 5].Vector.GMT > 0)
+		if (BZUSEVEC.data[6 * i + 5].Vector.RBI != -1)
 		{
 			VectorPanelSummaryBuffer.DCID[i] = BZUSEVEC.data[6 * i + 5].VectorCode;
 			format_time_rtcc(Buff, BZUSEVEC.data[6 * i + 5].Vector.GMT);
@@ -36407,7 +36433,7 @@ void RTCC::BMDVPS()
 		}
 		
 	}
-	if (BZSTLM.HighSpeedCMCCSMVector.GMT > 0)
+	if (BZSTLM.HighSpeedCMCCSMVector.RBI != -1)
 	{
 		format_time_rtcc(Buff, BZSTLM.HighSpeedCMCCSMVector.GMT);
 		VectorPanelSummaryBuffer.CompTelemetryHighGMT[0][0].assign(Buff);
@@ -36416,7 +36442,7 @@ void RTCC::BMDVPS()
 	{
 		VectorPanelSummaryBuffer.CompTelemetryHighGMT[0][0] = "";
 	}
-	if (BZSTLM.HighSpeedLGCCSMVector.GMT > 0)
+	if (BZSTLM.HighSpeedLGCCSMVector.RBI != -1)
 	{
 		format_time_rtcc(Buff, BZSTLM.HighSpeedLGCCSMVector.GMT);
 		VectorPanelSummaryBuffer.CompTelemetryHighGMT[0][1].assign(Buff);
@@ -36425,7 +36451,7 @@ void RTCC::BMDVPS()
 	{
 		VectorPanelSummaryBuffer.CompTelemetryHighGMT[0][1] = "";
 	}
-	if (BZSTLM.HighSpeedAGSCSMVector.GMT > 0)
+	if (BZSTLM.HighSpeedAGSCSMVector.RBI != -1)
 	{
 		format_time_rtcc(Buff, BZSTLM.HighSpeedAGSCSMVector.GMT);
 		VectorPanelSummaryBuffer.CompTelemetryHighGMT[0][2].assign(Buff);
@@ -36434,7 +36460,7 @@ void RTCC::BMDVPS()
 	{
 		VectorPanelSummaryBuffer.CompTelemetryHighGMT[0][2] = "";
 	}
-	if (BZSTLM.HighSpeedIUVector.GMT > 0)
+	if (BZSTLM.HighSpeedIUVector.RBI != -1)
 	{
 		format_time_rtcc(Buff, BZSTLM.HighSpeedIUVector.GMT);
 		VectorPanelSummaryBuffer.CompTelemetryHighGMT[0][3].assign(Buff);
@@ -36443,7 +36469,7 @@ void RTCC::BMDVPS()
 	{
 		VectorPanelSummaryBuffer.CompTelemetryHighGMT[0][3] = "";
 	}
-	if (BZSTLM.HighSpeedCMCLEMVector.GMT > 0)
+	if (BZSTLM.HighSpeedCMCLEMVector.RBI != -1)
 	{
 		format_time_rtcc(Buff, BZSTLM.HighSpeedCMCLEMVector.GMT);
 		VectorPanelSummaryBuffer.CompTelemetryHighGMT[1][0].assign(Buff);
@@ -36452,7 +36478,7 @@ void RTCC::BMDVPS()
 	{
 		VectorPanelSummaryBuffer.CompTelemetryHighGMT[1][0] = "";
 	}
-	if (BZSTLM.HighSpeedLGCLEMVector.GMT > 0)
+	if (BZSTLM.HighSpeedLGCLEMVector.RBI != -1)
 	{
 		format_time_rtcc(Buff, BZSTLM.HighSpeedLGCLEMVector.GMT);
 		VectorPanelSummaryBuffer.CompTelemetryHighGMT[1][1].assign(Buff);
@@ -36461,7 +36487,7 @@ void RTCC::BMDVPS()
 	{
 		VectorPanelSummaryBuffer.CompTelemetryHighGMT[1][1] = "";
 	}
-	if (BZSTLM.HighSpeedAGSLEMVector.GMT > 0)
+	if (BZSTLM.HighSpeedAGSLEMVector.RBI != -1)
 	{
 		format_time_rtcc(Buff, BZSTLM.HighSpeedAGSLEMVector.GMT);
 		VectorPanelSummaryBuffer.CompTelemetryHighGMT[1][2].assign(Buff);
@@ -36470,7 +36496,7 @@ void RTCC::BMDVPS()
 	{
 		VectorPanelSummaryBuffer.CompTelemetryHighGMT[1][2] = "";
 	}
-	if (BZSTLM.HighSpeedIUVector.GMT > 0)
+	if (BZSTLM.HighSpeedIUVector.RBI != -1)
 	{
 		format_time_rtcc(Buff, BZSTLM.HighSpeedIUVector.GMT);
 		VectorPanelSummaryBuffer.CompTelemetryHighGMT[1][3].assign(Buff);
