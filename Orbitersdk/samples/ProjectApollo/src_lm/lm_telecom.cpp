@@ -2633,16 +2633,16 @@ void LM_SBAND::Timestep(double simt){
 	}
 
 	// Receiver AGC Voltage
-	if (lem->SBandPASelSwitch.IsUp()) {
-		if (ant && pa_mode_1 > 2) {
+	if (lem->SBandXCvrSelSwitch.IsUp()) {
+		if (ant && tc_mode_1 > 2) {
 			rcvr_agc_voltage = ant->GetSignalStrength();
 		}
 		else {
 			rcvr_agc_voltage = 0.0;
 		}
 	}
-	else if (lem->SBandPASelSwitch.IsDown()){
-		if (ant && pa_mode_2 > 2) {
+	else if (lem->SBandXCvrSelSwitch.IsDown()){
+		if (ant && tc_mode_2 > 2) {
 			rcvr_agc_voltage = ant->GetSignalStrength();
 		}
 		else {
