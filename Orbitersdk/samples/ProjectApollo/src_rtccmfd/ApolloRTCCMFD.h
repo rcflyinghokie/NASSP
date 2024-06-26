@@ -102,6 +102,7 @@ public:
 	void CycleThroughVessels(VESSEL **v) const;
 	void menuSLVLaunchTargetingPad();
 	void menuSLVLaunchTargeting();
+	void menuSLVInsertionSVtoMPT();
 	void menuSLVLaunchUplink();
 	void menuVoid();
 	void menuSetLambertPage();

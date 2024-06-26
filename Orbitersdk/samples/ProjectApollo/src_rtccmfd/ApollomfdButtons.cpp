@@ -4160,7 +4160,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 		{ "Select IU vessel", 0, 'Q' },
 
 		{ "Calculate LWP", 0, 'C' },
-		{ "", 0, ' ' },
+		{ "Insertion state vector to MPT", 0, 'A' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
@@ -4177,7 +4177,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	RegisterFunction("IU", OAPI_KEY_Q, &ApolloRTCCMFD::set_IUVessel);
 
 	RegisterFunction("CLC", OAPI_KEY_C, &ApolloRTCCMFD::menuSLVLaunchTargeting);
-	RegisterFunction("", OAPI_KEY_A, &ApolloRTCCMFD::menuVoid);
+	RegisterFunction("MPT", OAPI_KEY_A, &ApolloRTCCMFD::menuSLVInsertionSVtoMPT);
 	RegisterFunction("", OAPI_KEY_Q, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_R, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("UPL", OAPI_KEY_U, &ApolloRTCCMFD::menuSLVLaunchUplink);
