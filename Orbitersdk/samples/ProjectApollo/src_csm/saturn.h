@@ -1017,6 +1017,7 @@ public:
 	//CSM to LM interface functions
 	h_Pipe* GetCMTunnelPipe() { return CMTunnel; }
 	h_Pipe* GetCSMO2Hose();
+	void ConnectCSMO2Hose();
 	void ConnectTunnelToCabinVent();
 	bool GetLMDesBatLVOn();
 	bool GetLMDesBatLVHVOffA();
