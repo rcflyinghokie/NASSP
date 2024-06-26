@@ -214,20 +214,20 @@ void MCC::MissionSequence_F()
 	case MST_F_LUNAR_ORBIT_LOI_DAY_7: //Rev 4 map update to state vector update
 		UpdateMacro(UTP_PADONLY, PT_AP10MAPUPDATE, MoonRev >= 4 && MoonRevTime > 3600.0, 43, MST_F_LUNAR_ORBIT_LOI_DAY_8);
 		break;
-	case MST_F_LUNAR_ORBIT_LOI_DAY_8: //State vector update to state vector update
+	case MST_F_LUNAR_ORBIT_LOI_DAY_8: //State vector update to TEI-10 update
 		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, MoonRev >= 5 && MoonRevTime > 30.0*60.0, 103, MST_F_LUNAR_ORBIT_LOI_DAY_9);
 		break;
-	case MST_F_LUNAR_ORBIT_LOI_DAY_9: //State vector update to TEI-10 update
-		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, true, 103, MST_F_LUNAR_ORBIT_LOI_DAY_10);
+	case MST_F_LUNAR_ORBIT_LOI_DAY_9: //TEI-10 update to state vector update
+		UpdateMacro(UTP_PADONLY, PT_AP11MNV, true, 33, MST_F_LUNAR_ORBIT_LOI_DAY_10);
 		break;
-	case MST_F_LUNAR_ORBIT_LOI_DAY_10: //TEI-10 update to LLS-2 update
-		UpdateMacro(UTP_PADONLY, PT_AP11MNV, MoonRev >= 10 && MoonRevTime > 30.0*60.0, 33, MST_F_LUNAR_ORBIT_DOI_DAY_1);
+	case MST_F_LUNAR_ORBIT_LOI_DAY_10: //State vector update to LLS-2 track PAD
+		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, MoonRev >= 10 && MoonRevTime > 30.0*60.0, 103, MST_F_LUNAR_ORBIT_DOI_DAY_1);
 		break;
-	case MST_F_LUNAR_ORBIT_DOI_DAY_1: //LLS-2 update to LLS-2 track PAD
-		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, true, 60, MST_F_LUNAR_ORBIT_DOI_DAY_2);
+	case MST_F_LUNAR_ORBIT_DOI_DAY_1: //LLS-2 track PAD to LLS-2 update
+		UpdateMacro(UTP_PADONLY, PT_AP11LMARKTRKPAD, true, 52, MST_F_LUNAR_ORBIT_DOI_DAY_2);
 		break;
-	case MST_F_LUNAR_ORBIT_DOI_DAY_2: //LLS-2 track PAD to rev 11 map update
-		UpdateMacro(UTP_PADONLY, PT_AP11LMARKTRKPAD, SubStateTime > 3.0*60.0, 52, MST_F_LUNAR_ORBIT_DOI_DAY_3);
+	case MST_F_LUNAR_ORBIT_DOI_DAY_2: //LLS-2 update to rev 11 map update
+		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, SubStateTime > 3.0*60.0, 60, MST_F_LUNAR_ORBIT_DOI_DAY_3);
 		break;
 	case MST_F_LUNAR_ORBIT_DOI_DAY_3: //Rev 11 map update to CSM DAP update
 		UpdateMacro(UTP_PADONLY, PT_AP10MAPUPDATE, MoonRev >= 10 && MoonRevTime > 3600.0, 44, MST_F_LUNAR_ORBIT_DOI_DAY_4);
