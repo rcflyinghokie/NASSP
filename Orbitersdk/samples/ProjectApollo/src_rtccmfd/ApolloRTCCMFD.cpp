@@ -4573,7 +4573,7 @@ bool DifferentialCorrectionSolutionLEMInput(void* id, char *str, void *data)
 bool ApolloRTCCMFD::set_DifferentialCorrectionSolution(char *str, bool csm)
 {
 	//To update display immediately
-	GC->rtcc->VectorPanelSummaryBuffer.gmt = -1.0;
+	GC->rtcc->VectorPanelSummaryBuffer.gmt = -10000000000000.0;
 
 	OBJHANDLE hVessel = oapiGetVesselByName(str);
 	if (hVessel)
@@ -4844,7 +4844,7 @@ bool EphemerisUpdateLEMInput(void* id, char *str, void *data)
 void ApolloRTCCMFD::VectorControlPBI(int code)
 {
 	//To update display immediately
-	GC->rtcc->VectorPanelSummaryBuffer.gmt = -1.0;
+	GC->rtcc->VectorPanelSummaryBuffer.gmt = -10000000000000.0;
 
 	GC->rtcc->BMSVPS(0, code);
 }
@@ -5304,6 +5304,33 @@ void ApolloRTCCMFD::menuSLVLaunchTargetingPad()
 void ApolloRTCCMFD::menuSLVLaunchTargeting()
 {
 	G->SkylabSaturnIBLaunchCalc();
+}
+
+void ApolloRTCCMFD::menuSLVInsertionSVtoMPT()
+{
+	if (GC->MissionPlanningActive == false) return;
+	if (GC->rtcc->GZLTRA.GMT_T == 0.0) return;
+
+	StateVectorTableEntry sv0;
+	int L;
+
+	if (GC->rtcc->PZSLVCON.Pad == 1)
+	{
+		L = RTCC_MPT_CSM;
+	}
+	else
+	{
+		L = RTCC_MPT_LM;
+	}
+
+	sv0.VectorCode = "NOMINS";
+	sv0.LandingSiteIndicator = false;
+	sv0.Vector.R = GC->rtcc->GZLTRA.R_T;
+	sv0.Vector.V = GC->rtcc->GZLTRA.V_T;
+	sv0.Vector.GMT = GC->rtcc->GZLTRA.GMT_T;
+	sv0.Vector.RBI = BODY_EARTH;
+
+	GC->rtcc->PMSVCT(0, L, sv0);
 }
 
 void ApolloRTCCMFD::menuSLVLaunchUplink()
@@ -9099,7 +9126,7 @@ void ApolloRTCCMFD::menuSLVNavigationUpdateUplink()
 void ApolloRTCCMFD::menuGetOnboardStateVectors()
 {
 	//To update display immediately
-	GC->rtcc->VectorPanelSummaryBuffer.gmt = -1.0;
+	GC->rtcc->VectorPanelSummaryBuffer.gmt = -10000000000000.0;
 
 	G->GetStateVectorFromAGC(true, true);
 	G->GetStateVectorFromAGC(true, false);
