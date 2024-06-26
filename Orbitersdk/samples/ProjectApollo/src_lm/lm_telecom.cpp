@@ -2656,7 +2656,7 @@ void LM_SBAND::Timestep(double simt){
 }
 
 void LM_SBAND::LoadState(char *line) {
-	sscanf(line + 26, "%i %i %lf %lf %i %i %lf %lf", &pa_mode_1, &pa_mode_2, &pa_timer_1, &pa_timer_2, &tc_mode_1, &tc_mode_2, &tc_timer_1, &tc_timer_2);
+	sscanf(line + 12, "%i %i %lf %lf %i %i %lf %lf", &pa_mode_1, &pa_mode_2, &pa_timer_1, &pa_timer_2, &tc_mode_1, &tc_mode_2, &tc_timer_1, &tc_timer_2);
 }
 
 
