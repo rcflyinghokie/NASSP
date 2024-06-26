@@ -1469,14 +1469,14 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 
 		REFSMMAT = REFSMMATCalc(&opt);
 
-		AGCStateVectorUpdate(buffer1, sv, true);
+		AGCStateVectorUpdate(buffer1, sv, true, true);
 		AGCDesiredREFSMMATUpdate(buffer2, REFSMMAT);
 
 		sprintf(uplinkdata, "%s%s", buffer1, buffer2);
 		if (upString != NULL) {
 			// give to mcc
 			strncpy(upString, uplinkdata, 1024 * 3);
-			sprintf(upDesc, "CSM state vector, LLS2 REFSMMAT");
+			sprintf(upDesc, "CSM state vector and V66, LLS2 REFSMMAT");
 		}
 	}
 	break;
