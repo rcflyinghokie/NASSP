@@ -2641,7 +2641,7 @@ void LM_SBAND::Timestep(double simt){
 			rcvr_agc_voltage = 0.0;
 		}
 	}
-	else if (lem->SBandXCvrSelSwitch.IsDown()){
+	else if (lem->SBandXCvrSelSwitch.IsDown()) {
 		if (ant && tc_mode_2 > 2) {
 			rcvr_agc_voltage = ant->GetSignalStrength();
 		}
