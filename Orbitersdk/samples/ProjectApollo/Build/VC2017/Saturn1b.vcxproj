@@ -158,6 +158,7 @@
     <ClCompile Include="..\..\src_aux\vesim.cpp" />
     <ClCompile Include="..\..\src_csm\CSMMalfunctionSimulation.cpp" />
     <ClCompile Include="..\..\src_csm\csmsensors.cpp" />
+    <ClCompile Include="..\..\src_csm\eps.cpp" />
     <ClCompile Include="..\..\src_csm\rhc.cpp" />
     <ClCompile Include="..\..\src_csm\sce.cpp" />
     <ClCompile Include="..\..\src_csm\smjc.cpp" />
@@ -465,6 +466,7 @@
     <ClInclude Include="..\..\src_aux\vesim.h" />
     <ClInclude Include="..\..\src_csm\CSMMalfunctionSimulation.h" />
     <ClInclude Include="..\..\src_csm\csmsensors.h" />
+    <ClInclude Include="..\..\src_csm\eps.h" />
     <ClInclude Include="..\..\src_csm\rhc.h" />
     <ClInclude Include="..\..\src_csm\sce.h" />
     <ClInclude Include="..\..\src_csm\smjc.h" />

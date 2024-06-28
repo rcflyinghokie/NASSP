@@ -40,14 +40,30 @@ public:
 
 	bool MissionPlanningActive;
 
-	VESSEL *pMPTVessel;
-	int MPTVesselNumber;
-
 	int mptInitError;
 
 	double REFSMMAT_PTC_MJD;
 
 	RTCC* rtcc;
+
+	//MANEUVER PAD PAGE
+	AP11MNV manpad;
+	AP11LMMNV lmmanpad;
+	AP7TPI TPI_PAD;
+	TLIPAD tlipad;
+	AP11PDIPAD pdipad;
+
+	//ENTRY PAD PAGE
+	AP11ENT lunarentrypad;
+	AP7ENT earthentrypad;
+	int entrypadopt; //0 = Earth Entry Update, 1 = Lunar Entry
+	bool EntryPADSxtStarCheckAttOpt; //true = sextant star attitude check at entry attitude, false = sextant star check at horizon check attitude
+
+	//LANDMARK TRACKING PAGE
+	AP11LMARKTRKPAD landmarkpad;
+	double LmkLat, LmkLng;
+	double LmkTime;
+	double LmkElevation;
 
 	//APOLLO GENERALIZED OPTICS PROGRAM
 	int AGOP_Page;
@@ -80,10 +96,6 @@ class ARCore {
 public:
 	ARCore(VESSEL* v, AR_GCore* gcin);
 	~ARCore();
-	void lambertcalc();
-	void SPQcalc();
-	void GPMPCalc();
-	void REFSMMATCalc();
 	void LunarLaunchTargetingCalc();
 	void LDPPalc();
 	void LunarLiftoffCalc();
@@ -94,17 +106,16 @@ public:
 	void TLCCCalc();
 	void EntryUpdateCalc();
 	void StateVectorCalc(int type);
-	void AGSStateVectorCalc();
+	void AGSStateVectorCalc(bool IsCSM);
 	void LandingSiteUpdate();
 	void CSMLSUplinkCalc();
 	void LMLSUplinkCalc();
 	void CSMLandingSiteUplink();
 	void LMLandingSiteUplink();
-	void VecPointCalc();
+	void VecPointCalc(bool IsCSM);
 	void TerrainModelCalc();
-	void DKICalc();
 	void LAPCalc();
-	void DAPPADCalc();
+	void DAPPADCalc(bool IsCSM);
 	void AscentPADCalc();
 	void PDAPCalc();
 	void CycleFIDOOrbitDigitals1();
@@ -158,20 +169,21 @@ public:
 	void ErasableMemoryFileLoad(int blocknum);
 	void ErasableMemoryUpdateUplink(int blocknum);
 
-	void ManeuverPAD();
+	void ManeuverPAD(bool IsCSM);
 	void EntryPAD();
 	void TPIPAD();
 	void TLI_PAD();
 	void PDI_PAD();
-	void MapUpdate();
-	void NavCheckPAD();
+	void MapUpdate(bool IsCSM);
+	void NavCheckPAD(bool IsCSM);
 	void AP11AbortCoefUplink();
 	void AP12AbortCoefUplink();
 	void DetermineGMPCode();
 	void NodeConvCalc();
 	void SendNodeToSFP();
 	void CalculateTPITime();
-	void GetStateVectorFromAGC(bool csm);
+	agc_t *GetAGCPointer(bool cmc) const;
+	void GetStateVectorFromAGC(bool csm, bool cmc);
 	void GetStateVectorFromIU();
 	void GetStateVectorsFromAGS();
 	void VectorCompareDisplayCalc();
@@ -179,36 +191,24 @@ public:
 	void LUNTARCalc();
 	void TLIProcessorCalc();
 	void SaturnVTLITargetUplink();
-	int GetVesselParameters(int Thruster, int &Config, int &TVC, double &CSMMass, double &LMMass);
-	void menuCalculateIMUComparison();
+	int GetVesselParameters(bool IsCSM, int docked, int Thruster, int &Config, int &TVC, double &CSMMass, double &LMMass);
+	int menuCalculateIMUComparison(bool IsCSM);
+	void menuCalculateIMUParkingAngles(agc_t* agc);
 
-	int startSubthread(int fcn);
+	int startSubthread(int fcn, bool IsCSM = true);
 	int subThread();
-
-	//EPHEM PROGRAM
-	void GenerateAGCEphemeris();
-	int agcCelBody_RH(CELBODY *Cel, double mjd, int Flags, VECTOR3 *Pos = NULL, VECTOR3 *Vel = NULL);
-	int agcCelBody_LH(CELBODY *Cel, double mjd, int Flags, VECTOR3 *Pos = NULL, VECTOR3 *Vel = NULL);
-	void AGCEphemeris(double T0, int Epoch, double TEphem0);
-	void AGCCorrectionVectors(double mjd_launchday, double dt_UNITW, double dt_504LM, int mission, bool isCMC);
-	void GenerateAGCCorrectionVectors();
 
 	// SUBTHREAD MANAGEMENT
 	KillableWorker subThreadWorker;
 	int subThreadMode;										// What should the subthread do?
 	std::atomic<ThreadStatus> subThreadStatus;
+	bool IsCSMCalculation;									// Vessel selected for calculation
 
 	ApolloRTCCMFDData g_Data;
-
-	//TARGETING VESSELS
-	VESSEL* vessel;
-	VESSEL* target;
-	int targetnumber;		//Vessel index for target
 
 	//GENERAL PARAMETERS
 	double P30TIG;				//Maneuver GET
 	VECTOR3 dV_LVLH;			//LVLH maneuver vector
-	int vesseltype;				// 0 = CSM, 1 = LM, 2 = MCC
 	bool vesselisdocked;		// false = undocked, true = docked
 	bool lemdescentstage;		//0 = ascent stage, 1 = descent stage
 	bool PADSolGood;
@@ -283,10 +283,7 @@ public:
 	int RTEASTType; //75 = unspecified, 76 = specific site, 77 = lunar search
 
 	//STATE VECTOR PAGE
-	bool SVSlot; //true = CSM, false = LEM
 	double SVDesiredGET;
-	VESSEL* svtarget;
-	int svtargetnumber;
 
 	//AGS STATE VECTOR
 	double AGSEpochTime;
@@ -294,22 +291,13 @@ public:
 	AP11AGSSVPAD agssvpad;
 
 	//MANEUVER PAD PAGE
-	AP11MNV manpad;
-	AP11LMMNV lmmanpad;
 	bool HeadsUp;
-	AP7TPI TPI_PAD;
-	int manpadopt; //0 = Maneuver PAD, 1 = TPI PAD, 2 = TLI PAD
+	int manpadopt; //0 = CSM Maneuver PAD, 1 = LM Maneuver PAD, 2 = TPI PAD, 3 = TLI PAD, 4 = PDI PAD
 	double sxtstardtime;
 	double manpad_ullage_dt;
 	bool manpad_ullage_opt; //true = 4 jets, false = 2 jets
-	TLIPAD tlipad;
-	AP11PDIPAD pdipad;
-
-	//ENTRY PAD PAGE
-	AP11ENT lunarentrypad;
-	AP7ENT earthentrypad;
-	int entrypadopt; //0 = Earth Entry Update, 1 = Lunar Entry
-	bool EntryPADSxtStarCheckAttOpt; //true = sextant star attitude check at entry attitude, false = sextant star check at horizon check attitude
+	int ManPADMPT; //1 = CSM, 3 = LEM
+	int ManPADMPTManeuver; //1-15
 
 	//MAP UPDATE PAGE
 	AP10MAPUPDATE mapupdate;
@@ -321,19 +309,11 @@ public:
 	//TLCC PAGE
 	int TLCCSolGood;
 
-	//LANDMARK TRACKING PAGE
-	AP11LMARKTRKPAD landmarkpad;
-	double LmkLat, LmkLng;
-	double LmkTime;
-
 	//VECPOINT PAGE
 	int VECoption;		//0 = Point SC at body, 1 = Open hatch thermal control
 	int VECdirection;	//0 = +X, 1 = -X, 2 = +Y,3 = -Y,4 = +Z, 5 = -Z
 	OBJHANDLE VECbody;	//handle for the desired body
 	VECTOR3 VECangles;	//IMU angles
-
-	//DOI Page
-	VECTOR3 DOI_dV_LVLH;				//Integrated DV Vector
 
 	//Terrain Model
 	double TMLat, TMLng, TMAzi, TMDistance, TMStepSize, TMAlt;
@@ -365,16 +345,6 @@ public:
 	//LVDC PAGE
 	double LVDCLaunchAzimuth;
 
-	//AGC EPHEMERIS
-	int AGCEphemOption;	//0 = AGC ephemerides, 1 = AGC precession/nutation/libration correction vectors
-	int AGCEphemBRCSEpoch;
-	double AGCEphemTEphemZero;
-	double AGCEphemTIMEM0;
-	double AGCEphemTEPHEM;
-	double AGCEphemTLAND;
-	int AGCEphemMission;
-	bool AGCEphemIsCMC;
-
 	//NODAL TARGET CONVERSION
 	bool NodeConvOpt; //false = EMP to selenographc, true = selenographic to EMP
 	double NodeConvLat;
@@ -388,11 +358,16 @@ public:
 	int SpaceDigitalsOption;
 	double SpaceDigitalsGET;
 
+	//SATURN IB LAUNCH TARGETING
+	VESSEL* Rendezvous_Target; //Target vessel in orbit
+
 	//UPLINK
 	double AGCClockTime[2];
 	double RTCCClockTime[2];
 	double DeltaClockTime[2];
 	double DesiredRTCCLiftoffTime[2];
+
+	VESSEL *iuvessel;
 	int iuUplinkResult; //0 = no uplink, 1 = uplink accepted, 2 = vessel has no IU, 3 = uplink rejected, 4 = No targeting parameters
 
 	//LUNAR TARGETING PROGRAM
@@ -406,6 +381,10 @@ public:
 
 	//DEBUG
 	VECTOR3 DebugIMUTorquingAngles;
+
+	//IMU PARKING ANGLES
+	unsigned int GravVec[6];
+	VECTOR3 IMUParkingAngles;
 
 private:
 

@@ -81,6 +81,7 @@ MESHHANDLE hCMB;
 MESHHANDLE hChute30;
 MESHHANDLE hChute31;
 MESHHANDLE hChute32;
+MESHHANDLE hChutesPacked;
 MESHHANDLE hFHC2;
 MESHHANDLE hsat5tower;
 MESHHANDLE hFHO2;
@@ -651,6 +652,7 @@ void SaturnInitMeshes()
 	LOAD_MESH(hChute30, "ProjectApollo/Apollo_2chute");
 	LOAD_MESH(hChute31, "ProjectApollo/Apollo_3chuteEX");
 	LOAD_MESH(hChute32, "ProjectApollo/Apollo_3chuteHD");
+	LOAD_MESH(hChutesPacked, "ProjectApollo/CM-ChutesPacked");
 	LOAD_MESH(hApollochute, "ProjectApollo/Apollo_3chute");
 	LOAD_MESH(hFHC2, "ProjectApollo/CMB-HatchC");
 	LOAD_MESH(hsat5tower, "ProjectApollo/BoostCover");
@@ -1535,6 +1537,11 @@ void Saturn::SetReentryMeshes() {
 	}
 	SetMeshVisibilityMode (meshidx, MESHVIS_VCEXTERNAL);
 
+	if ((!ApexCoverAttached) && (stage < CM_ENTRY_STAGE_THREE)) {
+		meshidx = AddMesh(hChutesPacked, & mesh_dir);
+		SetMeshVisibilityMode(meshidx, MESHVIS_EXTERNAL);
+	}
+
 	if (LESAttached) {
 		TowerOffset = 4.95;
 		VECTOR3 mesh_dir_tower = mesh_dir + _V(0, 0, TowerOffset);
@@ -1888,13 +1895,6 @@ bool Saturn::clbkLoadGenericCockpit ()
 
 {
 	TRACESETUP("Saturn::clbkLoadGenericCockpit");
-
-	//
-	// VC-only in engineering camera view.
-	//
-
-	if (viewpos == SATVIEW_ENG1 || viewpos == SATVIEW_ENG2 || viewpos == SATVIEW_ENG3)
-		return false;
 
 	SetCameraRotationRange(0.0, 0.0, 0.0, 0.0);
 	SetCameraDefaultDirection(_V(0.0, 0.0, 1.0));
