@@ -79,13 +79,13 @@ namespace rtcc
 		AddText(temp, "DVX TWEAK", 64, 694);
 		AddText(temp, "HP", 64, 662);
 
-		AddText(temp, "GET CSI", 64, 630);
-		AddText(temp, "DV CSI", 64, 598);
-		AddText(temp, "GET CDH", 64, 566);
-		AddText(temp, "DV CDH", 64, 534);
+		AddText(temp, "GET CSI", 64, 598);
+		AddText(temp, "DV CSI", 64, 566);
+		AddText(temp, "GET CDH", 64, 534);
+		AddText(temp, "DV CDH", 64, 502);
 
-		AddText(temp, "GET KICK", 64, 470);
-		AddText(temp, "DVX KICK", 64, 438);
+		AddText(temp, "GET KICK", 64, 438);
+		AddText(temp, "DVX KICK", 64, 406);
 
 		displays.push_back(temp);
 
@@ -98,7 +98,8 @@ namespace rtcc
 		AddText(temp, "WT", 64, 950);
 		AddText(temp, "DPH", 320, 950);
 		AddText(temp, "TPI", 64, 918);
-		AddText(temp, "INS", 512, 918);
+		AddText(temp, "INS", 320, 918);
+		AddText(temp, "REF", 640, 918);
 
 		AddText(temp, "SOURCE", 64, 854);
 		AddText(temp, "MSFN", 320, 854);
@@ -113,8 +114,12 @@ namespace rtcc
 		AddText(temp, "DVZ", 64, 630);
 		AddText(temp, "HP", 64, 598);
 
-		AddText(temp, "GETTPI", 64, 534);
-		AddText(temp, "DV", 64, 502);
+		AddText(temp, "R(M)", 64, 566);
+		AddText(temp, "P(I)", 64, 534);
+		AddText(temp, "Y(O)", 64, 502);
+
+		AddText(temp, "GETTPI", 64, 438);
+		AddText(temp, "DV", 64, 406);
 
 		displays.push_back(temp);
 	}

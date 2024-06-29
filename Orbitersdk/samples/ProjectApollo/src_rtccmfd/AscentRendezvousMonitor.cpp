@@ -434,7 +434,8 @@ int ShortAscentRendezvousMonitor::Calc(const ShortARMInputs &in, ShortARMDisplay
 		out.tab[i].Y_H = atan2(res.dV_LVLH.y, res.dV_LVLH.x);
 		out.tab[i].P_H = -res.dV_LVLH.z / sqrt(res.dV_LVLH.x*res.dV_LVLH.x + res.dV_LVLH.y*res.dV_LVLH.y);
 
-		if (length(out.tab[i].DV_B) > 60.0*0.3048)
+		//Mission rule: bailout required if tweak DV is greater than 60 ft/s or if HP after the tweak would be below 5 NM altitude
+		if (length(out.tab[i].DV_B) > 60.0*0.3048 || out.tab[i].HP < 5.0*1852.0)
 		{
 			out.tab[i].DoBailout = true;
 		}

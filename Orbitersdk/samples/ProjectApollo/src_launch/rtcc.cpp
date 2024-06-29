@@ -39385,19 +39385,19 @@ void RTCC::PMDARM(EphemerisData sv_CSM, EphemerisData sv_LM)
 		{
 			strtemp = "   GO";
 		}
-		DynamicDisplayData.DisplayFormatting(disp, strtemp, 400, 790, oapi::Sketchpad::RIGHT);
+		DynamicDisplayData.DisplayFormatting(disp, strtemp, 432, 790, oapi::Sketchpad::RIGHT);
 
-		DynamicDisplayData.DFLTime(disp, out.tab[0].GETI, 400, 726);
-		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_Tweak / 0.3048, "%.1lf", 400, 694);
-		DynamicDisplayData.DFLDouble(disp, out.tab[0].HP / 1852.0, "%.1lf", 400, 662);
+		DynamicDisplayData.DFLTime(disp, out.tab[0].GETI, 432, 726);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_Tweak / 0.3048, "%.1lf", 432, 694);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].HP / 1852.0, "%.1lf", 432, 662);
 
-		DynamicDisplayData.DFLTime(disp, out.tab[0].GET_CSI, 400, 630);
-		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_CSI / 0.3048, "%.1lf", 400, 598);
-		DynamicDisplayData.DFLTime(disp, out.tab[0].GET_CDH, 400, 566);
-		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_CDH / 0.3048, "%.1lf", 400, 534);
+		DynamicDisplayData.DFLTime(disp, out.tab[0].GET_CSI, 432, 598);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_CSI / 0.3048, "%.1lf", 432, 566);
+		DynamicDisplayData.DFLTime(disp, out.tab[0].GET_CDH, 432, 534);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_CDH / 0.3048, "%.1lf", 432, 502);
 
-		DynamicDisplayData.DFLTime(disp, out.tab[0].GET_Kick, 400, 470);
-		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_Kick / 0.3048, "%.1lf", 400, 438);
+		DynamicDisplayData.DFLTime(disp, out.tab[0].GET_Kick, 432, 438);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_Kick / 0.3048, "%.1lf", 432, 406);
 	}
 
 	DynamicDisplayData.UpdateDisplay(disp);
@@ -39409,12 +39409,15 @@ void RTCC::PMDSARM(EphemerisData sv_CSM, EphemerisData sv_LM)
 
 	ShortARMInputs in;
 	ShortARMDisplay out;
+	REFSMMATData refs;
 	int err = 0;
 	bool calc = false;
 
 	//Only calculate if we are past insertion time
 	//if (PZMARM.t_Ins != 0.0 && (RTCCPresentTimeGMT() > PZMARM.t_Ins)) calc = true;
 	calc = true;
+
+	refs = EZJGMTX3.data[0];
 
 	if (calc)
 	{
@@ -39433,7 +39436,7 @@ void RTCC::PMDSARM(EphemerisData sv_CSM, EphemerisData sv_LM)
 		in.IMUAngles = PZMARM.IMUAngles;
 		in.IREF = PZMARM.IREF;
 		in.Axhor = PZMARM.Axhor;
-		in.REFSMMAT = EZJGMTX3.data[0].REFSMMAT;
+		in.REFSMMAT = refs.REFSMMAT;
 		in.t_Ins = PZMARM.t_Ins;
 
 		err = arm.Calc(in, out);
@@ -39441,13 +39444,17 @@ void RTCC::PMDSARM(EphemerisData sv_CSM, EphemerisData sv_LM)
 
 	rtcc::RTCCDisplay disp;
 	std::string strtemp;
+	char Buff[128];
 
 	disp.MSKNumber = 233;
 
 	DynamicDisplayData.DFLDouble(disp, PZMARM.WT*DEG, "%.2lf", 288, 950);
 	DynamicDisplayData.DFLDouble(disp, PZMARM.DTHETA*DEG, "%.2lf", 480, 950);
 	DynamicDisplayData.DFLTime(disp, GETfromGMT(PZMARM.t_TPI_Short), 288, 918);
-	DynamicDisplayData.DFLTime(disp, GETfromGMT(PZMARM.t_Ins), 768, 918);
+	DynamicDisplayData.DFLTime(disp, GETfromGMT(PZMARM.t_Ins), 576, 918);
+
+	FormatREFSMMATCode(RTCC_REFSMMAT_TYPE_CUR, refs.ID, Buff);
+	DynamicDisplayData.DisplayFormatting(disp, Buff, 918, 918, oapi::Sketchpad::RIGHT);
 
 	DynamicDisplayData.DFLInteger(disp, err, "ERR %d", 500, 64);
 
@@ -39456,19 +39463,26 @@ void RTCC::PMDSARM(EphemerisData sv_CSM, EphemerisData sv_LM)
 	{
 		if (out.tab[0].DoBailout)
 		{
-			strtemp = "NO GO";
+			strtemp = "BAIL";
 		}
 		else
 		{
-			strtemp = "   GO";
+			strtemp = "TWEAK";
 		}
-		DynamicDisplayData.DisplayFormatting(disp, strtemp, 400, 790, oapi::Sketchpad::RIGHT);
+		DynamicDisplayData.DisplayFormatting(disp, strtemp, 432, 790, oapi::Sketchpad::RIGHT);
 
-		DynamicDisplayData.DFLTime(disp, out.tab[0].GETI, 400, 726);
-		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_B.x / 0.3048, "%.1lf", 400, 694);
-		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_B.y / 0.3048, "%.1lf", 400, 662);
-		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_B.z / 0.3048, "%.1lf", 400, 630);
-		DynamicDisplayData.DFLDouble(disp, out.tab[0].HP / 1852.0, "%.1lf", 400, 598);
+		DynamicDisplayData.DFLTime(disp, out.tab[0].GETI, 432, 726);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_B.x / 0.3048, "%.1lf", 432, 694);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_B.y / 0.3048, "%.1lf", 432, 662);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_B.z / 0.3048, "%.1lf", 432, 630);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].HP / 1852.0, "%.1lf", 432, 598);
+
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].Att.z*DEG, "%03.0lf", 432, 566);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].Att.y*DEG, "%03.0lf", 432, 534);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].Att.x*DEG, "%03.0lf", 432, 502);
+
+		DynamicDisplayData.DFLTime(disp, out.tab[0].GETTPI, 432, 438);
+		DynamicDisplayData.DFLDouble(disp, out.tab[0].DV_TPI / 0.3048, "%.1lf", 432, 406);
 	}
 
 	DynamicDisplayData.UpdateDisplay(disp);
