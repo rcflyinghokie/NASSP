@@ -61,6 +61,7 @@ struct RTCCMFDData
 	int markermax = 0;
 	UINT ID = 0;
 	std::string MEDCode;
+	bool IsCSM = false;
 };
 
 class ApolloRTCCMFD: public MFD2 {

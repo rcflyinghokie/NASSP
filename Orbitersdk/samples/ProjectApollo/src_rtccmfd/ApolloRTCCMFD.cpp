@@ -118,6 +118,7 @@ void ApolloRTCCMFD::SaveState()
 	temp.subscreen = subscreen;
 	temp.ID = ID;
 	temp.MEDCode = MEDInputData.MEDCode;
+	temp.IsCSM = IsCSM;
 
 	bool found = false;
 
@@ -154,6 +155,7 @@ void ApolloRTCCMFD::LoadState()
 			screen = g_MFDData[i].screen;
 			subscreen = g_MFDData[i].subscreen;
 			MEDInputData.MEDCode = g_MFDData[i].MEDCode;
+			IsCSM = g_MFDData[i].IsCSM;
 			break;
 		}
 	}
