@@ -1557,19 +1557,31 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		if (upString != NULL) {
 			// give to mcc
 			strncpy(upString, uplinkdata, 1024 * 3);
-			sprintf(upDesc, "clock update, state vectors, LS REFSMMAT");
+			sprintf(upDesc, "Clock update, state vectors, LS REFSMMAT");
 		}
 	}
 	break;
 	case 65: //AGS ACTIVATION UPDATE
 	{
-		AP11AGSACT *form = (AP11AGSACT*)pad;
+		GENERICPAD *form = (GENERICPAD*)pad;
 
-		form->KFactor = 90.0*3600.0;
-		form->DEDA224 = 0;
-		form->DEDA225 = 0;
-		form->DEDA226 = 0;
-		form->DEDA227 = 0;
+		double KFactor, ss;
+		int hh, mm;
+
+		LEM *l = (LEM*)calcParams.tgt;
+		bool res_k = CalculateAGSKFactor(&l->agc.vagc, &l->aea.vags, KFactor);
+
+		//Sanity check on K-Factor value
+		if (!res_k || abs(KFactor - 90.0*3600.0) > 2.0 * 60.0)
+		{
+			KFactor = 90.0*3600.0; //Default to 90h if no reasonable K-Factor was determined
+		}
+
+		SystemParameters.MCGZSS = SystemParameters.MCGZSL + KFactor / 3600.0;
+
+		OrbMech::SStoHHMMSS(GETfromGMT(GetAGSClockZero()), hh, mm, ss, 0.01);
+
+		sprintf(form->paddata, "K-Factor: %03d:%02d:%05.2f GET", hh, mm, ss);
 	}
 	break;
 	case 70: //CSM SEPARATION BURN
@@ -1577,16 +1589,21 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		AP11ManPADOpt opt;
 		EphemerisData sv;
 		VECTOR3 dV_LVLH;
-		double t_P, t_Sep;
+		double t_P, t_Sep, t_Undock;
 		char buffer1[1000];
 		char buffer2[1000];
+		char GETBuffer[128];
 
 		AP11MNV * form = (AP11MNV *)pad;
 
 		sv = StateVectorCalcEphem(calcParams.src); //State vector for uplink
 
+		//Separation burn half an orbit before DOI
 		t_P = OrbMech::period(sv.R, sv.V, OrbMech::mu_Moon);
 		t_Sep = floor(calcParams.DOI - t_P / 2.0);
+		//Undocking 25 minutes (rounded down to the previous minute) before sep
+		t_Undock = floor((t_Sep - 25.0*60.0) / 60.0)*60.0;
+
 		dV_LVLH = _V(0, 0, -2.5)*0.3048;
 
 		opt.TIG = t_Sep;
@@ -1599,6 +1616,9 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 
 		AP11ManeuverPAD(opt, *form);
 		sprintf(form->purpose, "Separation");
+		form->type = 2;
+		OrbMech::format_time_HHMMSS(GETBuffer, t_Undock);
+		sprintf(form->remarks, "Undocking at %s GET", GETBuffer);
 
 		AGCStateVectorUpdate(buffer1, 1, RTCC_MPT_CSM, sv);
 		AGCStateVectorUpdate(buffer2, 1, RTCC_MPT_LM, sv);
@@ -1607,7 +1627,7 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		if (upString != NULL) {
 			// give to mcc
 			strncpy(upString, uplinkdata, 1024 * 3);
-			sprintf(upDesc, "state vectors");
+			sprintf(upDesc, "State vectors");
 		}
 	}
 	break;
