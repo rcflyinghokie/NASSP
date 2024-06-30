@@ -1599,6 +1599,7 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 
 		AP11ManeuverPAD(opt, *form);
 		sprintf(form->purpose, "Separation");
+		form->type = 2;
 
 		AGCStateVectorUpdate(buffer1, 1, RTCC_MPT_CSM, sv);
 		AGCStateVectorUpdate(buffer2, 1, RTCC_MPT_LM, sv);
