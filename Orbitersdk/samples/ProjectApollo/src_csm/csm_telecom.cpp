@@ -2531,10 +2531,10 @@ unsigned char PCM::measure(int channel, int type, int ccode){
 							return(0);
 						case 8:			// LES LOGIC BUS A VOLTS
 							sat->GetSECSStatus( secsStatus );
-							return(scale_data( secsStatus.BusBVoltage, 0, 40 ));
-						case 9:			// PYRO BUS A VOLTS
-							sat->GetSECSStatus( secsStatus );
 							return(scale_data( secsStatus.BusAVoltage, 0, 40 ));
+						case 9:			// PYRO BUS A VOLTS
+							sat->GetPyroStatus(pyroStatus);
+							return(scale_data(pyroStatus.BusAVoltage, 0, 40 ));
 						case 10:		// SPS HE TK PRESS
 							return(scale_data(sat->GetSPSPropellant()->GetHeliumPressurePSI(), 0, 5000));
 						case 11:		// SPS OX TK PRESS
