@@ -72,7 +72,6 @@ extern "C" {
 using namespace nassp;
 
 //extern FILE *PanelsdkLogFile;
-//extern FILE* IMUDriftLogger;
 
 #define CSM_AXIS_INPUT_CNT  53
 VesimInputDefinition vesim_csm_inputs[CSM_AXIS_INPUT_CNT] = {
