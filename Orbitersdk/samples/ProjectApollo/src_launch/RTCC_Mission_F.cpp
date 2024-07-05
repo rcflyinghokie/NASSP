@@ -1589,7 +1589,7 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		AP11ManPADOpt opt;
 		EphemerisData sv;
 		VECTOR3 dV_LVLH;
-		double t_P, t_Sep, t_Undock;
+		double t_P, t_Undock;
 		char buffer1[1000];
 		char buffer2[1000];
 		char GETBuffer[128];
@@ -1600,13 +1600,13 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 
 		//Separation burn half an orbit before DOI
 		t_P = OrbMech::period(sv.R, sv.V, OrbMech::mu_Moon);
-		t_Sep = floor(calcParams.DOI - t_P / 2.0);
+		calcParams.SEP = floor(calcParams.DOI - t_P / 2.0);
 		//Undocking 25 minutes (rounded down to the previous minute) before sep
-		t_Undock = floor((t_Sep - 25.0*60.0) / 60.0)*60.0;
+		t_Undock = floor((calcParams.SEP - 25.0*60.0) / 60.0)*60.0;
 
 		dV_LVLH = _V(0, 0, -2.5)*0.3048;
 
-		opt.TIG = t_Sep;
+		opt.TIG = calcParams.SEP;
 		opt.dV_LVLH = dV_LVLH;
 		opt.enginetype = RTCC_ENGINETYPE_CSMRCSPLUS4;
 		opt.HeadsUp = true;
