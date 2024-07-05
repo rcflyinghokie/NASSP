@@ -1556,18 +1556,8 @@ void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 	//
 	// Subclass specific handling
 	//
-	//VECTOR3 ATTITUDEFORTESTING = imu.GetTotalAttitude();
-	VECTOR3 ATTITUDEFORTESTING = imu.getPlatformEulerAnglesZYX();
-	VECTOR3 DRIFTRATEFORTESTING = imu.GetNBDriftRates();
-	VECTOR3 IMURESOLVERPHASEERROR = imu.getResolverPhaseError();
-	//sprintf(oapiDebugString(), "<%0.10f, %0.10f, %0.10f>, <%0.10f, %0.10f, %0.10f>, <%0.10f, %0.10f, %0.10f>", 
-	//	ATTITUDEFORTESTING.x, ATTITUDEFORTESTING.y, ATTITUDEFORTESTING.z, 
-	//	DRIFTRATEFORTESTING.x, DRIFTRATEFORTESTING.y, DRIFTRATEFORTESTING.z,
-	//	IMURESOLVERPHASEERROR.x, IMURESOLVERPHASEERROR.y, IMURESOLVERPHASEERROR.z);
-	//fprintf(IMUDriftLogger, "%0.15f, %0.15f, %0.15f, %0.15f\n", simt, ATTITUDEFORTESTING.x, ATTITUDEFORTESTING.y, ATTITUDEFORTESTING.z);
-	//fflush(IMUDriftLogger);
+
 	Timestep(simt, simdt, mjd);
-	
 
 	sprintf(buffer, "End time(0) %lld", time(0)); 
 	TRACE(buffer);
