@@ -450,10 +450,10 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	{
 		{ "Choose CSM", 0, 'E' },
 		{ "T1 guess", 0, 'T' },
+		{ "T2 elevation", 0, ' ' },
 		{ "Landmark Latitude", 0, 'A' },
 		{ "Landmark Longitude", 0, 'O' },
 		{ "Load landing site coordinates", 0, 'D' },
-		{ "", 0, ' ' },
 
 		{ "Calculate PAD", 0, 'C' },
 		{ "", 0, ' ' },
@@ -467,10 +467,10 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 
 	RegisterFunction("CSM", OAPI_KEY_E, &ApolloRTCCMFD::set_CSMVessel);
 	RegisterFunction("TIM", OAPI_KEY_T, &ApolloRTCCMFD::menuSetLmkTime);
+	RegisterFunction("EL", OAPI_KEY_F, &ApolloRTCCMFD::menuSetLmkElevation);
 	RegisterFunction("LAT", OAPI_KEY_A, &ApolloRTCCMFD::menuSetLmkLat);
 	RegisterFunction("LNG", OAPI_KEY_O, &ApolloRTCCMFD::menuSetLmkLng);
 	RegisterFunction("LLS", OAPI_KEY_D, &ApolloRTCCMFD::menuLmkUseLandingSite);
-	RegisterFunction("", OAPI_KEY_F, &ApolloRTCCMFD::menuVoid);
 
 	RegisterFunction("CLC", OAPI_KEY_C, &ApolloRTCCMFD::menuLmkPADCalc);
 	RegisterFunction("", OAPI_KEY_G, &ApolloRTCCMFD::menuVoid);
@@ -4160,7 +4160,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 		{ "Select IU vessel", 0, 'Q' },
 
 		{ "Calculate LWP", 0, 'C' },
-		{ "", 0, ' ' },
+		{ "Insertion state vector to MPT", 0, 'A' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
 		{ "", 0, ' ' },
@@ -4177,7 +4177,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	RegisterFunction("IU", OAPI_KEY_Q, &ApolloRTCCMFD::set_IUVessel);
 
 	RegisterFunction("CLC", OAPI_KEY_C, &ApolloRTCCMFD::menuSLVLaunchTargeting);
-	RegisterFunction("", OAPI_KEY_A, &ApolloRTCCMFD::menuVoid);
+	RegisterFunction("MPT", OAPI_KEY_A, &ApolloRTCCMFD::menuSLVInsertionSVtoMPT);
 	RegisterFunction("", OAPI_KEY_Q, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("", OAPI_KEY_R, &ApolloRTCCMFD::menuVoid);
 	RegisterFunction("UPL", OAPI_KEY_U, &ApolloRTCCMFD::menuSLVLaunchUplink);

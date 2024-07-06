@@ -4905,6 +4905,14 @@ h_Pipe* Saturn::GetCSMO2Hose()
 	return (h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:CSMTOLMO2HOSE");
 }
 
+void Saturn::ConnectCSMO2Hose()
+{
+	if (ForwardHatch.IsOpen())
+	{
+		lemECSConnector.ConnectCSMO2Hose();
+	}
+}
+
 bool Saturn::GetLMDesBatLVOn()
 {
 	return LMPowerSwitch.IsDown() && MnbLMPWR2CircuitBraker.IsPowered();

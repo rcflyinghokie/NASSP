@@ -53,6 +53,17 @@ struct MEDInputPage
 	std::vector<MEDInput> table;
 };
 
+struct RTCCMFDData
+{
+	int screen = 0;
+	int subscreen = 0;
+	int marker = 0;
+	int markermax = 0;
+	UINT ID = 0;
+	std::string MEDCode;
+	bool IsCSM = false;
+};
+
 class ApolloRTCCMFD: public MFD2 {
 public:
 	ApolloRTCCMFD (DWORD w, DWORD h, VESSEL *vessel, UINT im);
@@ -64,7 +75,6 @@ public:
 	bool ConsumeKeyBuffered(DWORD key);
 	void WriteStatus(FILEHANDLE scn) const;
 	void ReadStatus(FILEHANDLE scn);
-	void StoreStatus(void) const;
 	void RecallStatus(void);
 
 	void Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax = 1024, int ymax = 1024);
@@ -93,6 +103,7 @@ public:
 	void CycleThroughVessels(VESSEL **v) const;
 	void menuSLVLaunchTargetingPad();
 	void menuSLVLaunchTargeting();
+	void menuSLVInsertionSVtoMPT();
 	void menuSLVLaunchUplink();
 	void menuVoid();
 	void menuSetLambertPage();
@@ -200,6 +211,7 @@ public:
 	void menuCycleTwoImpulseOption();
 	void menuSwitchHeadsUp();
 	void menuCalcManPAD();
+	void set_ManPADMPTInput(int mpt, int num);
 	void menuSetManPADPage();
 	void menuCalcEntryPAD();
 	void menuSetEntryPADPage();
@@ -299,6 +311,7 @@ public:
 	void menuLOICalc();
 	void menuSetLandmarkTrkPage();
 	void menuSetLmkTime();
+	void menuSetLmkElevation();
 	void menuSetLmkLat();
 	void menuSetLmkLng();
 	void menuLmkUseLandingSite();
@@ -870,14 +883,11 @@ protected:
 	int marker;
 	int markermax;
 	int status; //Page dependent status, reset to 0 when new page is entered
-	static struct ScreenData {
-		int screen;
-		int subscreen;
-		int marker;
-		int markermax;
-	} screenData;
 private:
+	void SaveState();
+	void LoadState();
 
+	UINT ID;
 	ARCore* G;
 	AR_GCore* GC;
 	ApolloRTCCMFDButtons coreButtons;
