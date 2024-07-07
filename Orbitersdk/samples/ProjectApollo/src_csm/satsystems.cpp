@@ -59,7 +59,6 @@ void Saturn::SystemsInit() {
 	Panelsdk.InitFromFile("ProjectApollo\\SaturnSystems");
 
 	//PanelsdkLogFile = fopen("ProjectApollo Saturn Systems.log", "w");
-	//IMUDriftLogger = fopen("IMUDriftLogger.log", "w");
 
 	//
 	// Electrical systems.
