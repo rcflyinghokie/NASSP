@@ -412,74 +412,9 @@ namespace mission {
 				sscanf(line + 13, "%lf", &LM_PIPAScale.z);
 			}
 		}
-		//LoadIMU_AndPIPA_RatesAndBiases(hFile);
 		hFile.close();
 
 		return true;
-	}
-
-	void Mission::LoadIMU_AndPIPA_RatesAndBiases(std::ifstream &hFile) {
-		//char line[256];
-
-		//for (std::string line; std::getline(hFile, line);) {
-		//	if (!line.compare(0,7,"CMNBDX=")) {
-		//		CM_IMUDriftRates.m11 = std::stod(line.substr(7));
-		//	}
-		//	else if (!line.compare(0, 7, "CMNBDY=")) {
-		//		CM_IMUDriftRates.m12 = std::stod(line.substr(7));
-		//	}
-		//	else if (!line.compare(0, 7, "CMNBDZ=")) {
-		//		CM_IMUDriftRates.m13 = std::stod(line.substr(7));
-		//	}
-		//}
-
-		//while (hFile.getline(line, sizeof line)) {
-		//	if (!_strnicmp(line, "CMNBDX=", 7)) {
-		//		sscanf(line + 7, "%lf", &CM_IMUDriftRates.m11);
-		//	}
-		//	else if (!_strnicmp(line, "CMNBDY=", 7)) {
-		//		sscanf(line + 7, "%lf", &CM_IMUDriftRates.m12);
-		//	}
-		//	else if (!_strnicmp(line, "CMNBDZ=", 7)) {
-		//		sscanf(line + 7, "%lf", &CM_IMUDriftRates.m13);
-		//	}
-		//}
-
-		/*oapiReadItem_float(hFile, "CMNBDX", CM_IMUDriftRates.m11);
-		oapiReadItem_float(hFile, "CMNBDY", CM_IMUDriftRates.m12);
-		oapiReadItem_float(hFile, "CMNBDZ", CM_IMUDriftRates.m13);
-		oapiReadItem_float(hFile, "CMADSRAX", CM_IMUDriftRates.m21);
-		oapiReadItem_float(hFile, "CMADSRAY", CM_IMUDriftRates.m22);
-		oapiReadItem_float(hFile, "CMADSRAZ", CM_IMUDriftRates.m23);
-		oapiReadItem_float(hFile, "CMADIAX", CM_IMUDriftRates.m31);
-		oapiReadItem_float(hFile, "CMADIAY", CM_IMUDriftRates.m32);
-		oapiReadItem_float(hFile, "CMADIAZ", CM_IMUDriftRates.m33);
-
-		oapiReadItem_float(hFile, "CMPIPABIASX", CM_PIPABias.x);
-		oapiReadItem_float(hFile, "CMPIPABIASY", CM_PIPABias.y);
-		oapiReadItem_float(hFile, "CMPIPABIASZ", CM_PIPABias.z);
-
-		oapiReadItem_float(hFile, "CMPIPASCALEX", CM_PIPAScale.x);
-		oapiReadItem_float(hFile, "CMPIPASCALEY", CM_PIPAScale.y);
-		oapiReadItem_float(hFile, "CMPIPASCALEZ", CM_PIPAScale.z);
-
-		oapiReadItem_float(hFile, "LMNBDX", LM_IMUDriftRates.m11);
-		oapiReadItem_float(hFile, "LMNBDY", LM_IMUDriftRates.m12);
-		oapiReadItem_float(hFile, "LMNBDZ", LM_IMUDriftRates.m13);
-		oapiReadItem_float(hFile, "LMADSRAX", LM_IMUDriftRates.m21);
-		oapiReadItem_float(hFile, "LMADSRAY", LM_IMUDriftRates.m22);
-		oapiReadItem_float(hFile, "LMADSRAZ", LM_IMUDriftRates.m23);
-		oapiReadItem_float(hFile, "LMADIAX", LM_IMUDriftRates.m31);
-		oapiReadItem_float(hFile, "LMADIAY", LM_IMUDriftRates.m32);
-		oapiReadItem_float(hFile, "LMADIAZ", LM_IMUDriftRates.m33);
-
-		oapiReadItem_float(hFile, "LMPIPABIASX", LM_PIPABias.x);
-		oapiReadItem_float(hFile, "LMPIPABIASY", LM_PIPABias.y);
-		oapiReadItem_float(hFile, "LMPIPABIASZ", LM_PIPABias.z);
-
-		oapiReadItem_float(hFile, "LMPIPASCALEX", LM_PIPAScale.x);
-		oapiReadItem_float(hFile, "LMPIPASCALEY", LM_PIPAScale.y);
-		oapiReadItem_float(hFile, "LMPIPASCALEZ", LM_PIPAScale.z);*/
 	}
 
 	MATRIX3 Mission::GetCM_IMU_Drift() const {
