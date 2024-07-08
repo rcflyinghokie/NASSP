@@ -257,7 +257,7 @@ void MCC::MissionSequence_F()
 		UpdateMacro(UTP_PADONLY, PT_AP11LMMNV, SubStateTime > 2.0*60.0, 72, MST_F_LUNAR_ORBIT_DOI_DAY_14);
 		break;
 	case MST_F_LUNAR_ORBIT_DOI_DAY_14: //PDI Abort update to LGC CSM state vector update
-		UpdateMacro(UTP_PADONLY, PT_AP11LMMNV, MoonRev >= 12 && MoonRevTime > 50.0*60.0, 74, MST_F_LUNAR_ORBIT_DOI_DAY_15);
+		UpdateMacro(UTP_PADONLY, PT_AP11LMMNV, (MoonRev >= 12 && MoonRevTime > 50.0*60.0) && rtcc->GETEval2(rtcc->calcParams.SEP + 60.0), 74, MST_F_LUNAR_ORBIT_DOI_DAY_15);
 		break;
 	case MST_F_LUNAR_ORBIT_DOI_DAY_15: //LGC CSM state vector update to CMC CSM+LM state vector update
 		UpdateMacro(UTP_LGCUPLINKONLY, PT_NONE, MoonRev >= 12 && MoonRevTime > 1.0*3600.0 + 10.0*60.0, 100, MST_F_LUNAR_ORBIT_DOI_DAY_16);
