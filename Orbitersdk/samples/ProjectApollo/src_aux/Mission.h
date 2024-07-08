@@ -102,7 +102,6 @@ namespace mission
 		//
 		VECTOR3 GetLM_PIPA_Scale() const;
 		//0 = LM-7 and before (ASC PRESS LOW before staging, RCS for HEATER FAILURE CAUTION), 1 = LM-8 and after (both cut and capped)
-		int GetLMCWEAVersion() const;
 		//false = Normal polarity (Apollo 14 and earlier), Lateral axis for PGNS and LR input has switched polarity (Apollo 15 and later)
 		bool GetCrossPointerReversePolarity() const;
 		//false = No shades (Apollo 15 and earlier), Shades (Apollo 16 & 17)
