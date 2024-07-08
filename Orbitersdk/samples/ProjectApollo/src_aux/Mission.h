@@ -186,8 +186,6 @@ namespace mission
 		VECTOR3 LM_PIPABias;
 		VECTOR3 LM_PIPAScale;
 
-		void Mission::LoadIMU_AndPIPA_RatesAndBiases(std::ifstream &hFile);
-
 		void SetDefaultValues();
 	};
 }
