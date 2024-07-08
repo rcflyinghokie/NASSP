@@ -44,8 +44,6 @@
 
 //FILE *PanelsdkLogFile;
 
-FILE *IMUDriftLogger;
-
 
 void Saturn::SystemsInit() {
 
