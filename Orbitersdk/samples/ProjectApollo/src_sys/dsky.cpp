@@ -157,6 +157,7 @@ DSKY::DSKY(SoundLib &s, ApolloGuidance &computer, int IOChannel) : soundlib(s), 
 
 {
 	DimmerRotationalSwitch = NULL;
+	IntegralRotationalSwitch = NULL;
 	StatusPower = NULL;
 	SegmentPower = NULL;
 	Reset();
@@ -211,12 +212,13 @@ DSKY::~DSKY()
 	WSACleanup();
 }
 
-void DSKY::Init(e_object *statuslightpower, e_object *segmentlightpower, ContinuousRotationalSwitch *dimmer)
+void DSKY::Init(e_object *statuslightpower, e_object *segmentlightpower, ContinuousRotationalSwitch *dimmer, ContinuousRotationalSwitch *integralDimmer)
 
 {
 	StatusPower = statuslightpower;
 	SegmentPower = segmentlightpower;
 	DimmerRotationalSwitch = dimmer;
+	IntegralRotationalSwitch = integralDimmer;
 	Reset();
 	FirstTimeStep = true;
 }
@@ -1567,10 +1569,14 @@ void DSKY::SendNetworkPacketNumerics()
 	if (numericsOutEnabled == true) {
 		std::string message = "{\"brightness\": \"";
 		char numLvl[256] = "";
+		char intLvl[256] = "";
 
 		sprintf(numLvl, "%lf", DimmerRotationalSwitch->GetOutput());
+		sprintf(intLvl, "%lf", IntegralRotationalSwitch->GetOutput());
 
-		message = message + numLvl + "\"}";
+		message = message + numLvl + "\",";
+		message = message + "\"integralBrightness\": \"";
+		message = message + intLvl + "\"}";
 
 		sendto(clientSock, message.c_str(), message.length(), 0, (LPSOCKADDR)&serverAddr[1], sizeof(struct sockaddr));
 		//strcpy(oapiDebugString(), message.c_str());
