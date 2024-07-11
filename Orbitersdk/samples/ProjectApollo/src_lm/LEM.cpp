@@ -845,19 +845,19 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 			case OAPI_KEY_DECIMAL:
 				dskyKeyChanged = &DskySwitchClear;
 				break;
-			case OAPI_KEY_R:
+			case OAPI_KEY_PRIOR:
 				dskyKeyChanged = &DskySwitchReset;
 				break;
 			case OAPI_KEY_HOME:
 				dskyKeyChanged = &DskySwitchKeyRel;
 				break;
-			case OAPI_KEY_T:
+			case OAPI_KEY_NUMPADENTER:
 				dskyKeyChanged = &DskySwitchEnter;
 				break;
-			case OAPI_KEY_V:
+			case OAPI_KEY_DIVIDE:
 				dskyKeyChanged = &DskySwitchVerb;
 				break;
-			case OAPI_KEY_N:
+			case OAPI_KEY_MULTIPLY:
 				dskyKeyChanged = &DskySwitchNoun;
 				break;
 			case OAPI_KEY_ADD:
