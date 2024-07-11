@@ -267,8 +267,67 @@ void DSKY::Timestep(double simt)
 			serverAddr[0].sin_port = htons((u_short)DSKYOutPort);
 			serverAddr[1].sin_port = htons((u_short)NumericsOutPort);
 			clientSock = socket(PF_INET, SOCK_DGRAM, 0);
+			
+			// Set socket as nonblocking
+			int iMode = 1; // 0 = BLOCKING, 1 = NONBLOCKING
+			if(ioctlsocket(clientSock, FIONBIO, (u_long FAR*) &iMode) != 0){
+				closesocket(clientSock);
+				WSACleanup();
+			}
 		}
 		oapiCloseFile(DSKYOutConfig, FILE_IN_ZEROONFAIL);
+	}
+	if(DSKYOutEnabled){
+    	char buffer[512];
+		int recvLen = recv(clientSock, buffer, sizeof(buffer) - 1, 0);
+
+        if (recvLen != SOCKET_ERROR) {
+            buffer[recvLen] = '\0';  // Null-terminate the received data
+			   
+			if (strcmp(buffer, "v") == 0) {
+				this->VerbPressed();
+			} else if (strcmp(buffer, "n") == 0) {
+				this->NounPressed();
+			} else if (strcmp(buffer, "+") == 0) {
+				this->PlusPressed();
+			} else if (strcmp(buffer, "-") == 0) {
+				this->MinusPressed();
+			} else if (strcmp(buffer, "0") == 0) {
+				this->NumberPressed(0);
+			} else if (strcmp(buffer, "1") == 0) {
+				this->NumberPressed(1);
+			} else if (strcmp(buffer, "2") == 0) {
+				this->NumberPressed(2);
+			} else if (strcmp(buffer, "3") == 0) {
+				this->NumberPressed(3);
+			} else if (strcmp(buffer, "4") == 0) {
+				this->NumberPressed(4);
+			} else if (strcmp(buffer, "5") == 0) {
+				this->NumberPressed(5);
+			} else if (strcmp(buffer, "6") == 0) {
+				this->NumberPressed(6);
+			} else if (strcmp(buffer, "7") == 0) {
+				this->NumberPressed(7);
+			} else if (strcmp(buffer, "8") == 0) {
+				this->NumberPressed(8);
+			} else if (strcmp(buffer, "9") == 0) {
+				this->NumberPressed(9);
+			} else if (strcmp(buffer, "c") == 0) {
+				this->ClearPressed();
+			} else if (strcmp(buffer, "p") == 0) {
+				this->ProceedPressed();
+			} else if (strcmp(buffer, "o") == 0) {
+				this->ProceedReleased();
+			} else if (strcmp(buffer, "k") == 0) {
+				this->KeyRel();
+			} else if (strcmp(buffer, "e") == 0) {
+				this->EnterPressed();
+			} else if (strcmp(buffer, "r") == 0) {
+				this->ResetPressed();
+			}
+
+			//sprintf(oapiDebugString(), buffer);
+        }
 	}
 }
 
