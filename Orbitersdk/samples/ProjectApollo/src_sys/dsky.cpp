@@ -201,8 +201,6 @@ void DSKY::Reset()
 	DSKYOutEnabled = false;
 	strcpy(DSKYOutIp, "127.0.0.1");
 	DSKYOutPort = 3002;
-	numericsOutEnabled = false;
-	NumericsOutPort = 3003;
 }
 
 DSKY::~DSKY()
@@ -257,17 +255,12 @@ void DSKY::Timestep(double simt)
 			oapiReadItem_bool(DSKYOutConfig, "ENABLED", DSKYOutEnabled);
 			oapiReadItem_string(DSKYOutConfig, "IP", DSKYOutIp);
 			oapiReadItem_int(DSKYOutConfig, "DSKYPORT", DSKYOutPort);
-			oapiReadItem_bool(DSKYOutConfig, "NUMERICSENABLED", numericsOutEnabled);
-			oapiReadItem_int(DSKYOutConfig, "NUMERICSPORT", NumericsOutPort);
 
 			//Set up network stuff
 			WSAStartup(0x0202, &wsaData);
-			serverAddr[0].sin_family = AF_INET;
-			serverAddr[1].sin_family = AF_INET;
-			serverAddr[0].sin_addr.s_addr = inet_addr(DSKYOutIp);
-			serverAddr[1].sin_addr.s_addr = inet_addr(DSKYOutIp);
-			serverAddr[0].sin_port = htons((u_short)DSKYOutPort);
-			serverAddr[1].sin_port = htons((u_short)NumericsOutPort);
+			serverAddr.sin_family = AF_INET;
+			serverAddr.sin_addr.s_addr = inet_addr(DSKYOutIp);
+			serverAddr.sin_port = htons((u_short)DSKYOutPort);
 			clientSock = socket(PF_INET, SOCK_DGRAM, 0);
 			
 			// Set socket as nonblocking
@@ -1536,6 +1529,8 @@ void DSKY::SendNetworkPacketDSKY()
 		std::string r3 = "\"r3\": ";
 		std::string alarms = "\"alarms\": ";
 		std::string powered = "\"powered\": ";
+		std::string numerics = "\"numerics\": ";
+		std::string integral = "\"integral\": ";
 
 		compLight = compLight + "\"" + B2S(CompActy) + "\",";
 		prog = prog + "\"" + Prog + "\",";
@@ -1545,7 +1540,7 @@ void DSKY::SendNetworkPacketDSKY()
 		r1 = r1 + "\"" + R1 + "\",";
 		r2 = r2 + "\"" + R2 + "\",";
 		r3 = r3 + "\"" + R3 + "\",";
-
+		
 		alarms = alarms + "\"" + B2S(UplinkLight) + " " + B2S(NoAttLight) + " " + B2S(StbyLight) + " "
 			+ B2S(KbRelLight) + " " + B2S(OprErrLight) + " " + B2S(TempLight) + " " + B2S(GimbalLockLight)
 			+ " " + B2S(ProgLight) + " " + B2S(RestartLight) + " " + B2S(TrackerLight) + " " + B2S(VelLight)
@@ -1553,32 +1548,20 @@ void DSKY::SendNetworkPacketDSKY()
 
 		bool elPowered = true;
 		if (!IsSegmentPowered() || ELOff) { elPowered = false; }
-		powered = powered + "\"" + B2S(IsStatusPowered()) + " " + B2S(elPowered) + "\"";
+		powered = powered + "\"" + B2S(IsStatusPowered()) + " " + B2S(elPowered) + "\",";
 
-		std::string message = "{" + compLight + prog + verb + noun + flashing + r1 + r2 + r3 + alarms + powered + "}";
-
-		sendto(clientSock, message.c_str(), message.length(), 0, (LPSOCKADDR)&serverAddr[0], sizeof(struct sockaddr));
-		//strcpy(oapiDebugString(), message.c_str());
-
-		SendNetworkPacketNumerics();
-	}
-}
-
-void DSKY::SendNetworkPacketNumerics()
-{
-	if (numericsOutEnabled == true) {
-		std::string message = "{\"brightness\": \"";
 		char numLvl[256] = "";
 		char intLvl[256] = "";
 
 		sprintf(numLvl, "%lf", DimmerRotationalSwitch->GetOutput());
 		sprintf(intLvl, "%lf", IntegralRotationalSwitch->GetOutput());
 
-		message = message + numLvl + "\",";
-		message = message + "\"integralBrightness\": \"";
-		message = message + intLvl + "\"}";
+		numerics = numerics + "\"" + numLvl + "\",";
+		integral = integral + "\"" + intLvl + "\"";
 
-		sendto(clientSock, message.c_str(), message.length(), 0, (LPSOCKADDR)&serverAddr[1], sizeof(struct sockaddr));
+		std::string message = "{" + compLight + prog + verb + noun + flashing + r1 + r2 + r3 + alarms + powered + numerics + integral + "}";
+
+		sendto(clientSock, message.c_str(), message.length(), 0, (LPSOCKADDR)&serverAddr, sizeof(struct sockaddr));
 		//strcpy(oapiDebugString(), message.c_str());
 	}
 }

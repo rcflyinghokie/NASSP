@@ -161,7 +161,6 @@ public:
 	void LoadState(FILEHANDLE scn, char *end_str);
 
 	void SendNetworkPacketDSKY();
-	void SendNetworkPacketNumerics();
 
 	char *GetProg() { return Prog; };
 	char *GetVerb() { return Verb; };
@@ -293,10 +292,8 @@ protected:
 	bool DSKYOutEnabled;
 	char DSKYOutIp[256];
 	int DSKYOutPort;
-	bool numericsOutEnabled;
-	int NumericsOutPort;
 	WSADATA wsaData;
-	struct sockaddr_in serverAddr[2];
+	struct sockaddr_in serverAddr;
 	int clientSock;
 	
 	//
