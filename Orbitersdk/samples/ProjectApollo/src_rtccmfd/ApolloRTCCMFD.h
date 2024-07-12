@@ -63,6 +63,7 @@ struct RTCCMFDData
 	UINT ID = 0;
 	std::string MEDCode;
 	bool IsCSM = false;
+	bool EnableCalculation;
 };
 
 class ApolloRTCCMFD: public MFD2 {

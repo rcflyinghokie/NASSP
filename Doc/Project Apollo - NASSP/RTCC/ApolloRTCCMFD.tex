@@ -2254,7 +2254,38 @@ LN & Geographic longitude of the earth return ascending node & deg & (3)\\
 \subsection{CSM Optics Support Table (MSK 0229)}
 
 TBD
+\newpage
+\subsection{Ascent Rendezvous Monitor (MSK 0232)}
 
+The Ascent Rendezvous Monitor (ARM) display calculates a tweak burn to be performed shortly after insertion from lunar ascent to correct the trajectory and get back to the nominal coelliptic rendezvous profile. It also shows additional parameters for contingencies, like the time of ignition and Delta V of an apolune kick burn, to correct an unsafe orbit.
+\subsubsection{Inputs}
+See input page in the MFD.
+\subsubsection{Display}
+The display automatically updates every two seconds after it has been enabled with the ENA button. This can be done before lunar liftoff, although no reasonable calculations can be done until shortly before insertion. Before that error messages will be displayed.\\
+
+According to the mission rules the tweak burn is required if its DV exceeds 30 ft/s. For this recommended action is display which either says GO or NO GO. The apolune kick calculation is done if the current perilune is lower than the minumum safe altitude from the input page.\\
+
+List of error codes:
+\begin{enumerate}
+	\item Failure in conic state vector extrapolation routine
+	\item CDH indicator must be an odd number
+	\item Too many iterations
+\end{enumerate}
+\newpage
+\subsection{Short Ascent Rendezvous Monitor (MSK 0233)}
+
+The Short Ascent Rendezvous Monitor (Short ARM) display is, like MSK 232, computing a tweak burn to be performed shortly after lunar ascent, but it is used for the direct/short rendezvous profile employed on Apollo 14 and later. On these missions the ARM display is used to calculate a bailout burn to get back to a coelliptic profile.
+\subsubsection{Inputs}
+See input page in the MFD.
+\subsubsection{Display}
+The display automatically updates every two seconds after it has been enabled with the ENA button. This can be done before lunar liftoff, although no reasonable calculations can be done until shortly before insertion. Before that a numeric error code will be displayed.\\
+
+According to the mission rules the tweak burn should not be performed if the DV exceeds 60 feet per second or if the perilune altitude after the burn would be below 5 nautical miles. The recommendation message on the display shows either BAIL or TWEAK for this. No specific recommendation is given if the tweak burn Delta V is so small that it should not even be performed.\\
+
+List of error codes:
+\begin{enumerate}
+	\item Failure in Two-Impulse processor
+\end{enumerate}
 \newpage
 \subsection{LM Optics Support Table (MSK 0239)}
 

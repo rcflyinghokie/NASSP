@@ -8843,35 +8843,35 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 	}
 	else if (screen == 99)
 	{
-		//ARM
-		DFLBackgroundSlide(skp, 232);
-		DFLDynamicData(skp, 232);
-
+		//Ascent Rendezvous Monitor (Coelliptic)
 		if (EnableCalculation)
 		{
-			skp->Text(1 * W / 16, 2 * H / 14, "*", 1);
+			skp->Text(1 * W / 32, 2 * H / 14, "*", 1);
 
 			if (GC->rtcc->RTCCPresentTimeGMT() > GC->rtcc->PZMARM.t_Calc_ARM + 2.0)
 			{
 				G->startSubthread(58);
 			}
 		}
+
+		DFLBackgroundSlide(skp, 232);
+		DFLDynamicData(skp, 232);
 	}
 	else if (screen == 100)
 	{
-		//ARM
-		DFLBackgroundSlide(skp, 233);
-		DFLDynamicData(skp, 233);
-
+		//Ascent Rendezvous Monitor (Short)
 		if (EnableCalculation)
 		{
-			skp->Text(1 * W / 16, 2 * H / 14, "*", 1);
+			skp->Text(1 * W / 32, 2 * H / 14, "*", 1);
 
 			if (GC->rtcc->RTCCPresentTimeGMT() > GC->rtcc->PZMARM.t_Calc_ShortARM + 2.0)
 			{
 				G->startSubthread(59);
 			}
 		}
+
+		DFLBackgroundSlide(skp, 233);
+		DFLDynamicData(skp, 233);
 	}
 	else if (screen == 101)
 	{

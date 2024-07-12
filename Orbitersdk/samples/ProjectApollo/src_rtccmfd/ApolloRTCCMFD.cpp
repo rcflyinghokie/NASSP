@@ -120,6 +120,7 @@ void ApolloRTCCMFD::SaveState()
 	temp.ID = ID;
 	temp.MEDCode = MEDInputData.MEDCode;
 	temp.IsCSM = IsCSM;
+	temp.EnableCalculation = EnableCalculation;
 
 	bool found = false;
 
@@ -157,6 +158,7 @@ void ApolloRTCCMFD::LoadState()
 			subscreen = g_MFDData[i].subscreen;
 			MEDInputData.MEDCode = g_MFDData[i].MEDCode;
 			IsCSM = g_MFDData[i].IsCSM;
+			EnableCalculation = g_MFDData[i].EnableCalculation;
 			break;
 		}
 	}
@@ -9939,11 +9941,11 @@ void ApolloRTCCMFD::SetMEDInputPage(std::string med)
 		GMT_Display2(Buff, GC->rtcc->PZMARM.t_Ins);
 		AddMEDInput(MEDInputData.table, "INS:", "Insertion time:", Buff, "GET");
 		sprintf(Buff, "%.0lf", GC->rtcc->PZMARM.IMUAngles.z*DEG);
-		AddMEDInput(MEDInputData.table, "IMU R (M):", "IMU roll gimbal angle:", Buff, "DEG");
+		AddMEDInput(MEDInputData.table, "IMU R (M):", "IMU roll gimbal angle:", Buff, "degrees");
 		sprintf(Buff, "%.0lf", GC->rtcc->PZMARM.IMUAngles.y*DEG);
-		AddMEDInput(MEDInputData.table, "IMU P (I):", "IMU pitch gimbal angle:", Buff, "DEG");
+		AddMEDInput(MEDInputData.table, "IMU P (I):", "IMU pitch gimbal angle:", Buff, "degrees");
 		sprintf(Buff, "%.0lf", GC->rtcc->PZMARM.IMUAngles.x*DEG);
-		AddMEDInput(MEDInputData.table, "IMU Y (O):", "IMU yaw gimbal angle:", Buff, "DEG");
+		AddMEDInput(MEDInputData.table, "IMU Y (O):", "IMU yaw gimbal angle:", Buff, "degrees");
 
 		MEDInputData.display = 100;
 	}

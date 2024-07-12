@@ -285,7 +285,7 @@ void AscentRendezvousMonitor::ApoluneKick(const ARMInputs &in, ARMDisplay &out)
 	VECTOR3 R0, V0;
 	double T0, r_min, r_apo, r_peri, a, v1, v2, dt;
 
-	r_min = pRTCC->BZLAND.rad[0];
+	r_min = pRTCC->BZLAND.rad[0] + in.h_min;
 
 	for (int i = 0; i < 3; i++)
 	{
