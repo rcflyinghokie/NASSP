@@ -44,7 +44,14 @@ public:
 	DSKY(SoundLib &s, ApolloGuidance &computer, int IOChannel = 015);
 	virtual ~DSKY();
 
-	void Init(e_object *statuslightpower, e_object *segmentlightpower, ContinuousRotationalSwitch *dimmer, ContinuousRotationalSwitch *integralDimmer);
+	void Init(
+		e_object *statuslightpower, 
+		e_object *segmentlightpower, 
+		ContinuousRotationalSwitch *dimmer, 
+		ContinuousRotationalSwitch *integralDimmer,
+		ToggleSwitch *anunOverride,
+		ToggleSwitch *integralOverride
+	);
 	void Reset();
 
 	//
@@ -282,6 +289,8 @@ protected:
 	bool FirstTimeStep;
 	e_object *StatusPower;
 	e_object *SegmentPower;
+	ToggleSwitch *LtgORideAnunSwitch;
+	ToggleSwitch *LtgORideIntegralSwitch;
 	ContinuousRotationalSwitch *DimmerRotationalSwitch;
 	ContinuousRotationalSwitch *IntegralRotationalSwitch;
 

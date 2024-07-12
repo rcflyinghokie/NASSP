@@ -156,8 +156,11 @@ static int SegmentCount[] = {6, 2, 5, 5, 4, 5, 6, 3, 7, 5 };
 DSKY::DSKY(SoundLib &s, ApolloGuidance &computer, int IOChannel) : soundlib(s), agc(computer)
 
 {
+	LtgORideAnunSwitch = NULL;
+	LtgORideIntegralSwitch = NULL;
 	DimmerRotationalSwitch = NULL;
 	IntegralRotationalSwitch = NULL;
+
 	StatusPower = NULL;
 	SegmentPower = NULL;
 	Reset();
@@ -210,13 +213,22 @@ DSKY::~DSKY()
 	WSACleanup();
 }
 
-void DSKY::Init(e_object *statuslightpower, e_object *segmentlightpower, ContinuousRotationalSwitch *dimmer, ContinuousRotationalSwitch *integralDimmer)
+void DSKY::Init(
+	e_object *statuslightpower, 
+	e_object *segmentlightpower, 
+	ContinuousRotationalSwitch *dimmer, 
+	ContinuousRotationalSwitch *integralDimmer,
+	ToggleSwitch *anunOverride,
+	ToggleSwitch *integralOverride
+)
 
 {
 	StatusPower = statuslightpower;
 	SegmentPower = segmentlightpower;
 	DimmerRotationalSwitch = dimmer;
 	IntegralRotationalSwitch = integralDimmer;
+	LtgORideAnunSwitch = anunOverride;
+	LtgORideIntegralSwitch = integralOverride;
 	Reset();
 	FirstTimeStep = true;
 }
@@ -1529,6 +1541,7 @@ void DSKY::SendNetworkPacketDSKY()
 		std::string r3 = "\"r3\": ";
 		std::string alarms = "\"alarms\": ";
 		std::string powered = "\"powered\": ";
+		std::string anun = "\"anun\": ";
 		std::string numerics = "\"numerics\": ";
 		std::string integral = "\"integral\": ";
 
@@ -1550,16 +1563,27 @@ void DSKY::SendNetworkPacketDSKY()
 		if (!IsSegmentPowered() || ELOff) { elPowered = false; }
 		powered = powered + "\"" + B2S(IsStatusPowered()) + " " + B2S(elPowered) + "\",";
 
+		char anunLvl[256] = "";
 		char numLvl[256] = "";
 		char intLvl[256] = "";
 
+		sprintf(anunLvl, "%lf", DimmerRotationalSwitch->GetOutput());
 		sprintf(numLvl, "%lf", DimmerRotationalSwitch->GetOutput());
 		sprintf(intLvl, "%lf", IntegralRotationalSwitch->GetOutput());
 
+		if(LtgORideAnunSwitch && LtgORideAnunSwitch->IsUp()){
+			sprintf(anunLvl, "1.0");
+		}
+
+		if(LtgORideIntegralSwitch && LtgORideIntegralSwitch->IsUp()){
+			sprintf(intLvl, "1.0");
+		}
+
+		anun = anun + "\"" + anunLvl + "\",";
 		numerics = numerics + "\"" + numLvl + "\",";
 		integral = integral + "\"" + intLvl + "\"";
 
-		std::string message = "{" + compLight + prog + verb + noun + flashing + r1 + r2 + r3 + alarms + powered + numerics + integral + "}";
+		std::string message = "{" + compLight + prog + verb + noun + flashing + r1 + r2 + r3 + alarms + powered + anun + numerics + integral + "}";
 
 		sendto(clientSock, message.c_str(), message.length(), 0, (LPSOCKADDR)&serverAddr, sizeof(struct sockaddr));
 		//strcpy(oapiDebugString(), message.c_str());
