@@ -7067,6 +7067,14 @@ void ApolloRTCCMFD::menuSetLDPPSequence()
 	}
 }
 
+void ApolloRTCCMFD::menuLDPPSaveTLAND()
+{
+	if (GC->rtcc->PZLDPDIS.PD_GETTD != 0.0)
+	{
+		GC->rtcc->CZTDTGTU.GETTD = GC->rtcc->PZLDPDIS.PD_GETTD;
+	}
+}
+
 void ApolloRTCCMFD::menuLDPPCalc()
 {
 	G->LDPPalc();

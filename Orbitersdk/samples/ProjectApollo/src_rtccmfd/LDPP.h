@@ -22,6 +22,7 @@
 
 #include "OrbMech.h"
 #include "RTCCModule.h"
+#include "RTCCTables.h"
 
 struct LDPPOptions
 {
@@ -36,9 +37,9 @@ struct LDPPOptions
 	int I_AZ;
 	//Powered-descent time flag
 	int I_TPD;
-	//Time for powered descent ignition
+	//Time for powered descent ignition (GMT)
 	double T_PD;
-	//Table of threshold times
+	//Table of threshold times (GMT)
 	double TH[4];
 	//Number of dwell orbits desired between DOI and powered-descent ignition
 	int M;
@@ -63,9 +64,7 @@ struct LDPPOptions
 	//Initial weight of LM
 	double W_LM;
 	//CSM state vector and time
-	SV sv0;
-	//Liftoff time
-	double GETbase;
+	EphemerisData sv0;
 };
 
 struct LDPPResults
@@ -83,7 +82,7 @@ struct LDPPResults
 	double t_Land;
 	//Azimuth at landing site
 	double azi;
-	SV sv_before[4];
+	EphemerisData sv_before[4];
 	VECTOR3 V_after[4];
 };
 
@@ -95,18 +94,25 @@ public:
 	int LDPPMain(LDPPResults &out);
 protected:
 	
-	VECTOR3 SAC(int L, double h_W, int J, SV sv_L);
-	void CHAPLA(SV sv_L, int IWA, int IGO, int &I, double &t_m, VECTOR3 &DV);
-	void LLTPR(double T_H, SV sv_L, double &t_DOI, double &t_IGN, double &t_TD);
+	VECTOR3 SAC(int L, double h_W, int J, EphemerisData sv_L);
+	void CHAPLA(EphemerisData sv_L, int IWA, int IGO, int &I, double &t_m, VECTOR3 &DV);
+	int LLTPR(double T_H, EphemerisData sv_L, double &t_DOI, double &t_IGN, double &t_TD);
 	double ArgLat(VECTOR3 R, VECTOR3 V);
-	void CNODE(SV sv_A, SV sv_P, double &t_m, VECTOR3 &dV_LVLH);
+	void CNODE(EphemerisData sv_A, EphemerisData sv_P, double &t_m, VECTOR3 &dV_LVLH);
 	//Subroutine that iterates to find an upcoming apsis point
-	SV STAP(SV sv0, bool &error);
+	EphemerisData STAP(EphemerisData sv0, bool &error);
 	//Subroutine that iterates to find a specified radius in a given orbit
-	bool STCIR(SV sv0, double h_W, bool ca_flag, SV &sv_out);
-	SV TIMA(SV sv0, double u, bool &error);
-	SV APPLY(SV sv0, VECTOR3 dV_LVLH);
-	VECTOR3 LATLON(double MJD);
+	bool STCIR(EphemerisData sv0, double h_W, bool ca_flag, EphemerisData &sv_out);
+	EphemerisData TIMA(EphemerisData sv0, double u, bool &error);
+	//Add a LVLH Delta V vector to state
+	EphemerisData APPLY(EphemerisData sv0, VECTOR3 dV_LVLH);
+	VECTOR3 LATLON(double GMT);
+	//Utility functions
+	EphemerisData PMMLAEG(EphemerisData sv0, int opt, double param, bool &error, double DN = 0.0);
+	bool oneclickcoast(VECTOR3 R0, VECTOR3 V0, double gmt0, double dt, VECTOR3 &R1, VECTOR3 &V1);
+	EphemerisData PositionMatch(EphemerisData sv_A, EphemerisData sv_P, double mu);
+	double P29TimeOfLongitude(VECTOR3 R0, VECTOR3 V0, double GMT, double phi_d);
+
 	double mu;
 	OBJHANDLE hMoon;
 	//Number of the plane-change maneuver
@@ -114,6 +120,8 @@ protected:
 	//Number of maneuver
 	int i;
 	int IRUT;
+	//Closest approach to landing site in CHAPLA
+	double GMT_LS_CA;
 
 	double t_M[4];
 	VECTOR3 DeltaV_LVLH[4];
@@ -122,8 +130,8 @@ protected:
 	//State vector index
 	//0-3 = maneuvers
 	//0 = before, 1 = after
-	SV LDPP_SV_E[4][2];
-	SV sv_CSM, sv_LM, sv_V;
+	EphemerisData LDPP_SV_E[4][2];
+	EphemerisData sv_CSM, sv_V, sv_LM;
 
 	LDPPOptions opt;
 

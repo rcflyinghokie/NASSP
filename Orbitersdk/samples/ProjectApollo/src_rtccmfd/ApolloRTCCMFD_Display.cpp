@@ -5641,8 +5641,11 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		}
 		skp->Text(31 * W / 32, 4 * H / 28, Buffer, strlen(Buffer));
 
-		sprintf(Buffer, "%07.3f°", GC->rtcc->PZLDPDIS.DescAsc);
+		sprintf(Buffer, "%07.3f", GC->rtcc->PZLDPDIS.DescAsc);
 		skp->Text(30 * W / 32, 20 * H / 28, Buffer, strlen(Buffer));
+
+		sprintf(Buffer, "%+07.3lf", GC->rtcc->PZLDPDIS.SN_LK_A);
+		skp->Text(30 * W / 32, 21 * H / 28, Buffer, strlen(Buffer));
 
 		sprintf(Buffer, GC->rtcc->PZLDPDIS.DescAzMode);
 		skp->Text(27 * W / 32, 19 * H / 28, Buffer, strlen(Buffer));
@@ -5708,6 +5711,12 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		skp->Text(21 * W / 32, 19 * H / 28, "MODE", 4);
 		skp->Text(21 * W / 32, 20 * H / 28, "DESC AZ", 7);
 		skp->Text(21 * W / 32, 21 * H / 28, "SN.LK.A", 7);
+
+		if (GC->rtcc->PZLDPDIS.error != 0)
+		{
+			sprintf(Buffer, "Error %d", GC->rtcc->PZLDPDIS.error);
+			skp->Text(10 * W / 32, 27 * H / 28, Buffer, strlen(Buffer));
+		}
 	}
 	else if (screen == 61)
 	{

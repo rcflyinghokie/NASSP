@@ -1193,6 +1193,7 @@ LunarDescentPlanningTable::LunarDescentPlanningTable()
 	sprintf(DescAzMode, "");
 	DescAsc = 0.0;
 	SN_LK_A = 0.0;
+	error = 0;
 }
 
 MissionPlanTable::MissionPlanTable()
@@ -5761,12 +5762,13 @@ double RTCC::TPISearch(SV sv_A, SV sv_P, double elev)
 	return OrbMech::GETfromMJD(sv_A.MJD + dt / 24.0 / 3600.0, CalcGETBase());
 }
 
-int RTCC::LunarDescentPlanningProcessor(SV sv)
+int RTCC::LunarDescentPlanningProcessor(EphemerisData sv)
 {
 	LDPPOptions opt;
 
+	PZLDPDIS.error = 0;
+
 	opt.azi_nom = GZGENCSN.LDPPAzimuth;
-	opt.GETbase = CalcGETBase();
 	opt.H_DP = GZGENCSN.LDPPHeightofPDI;
 	opt.H_W = med_k16.DesiredHeight;
 	opt.IDO = med_k16.Sequence - 2;
@@ -5794,13 +5796,13 @@ int RTCC::LunarDescentPlanningProcessor(SV sv)
 	opt.MODE = med_k16.Mode;
 	opt.R_LS = BZLAND.rad[RTCC_LMPOS_BEST];
 	opt.sv0 = sv;
-	opt.TH[0] = med_k16.GETTH1;
-	opt.TH[1] = med_k16.GETTH2;
-	opt.TH[2] = med_k16.GETTH3;
-	opt.TH[3] = med_k16.GETTH4;
+	opt.TH[0] = GMTfromGET(med_k16.GETTH1);
+	opt.TH[1] = GMTfromGET(med_k16.GETTH2);
+	opt.TH[2] = GMTfromGET(med_k16.GETTH3);
+	opt.TH[3] = GMTfromGET(med_k16.GETTH4);
 	opt.theta_D = GZGENCSN.LDPPDescentFlightArc;
 	opt.t_D = GZGENCSN.LDPPDescentFlightTime;
-	opt.T_PD = GZGENCSN.LDPPTimeofPDI;
+	opt.T_PD = GMTfromGET(GZGENCSN.LDPPTimeofPDI);
 	opt.W_LM = 0.0;
 
 	//Mode 6 doesn't work yet
@@ -5811,15 +5813,16 @@ int RTCC::LunarDescentPlanningProcessor(SV sv)
 	ldpp.Init(opt);
 	int error = ldpp.LDPPMain(res);
 
-	if (error) return error;
+	if (error)
+	{
+		PZLDPDIS.error = error;
+		return error;
+	}
 
 	//Store in PZLDPELM
 	for (int i = 0;i < 4;i++)
 	{
-		PZLDPELM.sv_man_bef[i].R = res.sv_before[i].R;
-		PZLDPELM.sv_man_bef[i].V = res.sv_before[i].V;
-		PZLDPELM.sv_man_bef[i].GMT = OrbMech::GETfromMJD(res.sv_before[i].MJD, SystemParameters.GMTBASE);
-		PZLDPELM.sv_man_bef[i].RBI = BODY_MOON;	
+		PZLDPELM.sv_man_bef[i] = res.sv_before[i];
 		PZLDPELM.V_man_after[i] = res.V_after[i];
 		PZLDPELM.plan[i] = med_k16.Vehicle;
 	}
@@ -23638,14 +23641,30 @@ void RTCC::PMDDMT(int MPT_ID, unsigned ManNo, int REFSMMAT_ID, bool HeadsUp, Det
 
 void RTCC::PMDLDPP(const LDPPOptions &opt, const LDPPResults &res, LunarDescentPlanningTable &table)
 {
-	double lat, lng, GMTbase;
+	double lat, lng;
+
+	table = LunarDescentPlanningTable();
 
 	for (int i = 0;i < 4;i++)
 	{
 		table.DV[i] = length(res.DeltaV_LVLH[i]) / 0.3048;
 		table.DVVector[i] = res.DeltaV_LVLH[i] / 0.3048;
-		table.GETIG[i] = res.T_M[i];
-		table.GETTH[i] = opt.TH[i];
+		if (res.T_M[i] != 0.0)
+		{
+			table.GETIG[i] = GETfromGMT(res.T_M[i]);
+		}
+		else
+		{
+			table.GETIG[i] = 0.0;
+		}
+		if (opt.TH[i] != 0.0)
+		{
+			table.GETTH[i] = GETfromGMT(opt.TH[i]);
+		}
+		else
+		{
+			table.GETTH[i] = 0.0;
+		}
 		table.MVR[i] = "";
 		table.AC[i] = 0.0;
 		table.HPC[i] = 0.0;
@@ -23656,9 +23675,8 @@ void RTCC::PMDLDPP(const LDPPOptions &opt, const LDPPResults &res, LunarDescentP
 	table.LONG_LLS = opt.Lng_LS*DEG;
 	table.MODE = opt.MODE;
 
-	GMTbase = floor(opt.GETbase);
-	table.GMTV = OrbMech::GETfromMJD(opt.sv0.MJD, GMTbase);
-	table.GETV = OrbMech::GETfromMJD(opt.sv0.MJD, opt.GETbase);
+	table.GMTV = opt.sv0.GMT;
+	table.GETV = GETfromGMT(table.GMTV);
 
 	if (opt.MODE == 1)
 	{
@@ -23729,15 +23747,16 @@ void RTCC::PMDLDPP(const LDPPOptions &opt, const LDPPResults &res, LunarDescentP
 		table.MVR[0] = "PC";
 	}
 
-	SV sv_ig;
+	EphemerisData sv_ig;
 	double r_apo, r_peri;
 
 	sv_ig = opt.sv0;
 
 	for (int i = 0;i < res.i;i++)
 	{
-		sv_ig = coast(sv_ig, res.T_M[i] - OrbMech::GETfromMJD(sv_ig.MJD, opt.GETbase));
-		OrbMech::latlong_from_BRCS(SystemParameters.MAT_J2000_BRCS, sv_ig.R, sv_ig.MJD, sv_ig.gravref, lat, lng);
+		//State vector at TIG
+		sv_ig = coast(sv_ig, res.T_M[i] - sv_ig.GMT);
+		OrbMech::latlong_from_BRCS(SystemParameters.MAT_J2000_BRCS, sv_ig.R, OrbMech::MJDfromGET(sv_ig.GMT, GetGMTBase()), hMoon, lat, lng);
 		table.LIG[i] = lng * DEG;
 		sv_ig.V += tmul(OrbMech::LVLH_Matrix(sv_ig.R, sv_ig.V), res.DeltaV_LVLH[i]);
 
@@ -23747,9 +23766,38 @@ void RTCC::PMDLDPP(const LDPPOptions &opt, const LDPPResults &res, LunarDescentP
 		table.HPC[i] = (r_peri - opt.R_LS) / 1852.0;
 	}
 
-	table.PD_GETTH = opt.T_PD;
-	table.PD_GETIG = res.t_PDI;
-	table.PD_GETTD = res.t_Land;
+	if (opt.T_PD != 0.0) table.PD_GETTH = GETfromGMT(opt.T_PD);
+	else table.PD_GETTH = 0.0;
+
+	if (res.t_PDI != 0.0) table.PD_GETIG = GETfromGMT(res.t_PDI);
+	else table.PD_GETIG = 0.0;
+
+	if (res.t_Land != 0.0)
+	{
+		table.PD_GETTD = GETfromGMT(res.t_Land);
+
+		//Calculate sun elevation angle
+		VECTOR3 R_EM, V_EM, R_ES, R_LS_SG, R_LS_SC, R_MS, N, rho;
+		double sinang;
+
+		//Get sun and moon ephemerides
+		PLEFEM(1, res.t_Land / 3600.0, 0, &R_EM, &V_EM, &R_ES, NULL);
+		//Selenographic landing site vector
+		R_LS_SG = OrbMech::r_from_latlong(BZLAND.lat[0], BZLAND.lng[0], BZLAND.rad[0]);
+		//Selenocentric landing site vector
+		ELVCNV(R_LS_SG, res.t_Land, 1, RTCC_COORDINATES_MCT, RTCC_COORDINATES_MCI, R_LS_SC);
+		//Vector from moon to sun
+		R_MS = R_ES - R_EM;
+		//Elevation angle
+		OrbMech::EMXINGElev(R_MS, R_LS_SC, N, rho, sinang);
+		//Finally
+		table.SN_LK_A = asin(sinang)*DEG;
+	}
+	else
+	{
+		table.PD_GETTD = 0.0;
+		table.SN_LK_A = 0.0;
+	}
 
 	if (opt.I_AZ == 0)
 	{

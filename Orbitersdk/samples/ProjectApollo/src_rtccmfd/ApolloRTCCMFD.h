@@ -351,6 +351,7 @@ public:
 	void menuSetLDPPDescIgnHeight();
 	void cycleLDPPPoweredDescSimFlag();
 	void menuSetLDPPPoweredDescTime();
+	void menuLDPPSaveTLAND();
 	void menuLDPPCalc();
 	void menuSetDescPlanCalcPage();
 	void menuTranslunarPage();
