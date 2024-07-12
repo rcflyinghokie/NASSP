@@ -21174,6 +21174,10 @@ RTCC_PMMDAN_4_3:
 
 void RTCC::EMDCHECK(int veh, int opt, double param, double THTime, int ref, bool feet)
 {
+	//INPUTS:
+	//opt: 1 = GMT, 2 = GET, 3 = MVI, 4 = MVE, 5 = RAD, 6 = ALT, 7 = FPA, 8 = LAT, 9 = LNG
+	//ref: 0 = ECI, 1 = ECT, 2 = MCI, 3 = MCT
+
 	EphemerisData sv_out, sv_conv, sv_inert;
 	MissionPlanTable *table;
 	OrbitEphemerisTable *ephem;
@@ -21246,10 +21250,16 @@ void RTCC::EMDCHECK(int veh, int opt, double param, double THTime, int ref, bool
 	case 7:
 		sprintf(EZCHECKDIS.Option, "FPA");
 		break;
+	case 8:
+		sprintf(EZCHECKDIS.Option, "LAT");
+		break;
+	case 9:
+		sprintf(EZCHECKDIS.Option, "LNG");
+		break;
 	}
 
 	//All options except MVI and MVE
-	if (opt == 1 || opt == 2 || opt == 5 || opt == 6 || opt == 7)
+	if (opt == 1 || opt == 2 || (opt >= 5 && opt <= 9))
 	{
 		EphemerisData svtemp;
 		double THGMT;
@@ -21427,6 +21437,14 @@ void RTCC::EMDCHECK(int veh, int opt, double param, double THTime, int ref, bool
 			else if (opt == 7)
 			{
 				intab.CutoffIndicator = 4;
+			}
+			else if (opt == 8)
+			{
+				intab.CutoffIndicator = 8;
+			}
+			else if (opt == 9)
+			{
+				intab.CutoffIndicator = 7;
 			}
 			else
 			{
@@ -21650,11 +21668,13 @@ void RTCC::EMDCHECK(int veh, int opt, double param, double THTime, int ref, bool
 
 	if (ref == 0)
 	{
+		//ECI: lambda is mean inertial, lambda_D = is mean geographic
 		EZCHECKDIS.lambda_D -= SystemParameters.MCLAMD + sv_out.GMT*OrbMech::w_Earth;
 	}
 	else if (ref == 1)
 	{
-		EZCHECKDIS.lambda_D -= sv_out.GMT*OrbMech::w_Earth;
+		//ECT: lambda is true geographic, lambda_D is true inertial
+		EZCHECKDIS.lambda -= sv_out.GMT*OrbMech::w_Earth;
 	}
 	OrbMech::normalizeAngle(EZCHECKDIS.lambda);
 	OrbMech::normalizeAngle(EZCHECKDIS.lambda_D);
@@ -32191,6 +32211,14 @@ int RTCC::EMGTVMED(std::string med, std::vector<std::string> data)
 		{
 			opt = 7;
 		}
+		else if (data[1] == "LAT")
+		{
+			opt = 8;
+		}
+		else if (data[1] == "LNG")
+		{
+			opt = 9;
+		}
 		else
 		{
 			return 2;
@@ -32219,6 +32247,10 @@ int RTCC::EMGTVMED(std::string med, std::vector<std::string> data)
 			{
 				param = sin(param*RAD);
 			}
+			else if (opt == 8 || opt == 9)
+			{
+				param = param*RAD;
+			}
 		}
 		bool hasTHT;
 		double THTime = -1.0;
@@ -32237,7 +32269,7 @@ int RTCC::EMGTVMED(std::string med, std::vector<std::string> data)
 		}
 		if (opt >= 5)
 		{
-			//Mandatory for RAD, ALT, FPA
+			//Mandatory for RAD, ALT, FPA, LAT, LNG
 			if (hasTHT == false)
 			{
 				return 2;

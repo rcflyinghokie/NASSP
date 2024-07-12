@@ -54,6 +54,17 @@ struct MEDInputPage
 	int display = -1;
 };
 
+struct RTCCMFDData
+{
+	int screen = 0;
+	int subscreen = 0;
+	int marker = 0;
+	int markermax = 0;
+	UINT ID = 0;
+	std::string MEDCode;
+	bool IsCSM = false;
+};
+
 class ApolloRTCCMFD: public MFD2 {
 public:
 	ApolloRTCCMFD (DWORD w, DWORD h, VESSEL *vessel, UINT im);
@@ -65,7 +76,6 @@ public:
 	bool ConsumeKeyBuffered(DWORD key);
 	void WriteStatus(FILEHANDLE scn) const;
 	void ReadStatus(FILEHANDLE scn);
-	void StoreStatus(void) const;
 	void RecallStatus(void);
 
 	void Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax = 1024, int ymax = 1024);
@@ -886,14 +896,11 @@ protected:
 	int marker;
 	int markermax;
 	int status; //Page dependent status, reset to 0 when new page is entered
-	static struct ScreenData {
-		int screen;
-		int subscreen;
-		int marker;
-		int markermax;
-	} screenData;
 private:
+	void SaveState();
+	void LoadState();
 
+	UINT ID;
 	ARCore* G;
 	AR_GCore* GC;
 	ApolloRTCCMFDButtons coreButtons;
