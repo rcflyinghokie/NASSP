@@ -249,7 +249,7 @@ void DSKY::Timestep(double simt)
 	if(FirstTimeStep)
 	{
 		FirstTimeStep = false;
-	    soundlib.LoadSound(Sclick, BUTTON_SOUND);
+		soundlib.LoadSound(Sclick, BUTTON_SOUND);
 		FILEHANDLE DSKYOutConfig = oapiOpenFile("ProjectApollo\\DSKYOut.cfg", FILE_IN_ZEROONFAIL, CONFIG);
 		if (DSKYOutConfig) {
 			oapiReadItem_bool(DSKYOutConfig, "ENABLED", DSKYOutEnabled);
@@ -273,12 +273,12 @@ void DSKY::Timestep(double simt)
 		oapiCloseFile(DSKYOutConfig, FILE_IN_ZEROONFAIL);
 	}
 	if(DSKYOutEnabled){
-    	char buffer[512];
+		char buffer[512];
 		int recvLen = recv(clientSock, buffer, sizeof(buffer) - 1, 0);
 
-        if (recvLen != SOCKET_ERROR) {
-            buffer[recvLen] = '\0';  // Null-terminate the received data
-			   
+		if (recvLen != SOCKET_ERROR) {
+			buffer[recvLen] = '\0';  // Null-terminate the received data
+			
 			if (strcmp(buffer, "v") == 0) {
 				this->VerbPressed();
 			} else if (strcmp(buffer, "n") == 0) {
@@ -322,7 +322,7 @@ void DSKY::Timestep(double simt)
 			}
 
 			//sprintf(oapiDebugString(), buffer);
-        }
+		}
 	}
 }
 
