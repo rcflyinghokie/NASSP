@@ -1601,7 +1601,7 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 
 		SetVCLighting(vcidx, &DSKY_CW_Lights[0],  MAT_LIGHT, ((lca.GetIntegralVoltage() / 75.0) + (FloodLights.GetCDRRotaryVoltage() / 28.0))/2.0, DSKY_CW_Lights.size());
 
-		//External Meshes ***If Second paremeter is 0 then the mesh contains only one Material***
+		//External Meshes ***If Second parameter is 0 then the mesh contains only one Material***
 		SetVCLighting(xpointershadesidx, 0, MAT_LIGHT, FloodLights.GetCDRRotaryVoltage() / 28.0, 1); //FloodLights_XPointer_Shades
 		SetVCLighting(windowshadesidx,   0, MAT_LIGHT, FloodLights.GetCDRRotaryVoltage() / 28.0, 1); //FloodLights_WindowShades
 

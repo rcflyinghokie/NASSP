@@ -1773,17 +1773,28 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 		}
 		// ... and Read them
 		cws.GetCWLightStates(LightStates);
+		
+		if (dsky.UplinkLit()		&& NumericRotarySwitch.GetOutput())	{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_UPLINK_ACTY); }
+		if (dsky.NoAttLit()			&& NumericRotarySwitch.GetOutput())	{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_NO_ATT); }
+		if (dsky.StbyLit()			&& NumericRotarySwitch.GetOutput())	{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_STBY); }
+		if (dsky.KbRelLit()			&& NumericRotarySwitch.GetOutput())	{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_KEY_REL); }
+		if (dsky.OprErrLit()		&& NumericRotarySwitch.GetOutput())	{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_OPR_ERR); }
+		if (dsky.TempLit()			&& NumericRotarySwitch.GetOutput())	{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_TEMP); }
+		if (dsky.GimbalLockLit()	&& NumericRotarySwitch.GetOutput())	{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_GIMBAL_LOCK); }
+		if (dsky.ProgLit()			&& NumericRotarySwitch.GetOutput())	{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_PROG); }
+		if (dsky.RestartLit()		&& NumericRotarySwitch.GetOutput())	{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_RESTART); }
+		if (dsky.TrackerLit()		&& NumericRotarySwitch.GetOutput())	{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_TRACKER); }
 
-		if (dsky.UplinkLit())		{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_UPLINK_ACTY);	DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_UPLINK_ACTY); }
-		if (dsky.NoAttLit())		{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_NO_ATT); 		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_NO_ATT); }
-		if (dsky.StbyLit())			{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_STBY);			DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_STBY); }
-		if (dsky.KbRelLit())		{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_KEY_REL);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_KEY_REL); }
-		if (dsky.OprErrLit())		{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_OPR_ERR);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_OPR_ERR); }
-		if (dsky.TempLit())			{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_TEMP);			DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_TEMP); }
-		if (dsky.GimbalLockLit())	{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_GIMBAL_LOCK);	DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_GIMBAL_LOCK); }
-		if (dsky.ProgLit())			{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_PROG);			DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_PROG); }
-		if (dsky.RestartLit())		{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_RESTART);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_RESTART); }
-		if (dsky.TrackerLit())		{ DSKY_Lights.push_back(VC_MAT_DSKY_Lights_TRACKER);		DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_TRACKER); }
+		if (dsky.UplinkLit()		&& Panel100NumericRotarySwitch.GetOutput())	{ DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_UPLINK_ACTY); }
+		if (dsky.NoAttLit()			&& Panel100NumericRotarySwitch.GetOutput())	{ DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_NO_ATT); }
+		if (dsky.StbyLit()			&& Panel100NumericRotarySwitch.GetOutput())	{ DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_STBY); }
+		if (dsky.KbRelLit()			&& Panel100NumericRotarySwitch.GetOutput())	{ DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_KEY_REL); }
+		if (dsky.OprErrLit()		&& Panel100NumericRotarySwitch.GetOutput())	{ DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_OPR_ERR); }
+		if (dsky.TempLit()			&& Panel100NumericRotarySwitch.GetOutput())	{ DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_TEMP); }
+		if (dsky.GimbalLockLit()	&& Panel100NumericRotarySwitch.GetOutput())	{ DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_GIMBAL_LOCK); }
+		if (dsky.ProgLit()			&& Panel100NumericRotarySwitch.GetOutput())	{ DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_PROG); }
+		if (dsky.RestartLit()		&& Panel100NumericRotarySwitch.GetOutput())	{ DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_RESTART); }
+		if (dsky.TrackerLit()		&& Panel100NumericRotarySwitch.GetOutput())	{ DSKY_LEB_Lights.push_back(VC_MAT_DSKY_LIGHT_LEB_TRACKER); }
 
 		for (int i = 0; i < CWS_LIGHTS_PER_PANEL; i++)
 		{
@@ -1814,8 +1825,8 @@ bool Saturn::clbkVCRedrawEvent (int id, int event, SURFHANDLE surf)
 		 }
 
 		SetVCLighting(vcidx, &CW_Lights[0], MAT_LIGHT, 1, CW_Lights.size()); 	//Caution & Warning Lights
-		SetVCLighting(vcidx, &DSKY_Lights[0], MAT_LIGHT, (IntegralRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, DSKY_Lights.size());
-		SetVCLighting(vcidx, &DSKY_LEB_Lights[0], MAT_LIGHT, (Panel100IntegralRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, DSKY_LEB_Lights.size());
+		SetVCLighting(vcidx, &DSKY_Lights[0], MAT_LIGHT, (NumericRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, DSKY_Lights.size());
+		SetVCLighting(vcidx, &DSKY_LEB_Lights[0], MAT_LIGHT, (Panel100NumericRotarySwitch.GetOutput() + FloodRotarySwitch.GetOutput()) / 2.0, DSKY_LEB_Lights.size());
 
 		// Full Lit Lights
 		if (AbortLightLogic()) {
