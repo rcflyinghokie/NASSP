@@ -84,6 +84,7 @@ DWORD FloodLights_P8[] = {
 	VC_MAT_csm_cabin_press_panel_t,
 	VC_MAT_csm_lower_equip_bay_t,
 	VC_MAT_csm_right_cb_panels_ILL_P5_t,
+	VC_MAT_csm_right_cb_panels_ILL_P100_t,
 	VC_MAT_csm_right_cb_panels_t,
 	VC_MAT_DOR_t,
 	VC_MAT_DSKY_Keys_LEB_t,
@@ -262,12 +263,14 @@ DWORD FloodLights_P5[] = {
 
 //
 // Material Emissions Panel 100 (LEB)
+// Integral Lights controlled by Panel 100 Integral Rheostat
 //
 DWORD IntegralLights_P100[] = {
 
 	// TODO Material List
 	VC_MAT_CMVCTex1_ILL_P100_t,
 	VC_MAT_CMVCTex2_ILL_P100_t,
+	VC_MAT_csm_right_cb_panels_ILL_P100_t,
 	VC_MAT_DSKY_Keys_LEB_t,
 	VC_MAT_Rotarys_P100_t,
 	VC_MAT_Panel306,
@@ -493,7 +496,7 @@ DWORD IntegralLights_CW_Lights_CM[] = {
 	VC_MAT_NONE,
 	VC_MAT_NONE,
 	VC_MAT_NONE,
-	VC_MAT_CW_Lights_P2_SPS_FLANGE_TEMP_HI,
+	VC_MAT_NONE,
 	VC_MAT_NONE,
 	VC_MAT_NONE,
 	VC_MAT_NONE,
@@ -528,7 +531,6 @@ DWORD IntegralLights_CW_Lights_CM[] = {
 //
 // EMS .05G Light
 //
-
 DWORD EMSPoint05GLight[] = {
 	VC_MAT_Panel1_05G
 };
