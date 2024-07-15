@@ -5774,11 +5774,11 @@ int RTCC::LunarDescentPlanningProcessor(EphemerisData sv)
 	opt.IDO = med_k16.Sequence - 2;
 	if (GZGENCSN.LDPPAzimuth != 0.0)
 	{
-		opt.I_AZ = 1;
+		opt.I_AZ = true;
 	}
 	else
 	{
-		opt.I_AZ = 0;
+		opt.I_AZ = false;
 	}
 	if (GZGENCSN.LDPPPoweredDescentSimFlag)
 	{
@@ -5800,7 +5800,7 @@ int RTCC::LunarDescentPlanningProcessor(EphemerisData sv)
 	opt.TH[1] = GMTfromGET(med_k16.GETTH2);
 	opt.TH[2] = GMTfromGET(med_k16.GETTH3);
 	opt.TH[3] = GMTfromGET(med_k16.GETTH4);
-	opt.theta_D = GZGENCSN.LDPPDescentFlightArc;
+	opt.theta_D = opt.theta_PDI = GZGENCSN.LDPPDescentFlightArc;
 	opt.t_D = GZGENCSN.LDPPDescentFlightTime;
 	opt.T_PD = GMTfromGET(GZGENCSN.LDPPTimeofPDI);
 	opt.W_LM = 0.0;
@@ -5836,6 +5836,178 @@ int RTCC::LunarDescentPlanningProcessor(EphemerisData sv)
 	PZLDPELM.code[3] = PZLDPDIS.MVR[3];
 
 	return 0;
+}
+
+void RTCC::PMDLDPP(const LDPPOptions &opt, const LDPPResults &res, LunarDescentPlanningTable &table)
+{
+	double lat, lng;
+
+	table = LunarDescentPlanningTable();
+
+	for (int i = 0; i < 4; i++)
+	{
+		table.DV[i] = length(res.DeltaV_LVLH[i]) / 0.3048;
+		table.DVVector[i] = res.DeltaV_LVLH[i] / 0.3048;
+		if (res.T_M[i] != 0.0)
+		{
+			table.GETIG[i] = GETfromGMT(res.T_M[i]);
+		}
+		else
+		{
+			table.GETIG[i] = 0.0;
+		}
+		if (opt.TH[i] != 0.0)
+		{
+			table.GETTH[i] = GETfromGMT(opt.TH[i]);
+		}
+		else
+		{
+			table.GETTH[i] = 0.0;
+		}
+		table.MVR[i] = "";
+		table.AC[i] = 0.0;
+		table.HPC[i] = 0.0;
+		table.LIG[i] = 0.0;
+	}
+
+	table.LAT_LLS = opt.Lat_LS*DEG;
+	table.LONG_LLS = opt.Lng_LS*DEG;
+	table.MODE = opt.MODE;
+
+	table.GMTV = opt.sv0.GMT;
+	table.GETV = GETfromGMT(table.GMTV);
+
+	if (opt.MODE == 1)
+	{
+		if (opt.IDO == -1)
+		{
+			table.MVR[0] = "PC";
+			table.MVR[1] = "DI";
+		}
+		else if (opt.IDO == 1)
+		{
+			table.MVR[0] = "AS";
+			table.MVR[1] = "CI";
+			table.MVR[2] = "DI";
+		}
+		else
+		{
+			table.MVR[0] = "PC";
+			table.MVR[1] = "DI";
+		}
+	}
+	if (opt.MODE == 2)
+	{
+		if (opt.IDO == 0)
+		{
+			table.MVR[0] = "AS";
+			table.MVR[1] = "DI";
+		}
+		else
+		{
+			table.MVR[0] = "CI";
+			table.MVR[1] = "DI";
+		}
+	}
+	else if (opt.MODE == 3)
+	{
+		table.MVR[0] = "AS";
+		table.MVR[1] = "CI";
+		table.MVR[2] = "DI";
+	}
+	else if (opt.MODE == 4)
+	{
+		table.MVR[0] = "DI";
+	}
+	else if (opt.MODE == 5)
+	{
+		if (opt.IDO == -1)
+		{
+			table.MVR[0] = "PC";
+			table.MVR[1] = "H1";
+			table.MVR[2] = "H2";
+		}
+		else if (opt.IDO == 0)
+		{
+			table.MVR[0] = "H1";
+			table.MVR[1] = "PC";
+			table.MVR[2] = "H2";
+		}
+		else
+		{
+			table.MVR[0] = "H1";
+			table.MVR[1] = "H2";
+			table.MVR[2] = "PC";
+		}
+		table.MVR[3] = "DI";
+	}
+	else if (opt.MODE == 7)
+	{
+		table.MVR[0] = "PC";
+	}
+
+	EphemerisData sv_ig;
+	double r_apo, r_peri;
+
+	sv_ig = opt.sv0;
+
+	for (int i = 0; i < res.i; i++)
+	{
+		//State vector at TIG
+		sv_ig = coast(sv_ig, res.T_M[i] - sv_ig.GMT);
+		OrbMech::latlong_from_BRCS(SystemParameters.MAT_J2000_BRCS, sv_ig.R, OrbMech::MJDfromGET(sv_ig.GMT, GetGMTBase()), hMoon, lat, lng);
+		table.LIG[i] = lng * DEG;
+		sv_ig.V += tmul(OrbMech::LVLH_Matrix(sv_ig.R, sv_ig.V), res.DeltaV_LVLH[i]);
+
+		OrbMech::periapo(sv_ig.R, sv_ig.V, OrbMech::mu_Moon, r_apo, r_peri); //TBD
+
+		table.AC[i] = (r_apo - opt.R_LS) / 1852.0;
+		table.HPC[i] = (r_peri - opt.R_LS) / 1852.0;
+	}
+
+	if (opt.T_PD != 0.0) table.PD_GETTH = GETfromGMT(opt.T_PD);
+	else table.PD_GETTH = 0.0;
+
+	if (res.t_PDI != 0.0) table.PD_GETIG = GETfromGMT(res.t_PDI);
+	else table.PD_GETIG = 0.0;
+
+	if (res.t_Land != 0.0)
+	{
+		table.PD_GETTD = GETfromGMT(res.t_Land);
+
+		//Calculate sun elevation angle
+		VECTOR3 R_EM, V_EM, R_ES, R_LS_SG, R_LS_SC, R_MS, N, rho;
+		double sinang;
+
+		//Get sun and moon ephemerides
+		PLEFEM(1, res.t_Land / 3600.0, 0, &R_EM, &V_EM, &R_ES, NULL);
+		//Selenographic landing site vector
+		R_LS_SG = OrbMech::r_from_latlong(BZLAND.lat[0], BZLAND.lng[0], BZLAND.rad[0]);
+		//Selenocentric landing site vector
+		ELVCNV(R_LS_SG, res.t_Land, 1, RTCC_COORDINATES_MCT, RTCC_COORDINATES_MCI, R_LS_SC);
+		//Vector from moon to sun
+		R_MS = R_ES - R_EM;
+		//Elevation angle
+		OrbMech::EMXINGElev(R_MS, R_LS_SC, N, rho, sinang);
+		//Finally
+		table.SN_LK_A = asin(sinang)*DEG;
+	}
+	else
+	{
+		table.PD_GETTD = 0.0;
+		table.SN_LK_A = 0.0;
+	}
+
+	if (opt.I_AZ == false)
+	{
+		sprintf(table.DescAzMode, "OPT");
+	}
+	else
+	{
+		sprintf(table.DescAzMode, "DES");
+	}
+	table.DescAsc = res.azi*DEG;
+	table.PD_ThetaIgn = opt.theta_D*DEG;
 }
 
 void RTCC::TranslunarInjectionProcessor(EphemerisData sv, PLAWDTOutput WeightsTable)
@@ -23637,178 +23809,6 @@ void RTCC::PMDDMT(int MPT_ID, unsigned ManNo, int REFSMMAT_ID, bool HeadsUp, Det
 			break;
 		}
 	}
-}
-
-void RTCC::PMDLDPP(const LDPPOptions &opt, const LDPPResults &res, LunarDescentPlanningTable &table)
-{
-	double lat, lng;
-
-	table = LunarDescentPlanningTable();
-
-	for (int i = 0;i < 4;i++)
-	{
-		table.DV[i] = length(res.DeltaV_LVLH[i]) / 0.3048;
-		table.DVVector[i] = res.DeltaV_LVLH[i] / 0.3048;
-		if (res.T_M[i] != 0.0)
-		{
-			table.GETIG[i] = GETfromGMT(res.T_M[i]);
-		}
-		else
-		{
-			table.GETIG[i] = 0.0;
-		}
-		if (opt.TH[i] != 0.0)
-		{
-			table.GETTH[i] = GETfromGMT(opt.TH[i]);
-		}
-		else
-		{
-			table.GETTH[i] = 0.0;
-		}
-		table.MVR[i] = "";
-		table.AC[i] = 0.0;
-		table.HPC[i] = 0.0;
-		table.LIG[i] = 0.0;
-	}
-
-	table.LAT_LLS = opt.Lat_LS*DEG;
-	table.LONG_LLS = opt.Lng_LS*DEG;
-	table.MODE = opt.MODE;
-
-	table.GMTV = opt.sv0.GMT;
-	table.GETV = GETfromGMT(table.GMTV);
-
-	if (opt.MODE == 1)
-	{
-		if (opt.IDO == -1)
-		{
-			table.MVR[0] = "PC";
-			table.MVR[1] = "DI";
-		}
-		else if (opt.IDO == 1)
-		{
-			table.MVR[0] = "AS";
-			table.MVR[1] = "CI";
-			table.MVR[2] = "DI";
-		}
-		else
-		{
-			table.MVR[0] = "PC";
-			table.MVR[1] = "DI";
-		}
-	}
-	if (opt.MODE == 2)
-	{
-		if (opt.IDO == 0)
-		{
-			table.MVR[0] = "AS";
-			table.MVR[1] = "DI";
-		}
-		else
-		{
-			table.MVR[0] = "CI";
-			table.MVR[1] = "DI";
-		}
-	}
-	else if (opt.MODE == 3)
-	{
-		table.MVR[0] = "AS";
-		table.MVR[1] = "CI";
-		table.MVR[2] = "DI";
-	}
-	else if (opt.MODE == 4)
-	{
-		table.MVR[0] = "DI";
-	}
-	else if (opt.MODE == 5)
-	{
-		if (opt.IDO == -1)
-		{
-			table.MVR[0] = "PC";
-			table.MVR[1] = "H1";
-			table.MVR[2] = "H2";
-		}
-		else if (opt.IDO == 0)
-		{
-			table.MVR[0] = "H1";
-			table.MVR[1] = "PC";
-			table.MVR[2] = "H2";
-		}
-		else
-		{
-			table.MVR[0] = "H1";
-			table.MVR[1] = "H2";
-			table.MVR[2] = "PC";
-		}
-		table.MVR[3] = "DI";
-	}
-	else if (opt.MODE == 7)
-	{
-		table.MVR[0] = "PC";
-	}
-
-	EphemerisData sv_ig;
-	double r_apo, r_peri;
-
-	sv_ig = opt.sv0;
-
-	for (int i = 0;i < res.i;i++)
-	{
-		//State vector at TIG
-		sv_ig = coast(sv_ig, res.T_M[i] - sv_ig.GMT);
-		OrbMech::latlong_from_BRCS(SystemParameters.MAT_J2000_BRCS, sv_ig.R, OrbMech::MJDfromGET(sv_ig.GMT, GetGMTBase()), hMoon, lat, lng);
-		table.LIG[i] = lng * DEG;
-		sv_ig.V += tmul(OrbMech::LVLH_Matrix(sv_ig.R, sv_ig.V), res.DeltaV_LVLH[i]);
-
-		OrbMech::periapo(sv_ig.R, sv_ig.V, OrbMech::mu_Moon, r_apo, r_peri); //TBD
-
-		table.AC[i] = (r_apo - opt.R_LS) / 1852.0;
-		table.HPC[i] = (r_peri - opt.R_LS) / 1852.0;
-	}
-
-	if (opt.T_PD != 0.0) table.PD_GETTH = GETfromGMT(opt.T_PD);
-	else table.PD_GETTH = 0.0;
-
-	if (res.t_PDI != 0.0) table.PD_GETIG = GETfromGMT(res.t_PDI);
-	else table.PD_GETIG = 0.0;
-
-	if (res.t_Land != 0.0)
-	{
-		table.PD_GETTD = GETfromGMT(res.t_Land);
-
-		//Calculate sun elevation angle
-		VECTOR3 R_EM, V_EM, R_ES, R_LS_SG, R_LS_SC, R_MS, N, rho;
-		double sinang;
-
-		//Get sun and moon ephemerides
-		PLEFEM(1, res.t_Land / 3600.0, 0, &R_EM, &V_EM, &R_ES, NULL);
-		//Selenographic landing site vector
-		R_LS_SG = OrbMech::r_from_latlong(BZLAND.lat[0], BZLAND.lng[0], BZLAND.rad[0]);
-		//Selenocentric landing site vector
-		ELVCNV(R_LS_SG, res.t_Land, 1, RTCC_COORDINATES_MCT, RTCC_COORDINATES_MCI, R_LS_SC);
-		//Vector from moon to sun
-		R_MS = R_ES - R_EM;
-		//Elevation angle
-		OrbMech::EMXINGElev(R_MS, R_LS_SC, N, rho, sinang);
-		//Finally
-		table.SN_LK_A = asin(sinang)*DEG;
-	}
-	else
-	{
-		table.PD_GETTD = 0.0;
-		table.SN_LK_A = 0.0;
-	}
-
-	if (opt.I_AZ == 0)
-	{
-		sprintf(table.DescAzMode, "OPT");
-	}
-	else
-	{
-		sprintf(table.DescAzMode, "DES");
-	}
-	table.DescAsc = res.azi*DEG;
-	table.PD_ThetaIgn = opt.theta_D*DEG;
 }
 
 void RTCC::EMGLMRAT(VECTOR3 X_P, VECTOR3 Y_P, VECTOR3 Z_P, VECTOR3 X_B, VECTOR3 Y_B, VECTOR3 Z_B, double &Pitch, double &Yaw, double &Roll, double &PB, double &YB, double &RB)

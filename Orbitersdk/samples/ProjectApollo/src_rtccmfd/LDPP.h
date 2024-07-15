@@ -28,13 +28,15 @@ struct LDPPOptions
 {
 	LDPPOptions();
 	//Maneuver routine flag
+	//1 = CSM phase change
 	int MODE;
 	//Maneuver sequence flag
+	//Mode 1: -1 = plane-change only, 0 = plane change and circularization, 1 = plane change combined with first maneuver of a CSM two-maneuver sequence to circularize the CSM orbit at an input altitude
 	int IDO;
 	//Powered-descent simulation flag
 	int I_PD;
-	//Descent azimuth flag: 0 = descent azimuth is not specified, 1 = descent azimuth is specified
-	int I_AZ;
+	//Descent azimuth flag: false = descent azimuth is not specified, true = descent azimuth is specified
+	bool I_AZ;
 	//Powered-descent time flag
 	int I_TPD;
 	//Time for powered descent ignition (GMT)
@@ -55,6 +57,8 @@ struct LDPPOptions
 	double theta_D;
 	//Powered-flight time of descent
 	double t_D;
+	//Angle from PDI to landing site
+	double theta_PDI;
 	//Descent azimuth desired
 	double azi_nom;
 	//Altitude wanted at apsis
@@ -93,11 +97,16 @@ public:
 	void Init(const LDPPOptions &in);
 	int LDPPMain(LDPPResults &out);
 protected:
-	
-	VECTOR3 SAC(int L, double h_W, int J, EphemerisData sv_L);
-	void CHAPLA(EphemerisData sv_L, int IWA, int IGO, int &I, double &t_m, VECTOR3 &DV);
+	//CSM phase change
+	void Mode1();
+
+	//Compute a maneuver to shift the line-of-apsides and change apocynthion and pericynthion or circularize the CSM orbit
+	VECTOR3 SAC(double h_W, int J, EphemerisData sv_L) const;
+	//Compute a maneuver to place CSM orbital track over a desired landing site with or without a specified azimuth
+	void CHAPLA(EphemerisData sv_L, bool IWA, bool IGO, int I, double &t_m, VECTOR3 &DV);
+	//Compute the time of the DOI maneuver based on a desired landing site and a CSM vector before the maneuver
 	int LLTPR(double T_H, EphemerisData sv_L, double &t_DOI, double &t_IGN, double &t_TD);
-	double ArgLat(VECTOR3 R, VECTOR3 V);
+	double ArgLat(VECTOR3 R, VECTOR3 V) const;
 	void CNODE(EphemerisData sv_A, EphemerisData sv_P, double &t_m, VECTOR3 &dV_LVLH);
 	//Subroutine that iterates to find an upcoming apsis point
 	EphemerisData STAP(EphemerisData sv0, bool &error);
@@ -106,12 +115,15 @@ protected:
 	EphemerisData TIMA(EphemerisData sv0, double u, bool &error);
 	//Add a LVLH Delta V vector to state
 	EphemerisData APPLY(EphemerisData sv0, VECTOR3 dV_LVLH);
-	VECTOR3 LATLON(double GMT);
+	VECTOR3 LATLON(double GMT) const;
 	//Utility functions
 	EphemerisData PMMLAEG(EphemerisData sv0, int opt, double param, bool &error, double DN = 0.0);
 	bool oneclickcoast(VECTOR3 R0, VECTOR3 V0, double gmt0, double dt, VECTOR3 &R1, VECTOR3 &V1);
 	EphemerisData PositionMatch(EphemerisData sv_A, EphemerisData sv_P, double mu);
 	double P29TimeOfLongitude(VECTOR3 R0, VECTOR3 V0, double GMT, double phi_d);
+	EphemerisData SaveElements(EphemerisData sv, int n, VECTOR3 DV);
+	EphemerisData LoadElements(int n, bool before);
+	double OutOfPlaneError(EphemerisData sv) const;
 
 	double mu;
 	OBJHANDLE hMoon;
@@ -122,8 +134,9 @@ protected:
 	int IRUT;
 	//Closest approach to landing site in CHAPLA
 	double GMT_LS_CA;
-
+	//Time of maneuvers
 	double t_M[4];
+	//Delta V of maneuvers
 	VECTOR3 DeltaV_LVLH[4];
 	double deltaw_s, u_man, deltaw;
 
@@ -132,6 +145,12 @@ protected:
 	//0 = before, 1 = after
 	EphemerisData LDPP_SV_E[4][2];
 	EphemerisData sv_CSM, sv_V, sv_LM;
+
+	//New state vectors
+	//0-3: maneuvers
+	//0-1: before or after
+	//0-1: position and velocity
+	VECTOR3 LDPP_SV_E_NEW[4][2][2];
 
 	LDPPOptions opt;
 
