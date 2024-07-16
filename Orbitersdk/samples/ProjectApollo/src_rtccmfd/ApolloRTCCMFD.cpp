@@ -34,6 +34,7 @@ VESSEL *GCoreVessel[32];
 AR_GCore *g_SC = NULL;      // points to the static core, root of all persistence
 int nGutsUsed;
 bool initialised = false;
+std::vector<RTCCMFDData> g_MFDData;
 
 // ==============================================================
 // MFD class implementation
@@ -42,6 +43,7 @@ bool initialised = false;
 ApolloRTCCMFD::ApolloRTCCMFD (DWORD w, DWORD h, VESSEL *vessel, UINT im)
 : MFD2 (w, h, vessel)
 {
+	ID = im;
 	screen = 0;
 	subscreen = 0;
 
@@ -85,6 +87,8 @@ ApolloRTCCMFD::ApolloRTCCMFD (DWORD w, DWORD h, VESSEL *vessel, UINT im)
 	markermax = 0;
 	IsCSM = true;
 	ErrorMessage = false;
+
+	LoadState();
 }
 
 // Destructor
@@ -100,6 +104,61 @@ ApolloRTCCMFD::~ApolloRTCCMFD ()
 	oapiReleaseFont(font5);
 	oapiReleasePen(pen);
 	oapiReleasePen(pen2);
+
+	SaveState();
+}
+
+void ApolloRTCCMFD::SaveState()
+{
+	RTCCMFDData temp;
+
+	temp.marker = marker;
+	temp.markermax = markermax;
+	temp.screen = screen;
+	temp.subscreen = subscreen;
+	temp.ID = ID;
+	temp.MEDCode = MEDInputData.MEDCode;
+	temp.IsCSM = IsCSM;
+
+	bool found = false;
+
+	//Search for existing MFD data
+	for (unsigned i = 0; i < g_MFDData.size(); i++)
+	{
+		if (g_MFDData[i].ID == ID)
+		{
+			//Found it, save in that place
+			g_MFDData[i] = temp;
+			found = true;
+			break;
+		}
+	}
+
+	if (!found)
+	{
+		//Found in array yet, add it
+		g_MFDData.push_back(temp);
+	}
+}
+
+void ApolloRTCCMFD::LoadState()
+{
+	//Load MFD data
+
+	for (unsigned i = 0; i < g_MFDData.size(); i++)
+	{
+		if (g_MFDData[i].ID == ID)
+		{
+			//Found it, load data
+			marker = g_MFDData[i].marker;
+			markermax = g_MFDData[i].markermax;
+			screen = g_MFDData[i].screen;
+			subscreen = g_MFDData[i].subscreen;
+			MEDInputData.MEDCode = g_MFDData[i].MEDCode;
+			IsCSM = g_MFDData[i].IsCSM;
+			break;
+		}
+	}
 }
 
 // Return button labels
@@ -4872,7 +4931,7 @@ void ApolloRTCCMFD::menuMPTInitM50M55Vehicle()
 void ApolloRTCCMFD::CheckoutMonitorCalc()
 {
 	bool CheckoutMonitorCalcInput(void* id, char *str, void *data);
-	oapiOpenInputBox("Format: U02, CSM or LEM, Indicator (GMT,GET,MVI,MVE,RAD,ALT,FPA), Parameter, Threshold Time (opt.), Reference (ECI,ECT,MCI,MCT) (opt.), FT (opt.);", CheckoutMonitorCalcInput, 0, 50, (void*)this);
+	oapiOpenInputBox("Format: U02, CSM or LEM, Indicator (GMT,GET,MVI,MVE,RAD,ALT,FPA,LAT,LNG), Parameter, Threshold Time (opt.), Reference (ECI,ECT,MCI,MCT) (opt.), FT (opt.);", CheckoutMonitorCalcInput, 0, 50, (void*)this);
 }
 
 bool CheckoutMonitorCalcInput(void *id, char *str, void *data)
@@ -6368,23 +6427,20 @@ void ApolloRTCCMFD::menuVECPOINTCalc()
 	G->VecPointCalc(IsCSM);
 }
 
-void ApolloRTCCMFD::StoreStatus(void) const
-{
-	screenData.screen = screen;
-	screenData.marker = marker;
-	screenData.markermax = markermax;
-	screenData.subscreen = subscreen;
-}
-
 void ApolloRTCCMFD::RecallStatus(void)
 {
-	SelectPage(screenData.screen);
-	subscreen = screenData.subscreen;
-	marker = screenData.marker;
-	markermax = screenData.markermax;
-}
+	//MFD data got reloaded in LoadState from the constructor, but resetting the MFD buttons crashes there. Do it here instead
 
-ApolloRTCCMFD::ScreenData ApolloRTCCMFD::screenData = { 0 };
+	if (screen == 130)
+	{
+		//Special logic for MED input page
+		SetMEDInputPage(MEDInputData.MEDCode);
+	}
+	else
+	{
+		SelectPage(screen);
+	}
+}
 
 void ApolloRTCCMFD::GetREFSMMATfromAGC()
 {

@@ -2398,21 +2398,34 @@ void umbra(VECTOR3 R, VECTOR3 V, VECTOR3 sun, OBJHANDLE planet, bool rise, doubl
 
 bool sight(VECTOR3 R1, VECTOR3 R2, double R_E)
 {
+	//Returns true if position vectors R1 and R2 have a line-of-sight, considering the body radius R_E
 	VECTOR3 R1n, R2n;
 	bool los;
-	double tau_min;
+	double r12, r22, tau_min, dot_r1r2;
 
+	//Preliminary calculations
+	//Normalized position vectors
 	R1n = R1 / R_E;
 	R2n = R2 / R_E;
+	//Squares of radius magnitudes
+	r12 = dotp(R1n, R1n);
+	r22 = dotp(R2n, R2n);
+	//Dot product between normalized vectors
+	dot_r1r2 = dotp(R1n, R2n);
 
-	tau_min = (length(R1n)*length(R1n) - dotp(R1n, R2n)) / (length(R1n)*length(R1n) + length(R2n)*length(R2n) - 2.0*dotp(R1n,R2n));
+	//Location on line connecting R1 and R2 where the distance from the center of the body to the line is minimized
+	tau_min = (r12 - dot_r1r2) / (r12 + r22 - 2.0*dot_r1r2);
+	//Default to no line-of-sight
 	los = false;
-	if (tau_min < 0 || tau_min>1)
+	//Is there a line of sight?
+	if (tau_min < 0.0 || tau_min > 1.0)
 	{
+		//Yes, because both vectors have to be in the same quadrant
 		los = true;
 	}
-	else if ((1.0 - tau_min)*length(R1n)*length(R1n) + dotp(R1n, R2n)*tau_min >= 1.0)
+	else if ((1.0 - tau_min)*r12 + dot_r1r2 * tau_min >= 1.0)
 	{
+		//Yes, because minimum distance from center of body to line connecting R1 and R2 is greater than R_E (R1 and R2 having been normalized)
 		los = true;
 	}
 	return los;
