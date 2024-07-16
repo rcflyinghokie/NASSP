@@ -33,12 +33,12 @@ struct LDPPOptions
 	//Maneuver sequence flag
 	//Mode 1: -1 = plane-change only, 0 = plane change and circularization, 1 = plane change combined with first maneuver of a CSM two-maneuver sequence to circularize the CSM orbit at an input altitude
 	int IDO;
-	//Powered-descent simulation flag
-	int I_PD;
+	//Powered-descent simulation flag (false = simulate powered descent, true = do not simulate powered descent)
+	bool I_PD;
 	//Descent azimuth flag: false = descent azimuth is not specified, true = descent azimuth is specified
 	bool I_AZ;
-	//Powered-descent time flag
-	int I_TPD;
+	//Powered-descent time flag: false = let powered descent compute time to ignite, true = input time for powered-descent ignition
+	bool I_TPD;
 	//Time for powered descent ignition (GMT)
 	double T_PD;
 	//Table of threshold times (GMT)
@@ -98,32 +98,38 @@ public:
 	int LDPPMain(LDPPResults &out);
 protected:
 	//CSM phase change
-	void Mode1();
+	int Mode1();
+	//Single CSM maneuver
+	int Mode2();
 
 	//Compute a maneuver to shift the line-of-apsides and change apocynthion and pericynthion or circularize the CSM orbit
-	VECTOR3 SAC(double h_W, int J, EphemerisData sv_L) const;
+	VECTOR3 SAC(double h_W, bool J, EphemerisData sv_L) const;
 	//Compute a maneuver to place CSM orbital track over a desired landing site with or without a specified azimuth
-	void CHAPLA(EphemerisData sv_L, bool IWA, bool IGO, int I, double &t_m, VECTOR3 &DV);
+	void CHAPLA(EphemerisData sv_L, bool IWA, bool IGO, int I, double TH, double &t_m, VECTOR3 &DV) const;
 	//Compute the time of the DOI maneuver based on a desired landing site and a CSM vector before the maneuver
 	int LLTPR(double T_H, EphemerisData sv_L, double &t_DOI, double &t_IGN, double &t_TD);
 	double ArgLat(VECTOR3 R, VECTOR3 V) const;
-	void CNODE(EphemerisData sv_A, EphemerisData sv_P, double &t_m, VECTOR3 &dV_LVLH);
+	void CNODE(EphemerisData sv_A, EphemerisData sv_P, double &t_m, VECTOR3 &dV_LVLH) const;
 	//Subroutine that iterates to find an upcoming apsis point
 	EphemerisData STAP(EphemerisData sv0, bool &error);
 	//Subroutine that iterates to find a specified radius in a given orbit
 	bool STCIR(EphemerisData sv0, double h_W, bool ca_flag, EphemerisData &sv_out);
+	//Advance state to argument of latitude
 	EphemerisData TIMA(EphemerisData sv0, double u, bool &error);
 	//Add a LVLH Delta V vector to state
 	EphemerisData APPLY(EphemerisData sv0, VECTOR3 dV_LVLH);
+	//Inertial (MCI) landing site vector at time GMT
 	VECTOR3 LATLON(double GMT) const;
 	//Utility functions
-	EphemerisData PMMLAEG(EphemerisData sv0, int opt, double param, bool &error, double DN = 0.0);
+	EphemerisData PMMLAEG(EphemerisData sv0, int opt, double param, bool &error, double DN = 0.0) const;
 	bool oneclickcoast(VECTOR3 R0, VECTOR3 V0, double gmt0, double dt, VECTOR3 &R1, VECTOR3 &V1);
-	EphemerisData PositionMatch(EphemerisData sv_A, EphemerisData sv_P, double mu);
-	double P29TimeOfLongitude(VECTOR3 R0, VECTOR3 V0, double GMT, double phi_d);
+	EphemerisData PositionMatch(EphemerisData sv_A, EphemerisData sv_P, double mu) const;
+	double P29TimeOfLongitude(VECTOR3 R0, VECTOR3 V0, double GMT, double phi_d) const;
 	EphemerisData SaveElements(EphemerisData sv, int n, VECTOR3 DV);
-	EphemerisData LoadElements(int n, bool before);
+	EphemerisData LoadElements(int n, bool before) const;
 	double OutOfPlaneError(EphemerisData sv) const;
+	double OrbitalPeriod(EphemerisData sv) const;
+	void OutputCalculations();
 
 	double mu;
 	OBJHANDLE hMoon;
@@ -153,6 +159,7 @@ protected:
 	VECTOR3 LDPP_SV_E_NEW[4][2][2];
 
 	LDPPOptions opt;
+	LDPPResults outp;
 
 	//Angular iteration tolerance
 	static const double zeta_theta;
