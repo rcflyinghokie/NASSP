@@ -79,6 +79,7 @@
 #define GSTP_DOD_GROUND  3
 #define GSTP_ARIA		 4
 #define GSTP_SHIP        5
+#define GSTP_RELAY_SAT   6
 
 // Ground Station Purpose Types
 #define GSPT_PRELAUNCH	0x0001
@@ -91,7 +92,7 @@
 #define GSPT_ENTRY		0x0080
 
 // Max number of ground stations
-#define MAX_GROUND_STATION	43
+#define MAX_GROUND_STATION	44
 
 // Message buffer limits
 #define MAX_MESSAGES		10

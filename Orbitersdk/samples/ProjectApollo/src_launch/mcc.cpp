@@ -549,6 +549,18 @@ void MCC::Init(){
 	GroundStations[42].CommCaps = GSGC_TELETYPE|GSGC_SCAMA_VOICE;
 	GroundStations[42].Active = true;
 
+	sprintf(GroundStations[43].Name, "ATS-6"); sprintf(GroundStations[43].Code, "ATS");
+	GroundStations[43].SBandAntenna = GSSA_3PT7METER;
+	GroundStations[43].HasRadar = true;
+	GroundStations[43].HasAcqAid = true;
+	GroundStations[43].DownTlmCaps = GSDT_USB | GSDT_VHF;
+	GroundStations[43].TrackingCaps = GSTK_CBAND_LOWSPEED | GSTK_USB;
+	GroundStations[43].USBCaps = GSSC_VOICE | GSSC_TELEMETRY;
+	GroundStations[43].CommCaps = GSGC_TELETYPE | GSGC_SCAMA_VOICE | GSGC_VHFAG_VOICE;
+	GroundStations[43].StationPurpose = GSPT_LUNAR;
+	GroundStations[43].StationType = GSTP_RELAY_SAT;
+	GroundStations[43].Active = true;
+
 	// MISSION STATE
 	MissionPhase = 0;
 	setState(MMST_PRELAUNCH);
@@ -968,11 +980,31 @@ void MCC::AutoUpdateXmitGroundStation(VESSEL* Ves, TrackingVesselType Type, Trac
 	for(int StationIndex = 1; StationIndex < MAX_GROUND_STATION; StationIndex++){
 		if (GroundStations[StationIndex].Active == true) {
 
-			GSVector = _V(cos(GroundStations[StationIndex].Position[1] * RAD) * cos(GroundStations[StationIndex].Position[0] * RAD),
-				sin(GroundStations[StationIndex].Position[0] * RAD), 
-				sin(GroundStations[StationIndex].Position[1] * RAD) * cos(GroundStations[StationIndex].Position[0] * RAD)) * R_E;
-			
-			oapiLocalToGlobal(Earth, &GSVector, &GSGlobalVector);
+			if (GroundStations[StationIndex].StationType == GSTP_RELAY_SAT)
+			{
+				//Relay satellite
+				OBJHANDLE hVes = oapiGetObjectByName(GroundStations[StationIndex].Name);
+				if (hVes)
+				{
+					oapiGetGlobalPos(hVes, &GSGlobalVector);
+					oapiGlobalToLocal(Earth, &GSGlobalVector, &GSVector);
+				}
+				else
+				{
+					GroundStations[StationIndex].Active = false;
+					continue;
+				}
+			}
+			else
+			{
+				//Ground station
+				GSVector = _V(cos(GroundStations[StationIndex].Position[1] * RAD) * cos(GroundStations[StationIndex].Position[0] * RAD),
+					sin(GroundStations[StationIndex].Position[0] * RAD),
+					sin(GroundStations[StationIndex].Position[1] * RAD) * cos(GroundStations[StationIndex].Position[0] * RAD)) * R_E;
+
+				oapiLocalToGlobal(Earth, &GSVector, &GSGlobalVector);
+			}
+
 
 			if (GroundStations[StationIndex].StationPurpose & GSPT_LUNAR)
 			{
