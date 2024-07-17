@@ -9670,7 +9670,7 @@ restartprep:
 			//Second opportunity targeting from TABLE
 
 			tgt_index = 0;
-			while (t_D > TABLE15[1].target[tgt_index].t_D)
+			while (tgt_index < 14 && t_D > TABLE15[1].target[tgt_index].t_D)
 			{
 				tgt_index++;
 			}
@@ -9711,7 +9711,7 @@ restartprep:
 			//First opportunity targeting from TABLE
 
 			tgt_index = 0;
-			while (t_D > TABLE15[0].target[tgt_index].t_D)
+			while (tgt_index < 14 && t_D > TABLE15[0].target[tgt_index].t_D)
 			{
 				tgt_index++;
 			}
