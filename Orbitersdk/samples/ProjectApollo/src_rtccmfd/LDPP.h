@@ -99,13 +99,28 @@ public:
 protected:
 	//CSM phase change
 	int Mode1();
-	//Single CSM maneuver
+	int Mode1_1();
+	int Mode1_2();
+	//Single CSM maneuver sequence
 	int Mode2();
+	int Mode2_1();
+	int Mode2_2();
+	//Double CSM maneuver sequence
+	int Mode3();
+	//DOI
+	int Mode4();
+	//Double Hohmann plane change DOI maneuver sequence
+	int Mode5();
+	//PDI
+	int Mode6();
+	//CSM prelaunch plane change maneuver
+	int Mode7();
 
 	//Compute a maneuver to shift the line-of-apsides and change apocynthion and pericynthion or circularize the CSM orbit
 	VECTOR3 SAC(double h_W, bool J, EphemerisData sv_L) const;
 	//Compute a maneuver to place CSM orbital track over a desired landing site with or without a specified azimuth
 	void CHAPLA(EphemerisData sv_L, bool IWA, bool IGO, int I, double TH, double &t_m, VECTOR3 &DV) const;
+	void CHAPLA_FixedTIG(EphemerisData sv_TIG, EphemerisData sv_L, double TH, double &deltaw_s, VECTOR3 &DV) const;
 	//Compute the time of the DOI maneuver based on a desired landing site and a CSM vector before the maneuver
 	int LLTPR(double T_H, EphemerisData sv_L, double &t_DOI, double &t_IGN, double &t_TD);
 	double ArgLat(VECTOR3 R, VECTOR3 V) const;
@@ -129,34 +144,34 @@ protected:
 	EphemerisData LoadElements(int n, bool before) const;
 	double OutOfPlaneError(EphemerisData sv) const;
 	double OrbitalPeriod(EphemerisData sv) const;
+	//Converges on closest approach to the landing site after TH
+	bool LSClosestApproach(EphemerisData sv, double TH, EphemerisData &sv_CA) const;
+	//Calculate DOI maneuver
+	int DOIManeuver(int i_DOI);
 	void OutputCalculations();
 
 	double mu;
 	OBJHANDLE hMoon;
 	//Number of the plane-change maneuver
 	int I_PC;
-	//Number of maneuver
-	int i;
-	int IRUT;
+	//Number of maneuvers in sequence
+	int I_Num;
 	//Closest approach to landing site in CHAPLA
 	double GMT_LS_CA;
+
+	//Time of DOI, PDI and touchdown
+	double t_DOI, t_IGN, t_TD;
+	//Stored state vectors
+	EphemerisData sv_CSM, sv_V, sv_LM;
+	//State vector index
+	//0-3: maneuvers
+	//0-1: before or after
+	//0-1: position and velocity
+	VECTOR3 LDPP_SV_E[4][2][2];
 	//Time of maneuvers
 	double t_M[4];
 	//Delta V of maneuvers
 	VECTOR3 DeltaV_LVLH[4];
-	double deltaw_s, u_man, deltaw;
-
-	//State vector index
-	//0-3 = maneuvers
-	//0 = before, 1 = after
-	EphemerisData LDPP_SV_E[4][2];
-	EphemerisData sv_CSM, sv_V, sv_LM;
-
-	//New state vectors
-	//0-3: maneuvers
-	//0-1: before or after
-	//0-1: position and velocity
-	VECTOR3 LDPP_SV_E_NEW[4][2][2];
 
 	LDPPOptions opt;
 	LDPPResults outp;

@@ -2016,11 +2016,11 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		if (GC->rtcc->GZGENCSN.LDPPPoweredDescentSimFlag)
 		{
-			skp->Text(1 * W / 8, 6 * H / 14, "Simulate powered descent (N/A)", 30);
+			skp->Text(1 * W / 8, 6 * H / 14, "Simulate descent (N/A)", 22);
 		}
 		else
 		{
-			skp->Text(1 * W / 8, 6 * H / 14, "Do not simulate powered descent", 31);
+			skp->Text(1 * W / 8, 6 * H / 14, "Do not simulate descent", 23);
 		}
 
 		GET_Display(Buffer, GC->rtcc->GZGENCSN.LDPPTimeofPDI);
@@ -2034,6 +2034,9 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		sprintf(Buffer, "%.2f°", GC->rtcc->GZGENCSN.LDPPDescentFlightArc*DEG);
 		skp->Text(5 * W / 8, 4 * H / 14, Buffer, strlen(Buffer));
+
+		sprintf(Buffer, "%.2f°", GC->rtcc->GZGENCSN.LDPPLandingSiteOffset*DEG);
+		skp->Text(5 * W / 8, 6 * H / 14, Buffer, strlen(Buffer));
 	}
 	else if (screen == 19)
 	{

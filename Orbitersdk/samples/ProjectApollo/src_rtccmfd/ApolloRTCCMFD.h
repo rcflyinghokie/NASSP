@@ -347,6 +347,7 @@ public:
 	void menuSetLDPPVectorTime();
 	void menuLSRadius();
 	void menuSetLDPPDwellOrbits();
+	void menuSetLDPPLandingSiteOffset();
 	void menuSetLDPPDescentFlightArc();
 	void menuSetLDPPDescIgnHeight();
 	void cycleLDPPPoweredDescSimFlag();
@@ -622,7 +623,6 @@ public:
 	void menuSetDescPlanTablePage();
 	void menuSetLDPPAzimuth();
 	void menuSetLDPPDescentFlightTime();
-	void set_LDPPDescentFlightTime(double dt);
 	void cycleLDPPVehicle();
 	void menuSetLDPPDesiredHeight();
 	void menuLDPPThresholdTime1();

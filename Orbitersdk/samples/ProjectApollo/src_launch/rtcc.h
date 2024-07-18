@@ -3967,6 +3967,7 @@ public:
 		double LDPPDescentFlightTime = 11.0*60.0; //Minutes
 		//Block 45
 		double LDPPDescentFlightArc = 15.0*RAD;
+		double LDPPLandingSiteOffset = 15.0*RAD;
 		//Block 46
 		double SPQDeltaH = 15.0*1852.0;
 		//Block 47
