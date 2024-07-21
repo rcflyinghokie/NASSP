@@ -1133,7 +1133,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 				sprintf(Buffer, "%+07.1f HP", GC->lmmanpad.HP);
 				skp->Text((int)(3.5 * W / 8), 12 * H / 26, Buffer, strlen(Buffer));
 
-				sprintf(Buffer, "%+07.1f DVR", length(GC->lmmanpad.dV) / 0.3048);
+				sprintf(Buffer, "%+07.1f DVR", GC->lmmanpad.dVR);
 				skp->Text((int)(3.5 * W / 8), 13 * H / 26, Buffer, strlen(Buffer));
 
 				OrbMech::SStoHHMMSS(GC->lmmanpad.burntime, hh, mm, secs);
