@@ -8241,7 +8241,7 @@ void ApolloRTCCMFD::menuSetLDPPAzimuth()
 
 void ApolloRTCCMFD::menuSetLDPPPoweredDescTime()
 {
-	GenericGETInput(&GC->rtcc->GZGENCSN.LDPPTimeofPDI, "Time for powered descent ignition (not available yet):");
+	GenericGETInput(&GC->rtcc->GZGENCSN.LDPPTimeofPDI, "Time for powered descent ignition (0 to calculate it internally):");
 }
 
 void ApolloRTCCMFD::menuLDPPThresholdTime1()

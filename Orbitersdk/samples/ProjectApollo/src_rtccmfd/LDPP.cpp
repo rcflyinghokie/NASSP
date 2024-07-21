@@ -57,10 +57,11 @@ LDPPResults::LDPPResults()
 		DeltaV_LVLH[ii] = _V(0, 0, 0);
 		T_M[ii] = 0.0;
 	}
-	i = 0;
+	I_Num = 0;
 	t_PDI = 0.0;
 	t_Land = 0.0;
 	azi = 0.0;
+	Error = 0;
 }
 
 const double LDPP::zeta_theta = 0.00613*RAD; //0.1NM crossrange
@@ -78,55 +79,57 @@ LDPP::LDPP(RTCC *r) : RTCCModule(r)
 	hMoon = oapiGetObjectByName("Moon");
 }
 
-void LDPP::Init(const LDPPOptions &in)
-{
-	opt = in;
-}
-
 //All based on MSC memo 68-FM-23
-int LDPP::LDPPMain(LDPPResults &out)
+void LDPP::LDPPMain(const LDPPOptions &in, LDPPResults &out)
 {
+	//Save options
+	opt = in;
+
+	outp.Error = 0;
+
 	switch (opt.MODE)
 	{
-	case 1:
-		Mode1();
-		break;
-	case 2:
-		Mode2();
-		break;
-	case 3:
-		Mode3();
-		break;
-	case 4:
-		Mode4();
-		break;
+	case 1: Mode1(); break;
+	case 2: Mode2(); break;
+	case 3: Mode3(); break;
+	case 4:	Mode4(); break;
+	case 5:	Mode5(); break;
+	case 6:	Mode6(); break;
+	case 7:	Mode7(); break;
+	}
+
+	if (IsErrorUnrecoverable())
+	{
+		out = outp;
+		return;
 	}
 
 	OutputCalculations();
+
+	//Set output data
 	out = outp;
-	return 0;
 }
 
-int LDPP::Mode1()
+void LDPP::Mode1()
 {
 	if (opt.IDO <= 1)
 	{
-		return Mode1_1();
+		Mode1_1();
 	}
 	else
 	{
-		return Mode1_2();
+		Mode1_2();
 	}
 }
 
-int LDPP::Mode1_1()
+void LDPP::Mode1_1()
 {
 	//Mode 1, Sequence 1-3
 
 	VECTOR3 DV, DV_apo;
 	double dt, t_PC, xi, TH;
 	int iter;
-	bool asseq, stop, error;
+	bool asseq, stop;
 
 	if (opt.IDO == 1)
 	{
@@ -161,7 +164,8 @@ int LDPP::Mode1_1()
 	{
 		iter++;
 		//Compute plane change alone
-		CHAPLA(sv_CSM, opt.I_AZ, asseq, I_Num, TH, t_PC, DV_apo);
+		CHAPLA(sv_CSM, opt.I_AZ, asseq, TH, t_PC, DV_apo);
+		if (IsErrorUnrecoverable()) return;
 		//Advance to t_PC
 		dt = t_PC - sv_V.GMT;
 		sv_CSM = pRTCC->coast(sv_V, dt);
@@ -191,11 +195,8 @@ int LDPP::Mode1_1()
 			sv_CSM = pRTCC->coast(sv_CSM, dt);
 			for (int iii = 0; iii < 2; iii++)
 			{
-				sv_CSM = STAP(sv_CSM, error);
-				if (error)
-				{
-					return 1;
-				}
+				sv_CSM = STAP(sv_CSM);
+				if (IsErrorUnrecoverable()) return;
 				if (abs(length(sv_CSM.R) - (opt.R_LS + opt.H_W)) < 2.0*1852.0) break;
 			}
 			//Circularize
@@ -220,17 +221,20 @@ int LDPP::Mode1_1()
 		}
 	} while (stop == false);
 
-	return 0;
+	if (iter >= 10)
+	{
+		SetError(5);
+	}
 }
 
-int LDPP::Mode1_2()
+void LDPP::Mode1_2()
 {
 	//Mode 1, Sequence 4-5
 
 	VECTOR3 DV, DV_aapo, DV_apo;
 	double dt, deltaw_s, xi;
 	int iter;
-	bool error, stop;
+	bool stop;
 	
 	I_PC = 1;
 	I_Num = 2;
@@ -246,10 +250,10 @@ int LDPP::Mode1_2()
 	if (opt.IDO < 3)
 	{
 		//PCC at altitude
-		error = STCIR(sv_CSM, opt.H_W, true, sv_CSM);
-		if (error)
+		if (STCIR(sv_CSM, opt.H_W, true, sv_CSM))
 		{
-
+			SetError(0);
+			return;
 		}
 	}
 	else
@@ -295,30 +299,146 @@ int LDPP::Mode1_2()
 		}
 	} while (stop == false);
 
-	return 0;
+	if (iter >= 10)
+	{
+		SetError(5);
+	}
 }
 
-int LDPP::Mode2()
+void LDPP::Mode2()
 {
 	if (opt.IDO <= 0)
 	{
-		return Mode2_1();
+		Mode2_1();
 	}
 	else
 	{
-		return Mode2_2();
+		Mode2_2();
 	}
 }
 
-int LDPP::Mode2_1()
+void LDPP::Mode2_1()
 {
+	//Mode 2, Sequence 1: Compute CSM maneuver to establish an apsis and an input altitude at the DOI maneuver point
+
+	EphemerisData sv_ASH_apo, sv_DOI;
+	VECTOR3 DV;
+	double dt, U_H_DOI, U_OC, t_OC, t_LS, t_D, U_LS, DU1, DU2, U_DOI, P_L, U0, a, DU;
+	int iter;
+	bool error, stop;
+
 	I_Num = 2;
 
-	//Mode 2, Sequence 1: Compute CSM maneuver to establish an apsis and an input altitude at the DOI maneuver point
-	return 0;
+	//Input state vector as CSM state vector
+	sv_CSM = opt.sv0;
+
+	//Advance to threshold time of first maneuver
+	dt = opt.TH[0] - sv_CSM.GMT;
+	sv_CSM = pRTCC->coast(sv_CSM, dt);
+
+	//Save
+	sv_V = sv_CSM;
+	U0 = ArgLat(sv_V.R, sv_V.V);
+
+	//Find argument of latitude at DOI threshold
+	//First advance to DOI threshold time
+	dt = opt.TH[3] - sv_CSM.GMT;
+	sv_CSM = coast_u(sv_CSM, dt, U0, U_H_DOI);
+
+	//Predicted argument of latitude at PDI
+	U_OC = U_H_DOI + PI2 * (double)opt.M;
+	if (opt.M != 0)
+	{
+		//Advance CSM to U_OC
+		sv_CSM = TIMA(sv_CSM, U_H_DOI, U_OC, error);
+		if (error)
+		{
+			//Unrecoverable AEG error
+			SetError(0);
+			return;
+		}
+	}
+	t_OC = sv_CSM.GMT;
+	for (int ii = 0; ii < 2; ii++)
+	{
+		//Advance CSM to longitude of the landing site, obtaining t_LS and U_LS
+		t_LS = P29TimeOfLongitude(sv_CSM.R, sv_CSM.V, sv_CSM.GMT, opt.Lng_LS);
+		dt = t_LS - sv_CSM.GMT;
+		sv_CSM = coast_u(sv_CSM, dt, U_OC, U_LS);
+		DU1 = U_LS - U_H_DOI;
+		DU2 = PI2 * (double)opt.M + PI + opt.theta_D;
+		if (DU1 < DU2)
+		{
+			//Use next landing site crossing
+			t_D = t_LS + 20.0*60.0;
+			dt = t_D - sv_CSM.GMT;
+			sv_CSM = coast_u(sv_CSM, dt, U_LS, U_OC);
+		}
+		else break;
+	}
+	//Obtain first guess at U_DOI
+	U_DOI = U_LS - opt.theta_D - PI - PI2 * (double)opt.M;
+	//Compute first guess at U_OC of maneuver point
+	P_L = OrbitalPeriod(sv_CSM);
+	U_OC = U_DOI - PI - PI2 * trunc((opt.TH[3] - opt.TH[0]) / P_L);
+
+	//Set up iteration
+	iter = 0;
+	stop = false;
+
+	do
+	{
+		iter++;
+		if (iter > 15) break;
+
+		//Advance CSM to U_OC
+		sv_CSM = TIMA(sv_V, U0, U_OC, error);
+		if (error)
+		{
+			//Unrecoverable AEG error
+			SetError(0);
+			return;
+		}
+
+		DV = SAC(opt.H_W, false, sv_CSM);
+		sv_CSM = SaveElements(sv_CSM, 0, DV);
+		//DOI
+		DOIManeuver(1);
+		//How close to an apsis is DOI?
+		//First determine if the ASH maneuver is at apolune or perilune
+		sv_ASH_apo = LoadElements(0, false);
+		sv_DOI = LoadElements(1, true);
+		a = OrbMech::GetSemiMajorAxis(sv_ASH_apo.R, sv_ASH_apo.V, mu);
+		if (a > length(sv_ASH_apo.R))
+		{
+			//ASH at perilune, so DOI has to be at apolune
+			dt = OrbMech::timetoapo(sv_DOI.R, sv_DOI.V, mu);
+		}
+		else
+		{
+			//ASH at apolune, so DOI has to be at perilune
+			dt = OrbMech::timetoperi(sv_DOI.R, sv_DOI.V, mu);
+		}
+		P_L = OrbitalPeriod(sv_DOI);
+		DU = dt / P_L * PI2;
+		if (abs(DU) < zeta_theta)
+		{
+			stop = true;
+		}
+		else
+		{
+			U_OC = U_OC - DU;
+		}
+
+	} while (stop == false);
+
+	if (iter > 15)
+	{
+		SetError(3);
+	}
 }
 
-int LDPP::Mode2_2()
+void LDPP::Mode2_2()
 {
 	//Mode 2, Sequence 2: Compute CSM maneuver to circularize orbit at an input altitude
 
@@ -337,22 +457,25 @@ int LDPP::Mode2_2()
 
 	//Advance to altitude
 	error = STCIR(sv_CSM, opt.H_W, true, sv_CSM);
+	if (error)
+	{
+		SetError(0);
+		return;
+	}
 	//Calculate circ burn
 	DV_apo = SAC(0.0, true, sv_CSM);
 	//Apply DV
 	sv_CSM = SaveElements(sv_CSM, 0, DV_apo);
 	//Calculate DOI
 	DOIManeuver(1);
-	return 0;
 }
 
-int LDPP::Mode3()
+void LDPP::Mode3()
 {
 	//Compute CSM two-maneuver sequence with the first maneuver performed at an input time or apsis and the second maneuver performed at an input altitude to circularize the orbit
 
 	VECTOR3 DV;
 	double dt;
-	bool error;
 
 	I_Num = 3;
 
@@ -366,7 +489,8 @@ int LDPP::Mode3()
 	if (opt.IDO >= 0)
 	{
 		//Advance CSM to next apsis
-		sv_CSM = STAP(sv_CSM, error);
+		sv_CSM = STAP(sv_CSM);
+		if (IsErrorUnrecoverable()) return;
 	}
 
 	//Compute a maneuver to give an altitude 180° around
@@ -380,7 +504,8 @@ int LDPP::Mode3()
 	//Advance to desired apsis
 	for (int i = 0; i < 2; i++)
 	{
-		sv_CSM = STAP(sv_CSM, error);
+		sv_CSM = STAP(sv_CSM);
+		if (IsErrorUnrecoverable()) return;
 		if (abs(length(sv_CSM.R) - (opt.R_LS + opt.H_W)) < 2.0*1852.0) break;
 	}
 	//Compute a maneuver to circularize CSM orbit
@@ -389,10 +514,9 @@ int LDPP::Mode3()
 	sv_CSM = SaveElements(sv_CSM, 1, DV);
 	//DOI
 	DOIManeuver(2);
-	return 0;
 }
 
-int LDPP::Mode4()
+void LDPP::Mode4()
 {
 	//DOI
 
@@ -408,28 +532,223 @@ int LDPP::Mode4()
 	sv_CSM = pRTCC->coast(sv_CSM, dt);
 
 	DOIManeuver(0);
-	return 0;
 }
 
-int LDPP::Mode5()
+void LDPP::Mode5()
 {
 	//Double Hohmann plane change DOI maneuver sequence
-	return 0;
+	//IDO = -1: PC, HO1, HO2. 0: HO1, PC, HO2. 1: HO1, HO2, PC
+
+	VECTOR3 DV;
+	double dt, t_PC, TH, DR, xi;
+	int iter, iii;
+	bool stop;
+
+	I_Num = 4;
+	if (opt.IDO < 0)
+	{
+		I_PC = 1;
+	}
+	else if (opt.IDO == 0)
+	{
+		I_PC = 2;
+	}
+	else
+	{
+		I_PC = 3;
+	}
+
+	//Input state vector as CSM state vector
+	sv_CSM = opt.sv0;
+
+	//Advance to threshold time of first maneuver
+	dt = opt.TH[0] - sv_CSM.GMT;
+	sv_CSM = pRTCC->coast(sv_CSM, dt);
+
+	//Save state vector at threshold time
+	sv_V = sv_CSM;
+	sv_LM = sv_CSM;
+
+	TH = 0.0;
+	iter = 0;
+
+	do
+	{
+		iter++;
+		//Maneuver 1
+		sv_CSM = sv_V;
+		if (opt.IDO == -1)
+		{
+			//PC
+			if (iter == 1)
+			{
+				DV = _V(0, 0, 0);
+			}
+			else
+			{
+				CHAPLA(sv_LM, opt.I_AZ, true, TH, t_PC, DV);
+				if (IsErrorUnrecoverable()) return;
+				dt = t_PC - sv_CSM.GMT;
+				sv_CSM = pRTCC->coast(sv_CSM, dt);
+			}
+		}
+		else
+		{
+			//HO1
+			//Advance CSM to next apsis
+			sv_CSM = STAP(sv_CSM);
+			if (IsErrorUnrecoverable()) return;
+
+			DV = SAC(opt.H_W, false, sv_CSM);
+		}
+		sv_CSM = SaveElements(sv_CSM, 0, DV);
+
+		//Maneuver 2
+		dt = opt.TH[1] - sv_CSM.GMT;
+		sv_CSM = pRTCC->coast(sv_CSM, dt);
+		if (opt.IDO == -1)
+		{
+			//HO1
+			sv_CSM = STAP(sv_CSM);
+			if (IsErrorUnrecoverable()) return;
+
+			DV = SAC(opt.H_W, false, sv_CSM);
+		}
+		else if (opt.IDO == 0)
+		{
+			//PC
+			if (iter == 1)
+			{
+				DV = _V(0, 0, 0);
+			}
+			else
+			{
+				CHAPLA(sv_LM, opt.I_AZ, true, TH, t_PC, DV);
+				if (IsErrorUnrecoverable()) return;
+				dt = t_PC - sv_CSM.GMT;
+				sv_CSM = pRTCC->coast(sv_CSM, dt);
+			}
+		}
+		else
+		{
+			//HO2
+			for (iii = 0; iii < 2; iii++)
+			{
+				sv_CSM = STAP(sv_CSM);
+				if (IsErrorUnrecoverable()) return;
+
+				DR = length(sv_CSM.R) - (opt.R_LS + opt.H_W);
+				if (abs(DR) < 1000.0*0.3048) break;
+			}
+			DV = SAC(0.0, true, sv_CSM);
+		}
+		sv_CSM = SaveElements(sv_CSM, 1, DV);
+
+		//Maneuver 3
+		dt = opt.TH[2] - sv_CSM.GMT;
+		sv_CSM = pRTCC->coast(sv_CSM, dt);
+		if (opt.IDO == 1)
+		{
+			//PC
+			if (iter == 1)
+			{
+				DV = _V(0, 0, 0);
+			}
+			else
+			{
+				CHAPLA(sv_LM, opt.I_AZ, true, TH, t_PC, DV);
+				if (IsErrorUnrecoverable()) return;
+				dt = t_PC - sv_CSM.GMT;
+				sv_CSM = pRTCC->coast(sv_CSM, dt);
+			}
+		}
+		else
+		{
+			//HO2
+			for (iii = 0; iii < 2; iii++)
+			{
+				sv_CSM = STAP(sv_CSM);
+				if (IsErrorUnrecoverable()) return;
+
+				DR = length(sv_CSM.R) - (opt.R_LS + opt.H_W);
+				if (abs(DR) < 1000.0*0.3048) break;
+			}
+			DV = SAC(0.0, true, sv_CSM);
+		}
+		sv_CSM = SaveElements(sv_CSM, 2, DV);
+
+		//DOI
+		DOIManeuver(3);
+		//Calculate out of plane error
+		xi = OutOfPlaneError(sv_LM);
+		if (abs(xi) <= zeta_theta || iter >= 10)
+		{
+			stop = true;
+		}
+		else
+		{
+			//To ensure it finds the right landing site passage
+			TH = t_TD - 1000.0;
+		}
+	} while (stop == false);
+
+	if (iter >= 10)
+	{
+		SetError(5);
+	}
 }
 
-int LDPP::Mode6()
+void LDPP::Mode6()
 {
 	//PDI
-	return 0;
+
+	double dt, t_LS;
+
+	//Input state vector as CSM state vector
+	sv_CSM = opt.sv0;
+
+	//Advance to threshold time of first maneuver
+	dt = opt.TH[0] - sv_CSM.GMT;
+	sv_CSM = pRTCC->coast(sv_CSM, dt);
+
+	//Predict time of landing here based on the threshold time
+	t_LS = P29TimeOfLongitude(sv_CSM.R, sv_CSM.V, sv_CSM.GMT, opt.Lng_LS);
+
+	//Save for PDI simulation
+	dt = t_LS - sv_CSM.GMT;
+	sv_LM = pRTCC->coast(sv_CSM, dt);
+	t_TD = sv_LM.GMT;
 }
 
-int LDPP::Mode7()
+void LDPP::Mode7()
 {
 	//CSM prelaunch plane change maneuver
-	return 0;
+
+	VECTOR3 DV_apo;
+	double dt, t_PC;
+
+	I_PC = 1;
+	I_Num = 1;
+
+	//Input state vector as CSM state vector
+	sv_CSM = opt.sv0;
+
+	//Advance to threshold time of first maneuver
+	dt = opt.TH[0] - sv_CSM.GMT;
+	sv_CSM = pRTCC->coast(sv_CSM, dt);
+
+	CHAPLA(sv_CSM, opt.I_AZ, false, opt.TH[3], t_PC, DV_apo);
+	if (IsErrorUnrecoverable()) return;
+
+	//Advance to t_PC
+	dt = t_PC - sv_CSM.GMT;
+	sv_CSM = pRTCC->coast(sv_CSM, dt);
+
+	//Save
+	SaveElements(sv_CSM, 0, DV_apo);
 }
 
-VECTOR3 LDPP::SAC(double h_W, bool J, EphemerisData sv_L) const
+VECTOR3 LDPP::SAC(double h_W, bool J, EphemerisData sv_L)
 {
 	//h_W: height wanted at an apsis, or circular altitude wanted
 	//J: false = compute maneuver to yield h_W at an apsis 180° away from maneuver, true = compute maneuver to circularize at input altitude
@@ -438,7 +757,7 @@ VECTOR3 LDPP::SAC(double h_W, bool J, EphemerisData sv_L) const
 	MATRIX3 Q_Xx;
 	VECTOR3 DV;
 	double u_b, u_d, R_A, R_A_apo, r, a, v, n, DN, dt, u_c, dr;
-	int nn;
+	int nn, mm;
 
 	Q_Xx = OrbMech::LVLH_Matrix(sv_L.R, sv_L.V);
 
@@ -465,6 +784,7 @@ VECTOR3 LDPP::SAC(double h_W, bool J, EphemerisData sv_L) const
 		R_A = length(sv_L.R);
 	}
 	R_A_apo = R_A;
+	mm = 0;
 	do
 	{
 		a = (R_A_apo + r) / 2.0;
@@ -491,34 +811,34 @@ VECTOR3 LDPP::SAC(double h_W, bool J, EphemerisData sv_L) const
 			sv_L2 = pRTCC->coast(sv_L2, dt);
 			u_c = ArgLat(sv_L2.R, sv_L2.V);
 			nn++;
-		} while (abs(dt) > zeta_t);
+		} while (abs(dt) > zeta_t && nn < 10);
 
 		dr = R_A - length(sv_L2.R);
 		R_A_apo += dr;
-	} while (abs(dr) > 1.0);
+		mm++;
+	} while (abs(dr) > 1.0 && mm < 10);
+
+	if (nn >= 10 || mm >= 10)
+	{
+		//Did not converge
+		SetError(7);
+	}
 	return mul(OrbMech::LVLH_Matrix(sv_L.R, sv_L.V), DV);
 }
 
 double LDPP::ArgLat(VECTOR3 R, VECTOR3 V) const
 {
-	VECTOR3 H, E, N;
-	double TA, w, u;
-	H = crossp(R, V);
-	E = crossp(V, H) / mu;
-	N = crossp(_V(0, 0, 1), H);
-	TA = acos2(dotp(unit(E), unit(R)));
-	if (dotp(R, V) < 0)
-	{
-		TA = PI2 - TA;
-	}
-	w = acos2(dotp(unit(N), unit(E)));
-	if (E.z < 0)
-	{
-		w = PI2 - w;
-	}
-	u = TA + w;
-	if (u > PI2)u -= PI2;
+	VECTOR3 K, h, n;
+	double u;
 
+	K = _V(0, 0, 1);
+	h = unit(crossp(R, V));
+	n = crossp(K, h);
+	u = acos2(dotp(unit(n), unit(R)));
+	if (R.z < 0)
+	{
+		u = PI2 - u;
+	}
 	return u;
 }
 
@@ -531,85 +851,92 @@ VECTOR3 LDPP::LATLON(double GMT) const
 	return R_LS;
 }
 
-int LDPP::LLTPR(double T_H, EphemerisData sv_L, double &t_DOI, double &t_IGN, double &t_TD)
+void LDPP::LLTPR(double T_H, EphemerisData sv_L, double &t_DOI, double &t_IGN, double &t_TD)
 {
-	EphemerisData sv_L0;
-	VECTOR3 H_c, h_c, C, c, V_H, R_PP, V_PP, d, R_ppu, D_L, RR_LS, rr_LS, h_c2;
-	double t, dt, R_D, S_w, R_p, R_a, a_D, t_H, t_L, cc, eps_R, alpha, E_I, t_x;
-	int N, S;
+	EphemerisData sv_L_apo, sv_PL;
+	VECTOR3 H_c, h_c, C, c, V_H, d, R_ppu, D_L, RR_LS, rr_LS, h_c2;
+	double t, dt, R_D, S_w, R_p, R_a, a_D, t_H, t_L, cc, eps_R, alpha, E_I, dt_peri;
+	int N, ii;
 
+	//Time of initial state vector
 	t = sv_L.GMT;
+	//Time to threshold time
 	dt = T_H - t;
+	//Iteration counter
 	N = 0;
+	//Direction switch
 	S_w = 1.0;
+	//Desired perilune radius
 	R_D = opt.R_LS + opt.H_DP;
-
-	sv_L0 = sv_L;
 
 	do
 	{
 		N = N + 1;
 		if (N > 15)
 		{
-			return 1;
+			SetError(6);
+			break;
 		}
 
+		//Update state vector to new time
 		t = t + S_w * dt;
 		sv_L = pRTCC->coast(sv_L, t - sv_L.GMT);
 
-		S = 0;
+		//Calculate orbit parameters after DOI
 		R_p = R_D;
 		R_a = length(sv_L.R);
 		H_c = crossp(sv_L.R, sv_L.V);
 		h_c = unit(H_c);
 		a_D = mu * R_a / (2.0*mu - R_a * pow(length(sv_L.V), 2));
-
-		t_H = (PI2*(double)opt.M + PI)*sqrt(pow(R_a + R_p, 3) / (8.0*mu));
-
-	LDPP_LLTPR_2_2:
-		C = crossp(h_c, sv_L.R);
-		c = unit(C);
-		V_H = c * sqrt(2.0*mu*R_p / (R_a*(R_p + R_a)));
-		sv_L.V = V_H;
-
-		oneclickcoast(sv_L.R, sv_L.V, sv_L.GMT, t_H, R_PP, V_PP);
-
-		//Not in LDPP document
-		double dt_peri = OrbMech::timetoperi(R_PP, V_PP, mu);
-		oneclickcoast(R_PP, V_PP, sv_L.GMT + t_H, dt_peri, R_PP, V_PP);
-
-		if (S <= 0)
+		//Iterate once 
+		for (ii = 0; ii < 2; ii++)
 		{
-			R_p = 2.0*R_D - length(R_PP);
-			S = 1;
-			goto LDPP_LLTPR_2_2;
+			//Transfer time from DOI to descent ignition
+			t_H = (PI2*(double)opt.M + PI)*sqrt(pow(R_a + R_p, 3) / (8.0*mu));
+			//Compute horizontal velocity at apolune
+			C = crossp(h_c, sv_L.R);
+			c = unit(C);
+			V_H = c * sqrt(2.0*mu*R_p / (R_a*(R_p + R_a)));
+			//State vector after DOI
+			sv_L_apo = sv_L;
+			sv_L_apo.V = V_H;
+			//Take state vector to predicted perilune
+			sv_PL = pRTCC->coast(sv_L_apo, t_H);
+			//t_H does not give the exact perilune, so improve the location with a conic correction
+			dt_peri = OrbMech::timetoperi(sv_PL.R, sv_PL.V, mu);
+			sv_PL = pRTCC->coast(sv_PL, dt_peri);
+			//Based on the actual perilune radius, bias the targeted perilune radius for a more precise result
+			if (ii == 0)
+			{
+				R_p = 2.0*R_D - length(sv_PL.R);
+			}
 		}
 
-		t_H += dt_peri;
-		t_x = t + t_H;
-
 		//Not in LDPP document
-		h_c2 = unit(crossp(R_PP, V_PP));
-
-		t_L = t_x + opt.t_D;
-		R_ppu = unit(R_PP);
+		h_c2 = unit(crossp(sv_PL.R, sv_PL.V));
+		//Compute LM landing time
+		t_L = sv_PL.GMT + opt.t_D;
+		//Compute position of LM at landing point
+		R_ppu = unit(sv_PL.R);
 		d = unit(crossp(h_c2, R_ppu));
 		D_L = R_ppu * cos(opt.theta_D) + d * sin(opt.theta_D);
-
+		//Inertial landing site vector
 		RR_LS = LATLON(t_L);
-
+		//Project landing site vector into CSM plane
 		cc = dotp(h_c2, RR_LS);
 		RR_LS = RR_LS - h_c2 * cc;
 		rr_LS = unit(RR_LS);
 		eps_R = length(D_L - rr_LS);
-
+		//Close enough?
 		if (eps_R <= zeta_theta)
 		{
 			t_DOI = t;
 		}
 		else
 		{
+			//Compute angular distance the LM landing point is away from the landing site
 			alpha = acos(dotp(D_L, rr_LS));
+			//For sign on dt compute
 			E_I = dotp(h_c2, crossp(D_L, rr_LS));
 			if (E_I >= 0)
 			{
@@ -628,29 +955,30 @@ int LDPP::LLTPR(double T_H, EphemerisData sv_L, double &t_DOI, double &t_IGN, do
 				}
 			}
 			dt = alpha * sqrt(pow(a_D, 3) / mu);
-
-			sv_L = sv_L0;
 		}
 	} while (eps_R > zeta_theta);
 
-	t_IGN = t_x;
+	t_IGN = sv_PL.GMT;
 	t_TD = t_L;
-	return 0;
 }
 
-void LDPP::CHAPLA(EphemerisData sv_L, bool IWA, bool IGO, int I, double TH, double &t_m, VECTOR3 &DV) const
+void LDPP::CHAPLA(EphemerisData sv_L, bool IWA, bool IGO, double TH, double &t_m, VECTOR3 &DV)
 {
+	//GLOBAL:
+	//I_Num: number of maneuvers in sequence
+	//I_PC: number of the plane-change maneuver
+
 	//INPUTS:
 	//sv_L: input state vector before landing site passage
 	//IWA: false = the azimuth is not specified, true = the azimuth is specified
 	//IGO: false = compute plane change as if it were the only maneuver being done, true = compute plane change as part of maneuver sequence
-	//I: number of maneuvers in sequence
-	//I_PC: number of the plane-change maneuver
+
 	//TH: Threshold for flying over the landing site
 
 	//OUTPUTS:
 	//t_m: maneuver time
 	//DV: maneuver delta V
+	//
 
 	EphemerisData sv_TH, sv_CA, sv_A, sv_P;
 	MATRIX3 Rot;
@@ -659,10 +987,12 @@ void LDPP::CHAPLA(EphemerisData sv_L, bool IWA, bool IGO, int I, double TH, doub
 	bool error;
 
 	error = LSClosestApproach(sv_L, TH, sv_CA);
+	GMT_LS_CA = sv_CA.GMT;
 
 	if (error)
 	{
-		//TBD: Error message: Failed to converge on closest approach in PCPLCH. Processing continued.
+		//Error message: Failed to converge on closest approach in PCPLCH. Processing continued.
+		SetError(4);
 	}
 	
 	//Convert state vector to MCT coordinates
@@ -694,13 +1024,19 @@ void LDPP::CHAPLA(EphemerisData sv_L, bool IWA, bool IGO, int I, double TH, doub
 	//Iteration loop to propagate backwards through maneuvers
 	if (IGO)
 	{
-		ii = I;
+		ii = I_Num;
 		CELEMENTS elem_A, elem_P;
 
 		do
 		{
 			//Propagate backwards to previous maneuver time
 			sv_P = PMMLAEG(sv_P, 0, t_M[ii - 1], error);
+			if (error)
+			{
+				//Error in backing through maneuver(s) in PCPLCH (aka CHAPLA). Processing halted.
+				SetError(1);
+				return;
+			}
 			//Active vehicle 
 			elem_A = OrbMech::GIMIKC(LDPP_SV_E[ii - 1][0][0], LDPP_SV_E[ii - 1][0][1], mu);
 			elem_P = OrbMech::GIMIKC(sv_P.R, sv_P.V, mu);
@@ -730,13 +1066,23 @@ void LDPP::CHAPLA(EphemerisData sv_L, bool IWA, bool IGO, int I, double TH, doub
 
 	//Advance both vehicles to threshold time for plane change
 	sv_A = PMMLAEG(sv_A, 0, opt.TH[I_PC - 1], error);
+	if (error)
+	{
+		//Unrecoverable AEG error
+		SetError(0);
+		return;
+	}
 	sv_P = PMMLAEG(sv_P, 0, opt.TH[I_PC - 1], error);
-
-	//??
-	//I = ii;
+	if (error)
+	{
+		//Unrecoverable AEG error
+		SetError(0);
+		return;
+	}
 
 	//Common node
 	CNODE(sv_A, sv_P, t_m, DV);
+	//TBD: Errors 8 and 9
 }
 
 void LDPP::CHAPLA_FixedTIG(EphemerisData sv_TIG, EphemerisData sv_L, double TH, double &deltaw_s, VECTOR3 &DV) const
@@ -769,7 +1115,7 @@ void LDPP::CHAPLA_FixedTIG(EphemerisData sv_TIG, EphemerisData sv_L, double TH, 
 	r_P = unit(R_P);
 	nu = acos2(dotp(r_LS, r_P)); //angle between landing site and projected landing site (out-of-plane angle)
 	delta_nu = acos2(dotp(r_LS, h_L));
-	delta_w = sin(nu) / (cos(nu)*cos(u_CA - u_MAN));
+	delta_w = sin(nu) / (cos(nu)*sin(u_CA - u_MAN));
 	cos_delta_nu = cos(delta_nu);
 	delta_w = delta_w * cos_delta_nu / abs(cos_delta_nu);
 
@@ -808,27 +1154,33 @@ EphemerisData LDPP::APPLY(EphemerisData sv0, VECTOR3 dV_LVLH)
 	return sv0;
 }
 
-EphemerisData LDPP::STAP(EphemerisData sv0, bool &error)
+EphemerisData LDPP::STAP(EphemerisData sv0)
 {
+	EphemerisData sv1;
 	CELEMENTS elem = OrbMech::GIMIKC(sv0.R, sv0.V, mu);
 	double DN = 0.0;
-	//Close to apsis
+	bool error;
 
-	if (elem.l < 0.001*RAD || elem.l > PI2 - 0.001*RAD || abs(elem.l - PI) < 0.001*RAD)
+	if (elem.e < 0.0005 || elem.l < 0.001*RAD || elem.l > PI2 - 0.001*RAD || abs(elem.l - PI) < 0.001*RAD)
 	{
-		return PMMLAEG(sv0, 3, 0.0, error, 0.5);
+		//Small eccentricty or already close to apsis
+		sv1 = PMMLAEG(sv0, 3, 0.0, error, 0.5);
 	}
-
-	if (elem.l < PI)
+	else if (elem.l < PI)
 	{
 		//Apoapsis
-		return PMMLAEG(sv0, 1, PI, error, DN);
+		sv1 = PMMLAEG(sv0, 1, PI, error, DN);
 	}
 	else
 	{
 		//Periapsis
-		return PMMLAEG(sv0, 1, 0, error, DN);
+		sv1 = PMMLAEG(sv0, 1, 0, error, DN);
 	}
+	if (error)
+	{
+		SetError(0);
+	}
+	return sv1;
 }
 
 bool LDPP::STCIR(EphemerisData sv0, double h_W, bool ca_flag, EphemerisData& sv_out)
@@ -932,60 +1284,69 @@ bool LDPP::STCIR(EphemerisData sv0, double h_W, bool ca_flag, EphemerisData& sv_
 
 	sv_out = sv0;
 	return false;
-
-	/*double dt2, dt21, dt22, r_H;
-
-	r_H = opt.R_LS + h_W;
-	dt21 = OrbMech::time_radius_integ(sv0.R, sv0.V, sv0.MJD, r_H, 1.0, hMoon, hMoon);
-	dt22 = OrbMech::time_radius_integ(sv0.R, sv0.V, sv0.MJD, r_H, -1.0, hMoon, hMoon);
-
-	if (abs(dt21) > abs(dt22))
-	{
-		dt2 = dt22;
-	}
-	else
-	{
-		dt2 = dt21;
-	}
-
-	sv_out = OrbMech::coast(sv0, dt2);
-	return false;*/
 }
 
-EphemerisData LDPP::TIMA(EphemerisData sv0, double u, bool &error)
+EphemerisData LDPP::TIMA(EphemerisData sv0, double U0, double UD, bool &error)
 {
-	double DN = 0.0;
+	//U0 has to be exact argument of latitude of sv0, but can contain multiples of 2 pi
 
-	while (u < 0)
-	{
-		DN -= 1.0;
-		u += PI2;
-	}
-	while (u > PI2)
-	{
-		DN += 1.0;
-		u -= PI2;
-	}
+	EphemerisData sv1;
+	double P_L, dt, U, DU;
+	int iter;
 
-	return PMMLAEG(sv0, 2, u, error, DN);
+	P_L = OrbitalPeriod(sv0);
+	dt = (UD - U0) / PI2 * P_L;
+	sv1 = sv0;
+	iter = 0;
+
+	do
+	{
+		//Advance to predicted time
+		sv1 = pRTCC->coast(sv1, dt);
+		//Calculate argument of latitude
+		U = ArgLat(sv1.R, sv1.V);
+		//Calculate argument of latitude error
+		DU = U - UD;
+		//Get rid of multiples of 2*pi
+		while (DU > PI)
+		{
+			DU -= PI2;
+		}
+		while (DU < -PI)
+		{
+			DU += PI2;
+		}
+		//Calculate time error
+		dt = DU / PI2 * P_L;
+		iter++;
+	} while (iter < 15 && abs(dt) < 0.01);
+	error = false;
+
+	return sv1;
 }
 
 void LDPP::CNODE(EphemerisData sv_A, EphemerisData sv_P, double &t_m, VECTOR3 &dV_LVLH) const
 {
 	CELEMENTS coe_M, coe_T;
-	double GMT_CN, U_L, U_U, i_T, i_M, h_T, h_M, cos_dw, DEN, U_CN;
+	double GMT_CN, U_L, U_U, i_T, i_M, h_T, h_M, cos_dw, DEN, U_CN, DN, U_B;
 	int ICT = 0;
 
 	GMT_CN = sv_A.GMT;
 
 	do
 	{
-
 		if (ICT == 0)
 		{
-			U_L = ArgLat(sv_A.R, sv_A.V);
+			U_L = U_B = ArgLat(sv_A.R, sv_A.V);
 			U_U = U_L + PI;
-			if (U_U > PI2) U_U -= PI2;
+			if (U_U >= PI2)
+			{
+				U_U -= PI2;
+			}
+		}
+		else
+		{
+			U_B = ArgLat(sv_A.R, sv_A.V);
 		}
 
 		coe_M = OrbMech::GIMIKC(sv_A.R, sv_A.V, mu);
@@ -1019,11 +1380,17 @@ void LDPP::CNODE(EphemerisData sv_A, EphemerisData sv_P, double &t_m, VECTOR3 &d
 		}
 
 		ICT++;
-
 		if (ICT > 3) break;
 
+		//Zero U passage?
+		DN = 0.0;
+		if (U_B >= U_CN && U_B >= U_CN + PI)
+		{
+			DN = 1.0;
+		}
+
 		bool error;
-		sv_A = PMMLAEG(sv_A, 2, U_CN, error);
+		sv_A = PMMLAEG(sv_A, 2, U_CN, error, DN);
 		if (error)
 		{
 			return;
@@ -1032,19 +1399,43 @@ void LDPP::CNODE(EphemerisData sv_A, EphemerisData sv_P, double &t_m, VECTOR3 &d
 		GMT_CN = sv_A.GMT;
 	} while (ICT <= 3);
 
-	VECTOR3 DV_Test = mul(OrbMech::LVLH_Matrix(sv_A.R, sv_A.V), sv_P.V - sv_A.V);
+	VECTOR3 H_P, H_C, K;
+	double dw, dv_PC, S;
 
-	double dw = acos(cos_dw);
-	double dv_PC = 2.0*sqrt(mu)*sin(dw / 2.0)*sqrt(2.0 / length(sv_A.R) - 1.0 / coe_M.a);
-	VECTOR3 H_P = unit(crossp(sv_P.R, sv_P.V));
-	VECTOR3 H_C = unit(crossp(sv_A.R, sv_A.V));
-	VECTOR3 K = unit(crossp(H_P, sv_A.R));
-	double S = dotp(H_C, K);
+	dw = acos(cos_dw);
+	dv_PC = 2.0*sqrt(mu)*sin(dw / 2.0)*sqrt(2.0 / length(sv_A.R) - 1.0 / coe_M.a);
+	H_P = unit(crossp(sv_P.R, sv_P.V));
+	H_C = unit(crossp(sv_A.R, sv_A.V));
+	K = unit(crossp(H_P, sv_A.R));
+	S = dotp(H_C, K);
 
 	dV_LVLH.x = -dv_PC * sin(0.5*dw);
 	dV_LVLH.y = -S * dv_PC*cos(0.5*dw) / abs(S);
 	dV_LVLH.z = 0.0;
 	t_m = GMT_CN;
+}
+
+EphemerisData LDPP::coast_u(EphemerisData sv0, double dt, double U0, double &U1) const
+{
+	//Update sv0 through dt, also updating the argument of latitude
+	EphemerisData sv1;
+	double P_L, U1_pred;
+
+	P_L = OrbitalPeriod(sv0);
+	U1_pred = U0 + dt / P_L * PI2;
+
+	sv1 = pRTCC->coast(sv0, dt);
+	U1 = ArgLat(sv1.R, sv1.V);
+
+	while (U1_pred > U1 + PI)
+	{
+		U1 += PI2;
+	}
+	while (U1_pred < U1 - PI)
+	{
+		U1 -= PI2;
+	}
+	return sv1;
 }
 
 EphemerisData LDPP::PMMLAEG(EphemerisData sv0, int opt, double param, bool &error, double DN) const
@@ -1068,11 +1459,6 @@ EphemerisData LDPP::PMMLAEG(EphemerisData sv0, int opt, double param, bool &erro
 	sv3 = pRTCC->ConvertSVtoEphemData(sv2);
 
 	return sv3;
-}
-
-bool LDPP::oneclickcoast(VECTOR3 R0, VECTOR3 V0, double gmt0, double dt, VECTOR3 &R1, VECTOR3 &V1)
-{
-	return OrbMech::oneclickcoast(pRTCC->SystemParameters.AGCEpoch, R0, V0, OrbMech::MJDfromGET(gmt0, pRTCC->GetGMTBase()), dt, R1, V1, hMoon, hMoon);
 }
 
 EphemerisData LDPP::PositionMatch(EphemerisData sv_A, EphemerisData sv_P, double mu) const
@@ -1244,14 +1630,13 @@ int LDPP::DOIManeuver(int i_DOI)
 
 	VECTOR3 DV_apo;
 	double dt;
-	int err;
 
 	//DOI
 	//Advance to threshold
 	dt = opt.TH[3] - sv_CSM.GMT;
 	sv_CSM = pRTCC->coast(sv_CSM, dt);
 	//Calculate DOI time
-	err = LLTPR(opt.TH[3], sv_CSM, t_DOI, t_IGN, t_TD);
+	LLTPR(opt.TH[3], sv_CSM, t_DOI, t_IGN, t_TD);
 	//Advance to CSM
 	dt = t_DOI - sv_CSM.GMT;
 	sv_CSM = pRTCC->coast(sv_CSM, dt);
@@ -1267,26 +1652,52 @@ int LDPP::DOIManeuver(int i_DOI)
 	return 0;
 }
 
+void LDPP::PDICalculations()
+{
+	//Assume W_LM to be the LM weight after any LM maneuvers (if applicable) and t_TD is the predicted time of landing
+
+	double T_PD;
+	if (opt.I_TPD)
+	{
+		//Input time to begin powered descent T_PD
+		T_PD = opt.T_PD;
+	}
+	else
+	{
+		//Allow program to compute time to begin powered descent T_PD
+		T_PD = 0.0; //TBD
+
+		SV sv, sv_IG;
+		MATRIX3 REFSMMAT;
+		VECTOR3 R_LS, U_IG;
+		double TLAND, t_go, CR;
+
+		sv = pRTCC->ConvertEphemDatatoSV(sv_LM, opt.W_LM);
+		R_LS = OrbMech::r_from_latlong(opt.Lat_LS, opt.Lng_LS, opt.R_LS);
+		TLAND = pRTCC->GETfromGMT(t_TD);
+
+		if (pRTCC->PDIIgnitionAlgorithm(sv, R_LS, TLAND, sv_IG, t_go, CR, U_IG, REFSMMAT) == false)
+		{
+			//No error
+			//TBD: Output parameters
+		}
+
+	}
+	//TBD: Powered descent guidance subroutine
+}
+
 void LDPP::OutputCalculations()
 {
 	if (opt.MODE != 7)
 	{
 		//Compute new LM weight
-		opt.W_LM = opt.W_LM / exp(length(DeltaV_LVLH[I_Num - 1]) / opt.I_SP);
-		if (opt.I_PD == false)
+		if (opt.MODE != 6)
 		{
-			double T_PD;
-			if (opt.I_TPD)
-			{
-				//Input time to begin powered descent T_PD
-				T_PD = opt.T_PD;
-			}
-			else
-			{
-				//Allow program to compute time to begin powered descent T_PD
-				T_PD = 0.0; //TBD
-			}
-			//TBD: Powered descent guidance subroutine
+			opt.W_LM = opt.W_LM / exp(length(DeltaV_LVLH[I_Num - 1]) / opt.I_SP);
+		}
+		if (opt.MODE == 6 || opt.I_PD == false)
+		{
+			PDICalculations();
 		}
 	}
 	//Compute display quantites and output
@@ -1302,16 +1713,29 @@ void LDPP::OutputCalculations()
 		outp.azi = opt.azi_nom;
 		outp.t_Land = 0.0;
 		outp.t_PDI = 0.0;
-		//outp.T_M[1] = GMT_LS_CA; //Show as second maneuver time
+		outp.T_M[1] = GMT_LS_CA; //Show as second maneuver time
 	}
 	else
 	{
 		//For now, from the old DOI calculation
 		double dt4;
-		OrbMech::time_theta(sv_LM.R, sv_LM.V, opt.theta_D - 15.0*RAD, mu, dt4);
+		OrbMech::time_theta(sv_LM.R, sv_LM.V, opt.theta_D - opt.theta_PDI, mu, dt4);
 		outp.azi = opt.azi_nom;
-		outp.t_Land = 0.0;// t_L + dt4;
-		outp.t_PDI = 0.0;// t_IGN + dt4;
+		outp.t_Land = t_TD + dt4;
+		outp.t_PDI = t_IGN + dt4;
 	}
-	outp.i = I_Num;
+	outp.I_Num = I_Num;
+}
+
+void LDPP::SetError(int bit)
+{
+	outp.Error |= (1 << bit);
+}
+
+bool LDPP::IsErrorUnrecoverable() const
+{
+	//Error bits 0, 1 are not recoverable
+	if (outp.Error & 1) return true;
+	if (outp.Error & 2) return true;
+	return false;
 }

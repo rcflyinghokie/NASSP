@@ -79,7 +79,7 @@ struct LDPPResults
 	//Time of each maneuver
 	double T_M[4];
 	//Number of maneuvers in plan
-	int i;
+	int I_Num;
 	//Time of PDI (if calculated)
 	double t_PDI;
 	//Time of touchdown (if calculated)
@@ -88,56 +88,71 @@ struct LDPPResults
 	double azi;
 	EphemerisData sv_before[4];
 	VECTOR3 V_after[4];
+	//Error codes (bitset):
+	//Bit 0: Unrecoverable AEG error (includes STAP errors). Processing halted.
+	//Bit 1: Error in backing through maneuver(s) in PCPLCH (aka CHAPLA). Processing halted.
+	//Bit 2: Error in trying to obtain LM weight from PLAWDT (or LM weight is zero). Processing continued.
+	//Bit 3: Failed to converge in ASH maneuver. Processing continued.
+	//Bit 4: Failed to converge on closest approach in PCPLCH (aka CHAPLA). Processing continued.
+	//Bit 5: Failed to converge on landing site. Processing continued.
+	//Bit 6: Failed to converge in DOI maneuver. Processing continued.
+	//Bit 7: Failed to converge on a height maneuver in PCSAC (SAC). Processing continued.
+	//Bit 8: Failed to converge on a common node. Processing continued.
+	//Bit 9: Delta V for plane change maneuver less than 1 ft/s. No maneuver computed, processing continued.
+	//Bit 10: Error from PMMAPD. Processing halted.
+	//Bit 11: Failed to converge on time of landing site longitude crossing PCTLLC (aka LLTPR) - Processing continued.
+	int Error;
 };
 
 class LDPP : public RTCCModule
 {
 public:
 	LDPP(RTCC *r);
-	void Init(const LDPPOptions &in);
-	int LDPPMain(LDPPResults &out);
+	void LDPPMain(const LDPPOptions &in, LDPPResults &out);
 protected:
 	//CSM phase change
-	int Mode1();
-	int Mode1_1();
-	int Mode1_2();
+	void Mode1();
+	void Mode1_1();
+	void Mode1_2();
 	//Single CSM maneuver sequence
-	int Mode2();
-	int Mode2_1();
-	int Mode2_2();
+	void Mode2();
+	void Mode2_1();
+	void Mode2_2();
 	//Double CSM maneuver sequence
-	int Mode3();
+	void Mode3();
 	//DOI
-	int Mode4();
+	void Mode4();
 	//Double Hohmann plane change DOI maneuver sequence
-	int Mode5();
+	void Mode5();
 	//PDI
-	int Mode6();
+	void Mode6();
 	//CSM prelaunch plane change maneuver
-	int Mode7();
+	void Mode7();
 
 	//Compute a maneuver to shift the line-of-apsides and change apocynthion and pericynthion or circularize the CSM orbit
-	VECTOR3 SAC(double h_W, bool J, EphemerisData sv_L) const;
+	VECTOR3 SAC(double h_W, bool J, EphemerisData sv_L);
 	//Compute a maneuver to place CSM orbital track over a desired landing site with or without a specified azimuth
-	void CHAPLA(EphemerisData sv_L, bool IWA, bool IGO, int I, double TH, double &t_m, VECTOR3 &DV) const;
+	void CHAPLA(EphemerisData sv_L, bool IWA, bool IGO, double TH, double &t_m, VECTOR3 &DV);
 	void CHAPLA_FixedTIG(EphemerisData sv_TIG, EphemerisData sv_L, double TH, double &deltaw_s, VECTOR3 &DV) const;
 	//Compute the time of the DOI maneuver based on a desired landing site and a CSM vector before the maneuver
-	int LLTPR(double T_H, EphemerisData sv_L, double &t_DOI, double &t_IGN, double &t_TD);
+	void LLTPR(double T_H, EphemerisData sv_L, double &t_DOI, double &t_IGN, double &t_TD);
+	//Calculate argument of latitude
 	double ArgLat(VECTOR3 R, VECTOR3 V) const;
+	//Subroutine that searches for a common node between two orbits
 	void CNODE(EphemerisData sv_A, EphemerisData sv_P, double &t_m, VECTOR3 &dV_LVLH) const;
 	//Subroutine that iterates to find an upcoming apsis point
-	EphemerisData STAP(EphemerisData sv0, bool &error);
+	EphemerisData STAP(EphemerisData sv0);
 	//Subroutine that iterates to find a specified radius in a given orbit
 	bool STCIR(EphemerisData sv0, double h_W, bool ca_flag, EphemerisData &sv_out);
 	//Advance state to argument of latitude
-	EphemerisData TIMA(EphemerisData sv0, double u, bool &error);
+	EphemerisData TIMA(EphemerisData sv0, double U0, double UD, bool &error);
 	//Add a LVLH Delta V vector to state
 	EphemerisData APPLY(EphemerisData sv0, VECTOR3 dV_LVLH);
 	//Inertial (MCI) landing site vector at time GMT
 	VECTOR3 LATLON(double GMT) const;
 	//Utility functions
+	EphemerisData coast_u(EphemerisData sv0, double dt, double U0, double &U1) const;
 	EphemerisData PMMLAEG(EphemerisData sv0, int opt, double param, bool &error, double DN = 0.0) const;
-	bool oneclickcoast(VECTOR3 R0, VECTOR3 V0, double gmt0, double dt, VECTOR3 &R1, VECTOR3 &V1);
 	EphemerisData PositionMatch(EphemerisData sv_A, EphemerisData sv_P, double mu) const;
 	double P29TimeOfLongitude(VECTOR3 R0, VECTOR3 V0, double GMT, double phi_d) const;
 	EphemerisData SaveElements(EphemerisData sv, int n, VECTOR3 DV);
@@ -148,7 +163,11 @@ protected:
 	bool LSClosestApproach(EphemerisData sv, double TH, EphemerisData &sv_CA) const;
 	//Calculate DOI maneuver
 	int DOIManeuver(int i_DOI);
+	//PDI Calculations
+	void PDICalculations();
 	void OutputCalculations();
+	void SetError(int bit);
+	bool IsErrorUnrecoverable() const;
 
 	double mu;
 	OBJHANDLE hMoon;

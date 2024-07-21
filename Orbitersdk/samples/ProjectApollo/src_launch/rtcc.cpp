@@ -5780,16 +5780,18 @@ int RTCC::LunarDescentPlanningProcessor(EphemerisData sv)
 	{
 		opt.I_AZ = false;
 	}
-	if (GZGENCSN.LDPPPoweredDescentSimFlag)
+	opt.I_SP = SystemParameters.MCTDT1 / SystemParameters.MCTDW1;
+
+	opt.I_PD = GZGENCSN.LDPPPoweredDescentSimFlag;
+	if (GZGENCSN.LDPPTimeofPDI != 0.0)
 	{
-		opt.I_PD = 1;
+		opt.I_TPD = true;
 	}
 	else
 	{
-		opt.I_PD = 0;
+		opt.I_TPD = false;
 	}
-	opt.I_SP = 0.0;
-	opt.I_TPD = 0;
+	
 	opt.Lat_LS = BZLAND.lat[RTCC_LMPOS_BEST];
 	opt.Lng_LS = BZLAND.lng[RTCC_LMPOS_BEST];
 	opt.M = GZGENCSN.LDPPDwellOrbits;
@@ -5800,7 +5802,8 @@ int RTCC::LunarDescentPlanningProcessor(EphemerisData sv)
 	opt.TH[1] = GMTfromGET(med_k16.GETTH2);
 	opt.TH[2] = GMTfromGET(med_k16.GETTH3);
 	opt.TH[3] = GMTfromGET(med_k16.GETTH4);
-	opt.theta_D = opt.theta_PDI = GZGENCSN.LDPPDescentFlightArc;
+	opt.theta_D = GZGENCSN.LDPPDescentFlightArc;
+	opt.theta_PDI = GZGENCSN.LDPPLandingSiteOffset;
 	opt.t_D = GZGENCSN.LDPPDescentFlightTime;
 	opt.T_PD = GMTfromGET(GZGENCSN.LDPPTimeofPDI);
 	opt.W_LM = 0.0;
@@ -5810,13 +5813,13 @@ int RTCC::LunarDescentPlanningProcessor(EphemerisData sv)
 
 	LDPP ldpp(this);
 	LDPPResults res;
-	ldpp.Init(opt);
-	int error = ldpp.LDPPMain(res);
+	ldpp.LDPPMain(opt, res);
 
-	if (error)
+	if (res.Error)
 	{
-		PZLDPDIS.error = error;
-		return error;
+		PZLDPDIS.error = res.Error;
+		//TBD: Online print
+		return res.Error;
 	}
 
 	//Store in PZLDPELM
@@ -5826,7 +5829,7 @@ int RTCC::LunarDescentPlanningProcessor(EphemerisData sv)
 		PZLDPELM.V_man_after[i] = res.V_after[i];
 		PZLDPELM.plan[i] = med_k16.Vehicle;
 	}
-	PZLDPELM.num_man = res.i;
+	PZLDPELM.num_man = res.I_Num;
 
 	PMDLDPP(opt, res, PZLDPDIS);
 
@@ -5882,68 +5885,78 @@ void RTCC::PMDLDPP(const LDPPOptions &opt, const LDPPResults &res, LunarDescentP
 		if (opt.IDO == -1)
 		{
 			table.MVR[0] = "PC";
-			table.MVR[1] = "DI";
+			table.MVR[1] = "DOI";
+		}
+		else if (opt.IDO == 0)
+		{
+			table.MVR[0] = "PCC";
+			table.MVR[1] = "DOI";
 		}
 		else if (opt.IDO == 1)
 		{
-			table.MVR[0] = "AS";
-			table.MVR[1] = "CI";
-			table.MVR[2] = "DI";
+			table.MVR[0] = "ASP";
+			table.MVR[1] = "CIA";
+			table.MVR[2] = "DOI";
+		}
+		else if (opt.IDO == 2)
+		{
+			table.MVR[0] = "PCCH";
+			table.MVR[1] = "DOI";
 		}
 		else
 		{
-			table.MVR[0] = "PC";
-			table.MVR[1] = "DI";
+			table.MVR[0] = "PCCT";
+			table.MVR[1] = "DOI";
 		}
 	}
-	if (opt.MODE == 2)
+	else if (opt.MODE == 2)
 	{
 		if (opt.IDO == 0)
 		{
-			table.MVR[0] = "AS";
-			table.MVR[1] = "DI";
+			table.MVR[0] = "ASH";
+			table.MVR[1] = "DOI";
 		}
 		else
 		{
-			table.MVR[0] = "CI";
-			table.MVR[1] = "DI";
+			table.MVR[0] = "CIR";
+			table.MVR[1] = "DOI";
 		}
 	}
 	else if (opt.MODE == 3)
 	{
-		table.MVR[0] = "AS";
-		table.MVR[1] = "CI";
-		table.MVR[2] = "DI";
+		table.MVR[0] = "ASH";
+		table.MVR[1] = "CIA";
+		table.MVR[2] = "DOI";
 	}
 	else if (opt.MODE == 4)
 	{
-		table.MVR[0] = "DI";
+		table.MVR[0] = "DOI";
 	}
 	else if (opt.MODE == 5)
 	{
 		if (opt.IDO == -1)
 		{
 			table.MVR[0] = "PC";
-			table.MVR[1] = "H1";
-			table.MVR[2] = "H2";
+			table.MVR[1] = "HO1";
+			table.MVR[2] = "HO2";
 		}
 		else if (opt.IDO == 0)
 		{
-			table.MVR[0] = "H1";
+			table.MVR[0] = "HO1";
 			table.MVR[1] = "PC";
-			table.MVR[2] = "H2";
+			table.MVR[2] = "HO2";
 		}
 		else
 		{
-			table.MVR[0] = "H1";
-			table.MVR[1] = "H2";
+			table.MVR[0] = "HO1";
+			table.MVR[1] = "HO2";
 			table.MVR[2] = "PC";
 		}
-		table.MVR[3] = "DI";
+		table.MVR[3] = "DOI";
 	}
 	else if (opt.MODE == 7)
 	{
-		table.MVR[0] = "PC";
+		table.MVR[0] = "PPC";
 	}
 
 	EphemerisData sv_ig;
@@ -5951,7 +5964,7 @@ void RTCC::PMDLDPP(const LDPPOptions &opt, const LDPPResults &res, LunarDescentP
 
 	sv_ig = opt.sv0;
 
-	for (int i = 0; i < res.i; i++)
+	for (int i = 0; i < res.I_Num; i++)
 	{
 		//State vector at TIG
 		sv_ig = coast(sv_ig, res.T_M[i] - sv_ig.GMT);
@@ -22525,7 +22538,7 @@ int RTCC::PMMXFR(int id, void *data)
 			if (inp->Plan < 0)
 			{
 				GMTI = PZLDPELM.sv_man_bef[0].GMT;
-				purpose = PZLDPELM.code[0];
+				purpose = PZLDPELM.code[0].substr(0, 2);
 				plan = PZLDPELM.plan[0];
 			}
 			else

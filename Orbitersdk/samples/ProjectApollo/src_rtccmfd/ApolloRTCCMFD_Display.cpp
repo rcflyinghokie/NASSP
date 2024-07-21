@@ -1966,7 +1966,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		}
 		else if (GC->rtcc->med_k16.Mode == 6)
 		{
-			skp->Text(1 * W / 16, 8 * H / 14, "LM Powered Descent (N/A)", 24);
+			skp->Text(1 * W / 16, 8 * H / 14, "LM Powered Descent", 18);
 		}
 		else if (GC->rtcc->med_k16.Mode == 7)
 		{
@@ -2016,14 +2016,21 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		if (GC->rtcc->GZGENCSN.LDPPPoweredDescentSimFlag)
 		{
-			skp->Text(1 * W / 8, 6 * H / 14, "Simulate descent (N/A)", 22);
+			skp->Text(1 * W / 8, 6 * H / 14, "Simulate descent", 16);
 		}
 		else
 		{
 			skp->Text(1 * W / 8, 6 * H / 14, "Do not simulate descent", 23);
 		}
 
-		GET_Display(Buffer, GC->rtcc->GZGENCSN.LDPPTimeofPDI);
+		if (GC->rtcc->GZGENCSN.LDPPTimeofPDI != 0.0)
+		{
+			GET_Display(Buffer, GC->rtcc->GZGENCSN.LDPPTimeofPDI);
+		}
+		else
+		{
+			sprintf(Buffer, "Calculate PDI time");
+		}
 		skp->Text(1 * W / 8, 8 * H / 14, Buffer, strlen(Buffer));
 
 		sprintf(Buffer, "%d", GC->rtcc->GZGENCSN.LDPPDwellOrbits);
