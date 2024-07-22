@@ -86,6 +86,7 @@ ApolloRTCCMFD::ApolloRTCCMFD (DWORD w, DWORD h, VESSEL *vessel, UINT im)
 	marker = 0;
 	markermax = 0;
 	IsCSM = true;
+	EnableCalculation = false;
 	ErrorMessage = false;
 
 	LoadState();
@@ -119,6 +120,7 @@ void ApolloRTCCMFD::SaveState()
 	temp.ID = ID;
 	temp.MEDCode = MEDInputData.MEDCode;
 	temp.IsCSM = IsCSM;
+	temp.EnableCalculation = EnableCalculation;
 
 	bool found = false;
 
@@ -156,6 +158,7 @@ void ApolloRTCCMFD::LoadState()
 			subscreen = g_MFDData[i].subscreen;
 			MEDInputData.MEDCode = g_MFDData[i].MEDCode;
 			IsCSM = g_MFDData[i].IsCSM;
+			EnableCalculation = g_MFDData[i].EnableCalculation;
 			break;
 		}
 	}
@@ -410,7 +413,20 @@ void ApolloRTCCMFD::GET_Display(char* Buff, double time, bool DispGET) //Display
 	}
 }
 
-void ApolloRTCCMFD::GET_Display2(char* Buff, double time) //Display a time in the format hhh:mm:ss.ss
+void ApolloRTCCMFD::GMT_Display2(char* Buff, double time) const
+{
+	//Input value is GMT, display as GET like GET_Display2, but only if it is not zero
+	if (time != 0.0)
+	{
+		GET_Display2(Buff, GC->rtcc->GETfromGMT(time));
+	}
+	else
+	{
+		GET_Display2(Buff, 0.0);
+	}
+}
+
+void ApolloRTCCMFD::GET_Display2(char* Buff, double time) const //Display a time in the format hhh:mm:ss.ss
 {
 	bool pos = true;
 	if (time < 0)
@@ -9525,6 +9541,12 @@ void ApolloRTCCMFD::SelectMCCScreen(int num)
 	case 229:
 		menuSetGuidanceOpticsSupportTablePage();
 		break;
+	case 232:
+		SetMEDInputPage("K19");
+		break;
+	case 233:
+		SetMEDInputPage("K39");
+		break;
 	case 239:
 		menuSetLMOpticsSupportTablePage();
 		break;
@@ -9824,6 +9846,11 @@ void ApolloRTCCMFD::CycleCSMOrLMSelection()
 	IsCSM = !IsCSM;
 }
 
+void ApolloRTCCMFD::CycleEnableCalculation()
+{
+	EnableCalculation = !EnableCalculation;
+}
+
 void ApolloRTCCMFD::SetMEDInputPageP13()
 {
 	SetMEDInputPage("P13");
@@ -9854,10 +9881,75 @@ void AddMEDInput(std::vector<MEDInput> &table, std::string Label, std::string De
 void ApolloRTCCMFD::SetMEDInputPage(std::string med)
 {
 	MEDInput temp;
+	char Buff[128];
 
 	MEDInputData.table.clear();
 
-	if (med == "P13")
+	if (med == "K19")
+	{
+		AddMEDInputTitle(MEDInputData, "K19", "Initialization for Ascent Rendezvous Monitor");
+
+		sprintf(Buff, "%.1lf", GC->rtcc->PZMARM.WT*DEG);
+		AddMEDInput(MEDInputData.table, "WT:", "Terminal phase travel angle (from TPI to TPF):", Buff, "degrees");
+		sprintf(Buff, "%.1lf", GC->rtcc->PZMARM.E*DEG);
+		AddMEDInput(MEDInputData.table, "E:", "Elevation Angle, chaser pitch to see target (0-90 degrees):", Buff, "degrees");
+		sprintf(Buff, "%.1lf", GC->rtcc->PZMARM.CSIFlag);
+		AddMEDInput(MEDInputData.table, "CSI:", "CSI Flag: If zero CSI performed at first apolune after Inser.; non-zero parm used as delta time from insertion to CSI", Buff, "minutes");
+		sprintf(Buff, "%d", GC->rtcc->PZMARM.CDHIndicator);
+		AddMEDInput(MEDInputData.table, "CDH:", "CDH Indicator: +N = N apsis crossings from CSI to CDH, -N = N/2 revs from CSI to CDH (N must be odd):", Buff, "");
+		GMT_Display2(Buff, GC->rtcc->PZMARM.t_TPI_Coell);
+		AddMEDInput(MEDInputData.table, "TPI:", "TPI time:", Buff, "GET");
+		GMT_Display2(Buff, GC->rtcc->PZMARM.t_Ins);
+		AddMEDInput(MEDInputData.table, "INS:", "Insertion time:", Buff, "GET");
+		sprintf(Buff, "%.1lf", GC->rtcc->PZMARM.h_min / 1852.0);
+		AddMEDInput(MEDInputData.table, "MIN:", "Minimum safe perilune", Buff, "NM");
+		sprintf(Buff, "%.1lf", GC->rtcc->PZMARM.DH / 1852.0);
+		AddMEDInput(MEDInputData.table, "DH:", "Desired Delta Height:", Buff, "NM");
+
+		MEDInputData.display = 99;
+	}
+	else if (med == "K39")
+	{
+		AddMEDInputTitle(MEDInputData, "K39", "Initialization for Short ARM");
+
+		if (GC->rtcc->PZMARM.ITWEAK)
+		{
+			GMT_Display2(Buff, GC->rtcc->PZMARM.t_tweak);
+		}
+		else
+		{
+			GET_Display2(Buff, -GC->rtcc->PZMARM.DT);
+		}
+		AddMEDInput(MEDInputData.table, "TW:", "Time of tweak (GET) or, if negative, time of tweak DT from insertion", Buff, "");
+
+		if (GC->rtcc->PZMARM.ITPI)
+		{
+			GMT_Display2(Buff, GC->rtcc->PZMARM.t_TPI_Short);
+		}
+		else
+		{
+			GET_Display2(Buff, -GC->rtcc->PZMARM.DTPI);
+		}
+		AddMEDInput(MEDInputData.table, "TPI:", "Time of TPI (GET) or, if negative, time from insertion to TPI", Buff, "");
+
+		sprintf(Buff, "%.2lf", GC->rtcc->PZMARM.DTHETA*DEG);
+		AddMEDInput(MEDInputData.table, "DPH:", "Phase offset at TPI:", Buff, "degrees");
+		sprintf(Buff, "%.1lf", GC->rtcc->PZMARM.DH / 1852.0);
+		AddMEDInput(MEDInputData.table, "DH:", "Height offset at TPI:", Buff, "NM");
+		sprintf(Buff, "%.1lf", GC->rtcc->PZMARM.WT*DEG);
+		AddMEDInput(MEDInputData.table, "WT:", "Terminal phase travel angle (from TPI to TPF):", Buff, "degrees");
+		GMT_Display2(Buff, GC->rtcc->PZMARM.t_Ins);
+		AddMEDInput(MEDInputData.table, "INS:", "Insertion time:", Buff, "GET");
+		sprintf(Buff, "%.0lf", GC->rtcc->PZMARM.IMUAngles.z*DEG);
+		AddMEDInput(MEDInputData.table, "IMU R (M):", "IMU roll gimbal angle:", Buff, "degrees");
+		sprintf(Buff, "%.0lf", GC->rtcc->PZMARM.IMUAngles.y*DEG);
+		AddMEDInput(MEDInputData.table, "IMU P (I):", "IMU pitch gimbal angle:", Buff, "degrees");
+		sprintf(Buff, "%.0lf", GC->rtcc->PZMARM.IMUAngles.x*DEG);
+		AddMEDInput(MEDInputData.table, "IMU Y (O):", "IMU yaw gimbal angle:", Buff, "degrees");
+
+		MEDInputData.display = 100;
+	}
+	else if (med == "P13")
 	{
 		AddMEDInputTitle(MEDInputData, "P13", "Enter Vector in Spherical Coordinates");
 
@@ -9953,4 +10045,38 @@ void ApolloRTCCMFD::set_MEDData(char *str)
 	MEDInput *data = &MEDInputData.table[(unsigned)marker];
 
 	data->Data.assign(str);
+}
+
+void ApolloRTCCMFD::menuGenericGoToDisplay()
+{
+	if (MEDInputData.table.size() == 0U) return;
+
+	if (MEDInputData.display >= 0)
+	{
+		SelectPage(MEDInputData.display);
+	}
+}
+
+void ApolloRTCCMFD::menuReturnToMEDInput()
+{
+	if (MEDInputData.table.size() == 0U)
+	{
+		menuSetMenu();
+	}
+	else
+	{
+		SetMEDInputPage(MEDInputData.MEDCode);
+	}
+}
+
+void ApolloRTCCMFD::DFLBackgroundSlide(oapi::Sketchpad *skp, unsigned display)
+{
+	skp->SetFont(font2);
+	GC->DFLBackgroundSlide(skp, W, H, display);
+}
+
+void ApolloRTCCMFD::DFLDynamicData(oapi::Sketchpad *skp, unsigned display)
+{
+	skp->SetFont(font2);
+	GC->rtcc->DynamicDisplayData.Print(skp, W, H, display);
 }

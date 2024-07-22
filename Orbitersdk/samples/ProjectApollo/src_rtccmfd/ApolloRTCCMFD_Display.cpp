@@ -7,7 +7,15 @@ char Buffer[128];
 // Repaint the MFD
 bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 {
-	Title(skp, "Apollo RTCC MFD");
+	//No title for actual MOCR displays
+	if (screen == 0)
+	{
+		Title(skp, "Apollo RTCC MFD");
+	}
+	else
+	{
+		skp->SetTextColor(RGB(255, 255, 255));
+	}
 	skp->SetFont(font);
 
 	// Draws the MFD title
@@ -18,8 +26,10 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 	//sprintf(Buffer, "%d", G->screen);
 	//skp->Text(7.5 * W / 8,(int)(0.5 * H / 14), Buffer, strlen(Buffer));
 
-	if (screen == 0)
+	//New
+	switch (screen)
 	{
+	case 0:
 		skp->Text(1 * W / 8, 2 * H / 14, "Maneuver Targeting", 18);
 		skp->Text(1 * W / 8, 4 * H / 14, "Pre-Advisory Data", 17);
 		skp->Text(1 * W / 8, 6 * H / 14, "Utility", 7);
@@ -29,9 +39,8 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		skp->Text(5 * W / 8, 2 * H / 14, "Uplinks", 7);
 		skp->Text(5 * W / 8, 10 * H / 14, "MCC Displays", 12);
-	}
-	else if (screen == 1)
-	{
+		break;
+	case 1:
 		skp->Text(6 * W / 8, (int)(0.5 * H / 14), "Two Impulse", 11);
 
 		if (GC->rtcc->med_k30.IVFlag == 0)
@@ -71,7 +80,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		}
 		else
 		{
-			if(GC->rtcc->med_k30.Vehicle == 1)
+			if (GC->rtcc->med_k30.Vehicle == 1)
 			{
 				PrintCSMVessel(Buffer);
 			}
@@ -146,8 +155,11 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			sprintf(Buffer, "%.0lf s", GC->rtcc->med_k30.TimeRange);
 			skp->Text(6 * W / 8, 4 * H / 14, Buffer, strlen(Buffer));
 		}
+		break;
 	}
-	else if (screen == 2)
+
+	//Old
+	if (screen == 2)
 	{
 		skp->SetTextAlign(oapi::Sketchpad::CENTER);
 		skp->Text(4 * W / 8, 2 * H / 32, "TWO IMPULSE MULTIPLE SOLUTION (MSK 0063)", 40);
@@ -1121,7 +1133,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 				sprintf(Buffer, "%+07.1f HP", GC->lmmanpad.HP);
 				skp->Text((int)(3.5 * W / 8), 12 * H / 26, Buffer, strlen(Buffer));
 
-				sprintf(Buffer, "%+07.1f DVR", length(GC->lmmanpad.dV) / 0.3048);
+				sprintf(Buffer, "%+07.1f DVR", GC->lmmanpad.dVR);
 				skp->Text((int)(3.5 * W / 8), 13 * H / 26, Buffer, strlen(Buffer));
 
 				OrbMech::SStoHHMMSS(GC->lmmanpad.burntime, hh, mm, secs);
@@ -3523,7 +3535,9 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		skp->Text(1 * W / 16, 17 * H / 28, "0087 CSM PSAT 2", 15);
 		skp->Text(1 * W / 16, 18 * H / 28, "0088 LM PSAT 2", 14);
 		skp->Text(1 * W / 16, 19 * H / 28, "0229 GOST", 9);
-		skp->Text(1 * W / 16, 20 * H / 28, "0239 LOST", 9);
+		skp->Text(1 * W / 16, 20 * H / 28, "0232 Ascent Rendezvous Monitor", 30);
+		skp->Text(1 * W / 16, 21 * H / 28, "0233 Short ARM", 14);
+		skp->Text(1 * W / 16, 22 * H / 28, "0239 LOST", 9);
 
 		skp->Text(8 * W / 16, 4 * H / 28, "1501 Moonrise/Moonset Times", 27);
 		skp->Text(8 * W / 16, 5 * H / 28, "1502 Sunrise/Sunset Times", 25);
@@ -4269,7 +4283,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 	}
 	else if (screen == 49)
 	{
-		skp->Text(5 * W / 8, (int)(0.5 * H / 14), "Landing Site Update", 19);
+		skp->Text(4 * W / 8, (int)(0.5 * H / 14), "Landing Site Update", 19);
 
 		PrintLMVessel(Buffer, false);
 		skp->Text(1 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
@@ -8827,7 +8841,39 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			Text(skp, GC->rtcc->VectorPanelSummaryBuffer.LastManGMTBO[i], 22 * i + 17, 29, 44, 32);
 		}
 	}
-	else if (screen == 99 || screen == 100 || screen == 101)
+	else if (screen == 99)
+	{
+		//Ascent Rendezvous Monitor (Coelliptic)
+		if (EnableCalculation)
+		{
+			skp->Text(1 * W / 32, 2 * H / 14, "*", 1);
+
+			if (GC->rtcc->RTCCPresentTimeGMT() > GC->rtcc->PZMARM.t_Calc_ARM + 2.0)
+			{
+				G->startSubthread(58);
+			}
+		}
+
+		DFLBackgroundSlide(skp, 232);
+		DFLDynamicData(skp, 232);
+	}
+	else if (screen == 100)
+	{
+		//Ascent Rendezvous Monitor (Short)
+		if (EnableCalculation)
+		{
+			skp->Text(1 * W / 32, 2 * H / 14, "*", 1);
+
+			if (GC->rtcc->RTCCPresentTimeGMT() > GC->rtcc->PZMARM.t_Calc_ShortARM + 2.0)
+			{
+				G->startSubthread(59);
+			}
+		}
+
+		DFLBackgroundSlide(skp, 233);
+		DFLDynamicData(skp, 233);
+	}
+	else if (screen == 101)
 	{
 		//Spare
 	}
