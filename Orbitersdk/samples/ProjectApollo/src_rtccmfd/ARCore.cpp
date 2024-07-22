@@ -3404,6 +3404,7 @@ int ARCore::subThread()
 	case 10: //Lunar Descent Planning Processor
 	{
 		EphemerisData sv;
+		double W_LM;
 
 		if (GC->MissionPlanningActive)
 		{
@@ -3424,6 +3425,7 @@ int ARCore::subThread()
 				Result = DONE;
 				break;
 			}
+			W_LM = 0.0; //TBD
 		}
 		else
 		{
@@ -3445,9 +3447,17 @@ int ARCore::subThread()
 			}
 
 			sv = GC->rtcc->StateVectorCalcEphem(v);
+			if (GC->rtcc->pLM)
+			{
+				W_LM = GC->rtcc->pLM->GetMass();
+			}
+			else
+			{
+				W_LM = 0.0;
+			}
 		}
 
-		GC->rtcc->LunarDescentPlanningProcessor(sv);
+		GC->rtcc->LunarDescentPlanningProcessor(sv, W_LM);
 
 		Result = DONE;
 	}

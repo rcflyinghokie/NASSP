@@ -221,6 +221,10 @@ void LDPP::Mode1_1()
 		}
 	} while (stop == false);
 
+	if (iter == 1)
+	{
+		//TBD: Error? No plane change calculation was necessary
+	}
 	if (iter >= 10)
 	{
 		SetError(5);
@@ -299,6 +303,10 @@ void LDPP::Mode1_2()
 		}
 	} while (stop == false);
 
+	if (iter == 1)
+	{
+		//TBD: Error? No plane change calculation was necessary
+	}
 	if (iter >= 10)
 	{
 		SetError(5);
@@ -366,7 +374,7 @@ void LDPP::Mode2_1()
 		dt = t_LS - sv_CSM.GMT;
 		sv_CSM = coast_u(sv_CSM, dt, U_OC, U_LS);
 		DU1 = U_LS - U_H_DOI;
-		DU2 = PI2 * (double)opt.M + PI + opt.theta_D;
+		DU2 = PI2 * (double)opt.M + PI + opt.theta_PDI;
 		if (DU1 < DU2)
 		{
 			//Use next landing site crossing
@@ -377,7 +385,7 @@ void LDPP::Mode2_1()
 		else break;
 	}
 	//Obtain first guess at U_DOI
-	U_DOI = U_LS - opt.theta_D - PI - PI2 * (double)opt.M;
+	U_DOI = U_LS - opt.theta_PDI - PI - PI2 * (double)opt.M;
 	//Compute first guess at U_OC of maneuver point
 	P_L = OrbitalPeriod(sv_CSM);
 	U_OC = U_DOI - PI - PI2 * trunc((opt.TH[3] - opt.TH[0]) / P_L);
@@ -919,7 +927,7 @@ void LDPP::LLTPR(double T_H, EphemerisData sv_L, double &t_DOI, double &t_IGN, d
 		//Compute position of LM at landing point
 		R_ppu = unit(sv_PL.R);
 		d = unit(crossp(h_c2, R_ppu));
-		D_L = R_ppu * cos(opt.theta_D) + d * sin(opt.theta_D);
+		D_L = R_ppu * cos(opt.theta_PDI) + d * sin(opt.theta_PDI);
 		//Inertial landing site vector
 		RR_LS = LATLON(t_L);
 		//Project landing site vector into CSM plane
@@ -1158,7 +1166,6 @@ EphemerisData LDPP::STAP(EphemerisData sv0)
 {
 	EphemerisData sv1;
 	CELEMENTS elem = OrbMech::GIMIKC(sv0.R, sv0.V, mu);
-	double DN = 0.0;
 	bool error;
 
 	if (elem.e < 0.0005 || elem.l < 0.001*RAD || elem.l > PI2 - 0.001*RAD || abs(elem.l - PI) < 0.001*RAD)
@@ -1169,12 +1176,12 @@ EphemerisData LDPP::STAP(EphemerisData sv0)
 	else if (elem.l < PI)
 	{
 		//Apoapsis
-		sv1 = PMMLAEG(sv0, 1, PI, error, DN);
+		sv1 = PMMLAEG(sv0, 1, PI, error, 0.0);
 	}
 	else
 	{
 		//Periapsis
-		sv1 = PMMLAEG(sv0, 1, 0, error, DN);
+		sv1 = PMMLAEG(sv0, 1, 0, error, 1.0);
 	}
 	if (error)
 	{
@@ -1656,6 +1663,19 @@ void LDPP::PDICalculations()
 {
 	//Assume W_LM to be the LM weight after any LM maneuvers (if applicable) and t_TD is the predicted time of landing
 
+	if (opt.W_LM == 0.0) return;
+	//TBD
+	return;
+
+	RTCCNIAuxOutputTable aux;
+	SV sv, sv_PDI, sv_land;
+	VECTOR3 R_LS;
+	double TLAND, dv;
+
+	R_LS = OrbMech::r_from_latlong(opt.Lat_LS, opt.Lng_LS, opt.R_LS);
+	TLAND = pRTCC->GETfromGMT(t_TD);
+	sv = pRTCC->ConvertEphemDatatoSV(sv_LM, opt.W_LM);
+
 	double T_PD;
 	if (opt.I_TPD)
 	{
@@ -1667,14 +1687,10 @@ void LDPP::PDICalculations()
 		//Allow program to compute time to begin powered descent T_PD
 		T_PD = 0.0; //TBD
 
-		SV sv, sv_IG;
+		SV sv_IG;
 		MATRIX3 REFSMMAT;
-		VECTOR3 R_LS, U_IG;
-		double TLAND, t_go, CR;
-
-		sv = pRTCC->ConvertEphemDatatoSV(sv_LM, opt.W_LM);
-		R_LS = OrbMech::r_from_latlong(opt.Lat_LS, opt.Lng_LS, opt.R_LS);
-		TLAND = pRTCC->GETfromGMT(t_TD);
+		VECTOR3 U_IG;
+		double t_go, CR;
 
 		if (pRTCC->PDIIgnitionAlgorithm(sv, R_LS, TLAND, sv_IG, t_go, CR, U_IG, REFSMMAT) == false)
 		{
@@ -1683,7 +1699,8 @@ void LDPP::PDICalculations()
 		}
 
 	}
-	//TBD: Powered descent guidance subroutine
+	//Powered descent guidance subroutine
+	pRTCC->PoweredDescentProcessor(R_LS, TLAND, sv, aux, NULL, sv_PDI, sv_land, dv);
 }
 
 void LDPP::OutputCalculations()
@@ -1693,6 +1710,7 @@ void LDPP::OutputCalculations()
 		//Compute new LM weight
 		if (opt.MODE != 6)
 		{
+			//Take DOI DV into account
 			opt.W_LM = opt.W_LM / exp(length(DeltaV_LVLH[I_Num - 1]) / opt.I_SP);
 		}
 		if (opt.MODE == 6 || opt.I_PD == false)
@@ -1719,7 +1737,7 @@ void LDPP::OutputCalculations()
 	{
 		//For now, from the old DOI calculation
 		double dt4;
-		OrbMech::time_theta(sv_LM.R, sv_LM.V, opt.theta_D - opt.theta_PDI, mu, dt4);
+		OrbMech::time_theta(sv_LM.R, sv_LM.V, opt.theta_PDI - opt.theta_D, mu, dt4);
 		outp.azi = opt.azi_nom;
 		outp.t_Land = t_TD + dt4;
 		outp.t_PDI = t_IGN + dt4;

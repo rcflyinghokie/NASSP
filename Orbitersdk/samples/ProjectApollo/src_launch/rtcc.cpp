@@ -2254,6 +2254,10 @@ void RTCC::LoadMissionInitParameters(int year, int month, int day)
 			{
 				GZGENCSN.LDPPDescentFlightArc = dtemp * RAD;
 			}
+			else if (papiReadScenario_double(Buff, "LDPPLandingSiteOffset", dtemp))
+			{
+				GZGENCSN.LDPPLandingSiteOffset = dtemp * RAD;
+			}
 			else if (papiReadScenario_double(Buff, "LDPPHeightofPDI", dtemp))
 			{
 				GZGENCSN.LDPPHeightofPDI = dtemp * 0.3048;
@@ -5762,7 +5766,7 @@ double RTCC::TPISearch(SV sv_A, SV sv_P, double elev)
 	return OrbMech::GETfromMJD(sv_A.MJD + dt / 24.0 / 3600.0, CalcGETBase());
 }
 
-int RTCC::LunarDescentPlanningProcessor(EphemerisData sv)
+int RTCC::LunarDescentPlanningProcessor(EphemerisData sv, double W_LM)
 {
 	LDPPOptions opt;
 
@@ -5806,10 +5810,7 @@ int RTCC::LunarDescentPlanningProcessor(EphemerisData sv)
 	opt.theta_PDI = GZGENCSN.LDPPLandingSiteOffset;
 	opt.t_D = GZGENCSN.LDPPDescentFlightTime;
 	opt.T_PD = GMTfromGET(GZGENCSN.LDPPTimeofPDI);
-	opt.W_LM = 0.0;
-
-	//Mode 6 doesn't work yet
-	if (opt.MODE == 6) return 1;
+	opt.W_LM = W_LM;
 
 	LDPP ldpp(this);
 	LDPPResults res;
@@ -5876,6 +5877,7 @@ void RTCC::PMDLDPP(const LDPPOptions &opt, const LDPPResults &res, LunarDescentP
 	table.LAT_LLS = opt.Lat_LS*DEG;
 	table.LONG_LLS = opt.Lng_LS*DEG;
 	table.MODE = opt.MODE;
+	table.LMWT = opt.W_LM / LBS2KG;
 
 	table.GMTV = opt.sv0.GMT;
 	table.GETV = GETfromGMT(table.GMTV);
@@ -7265,6 +7267,7 @@ void RTCC::SaveState(FILEHANDLE scn) {
 	SAVE_INT("RTCC_GZGENCSN_LDPPDwellOrbits", GZGENCSN.LDPPDwellOrbits);
 	SAVE_BOOL("RTCC_GZGENCSN_LDPPPoweredDescentSimFlag", GZGENCSN.LDPPPoweredDescentSimFlag);
 	SAVE_DOUBLE("RTCC_GZGENCSN_LDPPDescentFlightArc", GZGENCSN.LDPPDescentFlightArc);
+	SAVE_DOUBLE("RTCC_GZGENCSN_LDPPLandingSiteOffset", GZGENCSN.LDPPLandingSiteOffset);
 	if (EZETVMED.SpaceDigVehID != -1)
 	{
 		SAVE_INT("EZETVMED_SpaceDigVehID", EZETVMED.SpaceDigVehID);
@@ -7567,6 +7570,7 @@ void RTCC::LoadState(FILEHANDLE scn) {
 		LOAD_INT("RTCC_GZGENCSN_LDPPDwellOrbits", GZGENCSN.LDPPDwellOrbits);
 		LOAD_BOOL("RTCC_GZGENCSN_LDPPPoweredDescentSimFlag", GZGENCSN.LDPPPoweredDescentSimFlag);
 		LOAD_DOUBLE("RTCC_GZGENCSN_LDPPDescentFlightArc", GZGENCSN.LDPPDescentFlightArc);
+		LOAD_DOUBLE("RTCC_GZGENCSN_LDPPLandingSiteOffset", GZGENCSN.LDPPLandingSiteOffset);
 
 		LOAD_INT("EZETVMED_SpaceDigVehID", EZETVMED.SpaceDigVehID);
 		LOAD_INT("EZETVMED_SpaceDigCentralBody", EZETVMED.SpaceDigCentralBody);
