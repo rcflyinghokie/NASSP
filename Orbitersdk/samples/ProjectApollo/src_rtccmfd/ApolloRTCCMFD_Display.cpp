@@ -2028,7 +2028,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		if (GC->rtcc->GZGENCSN.LDPPPoweredDescentSimFlag)
 		{
-			skp->Text(1 * W / 8, 6 * H / 14, "Simulate descent", 16);
+			skp->Text(1 * W / 8, 6 * H / 14, "Simulate descent (N/A)", 22);
 		}
 		else
 		{

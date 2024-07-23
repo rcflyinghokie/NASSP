@@ -58,6 +58,7 @@ LDPPResults::LDPPResults()
 		T_M[ii] = 0.0;
 	}
 	I_Num = 0;
+	t_PDI_TH = 0.0;
 	t_PDI = 0.0;
 	t_Land = 0.0;
 	azi = 0.0;
@@ -711,6 +712,8 @@ void LDPP::Mode6()
 	//PDI
 
 	double dt, t_LS;
+
+	I_Num = 0;
 
 	//Input state vector as CSM state vector
 	sv_CSM = opt.sv0;
@@ -1664,43 +1667,53 @@ void LDPP::PDICalculations()
 	//Assume W_LM to be the LM weight after any LM maneuvers (if applicable) and t_TD is the predicted time of landing
 
 	if (opt.W_LM == 0.0) return;
-	//TBD
-	return;
 
 	RTCCNIAuxOutputTable aux;
 	SV sv, sv_PDI, sv_land;
 	VECTOR3 R_LS;
-	double TLAND, dv;
+	double TLAND;
+	bool calcdescent;
 
 	R_LS = OrbMech::r_from_latlong(opt.Lat_LS, opt.Lng_LS, opt.R_LS);
 	TLAND = pRTCC->GETfromGMT(t_TD);
 	sv = pRTCC->ConvertEphemDatatoSV(sv_LM, opt.W_LM);
+	calcdescent = true;
 
-	double T_PD;
 	if (opt.I_TPD)
 	{
 		//Input time to begin powered descent T_PD
-		T_PD = opt.T_PD;
+		t_IGN = opt.T_PD;
+		TLAND = pRTCC->GETfromGMT(t_IGN + opt.t_D);
 	}
 	else
 	{
 		//Allow program to compute time to begin powered descent T_PD
-		T_PD = 0.0; //TBD
 
 		SV sv_IG;
 		MATRIX3 REFSMMAT;
 		VECTOR3 U_IG;
 		double t_go, CR;
 
-		if (pRTCC->PDIIgnitionAlgorithm(sv, R_LS, TLAND, sv_IG, t_go, CR, U_IG, REFSMMAT) == false)
+		if (pRTCC->PDIIgnitionAlgorithm(sv, R_LS, TLAND, sv_IG, t_go, CR, U_IG, REFSMMAT))
 		{
 			//No error
-			//TBD: Output parameters
+			//TBD: More output parameters
+			t_IGN = OrbMech::GETfromMJD(sv_IG.MJD, pRTCC->GetGMTBase());
+			t_TD = t_IGN + opt.t_D;
+		}
+		else
+		{
+			//Error in ignition algorithm
+			calcdescent = false;
+			SetError(5);
 		}
 
 	}
-	//Powered descent guidance subroutine
-	pRTCC->PoweredDescentProcessor(R_LS, TLAND, sv, aux, NULL, sv_PDI, sv_land, dv);
+	if (calcdescent)
+	{
+		//TBD: Powered descent guidance subroutine
+		//pRTCC->PoweredDescentProcessor(R_LS, TLAND, sv, aux, NULL, sv_PDI, sv_land, dv);
+	}
 }
 
 void LDPP::OutputCalculations()
@@ -1733,7 +1746,7 @@ void LDPP::OutputCalculations()
 		outp.t_PDI = 0.0;
 		outp.T_M[1] = GMT_LS_CA; //Show as second maneuver time
 	}
-	else
+	else if (opt.MODE != 6)
 	{
 		//For now, from the old DOI calculation
 		double dt4;
@@ -1741,6 +1754,13 @@ void LDPP::OutputCalculations()
 		outp.azi = opt.azi_nom;
 		outp.t_Land = t_TD + dt4;
 		outp.t_PDI = t_IGN + dt4;
+	}
+	else
+	{
+		//Mode 6
+		outp.t_PDI_TH = opt.TH[0];
+		outp.t_PDI = t_IGN;
+		outp.t_Land = t_TD;
 	}
 	outp.I_Num = I_Num;
 }

@@ -5942,7 +5942,7 @@ void RTCC::PMDLDPP(const LDPPOptions &opt, const LDPPResults &res, LunarDescentP
 		{
 			table.GETIG[i] = 0.0;
 		}
-		if (opt.TH[i] != 0.0)
+		if (opt.MODE != 6 && opt.TH[i] != 0.0)
 		{
 			table.GETTH[i] = GETfromGMT(opt.TH[i]);
 		}
@@ -6062,7 +6062,7 @@ void RTCC::PMDLDPP(const LDPPOptions &opt, const LDPPResults &res, LunarDescentP
 		table.HPC[i] = (r_peri - opt.R_LS) / 1852.0;
 	}
 
-	if (opt.T_PD != 0.0) table.PD_GETTH = GETfromGMT(opt.T_PD);
+	if (res.t_PDI_TH != 0.0) table.PD_GETTH = GETfromGMT(res.t_PDI_TH);
 	else table.PD_GETTH = 0.0;
 
 	if (res.t_PDI != 0.0) table.PD_GETIG = GETfromGMT(res.t_PDI);

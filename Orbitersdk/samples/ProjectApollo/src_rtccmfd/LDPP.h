@@ -80,6 +80,8 @@ struct LDPPResults
 	double T_M[4];
 	//Number of maneuvers in plan
 	int I_Num;
+	//Time of PDI threshold (if calculated)
+	double t_PDI_TH;
 	//Time of PDI (if calculated)
 	double t_PDI;
 	//Time of touchdown (if calculated)
