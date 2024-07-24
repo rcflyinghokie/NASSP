@@ -51,6 +51,7 @@ struct MEDInputPage
 	std::string Title;			//Title displayed on MFD page
 	std::string MEDCode;
 	std::vector<MEDInput> table;
+	int display = -1;
 };
 
 struct RTCCMFDData
@@ -62,6 +63,7 @@ struct RTCCMFDData
 	UINT ID = 0;
 	std::string MEDCode;
 	bool IsCSM = false;
+	bool EnableCalculation;
 };
 
 class ApolloRTCCMFD: public MFD2 {
@@ -80,6 +82,14 @@ public:
 	void Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax = 1024, int ymax = 1024);
 
 	void SelectPage(int page);
+
+	//Pages
+
+	//Display Formatting Language functions
+	void DFLBackgroundSlide(oapi::Sketchpad *skp, unsigned display);
+	void DFLDynamicData(oapi::Sketchpad *skp, unsigned display);
+
+	//Inputs
 	void menuTIChaserVectorTime();
 	void menuTITargetVectorTime();
 	void menuTITimeIncrement();
@@ -143,7 +153,8 @@ public:
 	void lambertcalc();
 	void Angle_Display(char *Buff, double angle, bool DispPlus = true);
 	void GET_Display(char * Buff, double time, bool DispGET = true);
-	void GET_Display2(char * Buff, double time);
+	void GMT_Display2(char * Buff, double time) const;
+	void GET_Display2(char * Buff, double time) const;
 	void GET_Display3(char* Buff, double time);
 	void GET_Display4(char* Buff, double time);
 	void GET_Display_HHMM(char *Buff, double time);
@@ -851,6 +862,7 @@ public:
 	void menuAGOPSaveREFSMMAT();
 	void menuSetRTACFPage();
 	void CycleCSMOrLMSelection();
+	void CycleEnableCalculation();
 
 	void SetMEDInputPageP13();
 	void SetMEDInputPageP14();
@@ -858,6 +870,8 @@ public:
 	void menuMEDInputCalc();
 	void menuInputMEDData();
 	void set_MEDData(char *str);
+	void menuGenericGoToDisplay();
+	void menuReturnToMEDInput();
 
 	void GenericGETInput(double *get, char *message);
 	void GenericDoubleInput(double *val, char* message, double factor = 1.0);
@@ -895,6 +909,7 @@ private:
 	RTCCMFDInputBoxData tempData;
 
 	bool IsCSM; //Chooses if the CSM or LM vessel in the RTCC is selected
+	bool EnableCalculation; //Generic variable for switch on/off a display related calculation
 	int ErrorMessage;
 	MEDInputPage MEDInputData;
 
