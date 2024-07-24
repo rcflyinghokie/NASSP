@@ -274,6 +274,18 @@ int CautionWarningSystem::GetMode()
 {
 	return Mode;
 }
+
+bool CautionWarningSystem::IsMasterAlarmLit(void)
+{
+	return MasterAlarmLit;
+}
+
+
+bool CautionWarningSystem::IsMasterAlarmLightEnabled(void)
+{
+	return MasterAlarmLightEnabled;
+}
+
 // by Jordan end
 
 void CautionWarningSystem::SetLight(int lightnum, bool state)

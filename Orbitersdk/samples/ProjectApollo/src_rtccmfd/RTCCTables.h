@@ -279,6 +279,22 @@ struct PLAWDTInput
 
 struct PLAWDTOutput
 {
+	PLAWDTOutput()
+	{
+		Err = 0;
+		ConfigArea = 0.0;
+		ConfigWeight = 0.0;
+		CSMArea = 0.0;
+		SIVBArea = 0.0;
+		LMAscArea = 0.0;
+		LMDscArea = 0.0;
+		CSMWeight = 0.0;
+		SIVBWeight = 0.0;
+		LMAscWeight = 0.0;
+		LMDscWeight = 0.0;
+		KFactor = 1.0;
+	}
+
 	//0: No error
 	//1: Request time within a maneuver - previous maneuver values used
 	//2: Maneuver not current - last current values used
@@ -360,7 +376,7 @@ struct EMSMISSInputTable
 	int ManCutoffIndicator;
 	//Descent burn indicator
 	bool DescentBurnIndicator = false;
-	//Cut-off indicator (1 = Time, 2 = radial distance, 3 = altitude above Earth or moon, 4 = flight-path angle, 5 = first reference switch)
+	//Cut-off indicator (1 = Time, 2 = radial distance, 3 = altitude above Earth or moon, 4 = flight-path angle, 5 = first reference switch, 6 = first ascending node relative to the Earth, 7 = longitude, 8 = latitude)
 	int CutoffIndicator = 1;
 	//Integration direction indicator (+X-forward, -X-backward)
 	double IsForwardIntegration = 1.0;

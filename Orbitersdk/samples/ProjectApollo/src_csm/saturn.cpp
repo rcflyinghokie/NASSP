@@ -411,6 +411,8 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	SCSLogicBus4Feeder("SCS-Logic-Bus-4-Feeder", Panelsdk),
 	SwitchPower("Switch-Power", Panelsdk),
 	GaugePower("Gauge-Power", Panelsdk),
+	CryoFanMotorsTank1Feeder("Cryo-Fan-Motors-Tank-1-Feeder", Panelsdk),
+	CryoFanMotorsTank2Feeder("Cryo-Fan-Motors-Tank-2-Feeder", Panelsdk),
 	SMQuadARCS(ph_rcs0, Panelsdk),
 	SMQuadBRCS(ph_rcs1, Panelsdk),
 	SMQuadCRCS(ph_rcs2, Panelsdk),
@@ -433,9 +435,15 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	MainChutesDeployPyrosFeeder("Main-Chutes-Deploy-Pyros-Feeder", Panelsdk),
 	MainChutesReleasePyros("Main-Chutes-Release-Pyros", Panelsdk),
 	MainChutesReleasePyrosFeeder("Main-Chutes-Release-Pyros-Feeder", Panelsdk),
+	CabinFan1Feeder("Cabin-Fan-1-Feeder", Panelsdk),
+	CabinFan2Feeder("Cabin-Fan-2-Feeder", Panelsdk),
 	EcsGlycolPumpsSwitch(Panelsdk),
+	GlycolPump1Feeder("Glycol-Pump-1-Feeder", Panelsdk),
+	GlycolPump2Feeder("Glycol-Pump-2-Feeder", Panelsdk),
 	SuitCompressor1Switch(Panelsdk),
 	SuitCompressor2Switch(Panelsdk),
+	SuitCompressor1Feeder("Suit-Compressor-1-Feeder", Panelsdk),
+	SuitCompressor2Feeder("Suit-Compressor-2-Feeder", Panelsdk),
 	BatteryCharger("BatteryCharger", Panelsdk),
 	timedSounds(soundlib),
 	iuCommandConnector(agc, this),
@@ -539,6 +547,11 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	BatteryManifoldPressureSensor("Battery-Manifold-Pressure-Sensor", 0.0, 20.0),
 	WasteH2ODumpTempSensor("Waste-H2O-Dump-Temp-Sensor", 0.0, 100.0),
 	UrineDumpTempSensor("Urine-Dump-Temp-Sensor", 0.0, 100.0),
+	SPSFuelLineTempSensor("SPS-Fuel-Line-Temp-Sensor", 0.0, 200.0),
+	SPSOxidizerLineTempSensor("SPS-Oxidizer-Line-Temp-Sensor", 0.0, 200.0),
+	SPSFuelFeedTempSensor("SPS-Fuel-Feed-Temp-Sensor", 0.0, 200.0),
+	SPSOxidizerFeedTempSensor("SPS-Oxidizer-Feed-Temp-Sensor", 0.0, 200.0),
+	SPSEngVlvTempSensor("SPS-Engine-Valve-Temp-Sensor", 0.0, 200.0),
 	vesim(&cbCSMVesim, this),
 	CueCards(vcidx, this, 11),
 	Failures(this)
@@ -1869,6 +1882,8 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	CrewStatus.SaveState(scn);
 	ForwardHatch.SaveState(scn);
 	SideHatch.SaveState(scn);
+	H2CryoPressureSwitch.SaveState(scn, "H2PRESSSWITCHES");
+	O2CryoPressureSwitch.SaveState(scn, "O2PRESSSWITCHES");
 	usb.SaveState(scn);
 	if (pMission->CSMHasHGA()) hga.SaveState(scn);
 	vhftransceiver.SaveState(scn);
@@ -2564,6 +2579,12 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	    else if (!strnicmp (line, "SIDEHATCH", 9)) {
 		    SideHatch.LoadState(line);
 	    }
+		else if (!strnicmp(line, "H2PRESSSWITCHES", 15)) {
+			H2CryoPressureSwitch.LoadState(line, 15);
+		}
+		else if (!strnicmp(line, "O2PRESSSWITCHES", 15)) {
+			O2CryoPressureSwitch.LoadState(line, 15);
+		}
 	    else if (!strnicmp (line, "UNIFIEDSBAND", 12)) {
 		    usb.LoadState(line);
 	    }
@@ -2675,6 +2696,10 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 			sscanf(line + 14, "%i", &tmp);
 			enableVESIM = (tmp!= 0);
 		}
+		else if (!strnicmp(line, "VIBRATIONVISUALIZED", 19)) {
+			sscanf(line + 19, "%i", &i);
+			VibrationVisualizationMultiplier = 0.01*(double)i;
+		}
 		else if (papiReadScenario_double(line, "LMDSCFUEL", LMDescentFuelMassKg)); 
 		else if (papiReadScenario_double(line, "LMASCFUEL", LMAscentFuelMassKg));
 		else if (papiReadScenario_double(line, "LMDSCEMPTY", LMDescentEmptyMassKg));
@@ -2772,7 +2797,9 @@ void Saturn::GetScenarioState (FILEHANDLE scn, void *vstatus)
 	//
 
 	agc.SetMissionInfo(pMission->GetCMCVersion(), PayloadName);
-
+	imu.SetDriftRates(pMission->GetCM_IMU_Drift());
+	imu.SetPIPABias(pMission->GetCM_PIPA_Bias());
+	imu.SetPIPAScale(pMission->GetCM_PIPA_Scale());
 	secs.SetSaturnType(SaturnType);
 
 	//
@@ -3649,59 +3676,6 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 		}
 	}
 
-	//
-	// We only allow this switch in VC mode, as we need to disable the panel when selecting these
-	// cameras.
-	//
-	// For now this is limited to the Saturn V.
-	//
-
-	if (key == OAPI_KEY_1 && down == true && InVC && stage < LAUNCH_STAGE_TWO && stage >= LAUNCH_STAGE_ONE) {
-		clbkLoadVC(SATVIEW_ENG1);
-		return 1;
-	}
-
-	if (key == OAPI_KEY_2 && down == true && InVC && stage < LAUNCH_STAGE_SIVB && stage >= LAUNCH_STAGE_ONE) {
-		clbkLoadVC(SATVIEW_ENG2);
-		return 1;
-	}
-
-	if (key == OAPI_KEY_3 && down == true && InVC && stage < LAUNCH_STAGE_SIVB && stage >= PRELAUNCH_STAGE)
-	{
-		//
-		// Key 3 switches to position 3 by default, then cycles around them.
-		//
-		switch (viewpos)
-		{
-		case SATVIEW_ENG3:
-			viewpos = SATVIEW_ENG4;
-			break;
-
-		case SATVIEW_ENG4:
-			viewpos = SATVIEW_ENG5;
-			break;
-
-		case SATVIEW_ENG5:
-			viewpos = SATVIEW_ENG6;
-			break;
-
-		case SATVIEW_ENG6:
-			viewpos = SATVIEW_ENG3;
-			break;
-
-		default:
-			viewpos = SATVIEW_ENG3;
-			break;
-		}
-		clbkLoadVC(viewpos);
-		return 1;
-	}
-
-	//Load left seat
-	if (key == OAPI_KEY_4 && down == true && InVC) {
-		clbkLoadVC(SATVIEW_LEFTSEAT);
-		return 1;
-	}
 	return 0;
 }
 
@@ -4929,6 +4903,14 @@ void Saturn::ConnectTunnelToCabinVent()
 h_Pipe* Saturn::GetCSMO2Hose()
 {
 	return (h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:CSMTOLMO2HOSE");
+}
+
+void Saturn::ConnectCSMO2Hose()
+{
+	if (ForwardHatch.IsOpen())
+	{
+		lemECSConnector.ConnectCSMO2Hose();
+	}
 }
 
 bool Saturn::GetLMDesBatLVOn()

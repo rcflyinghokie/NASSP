@@ -1551,6 +1551,65 @@ The procedure to calculate a nominal deorbit maneuver is very similar to the one
 \end{tabbing}
 \newpage
 
+\textbf{MED Code}: P13\\
+\textbf{Purpose}: Enter vector in spherical coordinates\\
+\textbf{Example}: \texttt{P13,CSM,5521.0,0.0,269.0,0.7,23.4,60.0,102:40:00,L,MCT;}
+
+\begin{center}
+\begin{tabular}{|c|*{6}{>{\centering\arraybackslash}m{2.1cm}|} }
+ \hline
+ \diagbox{\textbf{Desc.}}{\textbf{Item}} & \textbf{1} & \textbf{2} & \textbf{3} & \textbf{4} & \textbf{5} & \textbf{6} \\ 
+ \hline
+ \textbf{Item Name} &Vehicle&Velocity&Flight Path Angle&Azimuth&Geocentric Latitude&Longitude\\
+ \hline
+ \textbf{Input Format} &EBCDIC&FLP&FLP&FLP&FLP&FLP\\
+ \hline
+ \textbf{Input Units} &EBCDIC&ft./sec.&degrees&degrees&degrees&degrees\\
+ \hline
+ \textbf{Checking Option}&Note 1&$\geq$0&-90.$\leq$A$\leq$90&0.$\leq$A$\leq$360&-90.$\leq$A$\leq$90&-180.$\leq$A$\leq$180\\
+ \hline
+ \textbf{Missing Item Option}&Error&&&&&\\
+ \hline
+\end{tabular}
+\end{center}
+
+\begin{tabbing}
+\textbf{Notes}: \= (1) Vehicle must be in vehicle name table (CSM, LEM)\\
+\end{tabbing}
+\newpage
+
+\textbf{MED Code}: P13\\
+\textbf{Purpose}: Enter vector in spherical coordinates\\
+\textbf{Example}: \texttt{P13,CSM,5521.0,0.0,269.0,0.7,23.4,60.0,102:40:00,L,MCT;}
+
+\begin{center}
+\begin{tabular}{|c|*{6}{>{\centering\arraybackslash}m{2.1cm}|} }
+ \hline
+ \diagbox{\textbf{Desc.}}{\textbf{Item}} & \textbf{7} & \textbf{8} & \textbf{9} & \textbf{10} &&\\ 
+ \hline
+ \textbf{Item Name} &Height&Time&Live/Static Ephem. Ind.&Coordinate System Ind.&&\\
+ \hline
+ \textbf{Input Format} &FLP&H:M:S.TH&EBCDIC&EBCDIC&&\\
+ \hline
+ \textbf{Input Units} &NM&hours&EBCDIC&EBCDIC&&\\
+ \hline
+ \textbf{Checking Option}&H$\geq$0&T$\geq$0&Exact Note 2&Exact Note 3&&\\
+ \hline
+ \textbf{Missing Item Option}&&&Insert L&Insert ECT&&\\
+ \hline
+\end{tabular}
+\end{center}
+
+\begin{tabbing}
+\textbf{Notes}: \= (2) \= Possible inputs:\\
+\> \>-L - Live ephem. (default)\\
+\> \>-B = put in GZLTRA and STATIC ephem.\\
+\> \>-S = STATIC ephem.\\
+\> \>-G = Put in GZLTRA only.\\
+\> (3) Coord. System Ind. = ECT, MCT\\
+\end{tabbing}
+\newpage
+
 \textbf{MED Code}: P15\\
 \textbf{Purpose}: Update GMTZS for specified vehicle\\
 \textbf{Example}: \texttt{P15,AGC,13:32:00;}
@@ -1685,7 +1744,7 @@ The procedure to calculate a nominal deorbit maneuver is very similar to the one
 
 \begin{tabbing}
 \textbf{Notes}: \= (1) \= Vehicle must be in MHGVNM.\\
-\> (2) Date is checked by internal caldenar on final logic. Then reference day is calculated (Jan 1 =\\
+\> (2) Date is checked by internal calendar on final logic. Then reference day is calculated (Jan 1 =\\
 \> \> day 0) along with days in month, etc. These values are stored in GZGENCSN.\\
 \> (3) On entry, link to EMLAMPNP to rotate P and N matrices and sun/moon tables.\\
 \> (4) If in Nophase, items 1-5 required, 6 may be input (zero inserted if missing). If in \\
@@ -2195,7 +2254,38 @@ LN & Geographic longitude of the earth return ascending node & deg & (3)\\
 \subsection{CSM Optics Support Table (MSK 0229)}
 
 TBD
+\newpage
+\subsection{Ascent Rendezvous Monitor (MSK 0232)}
 
+The Ascent Rendezvous Monitor (ARM) display calculates a tweak burn to be performed shortly after insertion from lunar ascent to correct the trajectory and get back to the nominal coelliptic rendezvous profile. It also shows additional parameters for contingencies, like the time of ignition and Delta V of an apolune kick burn, to correct an unsafe orbit.
+\subsubsection{Inputs}
+See input page in the MFD.
+\subsubsection{Display}
+The display automatically updates every two seconds after it has been enabled with the ENA button. This can be done before lunar liftoff, although no reasonable calculations can be done until shortly before insertion. Before that error messages will be displayed.\\
+
+According to the mission rules the tweak burn is required if its DV exceeds 30 ft/s. For this recommended action is display which either says GO or NO GO. The apolune kick calculation is done if the current perilune is lower than the minumum safe altitude from the input page.\\
+
+List of error codes:
+\begin{enumerate}
+	\item Failure in conic state vector extrapolation routine
+	\item CDH indicator must be an odd number
+	\item Too many iterations
+\end{enumerate}
+\newpage
+\subsection{Short Ascent Rendezvous Monitor (MSK 0233)}
+
+The Short Ascent Rendezvous Monitor (Short ARM) display is, like MSK 232, computing a tweak burn to be performed shortly after lunar ascent, but it is used for the direct/short rendezvous profile employed on Apollo 14 and later. On these missions the ARM display is used to calculate a bailout burn to get back to a coelliptic profile.
+\subsubsection{Inputs}
+See input page in the MFD.
+\subsubsection{Display}
+The display automatically updates every two seconds after it has been enabled with the ENA button. This can be done before lunar liftoff, although no reasonable calculations can be done until shortly before insertion. Before that a numeric error code will be displayed.\\
+
+According to the mission rules the tweak burn should not be performed if the DV exceeds 60 feet per second or if the perilune altitude after the burn would be below 5 nautical miles. The recommendation message on the display shows either BAIL or TWEAK for this. No specific recommendation is given if the tweak burn Delta V is so small that it should not even be performed.\\
+
+List of error codes:
+\begin{enumerate}
+	\item Failure in Two-Impulse processor
+\end{enumerate}
 \newpage
 \subsection{LM Optics Support Table (MSK 0239)}
 

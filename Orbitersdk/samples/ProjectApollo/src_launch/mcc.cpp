@@ -950,11 +950,10 @@ void MCC::TimeStep(double simdt){
 
 void MCC::AutoUpdateXmitGroundStation(VESSEL* Ves, TrackingVesselType Type, TrackingSlot Slot)
 {
-	double Moonrelang;
 	double LOSRange;
 	VECTOR3 GSGlobalVector = _V(0, 0, 0);
 	VECTOR3 GSVector = _V(0, 0, 0);
-	bool MoonInTheWay, Sight;
+	bool Sight;
 
 	// Bail out if we failed to find either major body
 	if (Earth == NULL) { addMessage("Can't find Earth"); GT_Enabled = false; return; }
@@ -974,7 +973,7 @@ void MCC::AutoUpdateXmitGroundStation(VESSEL* Ves, TrackingVesselType Type, Trac
 				sin(GroundStations[StationIndex].Position[1] * RAD) * cos(GroundStations[StationIndex].Position[0] * RAD)) * R_E;
 			
 			oapiLocalToGlobal(Earth, &GSVector, &GSGlobalVector);
-			MoonInTheWay = false;
+
 			if (GroundStations[StationIndex].StationPurpose & GSPT_LUNAR)
 			{
 				LOSRange = 5e8;
@@ -983,16 +982,11 @@ void MCC::AutoUpdateXmitGroundStation(VESSEL* Ves, TrackingVesselType Type, Trac
 			{
 				LOSRange = 2e7;
 			}
-			//Check if there is line-of-sight between vessel and station
-			Sight = OrbMech::sight(Vessel_Vector[Slot], GSVector, R_E);
-			//Moon in the way
-			Moonrelang = dotp(unit(MoonGlobalPos - VesselGlobalPos[Slot]), unit(GSGlobalVector - VesselGlobalPos[Slot]));
-			if (Moonrelang > cos(asin(R_M / length(MoonGlobalPos - VesselGlobalPos[Slot]))))
-			{
-				MoonInTheWay = true;
-			}
+			//Check if there is line-of-sight between vessel and station and that the Moon is not in the way either
+			Sight = OrbMech::sight(Vessel_Vector[Slot], GSVector, R_E) && OrbMech::sight(VesselGlobalPos[Slot] - MoonGlobalPos, GSGlobalVector - MoonGlobalPos, R_M);
+
 			if (Sight && GroundStations[StationIndex].AOS[Slot] == 0 && ((GroundStations[StationIndex].USBCaps & GSSC_VOICE) || (GroundStations[StationIndex].CommCaps & GSGC_VHFAG_VOICE))) {
-				if (length(Vessel_Vector[Slot] - GSVector) < LOSRange && !MoonInTheWay)
+				if (length(Vessel_Vector[Slot] - GSVector) < LOSRange)
 				{
 					//Dont switch to a new station if we're transmitting an uplink;
 					bool uplinking = false;
@@ -1022,7 +1016,7 @@ void MCC::AutoUpdateXmitGroundStation(VESSEL* Ves, TrackingVesselType Type, Trac
 
 				}
 			}
-			if ((!Sight || length(Vessel_Vector[Slot] - GSVector) > LOSRange || MoonInTheWay) && GroundStations[StationIndex].AOS[Slot] == 1) {
+			if ((!Sight || length(Vessel_Vector[Slot] - GSVector) > LOSRange) && GroundStations[StationIndex].AOS[Slot] == 1) {
 				GroundStations[StationIndex].AOS[Slot] = 0;
 
 				if (Type == TrackingVesselType::TypeCM && GT_Enabled == true) {
@@ -1650,13 +1644,10 @@ void MCC::SaveState(FILEHANDLE scn) {
 			SAVE_DOUBLE("MCC_AP10MAPUPDATE_PMGET", form->PMGET);
 			SAVE_DOUBLE("MCC_AP10MAPUPDATE_SRGET", form->SRGET);
 			SAVE_DOUBLE("MCC_AP10MAPUPDATE_SSGET", form->SSGET);
-			if (form->type == 3)
-			{
-				SAVE_DOUBLE("MCC_AP10MAPUPDATE_AOSGET2", form->AOSGET2);
-				SAVE_DOUBLE("MCC_AP10MAPUPDATE_LOSGET2", form->LOSGET2);
-				SAVE_DOUBLE("MCC_AP10MAPUPDATE_PMGET2", form->PMGET2);
-				SAVE_DOUBLE("MCC_AP10MAPUPDATE_SSGET2", form->SSGET2);
-			}
+			SAVE_DOUBLE("MCC_AP10MAPUPDATE_AOSGET2", form->AOSGET2);
+			SAVE_DOUBLE("MCC_AP10MAPUPDATE_LOSGET2", form->LOSGET2);
+			SAVE_DOUBLE("MCC_AP10MAPUPDATE_PMGET2", form->PMGET2);
+			SAVE_DOUBLE("MCC_AP10MAPUPDATE_SSGET2", form->SSGET2);
 		}
 		else if (padNumber == 13)
 		{
@@ -2251,17 +2242,17 @@ void MCC::LoadState(FILEHANDLE scn) {
 		{
 			AP10MAPUPDATE * form = (AP10MAPUPDATE *)padForm;
 
-			LOAD_INT("MCC_AP10MAPUPDATE_REV", form->Rev);
-			LOAD_INT("MCC_AP10MAPUPDATE_type", form->type);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_AOSGET", form->AOSGET);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_LOSGET", form->LOSGET);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_PMGET", form->PMGET);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_SRGET", form->SRGET);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_SSGET", form->SSGET);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_AOSGET2", form->AOSGET2);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_LOSGET2", form->LOSGET2);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_PMGET2", form->PMGET2);
-			LOAD_DOUBLE("MCC_AP10MAPUPDATE_SSGET2", form->SSGET2);
+			papiReadScenario_int(line, "MCC_AP10MAPUPDATE_REV", form->Rev);
+			papiReadScenario_int(line, "MCC_AP10MAPUPDATE_type", form->type);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_AOSGET", form->AOSGET);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_LOSGET", form->LOSGET);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_PMGET", form->PMGET);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_SRGET", form->SRGET);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_SSGET", form->SSGET);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_AOSGET2", form->AOSGET2);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_LOSGET2", form->LOSGET2);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_PMGET2", form->PMGET2);
+			papiReadScenario_double(line, "MCC_AP10MAPUPDATE_SSGET2", form->SSGET2);
 		}
 		else if (padNumber == 13)
 		{
@@ -2970,6 +2961,22 @@ void MCC::drawPad(bool writetofile){
 			sprintf(buffer, "%sAOS: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
 			OrbMech::SStoHHMMSS(form->SSGET2, hh, mm, ss);
 			sprintf(buffer, "%sSS: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
+		}
+		else if (form->type == 4)
+		{
+			OrbMech::SStoHHMMSS(form->PMGET, hh, mm, ss);
+			sprintf(buffer, "%s180°: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
+			OrbMech::SStoHHMMSS(form->AOSGET, hh, mm, ss);
+			sprintf(buffer, "%sAOS: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
+		}
+		else if (form->type == 5)
+		{
+			OrbMech::SStoHHMMSS(form->PMGET, hh, mm, ss);
+			sprintf(buffer, "%s180°: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
+			OrbMech::SStoHHMMSS(form->AOSGET2, hh, mm, ss);
+			sprintf(buffer, "%sAOS WITH TEI: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
+			OrbMech::SStoHHMMSS(form->AOSGET, hh, mm, ss);
+			sprintf(buffer, "%sAOS WITHOUT TEI: %d:%02d:%02.0f\n", buffer, hh, mm, ss);
 		}
 
 		oapiAnnotationSetText(NHpad, buffer);

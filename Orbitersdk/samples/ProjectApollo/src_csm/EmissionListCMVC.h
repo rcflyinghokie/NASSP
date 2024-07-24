@@ -84,6 +84,7 @@ DWORD FloodLights_P8[] = {
 	VC_MAT_csm_cabin_press_panel_t,
 	VC_MAT_csm_lower_equip_bay_t,
 	VC_MAT_csm_right_cb_panels_ILL_P5_t,
+	VC_MAT_csm_right_cb_panels_ILL_P100_t,
 	VC_MAT_csm_right_cb_panels_t,
 	VC_MAT_DOR_t,
 	VC_MAT_DSKY_Keys_LEB_t,
@@ -210,12 +211,24 @@ DWORD FloodLights_P8[] = {
 	VC_MAT_LVEngine_8_7,
 	VC_MAT_LVEngine_8_8,
 
+	VC_MAT_LV_ENG_LV_GUID,
+	VC_MAT_LV_ENG_LV_RATE,
+	VC_MAT_LV_ENG_SII_SEP,
+
 	VC_MAT_LiftVectorindicatorBottom,
 	VC_MAT_LiftVectorindicatorTop,
 
 	VC_MAT_Panel1_05G,
-	VC_MAT_Panel1_SPS_THRUST
+	VC_MAT_Panel1_SPS_THRUST,
 
+	// LEB Condition Lamps
+	VC_MAT_LEB_ConditionLamp_CMC,
+	VC_MAT_LEB_ConditionLamp_ISS,
+	VC_MAT_LEB_ConditionLamp_PGNS,
+
+	VC_MAT_MasterAlarm_LEB,
+
+	VC_MAT_Panel_225_226_229_Guards
 };
 
 //
@@ -250,12 +263,14 @@ DWORD FloodLights_P5[] = {
 
 //
 // Material Emissions Panel 100 (LEB)
+// Integral Lights controlled by Panel 100 Integral Rheostat
 //
 DWORD IntegralLights_P100[] = {
 
 	// TODO Material List
 	VC_MAT_CMVCTex1_ILL_P100_t,
 	VC_MAT_CMVCTex2_ILL_P100_t,
+	VC_MAT_csm_right_cb_panels_ILL_P100_t,
 	VC_MAT_DSKY_Keys_LEB_t,
 	VC_MAT_Rotarys_P100_t,
 	VC_MAT_Panel306,
@@ -387,47 +402,47 @@ DWORD IntegralLights_CW_RightLights[] = {
 DWORD IntegralLights_CW_Lights[] = {
 	VC_MAT_CW_Lights_P2_BMAG1_TEMP,
 	VC_MAT_CW_Lights_P2_BMAG2_TEMP,
-	1000,
+	VC_MAT_NONE,
 	VC_MAT_CW_Lights_P2_CO2_PPHI,
 	VC_MAT_CW_Lights_P2_PITCH_GMBL1,
 	VC_MAT_CW_Lights_P2_YAW_GMBL1,
-	1000,
-	1000,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
 	VC_MAT_CW_Lights_P2_PITCH_GMBL2,
 	VC_MAT_CW_Lights_P2_YAW_GMBL2,
 	VC_MAT_CW_Lights_P2_CRYO_PRESS,
 	VC_MAT_CW_Lights_P2_GLYCOL_TEMP_LOW,
 	VC_MAT_CW_Lights_P2_CM_RCS1,
 	VC_MAT_CW_Lights_P2_CM_RCS2,
-	1000,
-	1000,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
 	VC_MAT_CW_Lights_P2_SM_RCS_A,
 	VC_MAT_CW_Lights_P2_SM_RCS_B,
 	VC_MAT_CW_Lights_P2_SM_RCS_C,
 	VC_MAT_CW_Lights_P2_SM_RCS_D,
-	1000,
-	1000,
-	1000,
-	1000,
-	1000,
-	1000,
-	1000,
-	1000,
-	1000,
-	1000,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
 	VC_MAT_CW_Lights_P2_SPS_FLANGE_TEMP_HI,
 	VC_MAT_CW_Lights_P2_FC1,
 	VC_MAT_CW_Lights_P2_FC2,
 	VC_MAT_CW_Lights_P2_FC3,
-	1000,
+	VC_MAT_NONE,
 	VC_MAT_CW_Lights_P2_INV1_TEMP_HI,
 	VC_MAT_CW_Lights_P2_INV2_TEMP_HI,
 	VC_MAT_CW_Lights_P2_INV3_TEMP_HI,
 	VC_MAT_CW_Lights_P2_SPS_PRESS,
-	1000,
+	VC_MAT_NONE,
 	VC_MAT_CW_Lights_P2_AC_BUS1,
 	VC_MAT_CW_Lights_P2_AC_BUS2,
-	1000,
+	VC_MAT_NONE,
 	VC_MAT_CW_Lights_P2_FC_BUS_DISCONNECT,
 	VC_MAT_CW_Lights_P2_AC_BUS1_OVERLOAD,
 	VC_MAT_CW_Lights_P2_AC_BUS2_OVERLOAD,
@@ -439,18 +454,83 @@ DWORD IntegralLights_CW_Lights[] = {
 	VC_MAT_CW_Lights_P2_CW,
 	VC_MAT_CW_Lights_P2_O2_FLOW_HI,
 	VC_MAT_CW_Lights_P2_SUIT_COMPRESSOR,
-	1000,
-	1000,
-	1000,
-	1000,
-	1000,
-	1000
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE
+};
+
+//
+// Caution & Warning Lights 
+//
+DWORD IntegralLights_CW_Lights_CM[] = {
+	VC_MAT_CW_Lights_P2_BMAG1_TEMP,
+	VC_MAT_CW_Lights_P2_BMAG2_TEMP,
+	VC_MAT_NONE,
+	VC_MAT_CW_Lights_P2_CO2_PPHI,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_CW_Lights_P2_CM_RCS1,
+	VC_MAT_CW_Lights_P2_CM_RCS2,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_CW_Lights_P2_INV1_TEMP_HI,
+	VC_MAT_CW_Lights_P2_INV2_TEMP_HI,
+	VC_MAT_CW_Lights_P2_INV3_TEMP_HI,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_CW_Lights_P2_AC_BUS1,
+	VC_MAT_CW_Lights_P2_AC_BUS2,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_CW_Lights_P2_AC_BUS1_OVERLOAD,
+	VC_MAT_CW_Lights_P2_AC_BUS2_OVERLOAD,
+	VC_MAT_CW_Lights_P2_CMC,
+	VC_MAT_CW_Lights_P2_CREW_ALERT,
+	VC_MAT_CW_Lights_P2_MN_BUS_A_UNDERVOLT,
+	VC_MAT_CW_Lights_P2_MN_BUS_B_UNDERVOLT,
+	VC_MAT_CW_Lights_P2_ISS,
+	VC_MAT_CW_Lights_P2_CW,
+	VC_MAT_CW_Lights_P2_O2_FLOW_HI,
+	VC_MAT_CW_Lights_P2_SUIT_COMPRESSOR,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE,
+	VC_MAT_NONE
 };
 
 //
 // EMS .05G Light
 //
-
 DWORD EMSPoint05GLight[] = {
 	VC_MAT_Panel1_05G
 };
