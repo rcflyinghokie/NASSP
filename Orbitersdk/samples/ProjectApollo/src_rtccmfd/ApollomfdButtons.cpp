@@ -620,7 +620,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	{
 		{ "Approach azimuth", 0, 'A' },
 		{ "Altitude at PDI", 0, 'H' },
-		{ "Powered descent sim flag", 0, 'P' },
+		{ "Pwrd descent sim", 0, 'P' },
 		{ "PDI time", 0, 'F' },
 		{ "Orbits between DOI and PDI", 0, 'N' },
 		{ "", 0, ' ' },

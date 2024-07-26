@@ -1951,8 +1951,26 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		}
 		else if (GC->rtcc->med_k16.Mode == 4)
 		{
-			skp->Text(1 * W / 16, 8 * H / 14, "LM Maneuver Sequence", 20);
-			skp->Text(1 * W / 16, 10 * H / 14, "DOI", 3);
+			skp->Text(1 * W / 16, 8 * H / 14, "Descent Orbit Insertion", 23);
+			switch (GC->rtcc->med_k16.Sequence)
+			{
+			case 1:
+				skp->Text(1 * W / 16, 10 * H / 14, "1: DOI only", 11);
+				break;
+			case 2:
+				skp->Text(1 * W / 16, 10 * H / 14, "2: DOI with plane change", 24);
+				break;
+			case 3:
+				skp->Text(1 * W / 16, 10 * H / 14, "3: Integrated DOI only", 22);
+				break;
+			case 4:
+				skp->Text(1 * W / 16, 10 * H / 14, "4: Integrated DOI with plane change", 35);
+				break;
+			default:
+				sprintf(Buffer, "%d: Not Used", GC->rtcc->med_k16.Sequence);
+				skp->Text(1 * W / 16, 10 * H / 14, Buffer, strlen(Buffer));
+				break;
+			}
 		}
 		else if (GC->rtcc->med_k16.Mode == 5)
 		{

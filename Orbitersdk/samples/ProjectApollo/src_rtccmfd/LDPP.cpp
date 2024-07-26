@@ -150,7 +150,7 @@ void LDPP::Mode1_1()
 
 	//Advance to threshold time of first maneuver
 	dt = opt.TH[0] - sv_CSM.GMT;
-	sv_CSM = pRTCC->coast(sv_CSM, dt);
+	sv_CSM = coast(sv_CSM, dt);
 
 	//Save state vector at threshold time
 	sv_V = sv_CSM;
@@ -169,7 +169,7 @@ void LDPP::Mode1_1()
 		if (IsErrorUnrecoverable()) return;
 		//Advance to t_PC
 		dt = t_PC - sv_V.GMT;
-		sv_CSM = pRTCC->coast(sv_V, dt);
+		sv_CSM = coast(sv_V, dt);
 		//Is the plane change a combination maneuver?
 		if (opt.IDO >= 0)
 		{
@@ -193,7 +193,7 @@ void LDPP::Mode1_1()
 		{
 			//Circularization at an apsis maneuver
 			dt = opt.TH[1] - sv_CSM.GMT;
-			sv_CSM = pRTCC->coast(sv_CSM, dt);
+			sv_CSM = coast(sv_CSM, dt);
 			for (int iii = 0; iii < 2; iii++)
 			{
 				sv_CSM = STAP(sv_CSM);
@@ -249,7 +249,7 @@ void LDPP::Mode1_2()
 
 	//Advance to threshold time of first maneuver
 	dt = opt.TH[0] - sv_CSM.GMT;
-	sv_CSM = pRTCC->coast(sv_CSM, dt);
+	sv_CSM = coast(sv_CSM, dt);
 
 	//Take state vector to plane change ignition time
 	if (opt.IDO < 3)
@@ -343,7 +343,7 @@ void LDPP::Mode2_1()
 
 	//Advance to threshold time of first maneuver
 	dt = opt.TH[0] - sv_CSM.GMT;
-	sv_CSM = pRTCC->coast(sv_CSM, dt);
+	sv_CSM = coast(sv_CSM, dt);
 
 	//Save
 	sv_V = sv_CSM;
@@ -462,7 +462,7 @@ void LDPP::Mode2_2()
 
 	//Advance to threshold time of first maneuver
 	dt = opt.TH[0] - sv_CSM.GMT;
-	sv_CSM = pRTCC->coast(sv_CSM, dt);
+	sv_CSM = coast(sv_CSM, dt);
 
 	//Advance to altitude
 	error = STCIR(sv_CSM, opt.H_W, true, sv_CSM);
@@ -493,7 +493,7 @@ void LDPP::Mode3()
 
 	//Advance to threshold time of first maneuver
 	dt = opt.TH[0] - sv_CSM.GMT;
-	sv_CSM = pRTCC->coast(sv_CSM, dt);
+	sv_CSM = coast(sv_CSM, dt);
 
 	if (opt.IDO >= 0)
 	{
@@ -508,7 +508,7 @@ void LDPP::Mode3()
 	sv_CSM = SaveElements(sv_CSM, 0, DV);
 	//Advance to next threshold time
 	dt = opt.TH[1] - sv_CSM.GMT;
-	sv_CSM = pRTCC->coast(sv_CSM, dt);
+	sv_CSM = coast(sv_CSM, dt);
 
 	//Advance to desired apsis
 	for (int i = 0; i < 2; i++)
@@ -530,17 +530,78 @@ void LDPP::Mode4()
 	//DOI
 
 	double dt;
+	bool Integrated;
 
 	I_Num = 1;
+
+	if (opt.IDO >= 1)
+	{
+		Integrated = true;
+	}
+	else
+	{
+		Integrated = false;
+	}
 
 	//Input state vector as CSM state vector
 	sv_CSM = opt.sv0;
 
 	//Advance to threshold time of first maneuver
 	dt = opt.TH[0] - sv_CSM.GMT;
-	sv_CSM = pRTCC->coast(sv_CSM, dt);
+	sv_CSM = coast(sv_CSM, dt, Integrated);
+	//Calculate DOI
+	DOIManeuver(0, Integrated);
+	if (IsErrorUnrecoverable()) return;
+	
+	if (opt.IDO == 0 || opt.IDO == 2)
+	{
+		//Plane change
 
-	DOIManeuver(0);
+		VECTOR3 DV_apo, DV_aapo, DV;
+		double deltaw_s, xi;
+		int iter;
+		bool stop;
+
+		//Prepare iteration
+		deltaw_s = 0.0;
+		DV_apo = _V(0, 0, 0);
+		DV_aapo = DeltaV_LVLH[0];
+		iter = 0;
+		stop = false;
+		sv_V = LoadElements(0, true); //Load state at DOI TIG
+
+		do
+		{
+			iter++;
+			//Calculate PCC DV
+			DV = DV_aapo + DV_apo;
+			//Save maneuver data and apply DV
+			sv_LM = SaveElements(sv_V, 0, DV);
+			//Propagate to estimated time of landing
+			dt = t_TD - sv_LM.GMT;
+			sv_LM = coast(sv_LM, dt, Integrated);
+			//Calculate out of plane error
+			xi = OutOfPlaneError(sv_LM);
+			if (abs(xi) <= zeta_theta || iter >= 10)
+			{
+				stop = true;
+			}
+			else
+			{
+				//Calculate plane change
+				CHAPLA_FixedTIG(sv_V, sv_LM, t_TD - 1000.0, deltaw_s, DV_apo);
+			}
+		} while (stop == false);
+
+		if (iter == 1)
+		{
+			//TBD: Error? No plane change calculation was necessary
+		}
+		if (iter >= 10)
+		{
+			SetError(5);
+		}
+	}
 }
 
 void LDPP::Mode5()
@@ -572,7 +633,7 @@ void LDPP::Mode5()
 
 	//Advance to threshold time of first maneuver
 	dt = opt.TH[0] - sv_CSM.GMT;
-	sv_CSM = pRTCC->coast(sv_CSM, dt);
+	sv_CSM = coast(sv_CSM, dt);
 
 	//Save state vector at threshold time
 	sv_V = sv_CSM;
@@ -598,7 +659,7 @@ void LDPP::Mode5()
 				CHAPLA(sv_LM, opt.I_AZ, true, TH, t_PC, DV);
 				if (IsErrorUnrecoverable()) return;
 				dt = t_PC - sv_CSM.GMT;
-				sv_CSM = pRTCC->coast(sv_CSM, dt);
+				sv_CSM = coast(sv_CSM, dt);
 			}
 		}
 		else
@@ -614,7 +675,7 @@ void LDPP::Mode5()
 
 		//Maneuver 2
 		dt = opt.TH[1] - sv_CSM.GMT;
-		sv_CSM = pRTCC->coast(sv_CSM, dt);
+		sv_CSM = coast(sv_CSM, dt);
 		if (opt.IDO == -1)
 		{
 			//HO1
@@ -635,7 +696,7 @@ void LDPP::Mode5()
 				CHAPLA(sv_LM, opt.I_AZ, true, TH, t_PC, DV);
 				if (IsErrorUnrecoverable()) return;
 				dt = t_PC - sv_CSM.GMT;
-				sv_CSM = pRTCC->coast(sv_CSM, dt);
+				sv_CSM = coast(sv_CSM, dt);
 			}
 		}
 		else
@@ -655,7 +716,7 @@ void LDPP::Mode5()
 
 		//Maneuver 3
 		dt = opt.TH[2] - sv_CSM.GMT;
-		sv_CSM = pRTCC->coast(sv_CSM, dt);
+		sv_CSM = coast(sv_CSM, dt);
 		if (opt.IDO == 1)
 		{
 			//PC
@@ -668,7 +729,7 @@ void LDPP::Mode5()
 				CHAPLA(sv_LM, opt.I_AZ, true, TH, t_PC, DV);
 				if (IsErrorUnrecoverable()) return;
 				dt = t_PC - sv_CSM.GMT;
-				sv_CSM = pRTCC->coast(sv_CSM, dt);
+				sv_CSM = coast(sv_CSM, dt);
 			}
 		}
 		else
@@ -720,14 +781,14 @@ void LDPP::Mode6()
 
 	//Advance to threshold time of first maneuver
 	dt = opt.TH[0] - sv_CSM.GMT;
-	sv_CSM = pRTCC->coast(sv_CSM, dt);
+	sv_CSM = coast(sv_CSM, dt);
 
 	//Predict time of landing here based on the threshold time
 	t_LS = P29TimeOfLongitude(sv_CSM.R, sv_CSM.V, sv_CSM.GMT, opt.Lng_LS);
 
 	//Save for PDI simulation
 	dt = t_LS - sv_CSM.GMT;
-	sv_LM = pRTCC->coast(sv_CSM, dt);
+	sv_LM = coast(sv_CSM, dt);
 	t_TD = sv_LM.GMT;
 }
 
@@ -746,20 +807,20 @@ void LDPP::Mode7()
 
 	//Advance to threshold time of first maneuver
 	dt = opt.TH[0] - sv_CSM.GMT;
-	sv_CSM = pRTCC->coast(sv_CSM, dt);
+	sv_CSM = coast(sv_CSM, dt);
 
 	CHAPLA(sv_CSM, opt.I_AZ, false, opt.TH[3], t_PC, DV_apo);
 	if (IsErrorUnrecoverable()) return;
 
 	//Advance to t_PC
 	dt = t_PC - sv_CSM.GMT;
-	sv_CSM = pRTCC->coast(sv_CSM, dt);
+	sv_CSM = coast(sv_CSM, dt);
 
 	//Save
 	SaveElements(sv_CSM, 0, DV_apo);
 }
 
-VECTOR3 LDPP::SAC(double h_W, bool J, EphemerisData sv_L)
+VECTOR3 LDPP::SAC(double h_W, bool J, EphemerisData sv_L, int Integrated)
 {
 	//h_W: height wanted at an apsis, or circular altitude wanted
 	//J: false = compute maneuver to yield h_W at an apsis 180° away from maneuver, true = compute maneuver to circularize at input altitude
@@ -819,7 +880,7 @@ VECTOR3 LDPP::SAC(double h_W, bool J, EphemerisData sv_L)
 				dt = (u_d - u_c) / n;
 			}
 			
-			sv_L2 = pRTCC->coast(sv_L2, dt);
+			sv_L2 = coast(sv_L2, dt, Integrated);
 			u_c = ArgLat(sv_L2.R, sv_L2.V);
 			nn++;
 		} while (abs(dt) > zeta_t && nn < 10);
@@ -862,7 +923,7 @@ VECTOR3 LDPP::LATLON(double GMT) const
 	return R_LS;
 }
 
-void LDPP::LLTPR(double T_H, EphemerisData sv_L, double &t_DOI, double &t_IGN, double &t_TD)
+void LDPP::LLTPR(double T_H, EphemerisData sv_L, EphemerisData &sv_DOI, VECTOR3 &DV_LVLH, double &t_IGN, double &t_TD, bool Integrated)
 {
 	EphemerisData sv_L_apo, sv_PL;
 	VECTOR3 H_c, h_c, C, c, V_H, d, R_ppu, D_L, RR_LS, rr_LS, h_c2;
@@ -891,7 +952,7 @@ void LDPP::LLTPR(double T_H, EphemerisData sv_L, double &t_DOI, double &t_IGN, d
 
 		//Update state vector to new time
 		t = t + S_w * dt;
-		sv_L = pRTCC->coast(sv_L, t - sv_L.GMT);
+		sv_L = coast(sv_L, t - sv_L.GMT,  Integrated);
 
 		//Calculate orbit parameters after DOI
 		R_p = R_D;
@@ -912,10 +973,10 @@ void LDPP::LLTPR(double T_H, EphemerisData sv_L, double &t_DOI, double &t_IGN, d
 			sv_L_apo = sv_L;
 			sv_L_apo.V = V_H;
 			//Take state vector to predicted perilune
-			sv_PL = pRTCC->coast(sv_L_apo, t_H);
+			sv_PL = coast(sv_L_apo, t_H, Integrated);
 			//t_H does not give the exact perilune, so improve the location with a conic correction
 			dt_peri = OrbMech::timetoperi(sv_PL.R, sv_PL.V, mu);
-			sv_PL = pRTCC->coast(sv_PL, dt_peri);
+			sv_PL = coast(sv_PL, dt_peri, Integrated);
 			//Based on the actual perilune radius, bias the targeted perilune radius for a more precise result
 			if (ii == 0)
 			{
@@ -969,6 +1030,8 @@ void LDPP::LLTPR(double T_H, EphemerisData sv_L, double &t_DOI, double &t_IGN, d
 		}
 	} while (eps_R > zeta_theta);
 
+	sv_DOI = sv_L;
+	DV_LVLH = mul(OrbMech::LVLH_Matrix(sv_DOI.R, sv_DOI.V), sv_L_apo.V - sv_L.V);
 	t_IGN = sv_PL.GMT;
 	t_TD = t_L;
 }
@@ -1254,7 +1317,7 @@ bool LDPP::STCIR(EphemerisData sv0, double h_W, bool ca_flag, EphemerisData& sv_
 			return true;
 		}
 
-		sv0 = pRTCC->coast(sv0, dt);
+		sv0 = coast(sv0, dt);
 		coe = OrbMech::GIMIKC(sv0.R, sv0.V, mu);
 		cos_f_cf = (coe.a*(1.0 - coe.e*coe.e) - r_H) / (coe.e*r_H);
 
@@ -1312,7 +1375,7 @@ EphemerisData LDPP::TIMA(EphemerisData sv0, double U0, double UD, bool &error)
 	do
 	{
 		//Advance to predicted time
-		sv1 = pRTCC->coast(sv1, dt);
+		sv1 = coast(sv1, dt);
 		//Calculate argument of latitude
 		U = ArgLat(sv1.R, sv1.V);
 		//Calculate argument of latitude error
@@ -1434,7 +1497,7 @@ EphemerisData LDPP::coast_u(EphemerisData sv0, double dt, double U0, double &U1)
 	P_L = OrbitalPeriod(sv0);
 	U1_pred = U0 + dt / P_L * PI2;
 
-	sv1 = pRTCC->coast(sv0, dt);
+	sv1 = coast(sv0, dt);
 	U1 = ArgLat(sv1.R, sv1.V);
 
 	while (U1_pred > U1 + PI)
@@ -1446,6 +1509,21 @@ EphemerisData LDPP::coast_u(EphemerisData sv0, double dt, double U0, double &U1)
 		U1 -= PI2;
 	}
 	return sv1;
+}
+
+EphemerisData LDPP::coast(EphemerisData sv1, double dt, bool Integrated) const
+{
+	if (Integrated)
+	{
+		EphemerisData sv2;
+		int ITS;
+		pRTCC->PMMCEN(sv1, 0.0, 0.0, 1, dt, 1.0, sv2, ITS);
+		return sv2;
+	}
+	else
+	{
+		return pRTCC->coast(sv1, dt);
+	}
 }
 
 EphemerisData LDPP::PMMLAEG(EphemerisData sv0, int opt, double param, bool &error, double DN) const
@@ -1589,12 +1667,12 @@ bool LDPP::LSClosestApproach(EphemerisData sv, double TH, EphemerisData &sv_CA) 
 
 	//Take state vector to threshold time for flying over the landing site
 	dt1 = TH - sv.GMT;
-	sv_TH = pRTCC->coast(sv, dt1);
+	sv_TH = coast(sv, dt1);
 	//Calculate time of landing site passage after threshold time
 	sv_CA.GMT = P29TimeOfLongitude(sv_TH.R, sv_TH.V, sv_TH.GMT, opt.Lng_LS);
 	dt2 = sv_CA.GMT - sv_TH.GMT;
 	//Take state vector to approximate time of landing site passage
-	sv_CA = pRTCC->coast(sv_TH, dt2);
+	sv_CA = coast(sv_TH, dt2);
 	//Mean motion of orbit
 	n_L = PI2 / OrbMech::period(sv_CA.R, sv_CA.V, mu);
 
@@ -1624,7 +1702,7 @@ bool LDPP::LSClosestApproach(EphemerisData sv, double TH, EphemerisData &sv_CA) 
 		dt3 = theta / n_L;
 		if (abs(dt3) > zeta_t)
 		{
-			sv_CA = pRTCC->coast(sv_CA, dt3);
+			sv_CA = coast(sv_CA, dt3);
 		}
 		ii++;
 		//Stop after 10 iterations
@@ -1634,31 +1712,30 @@ bool LDPP::LSClosestApproach(EphemerisData sv, double TH, EphemerisData &sv_CA) 
 	return false;
 }
 
-int LDPP::DOIManeuver(int i_DOI)
+int LDPP::DOIManeuver(int i_DOI, bool Integrated)
 {
 	//Function uses sv_CSM, TH[3] and H_DP and outputs elemets, sv_CSM at DOI time, sv_LM at touchdown time and t_DOI, t_IGN and t_TD
 
+	EphemerisData sv_DOI;
 	VECTOR3 DV_apo;
 	double dt;
 
 	//DOI
 	//Advance to threshold
 	dt = opt.TH[3] - sv_CSM.GMT;
-	sv_CSM = pRTCC->coast(sv_CSM, dt);
+	sv_CSM = coast(sv_CSM, dt, Integrated);
 	//Calculate DOI time
-	LLTPR(opt.TH[3], sv_CSM, t_DOI, t_IGN, t_TD);
-	//Advance to CSM
-	dt = t_DOI - sv_CSM.GMT;
-	sv_CSM = pRTCC->coast(sv_CSM, dt);
+	LLTPR(opt.TH[3], sv_CSM, sv_DOI, DV_apo, t_IGN, t_TD, Integrated);
+	t_DOI = sv_DOI.GMT;
+	//Assign to CSM
+	sv_CSM = sv_DOI;
 	//Assign CSM vector and time to LM
 	sv_LM = sv_CSM;
-	//Compute DOI
-	DV_apo = SAC(opt.H_DP, 0, sv_LM);
 	//Save state vector and apply DV
 	sv_LM = SaveElements(sv_LM, i_DOI, DV_apo);
 	//Advance to time of touchdown
 	dt = t_TD - sv_LM.GMT;
-	sv_LM = pRTCC->coast(sv_LM, dt);
+	sv_LM = coast(sv_LM, dt, Integrated);
 	return 0;
 }
 

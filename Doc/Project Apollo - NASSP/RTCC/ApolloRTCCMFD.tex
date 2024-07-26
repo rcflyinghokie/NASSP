@@ -520,21 +520,49 @@ Maneuver&Maneuver&Maneuver&\\
 Mode No.&Sequence No.&Display Code& Definition\\
 \hline
 1&1&PC&Compute plane-change maneuver only\\
+\hline
 1&2&PCC&Compute plane-change and circularization maneuver\\
+\hline
 1&3&ASP-CIA&Compute plane-change maneuver combined with first maneuver of a CSM two maneuver sequence to circularize the CSM orbit at an input altitude\\
+\hline
 1&4&PCCH&Compute plane-change and circularization maneuver at a specific altitude\\
+\hline
 1&5&PPCT&Compute plane-change and circularization maneuver at an input time\\
+\hline
 2&2&ASH&Compute CSM maneuver to establish an apsis and an input altitude at the DOI maneuver point\\
+\hline
 2&3&CIR&Compute CSM maneuver to circularize orbit at an input altitude\\
+\hline
 3&1&ASHT-CIA&Compute CSM two-maneuver sequence with the first maneuver performed at an input time and the second maneuver performed at an input altitude to circularize the orbit\\
+\hline
 3&2&ASHA-CIA&Compute CSM two-maneuver sequence with the first maneuver performed at an apsis and the second maneuver performed at an input altitude to circularize the orbit\\
+\hline
+\end{tabular}
+\end{center}
+\newpage
+\begin{center}
+\begin{tabular}{l l l m{7.3cm}}
+Maneuver&Maneuver&Maneuver&\\
+Mode No.&Sequence No.&Display Code& Definition\\
+\hline
 4&1&DOI&Computes the DOI maneuver only\\
+\hline
+4&2&DOI&Computes the DOI maneuver only and includes a plane change\\
+\hline
+4&3&DOI&Computes the DOI maneuver with a higher fidelity numerical integration processor, for a more precise perilune altitude and placement. Useful for CSM DOIs that take place many hours before PDI.\\
+\hline
+4&4&DOI&Same as sequence 3, but with an included plane change.\\
+\hline
 5&1&PC, HO1, HO2&Compute CSM three-maneuver sequence so that the first maneuver is a plane change and the following pair is a double Hohmann to a circular orbit at an input altitude\\
-5&2&HO1, PC, HO2&Compute CSM three-maneuver sequence so that the first maneuver initiates a double Hohmann, the second is a plane-change, and the third completes the double Hohmann to a circular orbit at an input altitude\\
-5&3&HO2, HO2, PC&Compute CSM three-maneuver sequence so that the first two maneuvers constitute a double Hohmann to a circular orbit
-at an input altitude and the third is a plane change\\
+\hline
+5&2&HO1, PC, HO2&Compute CSM three-maneuver sequence so that the first maneuver initiates a double Hohmann, the second is a plane-change, and the third completes  the double Hohmann to a circular orbit at an input altitude\\
+\hline
+5&3&HO2, HO2, PC&Compute CSM three-maneuver sequence so that the first two maneuvers constitute a double Hohmann to a circular orbit at an input altitude and the third is a plane change\\
+\hline
 6&1&PDI&Powered descent only\\
+\hline
 7&1&PPC&Prelaunch plane change\\
+\hline
 \end{tabular}
 \end{center}
 \newpage

@@ -32,6 +32,15 @@ struct LDPPOptions
 	int MODE;
 	//Maneuver sequence flag
 	//Mode 1: -1 = plane-change only, 0 = plane change and circularization, 1 = plane change combined with first maneuver of a CSM two-maneuver sequence to circularize the CSM orbit at an input altitude
+	//Mode 2: 0 = compute CSM maneuver to establish an apsis and an input altitude at the DOI maneuver point, 1 = compute CSM maneuver to circularize orbit at an input altitude
+	//Mode 3: -1 = compute CSM two-maneuver sequence with the first maneuver performed at an input time and the second maneuver performed at an input altitude to circularize the orbit
+	//		   1 = compute CSM two-maneuver sequence with the first maneuver performed at an apsis and the second maneuver performed at an input altitude to circularize the orbit
+	//Mode 4: -1 = DOI alone, 0 = DOI with plane change, 1 = Integrated DOI, 2 = Integrated DOI with plane change
+	//Mode 5: -1 = compute CSM three-maneuver sequence so that the first maneuver is a plane change and the following pair is a double Hohmann to a circular orbit at an input altitude
+	//		  0 = compute CSM three-maneuver sequence so that the first maneuver initiates a double Hohmann, the second is a plane change, and the third completes the double Hohmann to a circular orbit at an input altitude.
+	//		  1 = compute CSM three-maneuver sequence so that the first two maneuvers constitute a double Hohmann to a circular orbit at an input altitude and the third is a plane change.
+	//Mode 6: Powered descent only
+	//Mode 7: CSM prelaunch plane change
 	int IDO;
 	//Powered-descent simulation flag (false = simulate powered descent, true = do not simulate powered descent)
 	bool I_PD;
@@ -132,12 +141,12 @@ protected:
 	void Mode7();
 
 	//Compute a maneuver to shift the line-of-apsides and change apocynthion and pericynthion or circularize the CSM orbit
-	VECTOR3 SAC(double h_W, bool J, EphemerisData sv_L);
+	VECTOR3 SAC(double h_W, bool J, EphemerisData sv_L, int Integrated = false);
 	//Compute a maneuver to place CSM orbital track over a desired landing site with or without a specified azimuth
 	void CHAPLA(EphemerisData sv_L, bool IWA, bool IGO, double TH, double &t_m, VECTOR3 &DV);
 	void CHAPLA_FixedTIG(EphemerisData sv_TIG, EphemerisData sv_L, double TH, double &deltaw_s, VECTOR3 &DV) const;
 	//Compute the time of the DOI maneuver based on a desired landing site and a CSM vector before the maneuver
-	void LLTPR(double T_H, EphemerisData sv_L, double &t_DOI, double &t_IGN, double &t_TD);
+	void LLTPR(double T_H, EphemerisData sv_L, EphemerisData &sv_DOI, VECTOR3 &DV_LVLH, double &t_IGN, double &t_TD, bool Integrated = false);
 	//Calculate argument of latitude
 	double ArgLat(VECTOR3 R, VECTOR3 V) const;
 	//Subroutine that searches for a common node between two orbits
@@ -154,6 +163,7 @@ protected:
 	VECTOR3 LATLON(double GMT) const;
 	//Utility functions
 	EphemerisData coast_u(EphemerisData sv0, double dt, double U0, double &U1) const;
+	EphemerisData coast(EphemerisData sv1, double dt, bool Integrated = false) const;
 	EphemerisData PMMLAEG(EphemerisData sv0, int opt, double param, bool &error, double DN = 0.0) const;
 	EphemerisData PositionMatch(EphemerisData sv_A, EphemerisData sv_P, double mu) const;
 	double P29TimeOfLongitude(VECTOR3 R0, VECTOR3 V0, double GMT, double phi_d) const;
@@ -164,7 +174,7 @@ protected:
 	//Converges on closest approach to the landing site after TH
 	bool LSClosestApproach(EphemerisData sv, double TH, EphemerisData &sv_CA) const;
 	//Calculate DOI maneuver
-	int DOIManeuver(int i_DOI);
+	int DOIManeuver(int i_DOI, bool Integrated = false);
 	//PDI Calculations
 	void PDICalculations();
 	void OutputCalculations();
