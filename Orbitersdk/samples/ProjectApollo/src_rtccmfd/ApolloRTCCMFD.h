@@ -38,6 +38,34 @@ struct RTCCMFDInputBoxData
 	void (ApolloRTCCMFD::*func)(void) = NULL;
 };
 
+struct MEDInput
+{
+	std::string Label;			//Short description on MFD page
+	std::string Description;	//Detailed description in MFD input box
+	std::string Unit;			//Unit displayed on MFD page
+	std::string Data;
+};
+
+struct MEDInputPage
+{
+	std::string Title;			//Title displayed on MFD page
+	std::string MEDCode;
+	std::vector<MEDInput> table;
+	int display = -1;
+};
+
+struct RTCCMFDData
+{
+	int screen = 0;
+	int subscreen = 0;
+	int marker = 0;
+	int markermax = 0;
+	UINT ID = 0;
+	std::string MEDCode;
+	bool IsCSM = false;
+	bool EnableCalculation;
+};
+
 class ApolloRTCCMFD: public MFD2 {
 public:
 	ApolloRTCCMFD (DWORD w, DWORD h, VESSEL *vessel, UINT im);
@@ -49,12 +77,19 @@ public:
 	bool ConsumeKeyBuffered(DWORD key);
 	void WriteStatus(FILEHANDLE scn) const;
 	void ReadStatus(FILEHANDLE scn);
-	void StoreStatus(void) const;
 	void RecallStatus(void);
 
-	bool Text(oapi::Sketchpad *skp, int x, int y, const std::string & str);
+	void Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax = 1024, int ymax = 1024);
 
 	void SelectPage(int page);
+
+	//Pages
+
+	//Display Formatting Language functions
+	void DFLBackgroundSlide(oapi::Sketchpad *skp, unsigned display);
+	void DFLDynamicData(oapi::Sketchpad *skp, unsigned display);
+
+	//Inputs
 	void menuTIChaserVectorTime();
 	void menuTITargetVectorTime();
 	void menuTITimeIncrement();
@@ -70,9 +105,15 @@ public:
 	void menuDKINCCDHInput();
 	void SPQDHdialogue();
 	void set_SPQDH(double DH);
-	void set_target();
+	void set_Vessel();
+	void set_CSMVessel();
+	void set_LMVessel();
+	void set_IUVessel();
+	void set_TargetVessel();
+	void CycleThroughVessels(VESSEL **v) const;
 	void menuSLVLaunchTargetingPad();
 	void menuSLVLaunchTargeting();
+	void menuSLVInsertionSVtoMPT();
 	void menuSLVLaunchUplink();
 	void menuVoid();
 	void menuSetLambertPage();
@@ -107,11 +148,13 @@ public:
 	void menuCycleMarkerUp();
 	void menuCycleMarkerDown();
 	void menuSetGMPInput();
+	void menuGPMCycleVessel();
 	void SPQcalc();
 	void lambertcalc();
 	void Angle_Display(char *Buff, double angle, bool DispPlus = true);
 	void GET_Display(char * Buff, double time, bool DispGET = true);
-	void GET_Display2(char * Buff, double time);
+	void GMT_Display2(char * Buff, double time) const;
+	void GET_Display2(char * Buff, double time) const;
 	void GET_Display3(char* Buff, double time);
 	void GET_Display4(char* Buff, double time);
 	void GET_Display_HHMM(char *Buff, double time);
@@ -169,8 +212,8 @@ public:
 	void menuGeneralMEDRequest(char *message);
 	void GeneralMEDRequest(char *str);
 	void EntryRangeDialogue();
+	void set_SVPageTarget();
 	void menuSVCalc();
-	void menuSwitchSVSlot();
 	void menuSVUpload();
 	void menuLSCalc();
 	void menuRevertRLSToPrelaunch();
@@ -179,6 +222,7 @@ public:
 	void menuCycleTwoImpulseOption();
 	void menuSwitchHeadsUp();
 	void menuCalcManPAD();
+	void set_ManPADMPTInput(int mpt, int num);
 	void menuSetManPADPage();
 	void menuCalcEntryPAD();
 	void menuSetEntryPADPage();
@@ -220,7 +264,7 @@ public:
 	void menuChangeVesselStatus();
 	void menuCycleLMStage();
 	void menuUpdateLiftoffTime();
-	void set_svtarget();
+	bool set_LiftoffTime(bool cmc);
 	void TwoImpulseOffset();
 	void GetREFSMMATfromAGC();
 	void menuCycleLunarEntryPADSxtOption();
@@ -278,6 +322,7 @@ public:
 	void menuLOICalc();
 	void menuSetLandmarkTrkPage();
 	void menuSetLmkTime();
+	void menuSetLmkElevation();
 	void menuSetLmkLat();
 	void menuSetLmkLng();
 	void menuLmkUseLandingSite();
@@ -405,18 +450,9 @@ public:
 	void menuSetLAPLiftoffTime();
 	void menuSetDAPPADPage();
 	void menuDAPPADCalc();
-	void menuSetLVDCPage();
+	void menuSetSaturnIBLVDCPage();
+	void menuSetSaturnVLVDCPage();
 	void menuLaunchAzimuthCalc();
-	void menuSetAGCEphemerisPage();
-	void menuCycleAGCEphemOpt();
-	void menuCycleAGCEphemAGCType();
-	void menuSetAGCEphemMission();
-	void menuSetAGCEphemBRCSEpoch();
-	void menuSetAGCEphemTEphemZero();
-	void menuSetAGCEphemTEPHEM();
-	void menuSetAGCEphemTIMEM0();
-	void menuSetAGCEphemTLAND();
-	void menuGenerateAGCEphemeris();
 	void cycleVECPOINTOpt();
 	void menuSetLMAscentPADPage();
 	void menuAscentPADCalc();
@@ -708,6 +744,8 @@ public:
 	void CalculateLOSTDOKOption();
 	void menuSetDebugPage();
 	void menuCalculateIMUComparison();
+	void menuSetIMUParkingAnglesPage();
+	void menuCalculateIMUParkingAngles();
 	void menuSLVNavigationUpdateCalc();
 	void menuSLVNavigationUpdateUplink();
 	void menuVectorPanelSummaryPage();
@@ -823,6 +861,18 @@ public:
 	void menuAGOPCalc();
 	void menuAGOPSaveREFSMMAT();
 	void menuSetRTACFPage();
+	void CycleCSMOrLMSelection();
+	void CycleEnableCalculation();
+
+	void SetMEDInputPageP13();
+	void SetMEDInputPageP14();
+	void SetMEDInputPage(std::string med);
+	void menuMEDInputCalc();
+	void menuInputMEDData();
+	void set_MEDData(char *str);
+	void menuGenericGoToDisplay();
+	void menuReturnToMEDInput();
+
 	void GenericGETInput(double *get, char *message);
 	void GenericDoubleInput(double *val, char* message, double factor = 1.0);
 	void GenericDouble2Input(double *val1, double *val2, char* message, double factor1 = 1.0, double factor2 = 1.0);
@@ -830,7 +880,6 @@ public:
 	void GenericInt2Input(int *val1, int *val2, char* message, int min1, int max1, int min2, int max2, void (ApolloRTCCMFD::*func)(void) = NULL);
 	void GenericVectorInput(VECTOR3 *val, char* message, double factor = 1.0, void (ApolloRTCCMFD::*func)(void) = NULL);
 	void GenericStringInput(std::string *val, char* message, void (ApolloRTCCMFD::*func)(void) = NULL);
-	void Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax = 1024, int ymax = 1024);
 protected:
 	oapi::Font *font;
 	oapi::Font *font2;
@@ -848,19 +897,21 @@ protected:
 	int marker;
 	int markermax;
 	int status; //Page dependent status, reset to 0 when new page is entered
-	static struct ScreenData {
-		int screen;
-		int subscreen;
-		int marker;
-		int markermax;
-	} screenData;
 private:
+	void SaveState();
+	void LoadState();
 
+	UINT ID;
 	ARCore* G;
 	AR_GCore* GC;
 	ApolloRTCCMFDButtons coreButtons;
 
 	RTCCMFDInputBoxData tempData;
+
+	bool IsCSM; //Chooses if the CSM or LM vessel in the RTCC is selected
+	bool EnableCalculation; //Generic variable for switch on/off a display related calculation
+	int ErrorMessage;
+	MEDInputPage MEDInputData;
 
 	//Additional display functions
 	void AGOPDisplay(oapi::Sketchpad*skp);
@@ -873,6 +924,13 @@ private:
 	void AGOPDisplayOption7(oapi::Sketchpad*skp);
 	void AGOPDisplayOption8(oapi::Sketchpad*skp);
 	void AGOPDisplayOption9(oapi::Sketchpad*skp);
+
+	void CSMOrLMSelection(oapi::Sketchpad*skp);
+	void CSMOrLMSelectionErrorMessage(oapi::Sketchpad*skp);
+	void PrintCSMVessel(char *Buffer, bool ShowCSM = true);
+	void PrintLMVessel(char *Buffer, bool ShowLM = true);
+	void PrintIUVessel(char *Buffer);
+	void PrintTargetVessel(char *Buffer);
 };
 
 #endif // !__ApolloRTCCMFD_H
