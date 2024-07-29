@@ -567,6 +567,11 @@ bool AR_GCore::AGOP_LM_REFSMMAT_Required()
 	return GetLMREFSMMAT;
 }
 
+void AR_GCore::DFLBackgroundSlide(oapi::Sketchpad *skp, DWORD W, DWORD H, unsigned display)
+{
+	BackgroundSlides.Print(skp, W, H, display);
+}
+
 ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 {
 	GC = gcin;
@@ -5580,6 +5585,42 @@ int ARCore::subThread()
 		}
 
 		Result = DONE;
+	}
+	break;
+	case 58: //Coelliptic ARM display
+	{
+		GC->rtcc->PZMARM.t_Calc_ARM = GC->rtcc->RTCCPresentTimeGMT();
+
+		if (GC->rtcc->pCSM == NULL || GC->rtcc->pLM == NULL)
+		{
+			Result = DONE;
+			break;
+		}
+
+		EphemerisData sv_CSM, sv_LM;
+
+		sv_CSM = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pCSM);
+		sv_LM = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pLM);
+
+		GC->rtcc->PMDARM(sv_CSM, sv_LM);
+	}
+	break;
+	case 59: //Short ARM display
+	{
+		GC->rtcc->PZMARM.t_Calc_ShortARM = GC->rtcc->RTCCPresentTimeGMT();
+
+		if (GC->rtcc->pCSM == NULL || GC->rtcc->pLM == NULL)
+		{
+			Result = DONE;
+			break;
+		}
+
+		EphemerisData sv_CSM, sv_LM;
+
+		sv_CSM = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pCSM);
+		sv_LM = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pLM);
+
+		GC->rtcc->PMDSARM(sv_CSM, sv_LM);
 	}
 	break;
 	}

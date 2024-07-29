@@ -15,6 +15,7 @@
 #include "rtcc.h"
 #include "LunarTargetingProgram.h"
 #include "thread.h"
+#include "RTCCDisplayFormatting.h"
 #include <queue>
 
 struct ApolloRTCCMFDData {  // global data storage
@@ -90,6 +91,12 @@ public:
 	std::string AGOP_Error;
 	MATRIX3 AGOP_REFSMMAT;
 	int AGOP_REFSMMAT_Vehicle;
+
+	//MOCR DISPLAY
+	void DFLBackgroundSlide(oapi::Sketchpad *skp, DWORD W, DWORD H, unsigned display);
+
+protected:
+	const rtcc::RTCCBackgroundSlides BackgroundSlides;
 };
 
 class ARCore {

@@ -44,6 +44,7 @@ See http://nassp.sourceforge.net/license/ for more details.
 #include "../src_rtccmfd/GeneralPurposeManeuver.h"
 #include "../src_rtccmfd/LWP.h"
 #include "../src_rtccmfd/AnalyticEphemerisGenerator.h"
+#include "../src_rtccmfd/RTCCDisplayFormatting.h"
 #include "MCCPADForms.h"
 
 class Saturn;
@@ -2631,7 +2632,7 @@ public:
 	int PMQAFMED(std::string med);
 	int PMQAFMED(std::string med, std::vector<std::string> data);
 	//K-MED Decoder
-	void PMKMED(std::string med);
+	void PMKMED(std::string med, std::vector<std::string> data, int &err, unsigned &param);
 	//'M' MED Module
 	int PMMMED(std::string med, std::vector<std::string> data);
 	//'P' Code MED Processor
@@ -4550,6 +4551,63 @@ public:
 		bool PlaneSolnForInterSoln = true;
 	} PZLOIPLN; //Figure out real name!
 
+	struct ARMMEDSaveTable
+	{
+		ARMMEDSaveTable();
+		void SaveState(FILEHANDLE scn, char *start_str, char *end_str);
+		void LoadState(FILEHANDLE scn, char *end_str);
+
+		//Coelliptic
+
+		//Elevation angle
+		double E;
+		//CSI: If zero CSI performed at first apolune after insertion. non-zero parameter used as delta time from insertion to CSI. (minutes)
+		double CSIFlag;
+		//CDH Indicator (+N: N apsis crossings from CSI to CDH, -N: N/2 revs from CSI to CDH (N must be odd)
+		int CDHIndicator;
+		//Minimum safe perilune
+		double h_min;
+		//Time of TPI (GMT)
+		double t_TPI_Coell;
+
+		//Short
+
+		//false = time of tweak DT from insertion, true = input time of tweat
+		bool ITWEAK;
+		//false = time of TPI is DTPI from insertion, true = input time of TPI
+		bool ITPI;
+		//Time of tweak (GMT)
+		double t_tweak;
+		//Delta time of tweak
+		double DT;
+		//Delta time of TPI
+		double DTPI;
+		//Phase and height offsets at TPI
+		double DTHETA;
+		//IMU gimbal angles
+		VECTOR3 IMUAngles;
+		//body axis reference. false = gimbal angles, true = Axhor
+		bool IREF;
+		//Angle between line of sight to the forward horizon and the spacecraft X-axis
+		double Axhor;
+		//Time of TPI (GMT)
+		double t_TPI_Short;
+
+		//Both
+
+		//Terminal phase travel angle
+		double WT;
+		//Desired Delta H
+		double DH;
+		//Time of insertion (GMT)
+		double t_Ins;
+
+		double t_Calc_ARM = -1.0;
+		double t_Calc_ShortARM = -1.0;
+
+	} PZMARM;
+
+
 	struct UMEDSaveTable
 	{
 		//Block 3
@@ -4928,6 +4986,12 @@ private:
 	void PMDRPT();
 	//Two-Impulse Multiple Solution Display
 	void PMDTIMP();
+public:
+		//Ascent Rendezvous Monitoring Display
+		void PMDARM(EphemerisData sv_CSM, EphemerisData sv_LM);
+		//Short Ascent Rendezvous Monitoring Display
+		void PMDSARM(EphemerisData sv_CSM, EphemerisData sv_LM);
+protected:
 	//GOST CSM/LM LCV Computation
 	void EMMGLCVP(int L, double gmt, int body);
 	//Relative Motion Digital Display
@@ -5011,6 +5075,7 @@ public:
 	char LEMName[64];
 
 	RTCCSystemParameters SystemParameters;
+	rtcc::RTCCDynamicDisplayData DynamicDisplayData;
 };
 
 #endif

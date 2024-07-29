@@ -4358,7 +4358,7 @@ void ITER(double &c, int &s, double e, double &p, double &x, double &eo, double 
 	}
 }
 
-bool QDRTPI(int Epoch, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, double mu, double dh, double E_L, int s, VECTOR3 &R_J, VECTOR3 &V_J)
+bool QDRTPI(int Epoch, VECTOR3 R, VECTOR3 V, double MJD, int gravref, double mu, double dh, double E_L, int s, VECTOR3 &R_J, VECTOR3 &V_J)
 {
 	int s_F;
 	double c, t, e_T, e_To, to, eps1, p;
