@@ -294,6 +294,7 @@
     <ClCompile Include="..\..\src_aux\Mission.cpp" />
     <ClCompile Include="..\..\src_csm\CSMMalfunctionSimulation.cpp" />
     <ClCompile Include="..\..\src_csm\csmsensors.cpp" />
+    <ClCompile Include="..\..\src_csm\eps.cpp" />
     <ClCompile Include="..\..\src_csm\rhc.cpp" />
     <ClCompile Include="..\..\src_csm\sce.cpp" />
     <ClCompile Include="..\..\src_csm\smjc.cpp" />
@@ -696,6 +697,7 @@
     <ClInclude Include="..\..\src_csm\CM-VC-SeatsFolded_Resource.h" />
     <ClInclude Include="..\..\src_csm\CM-VC-SeatsUnfolded_Resource.h" />
     <ClInclude Include="..\..\src_csm\EmissionListCMVC.h" />
+    <ClInclude Include="..\..\src_csm\eps.h" />
     <ClInclude Include="..\..\src_csm\rhc.h" />
     <ClInclude Include="..\..\src_csm\sce.h" />
     <ClInclude Include="..\..\src_csm\smjc.h" />

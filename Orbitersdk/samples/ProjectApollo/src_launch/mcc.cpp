@@ -950,11 +950,10 @@ void MCC::TimeStep(double simdt){
 
 void MCC::AutoUpdateXmitGroundStation(VESSEL* Ves, TrackingVesselType Type, TrackingSlot Slot)
 {
-	double Moonrelang;
 	double LOSRange;
 	VECTOR3 GSGlobalVector = _V(0, 0, 0);
 	VECTOR3 GSVector = _V(0, 0, 0);
-	bool MoonInTheWay, Sight;
+	bool Sight;
 
 	// Bail out if we failed to find either major body
 	if (Earth == NULL) { addMessage("Can't find Earth"); GT_Enabled = false; return; }
@@ -974,7 +973,7 @@ void MCC::AutoUpdateXmitGroundStation(VESSEL* Ves, TrackingVesselType Type, Trac
 				sin(GroundStations[StationIndex].Position[1] * RAD) * cos(GroundStations[StationIndex].Position[0] * RAD)) * R_E;
 			
 			oapiLocalToGlobal(Earth, &GSVector, &GSGlobalVector);
-			MoonInTheWay = false;
+
 			if (GroundStations[StationIndex].StationPurpose & GSPT_LUNAR)
 			{
 				LOSRange = 5e8;
@@ -983,16 +982,11 @@ void MCC::AutoUpdateXmitGroundStation(VESSEL* Ves, TrackingVesselType Type, Trac
 			{
 				LOSRange = 2e7;
 			}
-			//Check if there is line-of-sight between vessel and station
-			Sight = OrbMech::sight(Vessel_Vector[Slot], GSVector, R_E);
-			//Moon in the way
-			Moonrelang = dotp(unit(MoonGlobalPos - VesselGlobalPos[Slot]), unit(GSGlobalVector - VesselGlobalPos[Slot]));
-			if (Moonrelang > cos(asin(R_M / length(MoonGlobalPos - VesselGlobalPos[Slot]))))
-			{
-				MoonInTheWay = true;
-			}
+			//Check if there is line-of-sight between vessel and station and that the Moon is not in the way either
+			Sight = OrbMech::sight(Vessel_Vector[Slot], GSVector, R_E) && OrbMech::sight(VesselGlobalPos[Slot] - MoonGlobalPos, GSGlobalVector - MoonGlobalPos, R_M);
+
 			if (Sight && GroundStations[StationIndex].AOS[Slot] == 0 && ((GroundStations[StationIndex].USBCaps & GSSC_VOICE) || (GroundStations[StationIndex].CommCaps & GSGC_VHFAG_VOICE))) {
-				if (length(Vessel_Vector[Slot] - GSVector) < LOSRange && !MoonInTheWay)
+				if (length(Vessel_Vector[Slot] - GSVector) < LOSRange)
 				{
 					//Dont switch to a new station if we're transmitting an uplink;
 					bool uplinking = false;
@@ -1022,7 +1016,7 @@ void MCC::AutoUpdateXmitGroundStation(VESSEL* Ves, TrackingVesselType Type, Trac
 
 				}
 			}
-			if ((!Sight || length(Vessel_Vector[Slot] - GSVector) > LOSRange || MoonInTheWay) && GroundStations[StationIndex].AOS[Slot] == 1) {
+			if ((!Sight || length(Vessel_Vector[Slot] - GSVector) > LOSRange) && GroundStations[StationIndex].AOS[Slot] == 1) {
 				GroundStations[StationIndex].AOS[Slot] = 0;
 
 				if (Type == TrackingVesselType::TypeCM && GT_Enabled == true) {
