@@ -8707,6 +8707,7 @@ void RTCC::EngineParametersTable(int enginetype, double &Thrust, double &WLR, do
 		OnboardThrust = SystemParameters.MCTAT9;
 		break;
 	case RTCC_ENGINETYPE_LMDPS:
+	default:
 		Thrust = SystemParameters.MCTDT1;
 		WLR = SystemParameters.MCTDW1;
 		OnboardThrust = SystemParameters.MCTDT9;
@@ -35219,50 +35220,34 @@ void RTCC::PMMDMT(int L, unsigned man, RTCCNIAuxOutputTable *aux)
 			}
 		}
 
+		//Get engine parameters
 		double OnboardThrust;
 		EngineParametersTable(mptman->Thruster, T, WDOT, OnboardThrust);
 
-		if (mptman->Thruster == RTCC_ENGINETYPE_CSMRCSPLUS2 || mptman->Thruster == RTCC_ENGINETYPE_CSMRCSMINUS2)
+		//Get fuel remaining
+		switch (mptman->Thruster)
 		{
-			T = SystemParameters.MCTCT1;
-			WDOT = SystemParameters.MCTCW1;
+		case RTCC_ENGINETYPE_CSMRCSPLUS2:
+		case RTCC_ENGINETYPE_CSMRCSMINUS2:
+		case RTCC_ENGINETYPE_CSMRCSPLUS4:
+		case RTCC_ENGINETYPE_CSMRCSMINUS4:
 			F = mptman->CommonBlock.CSMRCSFuelRemaining;
-		}
-		else if (mptman->Thruster == RTCC_ENGINETYPE_CSMRCSPLUS4 || mptman->Thruster == RTCC_ENGINETYPE_CSMRCSMINUS4)
-		{
-			T = 2.0*SystemParameters.MCTCT1;
-			WDOT = 2.0*SystemParameters.MCTCW1;
-			F = mptman->CommonBlock.CSMRCSFuelRemaining;
-		}
-		else if (mptman->Thruster == RTCC_ENGINETYPE_LMRCSPLUS4 || mptman->Thruster == RTCC_ENGINETYPE_LMRCSMINUS4)
-		{
-			T = SystemParameters.MCTLT1;
-			WDOT = SystemParameters.MCTLW1;
+			break;
+		case RTCC_ENGINETYPE_LMRCSPLUS2:
+		case RTCC_ENGINETYPE_LMRCSMINUS2:
+		case RTCC_ENGINETYPE_LMRCSPLUS4:
+		case RTCC_ENGINETYPE_LMRCSMINUS4:
 			F = mptman->CommonBlock.LMRCSFuelRemaining;
-		}
-		else if (mptman->Thruster == RTCC_ENGINETYPE_LMRCSPLUS4 || mptman->Thruster == RTCC_ENGINETYPE_LMRCSMINUS4)
-		{
-			T = 2.0*SystemParameters.MCTLT1;
-			WDOT = 2.0*SystemParameters.MCTLW1;
-			F = mptman->CommonBlock.LMRCSFuelRemaining;
-		}
-		else if (mptman->Thruster == RTCC_ENGINETYPE_CSMSPS)
-		{
-			T = SystemParameters.MCTST1;
-			WDOT = SystemParameters.MCTSW1;
+			break;
+		case RTCC_ENGINETYPE_CSMSPS:
 			F = mptman->CommonBlock.SPSFuelRemaining;
-		}
-		else if (mptman->Thruster == RTCC_ENGINETYPE_LMAPS)
-		{
-			T = SystemParameters.MCTAT1;
-			WDOT = SystemParameters.MCTAW1;
+			break;
+		case RTCC_ENGINETYPE_LMAPS:
 			F = mptman->CommonBlock.LMAPSFuelRemaining;
-		}
-		else
-		{
-			T = SystemParameters.MCTDT1;
-			WDOT = SystemParameters.MCTDW1;
+			break;
+		default:
 			F = mptman->CommonBlock.LMDPSFuelRemaining;
+			break;
 		}
 	}
 
