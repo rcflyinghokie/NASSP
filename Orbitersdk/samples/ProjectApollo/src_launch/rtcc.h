@@ -2040,7 +2040,8 @@ struct LunarDescentPlanningTable
 	double PD_GETTD;
 	char DescAzMode[4];
 	double DescAsc;
-	double SN_LK_A; //???
+	double SN_LK_A; //Sun look angle (elevation angle at landing site)
+	int error;
 };
 
 struct SunriseSunsetData
@@ -2471,7 +2472,7 @@ public:
 	void BlockDataProcessor(EarthEntryOpt *opt, EntryResults *res);
 	void TranslunarInjectionProcessor(EphemerisData sv, PLAWDTOutput WeightsTable);
 	void TranslunarMidcourseCorrectionProcessor(EphemerisData sv0, double CSMmass, double LMmass);
-	int LunarDescentPlanningProcessor(SV sv);
+	int LunarDescentPlanningProcessor(EphemerisData sv, double W_LM);
 	bool GeneralManeuverProcessor(GMPOpt *opt, VECTOR3 &dV_i, double &P30TIG);
 	OBJHANDLE AGCGravityRef(VESSEL* vessel); // A sun referenced state vector wouldn't be much of a help for the AGC...
 	int DetermineSVBody(EphemerisData2 sv);
@@ -3967,6 +3968,7 @@ public:
 		double LDPPDescentFlightTime = 11.0*60.0; //Minutes
 		//Block 45
 		double LDPPDescentFlightArc = 15.0*RAD;
+		double LDPPLandingSiteOffset = 15.0*RAD;
 		//Block 46
 		double SPQDeltaH = 15.0*1852.0;
 		//Block 47

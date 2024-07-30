@@ -1951,8 +1951,26 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		}
 		else if (GC->rtcc->med_k16.Mode == 4)
 		{
-			skp->Text(1 * W / 16, 8 * H / 14, "LM Maneuver Sequence", 20);
-			skp->Text(1 * W / 16, 10 * H / 14, "DOI", 3);
+			skp->Text(1 * W / 16, 8 * H / 14, "Descent Orbit Insertion", 23);
+			switch (GC->rtcc->med_k16.Sequence)
+			{
+			case 1:
+				skp->Text(1 * W / 16, 10 * H / 14, "1: DOI only", 11);
+				break;
+			case 2:
+				skp->Text(1 * W / 16, 10 * H / 14, "2: DOI with plane change", 24);
+				break;
+			case 3:
+				skp->Text(1 * W / 16, 10 * H / 14, "3: Integrated DOI only", 22);
+				break;
+			case 4:
+				skp->Text(1 * W / 16, 10 * H / 14, "4: Integrated DOI with plane change", 35);
+				break;
+			default:
+				sprintf(Buffer, "%d: Not Used", GC->rtcc->med_k16.Sequence);
+				skp->Text(1 * W / 16, 10 * H / 14, Buffer, strlen(Buffer));
+				break;
+			}
 		}
 		else if (GC->rtcc->med_k16.Mode == 5)
 		{
@@ -1978,7 +1996,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		}
 		else if (GC->rtcc->med_k16.Mode == 6)
 		{
-			skp->Text(1 * W / 16, 8 * H / 14, "LM Powered Descent (N/A)", 24);
+			skp->Text(1 * W / 16, 8 * H / 14, "LM Powered Descent", 18);
 		}
 		else if (GC->rtcc->med_k16.Mode == 7)
 		{
@@ -2028,14 +2046,21 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		if (GC->rtcc->GZGENCSN.LDPPPoweredDescentSimFlag)
 		{
-			skp->Text(1 * W / 8, 6 * H / 14, "Simulate powered descent (N/A)", 30);
+			skp->Text(1 * W / 8, 6 * H / 14, "Simulate descent (N/A)", 22);
 		}
 		else
 		{
-			skp->Text(1 * W / 8, 6 * H / 14, "Do not simulate powered descent", 31);
+			skp->Text(1 * W / 8, 6 * H / 14, "Do not simulate descent", 23);
 		}
 
-		GET_Display(Buffer, GC->rtcc->GZGENCSN.LDPPTimeofPDI);
+		if (GC->rtcc->GZGENCSN.LDPPTimeofPDI != 0.0)
+		{
+			GET_Display(Buffer, GC->rtcc->GZGENCSN.LDPPTimeofPDI);
+		}
+		else
+		{
+			sprintf(Buffer, "Calculate PDI time");
+		}
 		skp->Text(1 * W / 8, 8 * H / 14, Buffer, strlen(Buffer));
 
 		sprintf(Buffer, "%d", GC->rtcc->GZGENCSN.LDPPDwellOrbits);
@@ -2046,6 +2071,9 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		sprintf(Buffer, "%.2f°", GC->rtcc->GZGENCSN.LDPPDescentFlightArc*DEG);
 		skp->Text(5 * W / 8, 4 * H / 14, Buffer, strlen(Buffer));
+
+		sprintf(Buffer, "%.2f°", GC->rtcc->GZGENCSN.LDPPLandingSiteOffset*DEG);
+		skp->Text(5 * W / 8, 6 * H / 14, Buffer, strlen(Buffer));
 	}
 	else if (screen == 19)
 	{
@@ -5655,8 +5683,11 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		}
 		skp->Text(31 * W / 32, 4 * H / 28, Buffer, strlen(Buffer));
 
-		sprintf(Buffer, "%07.3f°", GC->rtcc->PZLDPDIS.DescAsc);
+		sprintf(Buffer, "%07.3f", GC->rtcc->PZLDPDIS.DescAsc);
 		skp->Text(30 * W / 32, 20 * H / 28, Buffer, strlen(Buffer));
+
+		sprintf(Buffer, "%+07.3lf", GC->rtcc->PZLDPDIS.SN_LK_A);
+		skp->Text(30 * W / 32, 21 * H / 28, Buffer, strlen(Buffer));
 
 		sprintf(Buffer, GC->rtcc->PZLDPDIS.DescAzMode);
 		skp->Text(27 * W / 32, 19 * H / 28, Buffer, strlen(Buffer));
@@ -5722,6 +5753,12 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		skp->Text(21 * W / 32, 19 * H / 28, "MODE", 4);
 		skp->Text(21 * W / 32, 20 * H / 28, "DESC AZ", 7);
 		skp->Text(21 * W / 32, 21 * H / 28, "SN.LK.A", 7);
+
+		if (GC->rtcc->PZLDPDIS.error != 0)
+		{
+			sprintf(Buffer, "Error %d", GC->rtcc->PZLDPDIS.error);
+			skp->Text(10 * W / 32, 27 * H / 28, Buffer, strlen(Buffer));
+		}
 	}
 	else if (screen == 61)
 	{

@@ -358,10 +358,12 @@ public:
 	void menuSetLDPPVectorTime();
 	void menuLSRadius();
 	void menuSetLDPPDwellOrbits();
+	void menuSetLDPPLandingSiteOffset();
 	void menuSetLDPPDescentFlightArc();
 	void menuSetLDPPDescIgnHeight();
 	void cycleLDPPPoweredDescSimFlag();
 	void menuSetLDPPPoweredDescTime();
+	void menuLDPPSaveTLAND();
 	void menuLDPPCalc();
 	void menuSetDescPlanCalcPage();
 	void menuTranslunarPage();
@@ -632,7 +634,6 @@ public:
 	void menuSetDescPlanTablePage();
 	void menuSetLDPPAzimuth();
 	void menuSetLDPPDescentFlightTime();
-	void set_LDPPDescentFlightTime(double dt);
 	void cycleLDPPVehicle();
 	void menuSetLDPPDesiredHeight();
 	void menuLDPPThresholdTime1();

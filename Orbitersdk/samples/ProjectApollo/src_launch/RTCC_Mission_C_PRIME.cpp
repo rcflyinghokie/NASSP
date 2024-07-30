@@ -566,7 +566,7 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 			med_k16.GETTH2 = med_k16.GETTH3 = med_k16.GETTH4 = med_k16.GETTH1;
 			med_k16.DesiredHeight = 60.0*1852.0;
 
-			LunarDescentPlanningProcessor(sv_cut2);
+			LunarDescentPlanningProcessor(ConvertSVtoEphemData(sv_cut2), 0.0);
 			P30TIG_LOI2 = PZLDPDIS.GETIG[0];
 
 			//Step 3: Calculate LVLH REFSMMAT at LOI-2 TIG taking into account the trajectory leading up to that point
@@ -1069,7 +1069,7 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 		med_k16.GETTH2 = med_k16.GETTH3 = med_k16.GETTH4 = med_k16.GETTH1;
 		med_k16.DesiredHeight = 60.0*1852.0;
 
-		LunarDescentPlanningProcessor(sv);
+		LunarDescentPlanningProcessor(ConvertSVtoEphemData(sv), 0.0);
 
 		PoweredFlightProcessor(sv, PZLDPDIS.GETIG[0], RTCC_ENGINETYPE_CSMSPS, 0.0, PZLDPDIS.DVVector[0] * 0.3048, true, P30TIG, dV_LVLH);
 
