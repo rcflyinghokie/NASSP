@@ -28139,7 +28139,7 @@ void RTCC::CMRMEDIN(std::string med, std::vector<std::string> data, int &err, un
 		{
 			Veh = RTCC_MPT_LM;
 		}
-		id = out.Values[1].i;
+		id = out.Values[1].i + 1;
 		type = out.Values[2].i;
 
 		CMMRFMAT(Veh, id, type);
@@ -31579,11 +31579,11 @@ int RTCC::GMSMED(std::string med, std::vector<std::string> data)
 			//Item 4: Position Z
 			rtcc::AddDoubleMEDItem(opt, 1, true, true, SystemParameters.MCCMCU, -60.0, 60.0);
 			//Item 5: Velocity X
-			rtcc::AddDoubleMEDItem(opt, 1, true, true, SystemParameters.MCCMCU, -60.0, 60.0);
+			rtcc::AddDoubleMEDItem(opt, 1, true, true, SystemParameters.MCCMCU / 3600.0, -60.0, 60.0);
 			//Item 6: Velocity Y
-			rtcc::AddDoubleMEDItem(opt, 1, true, true, SystemParameters.MCCMCU, -60.0, 60.0);
+			rtcc::AddDoubleMEDItem(opt, 1, true, true, SystemParameters.MCCMCU / 3600.0, -60.0, 60.0);
 			//Item 7: Velocity Z
-			rtcc::AddDoubleMEDItem(opt, 1, true, true, SystemParameters.MCCMCU, -60.0, 60.0);
+			rtcc::AddDoubleMEDItem(opt, 1, true, true, SystemParameters.MCCMCU / 3600.0, -60.0, 60.0);
 		}
 
 		//Item 8: Time
@@ -31650,10 +31650,12 @@ int RTCC::GMSMED(std::string med, std::vector<std::string> data)
 			if (incoord <= 1)
 			{
 				outcoord = RTCC_COORDINATES_ECI;
+				sv.RBI = BODY_EARTH;
 			}
 			else
 			{
 				outcoord = RTCC_COORDINATES_MCI;
+				sv.RBI = BODY_MOON;
 			}
 
 			err = ELVCNV(sv_temp, incoord, outcoord, sv_out);
