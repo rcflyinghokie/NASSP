@@ -274,7 +274,8 @@ namespace rtcc
 		}
 		else
 		{
-			if (def.size() > stop)
+			stop++;
+			if (def.size() >= stop)
 			{
 				//Use stop
 			}

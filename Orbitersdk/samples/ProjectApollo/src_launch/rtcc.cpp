@@ -27597,15 +27597,15 @@ void RTCC::EMGABMED(int type, std::string med, std::vector<std::string> data, in
 			//Item 1: CSM Vehicle
 			rtcc::AddTextMEDItem(opt, 1, { "CSM" });
 			//Item 2: Time
-			rtcc::AddTimeMEDItem(opt, 2, true, false, 1.0, 0.0, 0.0, 0.0);
+			rtcc::AddTimeMEDItem(opt, 2, true, false);
 			//Item 3: Star
 			rtcc::AddIntegerMEDItem(opt, 2, true, true, 1, 400, 1);
 			//Item 4: Matrix 1
-			rtcc::AddTextMEDItem(opt, 2, MAT);
+			rtcc::AddTextMEDItem(opt, 2, MAT, -1);
 			//Item 5: Matrix 2
-			rtcc::AddTextMEDItem(opt, 2, MAT);
+			rtcc::AddTextMEDItem(opt, 2, MAT, -1);
 			//Item 6: Matrix 2
-			rtcc::AddTextMEDItem(opt, 2, MAT);
+			rtcc::AddTextMEDItem(opt, 2, MAT, -1);
 
 			err = rtcc::GenericMEDProcessing(opt, data, out);
 			if (err)
@@ -27615,17 +27615,15 @@ void RTCC::EMGABMED(int type, std::string med, std::vector<std::string> data, in
 			}
 
 			//Set output from MED processing
-			double get;
 			unsigned star;
 			int mtx1, mtx2, mtx3;
 
-			get = out.Values[1].d;
 			star = (unsigned)out.Values[2].i;
 			mtx1 = out.Values[3].i + 1;
 			mtx2 = out.Values[4].i + 1;
 			mtx3 = out.Values[5].i + 1;
 			
-			EZGSTMED.GMT = GMTfromGET(get);
+			EZGSTMED.GMT = GMTfromGET(out.Values[1].d);
 			EZGSTMED.StartingStar = star;
 			EZGSTMED.MTX1 = mtx1;
 			EZGSTMED.MTX2 = mtx2;
@@ -27670,9 +27668,6 @@ void RTCC::EMGABMED(int type, std::string med, std::vector<std::string> data, in
 				//DMT
 				refs1 = 5;
 
-				//DMT
-				opt.clear();
-
 				//Item 3.1: Maneuver number
 				rtcc::AddIntegerMEDItem(opt, 1, true, true, 1, 15);
 				//Item 3.2: Matrix
@@ -27686,20 +27681,20 @@ void RTCC::EMGABMED(int type, std::string med, std::vector<std::string> data, in
 					param = out.errorItem;
 					return;
 				}
-
+				//Maneuver number
 				man = out.Values[2].i;
-				switch (out.Values[3].i)
+				//REFSMMAT code
+				if (out.Values[3].i == 8)
 				{
-				case 0:	refs2 = RTCC_REFSMMAT_TYPE_CUR; break;
-				case 1:	refs2 = RTCC_REFSMMAT_TYPE_PCR; break;
-				case 2:	refs2 = RTCC_REFSMMAT_TYPE_TLM; break;
-				case 3:	refs2 = RTCC_REFSMMAT_TYPE_OST; break;
-				case 4:	refs2 = RTCC_REFSMMAT_TYPE_MED; break;
-				case 5:	refs2 = RTCC_REFSMMAT_TYPE_DMT; break;
-				case 6:	refs2 = RTCC_REFSMMAT_TYPE_DOD; break;
-				case 7:	refs2 = RTCC_REFSMMAT_TYPE_LCV; break;
-				case 8:	refs2 = 100; break;
+					//DES
+					refs2 = 100;
 				}
+				else
+				{
+					//Others
+					refs2 = refs2 = out.Values[3].i + 1;
+				}
+				//Heads up/down flag
 				if (out.Values[4].i == 0)
 				{
 					headsup = true;
@@ -27719,7 +27714,7 @@ void RTCC::EMGABMED(int type, std::string med, std::vector<std::string> data, in
 			{
 				//DOM, DOS, REP, REM
 				refs1 = 6;
-				refs2 = out.Values[2].i;
+				refs2 = out.Values[1].i;
 			}			
 
 			EMSGSUPP(1, refs1, refs2, man, headsup);
@@ -27754,26 +27749,24 @@ void RTCC::EMGABMED(int type, std::string med, std::vector<std::string> data, in
 				return;
 			}
 
-			unsigned j;
-			for (unsigned i = 0; i < 12; i++)
+			for (unsigned i = 1; i < 13; i++)
 			{
-				j = i + 1;
-				if (out.Ignored[j] == false)
+				if (out.Ignored[i] == false)
 				{
-					switch (j)
+					switch (i)
 					{
-					case 0: EZJGSTTB.SXT_STAR[0] = out.Values[j].i; break;
-					case 1: EZJGSTTB.SXT_SFT_INP[0] = out.Values[j].d; break;
-					case 2: EZJGSTTB.SXT_TRN_INP[0] = out.Values[j].d; break;
-					case 3: EZJGSTTB.SXT_STAR[1] = out.Values[j].i; break;
-					case 4: EZJGSTTB.SXT_SFT_INP[1] = out.Values[j].d; break;
-					case 5: EZJGSTTB.SXT_TRN_INP[1] = out.Values[j].d; break;
-					case 6: EZJGSTTB.Att[0].x = out.Values[j].d; break;
-					case 7: EZJGSTTB.Att[0].y = out.Values[j].d; break;
-					case 8: EZJGSTTB.Att[0].z = out.Values[j].d; break;
-					case 9: EZJGSTTB.Att[1].x = out.Values[j].d; break;
-					case 10: EZJGSTTB.Att[1].y = out.Values[j].d; break;
-					case 11: EZJGSTTB.Att[1].z = out.Values[j].d; break;
+					case 1: EZJGSTTB.SXT_STAR[0] = out.Values[i].i; break;
+					case 2: EZJGSTTB.SXT_SFT_INP[0] = out.Values[i].d; break;
+					case 3: EZJGSTTB.SXT_TRN_INP[0] = out.Values[i].d; break;
+					case 4: EZJGSTTB.SXT_STAR[1] = out.Values[i].i; break;
+					case 5: EZJGSTTB.SXT_SFT_INP[1] = out.Values[i].d; break;
+					case 6: EZJGSTTB.SXT_TRN_INP[1] = out.Values[i].d; break;
+					case 7: EZJGSTTB.Att[0].x = out.Values[i].d; break;
+					case 8: EZJGSTTB.Att[0].y = out.Values[i].d; break;
+					case 9: EZJGSTTB.Att[0].z = out.Values[i].d; break;
+					case 10: EZJGSTTB.Att[1].x = out.Values[i].d; break;
+					case 11: EZJGSTTB.Att[1].y = out.Values[i].d; break;
+					case 12: EZJGSTTB.Att[1].z = out.Values[i].d; break;
 					}
 				}
 			}
@@ -27813,7 +27806,7 @@ void RTCC::EMGABMED(int type, std::string med, std::vector<std::string> data, in
 			//Item 2: Position
 			rtcc::AddIntegerMEDItem(opt, 2, true, true, 1, 400, 0);
 
-			err = rtcc::GenericMEDProcessing(opt, data, out, 0, 1);
+			err = rtcc::GenericMEDProcessing(opt, data, out);
 			if (err)
 			{
 				param = out.errorItem;
@@ -27861,7 +27854,7 @@ void RTCC::EMGABMED(int type, std::string med, std::vector<std::string> data, in
 					//Item 5.3: Height
 					rtcc::AddDoubleMEDItem(opt, 1, false, false, 0.3048);
 
-					err = rtcc::GenericMEDProcessing(opt, data, out, 2, 3);
+					err = rtcc::GenericMEDProcessing(opt, data, out, 4, 6);
 					if (err)
 					{
 						param = out.errorItem;
@@ -27941,11 +27934,11 @@ void RTCC::EMGABMED(int type, std::string med, std::vector<std::string> data, in
 				//Item 3.1: Maneuver number
 				rtcc::AddIntegerMEDItem(opt, 1, true, true, 1, 15);
 				//Item 3.2: Matrix
-				rtcc::AddTextMEDItem(opt, 1, { "CUR", "PCR", "TLM", "OST", "MED", "DMT", "DOD", "LCV", "AGS", "DES", "DOK" });
+				rtcc::AddTextMEDItem(opt, 1, { "CUR", "PCR", "TLM", "OST", "MED", "DMT", "DOD", "LCV", "AGS", "DOK", "DES" });
 				//Item 3.3: Heads up or down
 				rtcc::AddTextMEDItem(opt, 1, { "U", "D" });
 
-				err = rtcc::GenericMEDProcessing(opt, data, out, 2, 3);
+				err = rtcc::GenericMEDProcessing(opt, data, out, 2, 4);
 				if (err)
 				{
 					param = out.errorItem;
@@ -27955,22 +27948,20 @@ void RTCC::EMGABMED(int type, std::string med, std::vector<std::string> data, in
 				unsigned man;
 				int refs;
 				bool headsup;
-
+				//Maneuver number
 				man = (unsigned)out.Values[2].i;
-				switch (out.Values[3].i)
+				//REFSMMAT code
+				if (out.Values[3].i == 10)
 				{
-				case 0:	refs = RTCC_REFSMMAT_TYPE_CUR; break;
-				case 1:	refs = RTCC_REFSMMAT_TYPE_PCR; break;
-				case 2:	refs = RTCC_REFSMMAT_TYPE_TLM; break;
-				case 3:	refs = RTCC_REFSMMAT_TYPE_OST; break;
-				case 4:	refs = RTCC_REFSMMAT_TYPE_MED; break;
-				case 5:	refs = RTCC_REFSMMAT_TYPE_DMT; break;
-				case 6:	refs = RTCC_REFSMMAT_TYPE_DOD; break;
-				case 7:	refs = RTCC_REFSMMAT_TYPE_LCV; break;
-				case 8:	refs = RTCC_REFSMMAT_TYPE_AGS; break;
-				case 9:	refs = 100; break;
-				case 10:refs = RTCC_REFSMMAT_TYPE_DOK; break;
+					//DES
+					refs = 100;
 				}
+				else
+				{
+					//Others
+					refs = out.Values[3].i + 1;
+				}
+				//Heads up/down flag
 				if (out.Values[4].i == 0)
 				{
 					headsup = true;
@@ -36794,7 +36785,7 @@ void RTCC::EMSGSUPP(int QUEID, int refs, int refs2, unsigned man, bool headsup)
 		//DMT
 		else if (refs == 5)
 		{
-			if (refs2 < 0)
+			if (refs2 <= 0)
 			{
 				EMGPRINT("EMSGSUPP", 1);
 				return;
@@ -36908,7 +36899,7 @@ void RTCC::EMSLSUPP(int QUEID, int refs, int refs2, unsigned man, bool headsup)
 		//DMT
 		else if (refs == 5)
 		{
-			if (refs2 < 0)
+			if (refs2 <= 0)
 			{
 				EMGPRINT("EMSLSUPP", 1);
 				return;
