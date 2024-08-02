@@ -3408,7 +3408,8 @@ int ARCore::subThread()
 	break;
 	case 10: //Lunar Descent Planning Processor
 	{
-		SV sv;
+		EphemerisData sv;
+		double W_LM;
 
 		if (GC->MissionPlanningActive)
 		{
@@ -3429,11 +3430,7 @@ int ARCore::subThread()
 				Result = DONE;
 				break;
 			}
-
-			sv.R = EPHEM.R;
-			sv.V = EPHEM.V;
-			sv.MJD = OrbMech::MJDfromGET(EPHEM.GMT, GC->rtcc->GetGMTBase());
-			sv.gravref = GC->rtcc->GetGravref(EPHEM.RBI);
+			W_LM = 0.0; //TBD
 		}
 		else
 		{
@@ -3454,16 +3451,18 @@ int ARCore::subThread()
 				break;
 			}
 
-			sv = GC->rtcc->StateVectorCalc(v);
-		}
-
-		if (!GC->rtcc->LunarDescentPlanningProcessor(sv))
-		{
-			if (GC->rtcc->med_k16.Mode != 7)
+			sv = GC->rtcc->StateVectorCalcEphem(v);
+			if (GC->rtcc->pLM)
 			{
-				GC->rtcc->CZTDTGTU.GETTD = GC->rtcc->PZLDPDIS.PD_GETTD;
+				W_LM = GC->rtcc->pLM->GetMass();
+			}
+			else
+			{
+				W_LM = 0.0;
 			}
 		}
+
+		GC->rtcc->LunarDescentPlanningProcessor(sv, W_LM);
 
 		Result = DONE;
 	}
