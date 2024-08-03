@@ -1814,7 +1814,7 @@ void LDPP::OutputCalculations()
 		outp.DeltaV_LVLH[ii] = DeltaV_LVLH[ii];
 		outp.T_M[ii] = t_M[ii];
 		outp.sv_before[ii] = LoadElements(ii, true);
-		outp.V_after[ii] = LDPP_SV_E[ii][1][0];
+		outp.V_after[ii] = LDPP_SV_E[ii][1][1];
 	}
 	if (opt.MODE == 7)
 	{
