@@ -796,8 +796,8 @@ void Saturn::initSaturn()
 
 	agc.ControlVessel(this);
 	imu.SetVessel(this, false);
-	dsky.Init(&LightingNumIntLMDCCB, &CMCDCBusFeeder, &NumericRotarySwitch);
-	dsky2.Init(&LightingNumIntLEBCB, &CMCDCBusFeeder, &Panel100NumericRotarySwitch);
+	dsky.Init(&LightingNumIntLMDCCB, &CMCDCBusFeeder, &NumericRotarySwitch, &IntegralRotarySwitch, NULL, NULL);
+	dsky2.Init(&LightingNumIntLEBCB, &CMCDCBusFeeder, &Panel100NumericRotarySwitch, &Panel100IntegralRotarySwitch, NULL, NULL);
 
 	//
 	// Configure SECS.
@@ -1557,6 +1557,10 @@ void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 	//
 
 	Timestep(simt, simdt, mjd);
+
+	if (oapiGetFocusObject() == GetHandle()) {
+		dsky.SendNetworkPacketDSKY();
+	}
 
 	sprintf(buffer, "End time(0) %lld", time(0)); 
 	TRACE(buffer);
@@ -2797,7 +2801,9 @@ void Saturn::GetScenarioState (FILEHANDLE scn, void *vstatus)
 	//
 
 	agc.SetMissionInfo(pMission->GetCMCVersion(), PayloadName);
-
+	imu.SetDriftRates(pMission->GetCM_IMU_Drift());
+	imu.SetPIPABias(pMission->GetCM_PIPA_Bias());
+	imu.SetPIPAScale(pMission->GetCM_PIPA_Scale());
 	secs.SetSaturnType(SaturnType);
 
 	//
@@ -4901,6 +4907,14 @@ void Saturn::ConnectTunnelToCabinVent()
 h_Pipe* Saturn::GetCSMO2Hose()
 {
 	return (h_Pipe*)Panelsdk.GetPointerByString("HYDRAULIC:CSMTOLMO2HOSE");
+}
+
+void Saturn::ConnectCSMO2Hose()
+{
+	if (ForwardHatch.IsOpen())
+	{
+		lemECSConnector.ConnectCSMO2Hose();
+	}
 }
 
 bool Saturn::GetLMDesBatLVOn()

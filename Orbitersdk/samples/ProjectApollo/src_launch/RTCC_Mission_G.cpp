@@ -1083,7 +1083,7 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 		med_k16.GETTH2 = med_k16.GETTH3 = med_k16.GETTH4 = med_k16.GETTH1;
 		med_k16.DesiredHeight = 60.0*1852.0;
 
-		LunarDescentPlanningProcessor(sv);
+		LunarDescentPlanningProcessor(ConvertSVtoEphemData(sv), 0.0);
 
 		PoweredFlightProcessor(sv, PZLDPDIS.GETIG[0], RTCC_ENGINETYPE_CSMSPS, WeightsTable.LMAscWeight + WeightsTable.LMDscWeight, PZLDPDIS.DVVector[0] * 0.3048, true, P30TIG, dV_LVLH);
 
@@ -1135,7 +1135,7 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 		med_k16.Sequence = 1;
 		med_k16.GETTH1 = med_k16.GETTH2 = med_k16.GETTH3 = med_k16.GETTH4 = calcParams.LOI + 25.0*3600.0;
 
-		LunarDescentPlanningProcessor(sv);
+		LunarDescentPlanningProcessor(ConvertSVtoEphemData(sv), 0.0);
 
 		calcParams.DOI = GETfromGMT(PZLDPELM.sv_man_bef[0].GMT);
 		calcParams.PDI = PZLDPDIS.PD_GETIG;
@@ -1160,10 +1160,10 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 		landmarkopt.lat[0] = 1.243*RAD;
 		landmarkopt.LmkTime[0] = calcParams.LOI + 22.5*3600.0;
 		landmarkopt.lng[0] = 23.688*RAD;
-		landmarkopt.sv0 = sv;
+		landmarkopt.sv0 = ConvertSVtoEphemData(sv);
 		landmarkopt.entries = 1;
 
-		LandmarkTrackingPAD(&landmarkopt, *form);
+		LandmarkTrackingPAD(landmarkopt, *form);
 
 		AGCStateVectorUpdate(buffer1, sv, true);
 		AGCDesiredREFSMMATUpdate(buffer2, REFSMMAT);
@@ -1320,7 +1320,7 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 		med_k16.Sequence = 1;
 		med_k16.GETTH1 = med_k16.GETTH2 = med_k16.GETTH3 = med_k16.GETTH4 = calcParams.LOI + 25.0*3600.0;
 
-		LunarDescentPlanningProcessor(sv);
+		LunarDescentPlanningProcessor(ConvertSVtoEphemData(sv), 0.0);
 
 		calcParams.DOI = GETfromGMT(PZLDPELM.sv_man_bef[0].GMT);
 		calcParams.PDI = PZLDPDIS.PD_GETIG;
@@ -1525,11 +1525,11 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 	case 64: //LM ACQUISITION TIME
 	{
 		LMARKTRKPADOpt opt;
-		SV sv0;
+		EphemerisData sv0;
 
 		AP11LMARKTRKPAD * form = (AP11LMARKTRKPAD *)pad;
 
-		sv0 = StateVectorCalc(calcParams.src);
+		sv0 = StateVectorCalcEphem(calcParams.src);
 
 		opt.sv0 = sv0;
 
@@ -1562,7 +1562,7 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 			opt.entries = 1;
 		}
 
-		LandmarkTrackingPAD(&opt, *form);
+		LandmarkTrackingPAD(opt, *form);
 	}
 	break;
 	case 170: //PDI2 PAD
@@ -1582,7 +1582,7 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 		med_k16.Sequence = 1;
 		med_k16.GETTH1 = med_k16.GETTH2 = med_k16.GETTH3 = med_k16.GETTH4 = calcParams.LOI + 25.0*3600.0;
 
-		LunarDescentPlanningProcessor(sv);
+		LunarDescentPlanningProcessor(ConvertSVtoEphemData(sv), 0.0);
 
 		calcParams.PDI = PZLDPDIS.PD_GETIG;
 		CZTDTGTU.GETTD = PZLDPDIS.PD_GETTD;
@@ -1607,7 +1607,7 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 		opt.sv0 = sv;
 		opt.t_land = CZTDTGTU.GETTD;
 
-		PDI_PAD(&opt, *form);
+		PDI_PAD(opt, *form);
 	}
 	break;
 	case 71: //PDI ABORT PAD
@@ -2000,15 +2000,19 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 
 		AP10CSIPADOpt opt;
 
+		//Use nominal AGS K-Factor for now
+		SystemParameters.MCGZSS = SystemParameters.MCGZSL + 90.0;
+
 		opt.dV_LVLH = calcParams.DVSTORE1;
 		opt.enginetype = RTCC_ENGINETYPE_LMRCSPLUS4;
-		opt.KFactor = 90.0*3600.0;
 		opt.REFSMMAT = GetREFSMMATfromAGC(&mcc->lm->agc.vagc, false);
-		opt.sv0 = calcParams.SVSTORE1;
+		opt.sv0 = ConvertSVtoEphemData(calcParams.SVSTORE1);
 		opt.t_CSI = calcParams.CSI;
 		opt.t_TPI = calcParams.TPI;
+		opt.WeightsTable.CC[RTCC_CONFIG_A] = true;
+		opt.WeightsTable.ConfigWeight = opt.WeightsTable.LMAscWeight = calcParams.SVSTORE1.mass;
 
-		AP10CSIPAD(&opt, *form);
+		AP10CSIPAD(opt, *form);
 		form->type = 1;
 	}
 	break;
@@ -2146,7 +2150,7 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 
 		GZGENCSN.LDPPAzimuth = 0.0;
 
-		LunarDescentPlanningProcessor(sv);
+		LunarDescentPlanningProcessor(ConvertSVtoEphemData(sv), 0.0);
 
 		PoweredFlightProcessor(sv, PZLDPDIS.GETIG[0], RTCC_ENGINETYPE_CSMSPS, 0.0, PZLDPDIS.DVVector[0] * 0.3048, true, TimeofIgnition, DeltaV_LVLH);
 
@@ -2390,15 +2394,19 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 
 		AP10CSIPADOpt opt;
 
+		//Use nominal AGS K-Factor for now
+		SystemParameters.MCGZSS = SystemParameters.MCGZSL + 120.0;
+
 		opt.dV_LVLH = calcParams.DVSTORE1;
 		opt.enginetype = RTCC_ENGINETYPE_LMRCSPLUS4;
-		opt.KFactor = 120.0*3600.0;
 		opt.REFSMMAT = EZJGMTX3.data[RTCC_REFSMMAT_TYPE_LLD - 1].REFSMMAT;
-		opt.sv0 = calcParams.SVSTORE1;
+		opt.sv0 = ConvertSVtoEphemData(calcParams.SVSTORE1);
 		opt.t_CSI = calcParams.CSI;
 		opt.t_TPI = calcParams.TPI;
+		opt.WeightsTable.CC[RTCC_CONFIG_A] = true;
+		opt.WeightsTable.ConfigWeight = opt.WeightsTable.LMAscWeight = calcParams.SVSTORE1.mass;
 
-		AP10CSIPAD(&opt, *form);
+		AP10CSIPAD(opt, *form);
 		form->type = 1;
 	}
 	break;
@@ -2682,7 +2690,7 @@ bool RTCC::CalculationMTP_G(int fcn, LPVOID &pad, char * upString, char * upDesc
 		entopt.REFSMMAT = REFSMMAT;
 		entopt.sv0 = sv;
 
-		LunarEntryPAD(&entopt, *form);
+		LunarEntryPAD(entopt, *form);
 		sprintf(form->Area[0], "MIDPAC");
 		if (entopt.direct == false)
 		{

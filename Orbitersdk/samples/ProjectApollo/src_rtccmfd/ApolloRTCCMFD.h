@@ -51,6 +51,19 @@ struct MEDInputPage
 	std::string Title;			//Title displayed on MFD page
 	std::string MEDCode;
 	std::vector<MEDInput> table;
+	int display = -1;
+};
+
+struct RTCCMFDData
+{
+	int screen = 0;
+	int subscreen = 0;
+	int marker = 0;
+	int markermax = 0;
+	UINT ID = 0;
+	std::string MEDCode;
+	bool IsCSM = false;
+	bool EnableCalculation;
 };
 
 class ApolloRTCCMFD: public MFD2 {
@@ -64,12 +77,19 @@ public:
 	bool ConsumeKeyBuffered(DWORD key);
 	void WriteStatus(FILEHANDLE scn) const;
 	void ReadStatus(FILEHANDLE scn);
-	void StoreStatus(void) const;
 	void RecallStatus(void);
 
 	void Text(oapi::Sketchpad *skp, std::string message, int x, int y, int xmax = 1024, int ymax = 1024);
 
 	void SelectPage(int page);
+
+	//Pages
+
+	//Display Formatting Language functions
+	void DFLBackgroundSlide(oapi::Sketchpad *skp, unsigned display);
+	void DFLDynamicData(oapi::Sketchpad *skp, unsigned display);
+
+	//Inputs
 	void menuTIChaserVectorTime();
 	void menuTITargetVectorTime();
 	void menuTITimeIncrement();
@@ -93,6 +113,7 @@ public:
 	void CycleThroughVessels(VESSEL **v) const;
 	void menuSLVLaunchTargetingPad();
 	void menuSLVLaunchTargeting();
+	void menuSLVInsertionSVtoMPT();
 	void menuSLVLaunchUplink();
 	void menuVoid();
 	void menuSetLambertPage();
@@ -132,7 +153,8 @@ public:
 	void lambertcalc();
 	void Angle_Display(char *Buff, double angle, bool DispPlus = true);
 	void GET_Display(char * Buff, double time, bool DispGET = true);
-	void GET_Display2(char * Buff, double time);
+	void GMT_Display2(char * Buff, double time) const;
+	void GET_Display2(char * Buff, double time) const;
 	void GET_Display3(char* Buff, double time);
 	void GET_Display4(char* Buff, double time);
 	void GET_Display_HHMM(char *Buff, double time);
@@ -200,6 +222,7 @@ public:
 	void menuCycleTwoImpulseOption();
 	void menuSwitchHeadsUp();
 	void menuCalcManPAD();
+	void set_ManPADMPTInput(int mpt, int num);
 	void menuSetManPADPage();
 	void menuCalcEntryPAD();
 	void menuSetEntryPADPage();
@@ -299,6 +322,7 @@ public:
 	void menuLOICalc();
 	void menuSetLandmarkTrkPage();
 	void menuSetLmkTime();
+	void menuSetLmkElevation();
 	void menuSetLmkLat();
 	void menuSetLmkLng();
 	void menuLmkUseLandingSite();
@@ -334,10 +358,12 @@ public:
 	void menuSetLDPPVectorTime();
 	void menuLSRadius();
 	void menuSetLDPPDwellOrbits();
+	void menuSetLDPPLandingSiteOffset();
 	void menuSetLDPPDescentFlightArc();
 	void menuSetLDPPDescIgnHeight();
 	void cycleLDPPPoweredDescSimFlag();
 	void menuSetLDPPPoweredDescTime();
+	void menuLDPPSaveTLAND();
 	void menuLDPPCalc();
 	void menuSetDescPlanCalcPage();
 	void menuTranslunarPage();
@@ -608,7 +634,6 @@ public:
 	void menuSetDescPlanTablePage();
 	void menuSetLDPPAzimuth();
 	void menuSetLDPPDescentFlightTime();
-	void set_LDPPDescentFlightTime(double dt);
 	void cycleLDPPVehicle();
 	void menuSetLDPPDesiredHeight();
 	void menuLDPPThresholdTime1();
@@ -838,6 +863,7 @@ public:
 	void menuAGOPSaveREFSMMAT();
 	void menuSetRTACFPage();
 	void CycleCSMOrLMSelection();
+	void CycleEnableCalculation();
 
 	void SetMEDInputPageP13();
 	void SetMEDInputPageP14();
@@ -845,6 +871,8 @@ public:
 	void menuMEDInputCalc();
 	void menuInputMEDData();
 	void set_MEDData(char *str);
+	void menuGenericGoToDisplay();
+	void menuReturnToMEDInput();
 
 	void GenericGETInput(double *get, char *message);
 	void GenericDoubleInput(double *val, char* message, double factor = 1.0);
@@ -870,14 +898,11 @@ protected:
 	int marker;
 	int markermax;
 	int status; //Page dependent status, reset to 0 when new page is entered
-	static struct ScreenData {
-		int screen;
-		int subscreen;
-		int marker;
-		int markermax;
-	} screenData;
 private:
+	void SaveState();
+	void LoadState();
 
+	UINT ID;
 	ARCore* G;
 	AR_GCore* GC;
 	ApolloRTCCMFDButtons coreButtons;
@@ -885,6 +910,7 @@ private:
 	RTCCMFDInputBoxData tempData;
 
 	bool IsCSM; //Chooses if the CSM or LM vessel in the RTCC is selected
+	bool EnableCalculation; //Generic variable for switch on/off a display related calculation
 	int ErrorMessage;
 	MEDInputPage MEDInputData;
 
