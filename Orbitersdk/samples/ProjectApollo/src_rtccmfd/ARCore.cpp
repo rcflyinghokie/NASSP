@@ -3424,8 +3424,7 @@ int ARCore::subThread()
 				gmt = GC->rtcc->RTCCPresentTimeGMT();
 			}
 
-			EphemerisData EPHEM;
-			if (GC->rtcc->EMSFFV(gmt, GC->rtcc->med_k16.Vehicle, EPHEM))
+			if (GC->rtcc->EMSFFV(gmt, GC->rtcc->med_k16.Vehicle, sv))
 			{
 				Result = DONE;
 				break;

@@ -2626,9 +2626,9 @@ public:
 	//Central Manual Entry Device Decoder
 	bool GMGMED(char *str);
 	//MED Decoder for G, A and B MEDs
-	int EMGABMED(int type, std::string med, std::vector<std::string> data);
+	void EMGABMED(int type, std::string med, std::vector<std::string> data, int &err, unsigned &param);
 	//MED Decoder for C MEDs
-	int CMRMEDIN(std::string med, std::vector<std::string> data);
+	void CMRMEDIN(std::string med, std::vector<std::string> data, int &err, unsigned &param);
 	//'F' MED Module
 	int PMQAFMED(std::string med);
 	int PMQAFMED(std::string med, std::vector<std::string> data);
@@ -5026,7 +5026,6 @@ protected:
 	bool PMMXFRDeleteOption(int L, double GMTI);
 	int PMMMCDCallEMSMISS(EphemerisData sv0, double GMTI, EphemerisData &sv1);
 	int PMSVCTAuxVectorFetch(int L, double T_F, EphemerisData &sv);
-	bool MEDTimeInputHHMMSS(std::string vec, double &hours);
 public:
 	EphemerisData ConvertSVtoEphemData(SV sv);
 	SV ConvertEphemDatatoSV(EphemerisData sv, double mass = 0.0);

@@ -192,7 +192,7 @@ void LDPP::Mode1_1()
 		if (opt.IDO == 1)
 		{
 			//Circularization at an apsis maneuver
-			dt = opt.TH[1] - sv_CSM.GMT;
+			dt = max(0.0, opt.TH[1] - sv_CSM.GMT);
 			sv_CSM = coast(sv_CSM, dt);
 			for (int iii = 0; iii < 2; iii++)
 			{
@@ -507,7 +507,7 @@ void LDPP::Mode3()
 	//Save maneuver
 	sv_CSM = SaveElements(sv_CSM, 0, DV);
 	//Advance to next threshold time
-	dt = opt.TH[1] - sv_CSM.GMT;
+	dt = max(0.0, opt.TH[1] - sv_CSM.GMT);
 	sv_CSM = coast(sv_CSM, dt);
 
 	//Advance to desired apsis
@@ -641,6 +641,7 @@ void LDPP::Mode5()
 
 	TH = 0.0;
 	iter = 0;
+	stop = false;
 
 	do
 	{
@@ -674,7 +675,7 @@ void LDPP::Mode5()
 		sv_CSM = SaveElements(sv_CSM, 0, DV);
 
 		//Maneuver 2
-		dt = opt.TH[1] - sv_CSM.GMT;
+		dt = max(0.0, opt.TH[1] - sv_CSM.GMT);
 		sv_CSM = coast(sv_CSM, dt);
 		if (opt.IDO == -1)
 		{
@@ -715,7 +716,7 @@ void LDPP::Mode5()
 		sv_CSM = SaveElements(sv_CSM, 1, DV);
 
 		//Maneuver 3
-		dt = opt.TH[2] - sv_CSM.GMT;
+		dt = max(0.0, opt.TH[2] - sv_CSM.GMT);
 		sv_CSM = coast(sv_CSM, dt);
 		if (opt.IDO == 1)
 		{
@@ -1722,10 +1723,10 @@ int LDPP::DOIManeuver(int i_DOI, bool Integrated)
 
 	//DOI
 	//Advance to threshold
-	dt = opt.TH[3] - sv_CSM.GMT;
+	dt = max(0.0, opt.TH[3] - sv_CSM.GMT);
 	sv_CSM = coast(sv_CSM, dt, Integrated);
 	//Calculate DOI time
-	LLTPR(opt.TH[3], sv_CSM, sv_DOI, DV_apo, t_IGN, t_TD, Integrated);
+	LLTPR(sv_CSM.GMT, sv_CSM, sv_DOI, DV_apo, t_IGN, t_TD, Integrated);
 	t_DOI = sv_DOI.GMT;
 	//Assign to CSM
 	sv_CSM = sv_DOI;
@@ -1814,7 +1815,7 @@ void LDPP::OutputCalculations()
 		outp.DeltaV_LVLH[ii] = DeltaV_LVLH[ii];
 		outp.T_M[ii] = t_M[ii];
 		outp.sv_before[ii] = LoadElements(ii, true);
-		outp.V_after[ii] = LDPP_SV_E[ii][1][0];
+		outp.V_after[ii] = LDPP_SV_E[ii][1][1];
 	}
 	if (opt.MODE == 7)
 	{
