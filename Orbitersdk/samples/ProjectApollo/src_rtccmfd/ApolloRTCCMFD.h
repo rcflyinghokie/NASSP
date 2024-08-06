@@ -789,11 +789,8 @@ public:
 	void menuSetASTSiteOrType();
 	void set_ASTSiteOrType(char *site);
 	void menuASTVectorTime();
-	void set_ASTVectorTime(double get);
 	void menuASTAbortTime();
-	void set_ASTAbortTime(double get);
 	void menuASTLandingTime();
-	void set_ASTLandingTime(double get);
 	void menuSetAbortScanTablePage();
 	void menuASTTMAXandDVInput();
 	bool set_ASTTMaxandDV(char *str);

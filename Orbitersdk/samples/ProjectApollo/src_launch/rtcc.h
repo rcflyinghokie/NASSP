@@ -4099,10 +4099,10 @@ public:
 
 		//Block 12
 		std::string RTESite = "No Site!";
-		double RTEVectorTime;
-		double RTET0Min; //Time of abort or minimum time
-		double RTET0Max; //Maximum time
-		double RTETimeOfLanding;
+		double RTEVectorTime; //Vector time in GMT (hrs)
+		double RTET0Min; //Time of abort or minimum time in GMT (hrs)
+		double RTET0Max; //Maximum time in GMT (hrs)
+		double RTETimeOfLanding; //Landing time in GMT (hrs)
 		double RTEUADVMax;
 		double RTEPTPMissDistance;
 		double RTEInclination;
