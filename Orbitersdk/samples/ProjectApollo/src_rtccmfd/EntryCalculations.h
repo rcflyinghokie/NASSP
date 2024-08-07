@@ -575,8 +575,6 @@ struct RTEMoonInputsArray
 	int SMODEI = 0;
 	//An array of premaneuver states spaced along the preabort trajectory
 	EphemerisDataTable2 STAVEC;
-	//Reference MJD, midnight before liftoff
-	double GMTBASE = 0.0;
 	//Sidereal angle
 	double alpha_SID0 = 0.0;
 	//Maximum allowable landing time in GMT; this is used in tradeoff displays and the UA submode
@@ -621,21 +619,31 @@ class RTEMoon : public RTCCModule
 {
 public:
 	RTEMoon(RTCC *r);
-	void READ(const RTEMoonInputsArray &opt);
+	//Moon-Centered Return-to-Earth Subprocessor main control routine
 	bool MASTER(const RTEMoonInputsArray &opt);
-	
-	void MCSSLM(bool &REP, double t_z_apo);
 
-	int precision;
+	//OUTPUTS:
+	//Actual landing coordinates
 	double EntryLatcor, EntryLngcor;
-	VECTOR3 DV, Entry_DV;
-	VECTOR3 R_EI, V_EI;
-	double EntryAng;
-	VECTOR3 Vig_apo;
-	double ReturnInclination;
-	double FlybyPeriAlt;
-	double t_R, t_Landing;
+	//State vector at ignition
 	EphemerisData2 sv0;
+	//Velocity vector after the maneuver
+	VECTOR3 Vig_apo;
+	//Inertial Delta V vector
+	VECTOR3 DV;
+	//LVLH Delta V vector
+	VECTOR3 Entry_DV;
+	//Lunar flyby altitude
+	double FlybyPeriAlt;
+	//Reentry state
+	VECTOR3 R_EI, V_EI;
+	double t_R;
+	//Reentry flight-path angle
+	double EntryAng;
+	//Earth-centered return inclination (negative if azimuth is TBD)
+	double ReturnInclination;
+	//Splashdown time
+	double t_Landing;
 private:
 
 	struct RTEMoonSEARCHArray
@@ -662,8 +670,16 @@ private:
 		double dt;
 	};
 
+	//Read program inputs and transfers them to internal variables
+	void READ(const RTEMoonInputsArray &opt);
+
+	//PTP control logic
 	void MCSS();
+	//PTP accessibility logic
+	void MCSSLM(bool &REP, double t_z_apo);
+	//ATP control logic
 	bool CLL(double &i_r, double &INTER, bool &q_m, double &t_z, double &dv);
+	//UA control logic
 	bool MCUA(double &i_r, double &INTER, bool &q_m, double &t_z, double &dv);
 
 	VECTOR3 ThreeBodyAbort(VECTOR3 R_I, VECTOR3 V_I, double t_I, double t_EI, bool q_m, double Incl, double INTER, VECTOR3 &R_EI, VECTOR3 &V_EI);
@@ -679,7 +695,6 @@ private:
 	//double r_s; //Pseudostate sphere
 	double EntryLng;
 	double dlngapo, dtapo;
-	double GMTBASE;
 	double i_rmax, u_rmax;
 	//12 = PTP discrete, 14 = ATP discrete, 16 = UA discrete
 	//22 = PTP tradeoff, 24 = ATP tradeoff

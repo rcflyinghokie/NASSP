@@ -8064,10 +8064,10 @@ void RTCC::RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res)
 		tab.CC[0] = true;
 
 		inp.AnchorVector = sv3;
-		inp.EphemerisLeftLimitGMT = sv3.GMT - 3600.0;
-		inp.EphemerisRightLimitGMT = sv3.GMT + 3600.0;
+		inp.EphemerisLeftLimitGMT = sv3.GMT - 60.0*60.0; //Search +/- 1 hour from guess
+		inp.EphemerisRightLimitGMT = sv3.GMT + 60.0*60.0;
 		inp.DensityMultiplier = 0.0;
-		inp.MinEphemDT = 3.0*60.0;
+		inp.MinEphemDT = 60.0;
 		inp.MCIEphemerisIndicator = true;
 		inp.EphemerisBuildIndicator = true;
 		inp.ManCutoffIndicator = 0;
@@ -8092,7 +8092,6 @@ void RTCC::RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res)
 	}
 
 	arr.SMODEI = opt->SMODE;
-	arr.GMTBASE = GetGMTBase();
 	arr.alpha_SID0 = SystemParameters.MCLAMD;
 	arr.TZMINI = GMTfromGET(TZMINI);
 	arr.TZMAXI = 0.0; //TBD
@@ -8128,7 +8127,7 @@ void RTCC::RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res)
 	res->GET05G = res->GET400K + dt22;
 	res->RTGO = OrbMech::CMCEMSRangeToGo(SystemParameters.MAT_J2000_BRCS, R05G, OrbMech::MJDfromGET(res->GET05G, GETbase), res->latitude, res->longitude);
 	res->VIO = length(V05G);
-	res->precision = teicalc.precision;
+	res->precision = 1;
 	res->Incl = teicalc.ReturnInclination;
 	res->FlybyAlt = teicalc.FlybyPeriAlt;
 	res->solutionfound = true;
@@ -25629,7 +25628,7 @@ void RTCC::PMMREAST(int med, EphemerisData *sv)
 			inp.EphemerisLeftLimitGMT = PZREAP.RTET0Min*3600.0;
 			inp.EphemerisRightLimitGMT = PZREAP.RTET0Max*3600.0;
 			inp.DensityMultiplier = 0.0;
-			inp.MinEphemDT = 3.0*60.0;
+			inp.MinEphemDT = 60.0;
 			inp.MCIEphemerisIndicator = true;
 			inp.EphemerisBuildIndicator = true;
 			inp.ManCutoffIndicator = 0;
@@ -25654,7 +25653,6 @@ void RTCC::PMMREAST(int med, EphemerisData *sv)
 		}
 
 		arr.SMODEI = SMODE;
-		arr.GMTBASE = GetGMTBase();
 		arr.alpha_SID0 = SystemParameters.MCLAMD;
 		arr.TZMINI = TZMINI;
 		arr.TZMAXI = TZMAXI;

@@ -6384,7 +6384,6 @@ RTEMoon::RTEMoon(RTCC *r) : RTCCModule(r)
 	R_M = OrbMech::R_Moon;
 	r_r = R_E + 400000.0*0.3048;
 
-	precision = 1;
 	ReturnInclination = 0.0;
 	EntryLng = 0.0;
 	t_Landing = 0.0;
@@ -6394,7 +6393,6 @@ void RTEMoon::READ(const RTEMoonInputsArray &opt)
 {
 	double LETSGOF, CRITF;
 
-	GMTBASE = opt.GMTBASE;
 	alpha_SID0 = opt.alpha_SID0;
 	for (int i = 0; i < 10; i++)
 	{
@@ -6460,7 +6458,7 @@ bool RTEMoon::MASTER(const RTEMoonInputsArray &opt)
 	//0 = noncircumlunar, 1 = circumlunar
 	bool q_m;
 	//End of SEARCH routine
-	bool END;
+	bool END, LAST;
 	//Subroutine SEARCH array
 	RTEMoonSEARCHArray SEARCHArray;
 
@@ -6470,6 +6468,7 @@ bool RTEMoon::MASTER(const RTEMoonInputsArray &opt)
 	//Initialize input variables
 	ii = 0;
 	END = false;
+	LAST = false;
 
 	//Read program inputs
 	READ(opt);
@@ -6542,7 +6541,7 @@ bool RTEMoon::MASTER(const RTEMoonInputsArray &opt)
 		//If it is a discrete case, then the calculation is done
 		if (LETSGO == 1) break;
 
-		if (END == false)
+		if (LAST == false)
 		{
 			//Run search algorithm
 			SEARCH(SEARCHArray, dv);
@@ -6554,8 +6553,12 @@ bool RTEMoon::MASTER(const RTEMoonInputsArray &opt)
 				//No good solution
 				return false;
 			}
-			END = true;
+			LAST = true;
 			continue;
+		}
+		else
+		{
+			END = true;
 		}
 	} while (END == false);
 
@@ -6587,7 +6590,7 @@ bool RTEMoon::MASTER(const RTEMoonInputsArray &opt)
 
 	// Final Calculations
 	double sing, cosg, x2;
-	VECTOR3 i, j, k, N, H_EI_equ, R_peri, V_peri;
+	VECTOR3 i, j, k, N, H_EI_equ;
 	MATRIX3 Q_Xx;
 	j = unit(crossp(sv0.V, sv0.R));
 	k = unit(-sv0.R);
@@ -6607,8 +6610,10 @@ bool RTEMoon::MASTER(const RTEMoonInputsArray &opt)
 	H_EI_equ = unit(N);
 	ReturnInclination = -acos(H_EI_equ.z)*INTER;
 
-	OrbMech::timetoperi_integ(pRTCC->SystemParameters.AGCEpoch, sv0.R, Vig_apo, OrbMech::MJDfromGET(sv0.GMT, GMTBASE), pRTCC->GetGravref(hMoon), pRTCC->GetGravref(hMoon), R_peri, V_peri);
-	FlybyPeriAlt = length(R_peri) - R_M;
+	//Calculate flyby altitdue
+	double r_apo, r_peri;
+	OrbMech::periapo(sv0.R, Vig_apo, mu_M, r_apo, r_peri);
+	FlybyPeriAlt = r_peri - pRTCC->BZLAND.rad[0];
 
 	return true;
 }
@@ -7793,6 +7798,7 @@ RTEMoon_SEARCH_P7:
 	if (arr.J >= STAVEC.table.size())
 	{
 		arr.IPART = 5;
+		sv0 = arr.STAVEX[6]; //Not in document, restore best solution
 		return;
 	}
 	//Still searching for a local minimum in the state vector table?

@@ -9273,9 +9273,8 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			sprintf_s(Buffer, "%s", GC->rtcc->med_f76.Site.c_str());
 			skp->Text(1 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
 
-			skp->Text(1 * W / 16, 12 * H / 14, "TZ:", 3);
 			GET_Display(Buffer, GC->rtcc->med_f75_f77.T_Z, false);
-			skp->Text(3 * W / 16, 12 * H / 14, Buffer, strlen(Buffer));
+			skp->Text(1 * W / 16, 12 * H / 14, Buffer, strlen(Buffer));
 		}
 		else
 		{
@@ -9289,9 +9288,8 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 			if (GC->rtcc->med_f77.Site != "FCUA")
 			{
-				skp->Text(1 * W / 16, 12 * H / 14, "TZ:", 3);
 				GET_Display(Buffer, GC->rtcc->med_f75_f77.T_Z, false);
-				skp->Text(3 * W / 16, 12 * H / 14, Buffer, strlen(Buffer));
+				skp->Text(1 * W / 16, 12 * H / 14, Buffer, strlen(Buffer));
 			}
 		}
 	}
