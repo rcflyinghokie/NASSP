@@ -26383,6 +26383,14 @@ void RTCC::PMMREDIG(bool mpt)
 		{
 			MED.IRM = 3;
 		}
+		else if (med_f80.REFSMMAT == "REI")
+		{
+			MED.IRM = 4;
+		}
+		else if (med_f80.REFSMMAT == "DEI")
+		{
+			MED.IRM = 5;
+		}
 		else
 		{
 			return;
@@ -26867,6 +26875,21 @@ void RTCC::PMMPAB(const RTEDMEDData &MED, const RTEDASTData &AST, const RTEDSPMD
 		XSM = _V(RFS.m11, RFS.m12, RFS.m13);
 		YSM = _V(RFS.m21, RFS.m22, RFS.m23);
 		ZSM = _V(RFS.m31, RFS.m32, RFS.m33);
+	}
+	else if (MED.IRM == 4 || MED.IRM == 5)
+	{
+		//Reentry related REFSMMAT
+		//LVLH attitude: REI = 0,0,0. DEI = 0,180,0
+		if (MED.IRM == 4)
+		{
+			ZSM = unit(outarray.R_r);
+		}
+		else
+		{
+			ZSM = unit(-outarray.R_r);
+		}
+		YSM = unit(crossp(outarray.V_r, outarray.R_r));
+		XSM = crossp(YSM, ZSM);
 	}
 	else
 	{
