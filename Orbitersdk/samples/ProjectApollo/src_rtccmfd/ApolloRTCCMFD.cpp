@@ -6395,7 +6395,7 @@ void ApolloRTCCMFD::TwoImpulseOffset()
 
 void ApolloRTCCMFD::cycleVECDirOpt()
 {
-	if (G->VECdirection < 5)
+	if (G->VECdirection < 4)
 	{
 		G->VECdirection++;
 	}
@@ -6403,6 +6403,19 @@ void ApolloRTCCMFD::cycleVECDirOpt()
 	{
 		G->VECdirection = 0;
 	}
+}
+
+void ApolloRTCCMFD::menuVECPOINTSelectAttitude()
+{
+	if (G->VECdirection == 4)
+	{
+		GenericDouble2Input(&G->VECBodyVector.x, &G->VECBodyVector.y, "Select body yaw and pitch:", RAD, RAD);
+	}
+}
+
+void ApolloRTCCMFD::menuVECPOINTOmicron()
+{
+	GenericDoubleInput(&G->VECBodyVector.z, "Select omicron (SEF = 180, BEF = 0):", RAD);
 }
 
 void ApolloRTCCMFD::cycleVECPOINTOpt()
@@ -6425,9 +6438,9 @@ void ApolloRTCCMFD::vecbodydialogue()
 
 bool VECbodyInput(void *id, char *str, void *data)
 {
-	if (oapiGetGbodyByName(str) != NULL)
+	if (oapiGetObjectByName(str) != NULL)
 	{
-		((ApolloRTCCMFD*)data)->set_vecbody(oapiGetGbodyByName(str));
+		((ApolloRTCCMFD*)data)->set_vecbody(oapiGetObjectByName(str));
 		return true;
 	}
 	return false;

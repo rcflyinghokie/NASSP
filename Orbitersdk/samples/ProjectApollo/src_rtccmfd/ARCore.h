@@ -318,7 +318,8 @@ public:
 
 	//VECPOINT PAGE
 	int VECoption;		//0 = Point SC at body, 1 = Open hatch thermal control
-	int VECdirection;	//0 = +X, 1 = -X, 2 = +Y,3 = -Y,4 = +Z, 5 = -Z
+	int VECdirection;	//0 = +X, 1 = -X, 2 = Optics, 3 = SIM Bay, 4 = Selectable
+	VECTOR3 VECBodyVector; //Yaw, pitch for option 7 and Omicron
 	OBJHANDLE VECbody;	//handle for the desired body
 	VECTOR3 VECangles;	//IMU angles
 
