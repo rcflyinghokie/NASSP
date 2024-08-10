@@ -1821,30 +1821,30 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 				skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
 			}
 
-			if (G->VECdirection == 0)
+			switch (G->VECdirection)
 			{
+			case 0:
 				skp->Text(1 * W / 16, 8 * H / 14, "+X", 2);
-			}
-			else if (G->VECdirection == 1)
-			{
+				break;
+			case 1:
 				skp->Text(1 * W / 16, 8 * H / 14, "-X", 2);
+				break;
+			case 2:
+				skp->Text(1 * W / 16, 8 * H / 14, "Optics", 6);
+				break;
+			case 3:
+				skp->Text(1 * W / 16, 8 * H / 14, "SIM Bay", 7);
+				break;
+			default:
+				skp->Text(1 * W / 16, 8 * H / 14, "Selectable", 10);
+				sprintf(Buffer, "Y: %+07.2lf°", G->VECBodyVector.x*DEG);
+				skp->Text(1 * W / 16, 10 * H / 14, Buffer, strlen(Buffer));
+				sprintf(Buffer, "P: %+07.2lf°", G->VECBodyVector.y*DEG);
+				skp->Text(1 * W / 16, 11 * H / 14, Buffer, strlen(Buffer));
+				break;
 			}
-			else if (G->VECdirection == 2)
-			{
-				skp->Text(1 * W / 16, 8 * H / 14, "+Y", 2);
-			}
-			else if (G->VECdirection == 3)
-			{
-				skp->Text(1 * W / 16, 8 * H / 14, "-Y", 2);
-			}
-			else if (G->VECdirection == 4)
-			{
-				skp->Text(1 * W / 16, 8 * H / 14, "+Z", 2);
-			}
-			else if (G->VECdirection == 5)
-			{
-				skp->Text(1 * W / 16, 8 * H / 14, "-Z", 2);
-			}
+			sprintf(Buffer, "O: %+07.2lf°", G->VECBodyVector.z*DEG);
+			skp->Text(1 * W / 16, 12 * H / 14, Buffer, strlen(Buffer));
 		}
 
 		sprintf(Buffer, "%+07.2f R", G->VECangles.x*DEG);

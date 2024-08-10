@@ -354,6 +354,8 @@ public:
 	void cycleVECDirOpt();
 	void vecbodydialogue();
 	void set_vecbody(OBJHANDLE body);
+	void menuVECPOINTSelectAttitude();
+	void menuVECPOINTOmicron();
 	void menuVECPOINTCalc();
 	void menuSetLDPPVectorTime();
 	void menuLSRadius();

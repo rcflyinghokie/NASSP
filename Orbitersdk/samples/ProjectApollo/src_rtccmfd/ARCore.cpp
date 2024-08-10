@@ -705,6 +705,7 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	VECdirection = 0;
 	VECbody = NULL;
 	VECangles = _V(0, 0, 0);
+	VECBodyVector = _V(0, 0, 0);
 
 	TPI_Mode = 0;
 	dt_TPI_sunrise = 16.0*60.0;
@@ -2435,56 +2436,72 @@ void ARCore::VecPointCalc(bool IsCSM)
 
 		if (v == NULL) return;
 
-		VECTOR3 vPos, pPos, relvec, UX, UY, UZ, loc;
-		MATRIX3 M, M_R;
-		double p_T, y_T;
-		OBJHANDLE gravref = GC->rtcc->AGCGravityRef(v);
+		EphemerisData sv;
+		MATRIX3 MAT, REFSMMAT;
+		VECTOR3 POINTVSM, vPos, pPos, dPos, U_LOS, UNITY, SCAXIS, UTSA, UTSB, UTSAP, UTSBP;
+		double UTPIT, UTYAW, OMICRON;
 
-		p_T = 0;
-		y_T = 0;
-
-		if (VECdirection == 1)
+		if (IsCSM)
 		{
-			p_T = PI;
-			y_T = 0;
+			REFSMMAT = GC->rtcc->EZJGMTX1.data[0].REFSMMAT;
 		}
-		else if (VECdirection == 2)
+		else
 		{
-			p_T = 0;
-			y_T = PI05;
-		}
-		else if (VECdirection == 3)
-		{
-			p_T = 0;
-			y_T = -PI05;
-		}
-		else if (VECdirection == 4)
-		{
-			p_T = -PI05;
-			y_T = 0;
-		}
-		else if (VECdirection == 5)
-		{
-			p_T = PI05;
-			y_T = 0;
+			REFSMMAT = GC->rtcc->EZJGMTX3.data[0].REFSMMAT;
 		}
 
+		switch (VECdirection)
+		{
+		case 0: //+X
+			UTYAW = 0;
+			UTPIT = 0;
+			break;
+		case 1: //-X
+			UTYAW = 0;
+			UTPIT = PI;
+			break;
+		case 2: //Optics
+			UTYAW = 0;
+			UTPIT = -(PI05 - 0.5676353234);
+			break;
+		case 3: //SIM Bay
+			UTYAW = PI05;
+			UTPIT = 52.25*RAD;
+			break;
+		default: //Selectable
+			UTYAW = VECBodyVector.x;
+			UTPIT = VECBodyVector.y;
+			break;
+		}
+
+		//State vector used in calculation
+		sv = GC->rtcc->StateVectorCalcEphem(v);
+		POINTVSM = unit(crossp(sv.V, sv.R));
+
+		//Pointing vector
 		v->GetGlobalPos(vPos);
 		oapiGetGlobalPos(VECbody, &pPos);
-		v->GetRelativePos(gravref, loc);
+		dPos = pPos - vPos;
+		dPos = mul(GC->rtcc->SystemParameters.MAT_J2000_BRCS, _V(dPos.x, dPos.z, dPos.y));
+		U_LOS = unit(dPos);
 
-		relvec = unit(pPos - vPos);
-		relvec = mul(GC->rtcc->SystemParameters.MAT_J2000_BRCS, _V(relvec.x, relvec.z, relvec.y));
-		loc = mul(GC->rtcc->SystemParameters.MAT_J2000_BRCS, _V(loc.x, loc.z, loc.y));
+		//Artemis calculations
+		OMICRON = VECBodyVector.z;
+		UNITY = _V(0, 1, 0);
+		SCAXIS = _V(cos(UTYAW)*cos(UTPIT), sin(UTYAW)*cos(UTPIT), -sin(UTPIT));
 
-		UX = relvec;
-		UY = unit(crossp(UX, -loc));
-		UZ = unit(crossp(UX, crossp(UX, -loc)));
+		UTSAP = crossp(SCAXIS, UNITY);
+		if (length(UTSAP) == 0.0) return;
+		UTSAP = unit(UTSAP);
 
-		M_R = _M(UX.x, UX.y, UX.z, UY.x, UY.y, UY.z, UZ.x, UZ.y, UZ.z);
-		M = _M(cos(y_T)*cos(p_T), sin(y_T), -cos(y_T)*sin(p_T), -sin(y_T)*cos(p_T), cos(y_T), sin(y_T)*sin(p_T), sin(p_T), 0.0, cos(p_T));
+		POINTVSM = unit(crossp(U_LOS, POINTVSM));
 
-		VECangles = OrbMech::CALCGAR(GC->rtcc->EZJGMTX1.data[0].REFSMMAT, mul(OrbMech::tmat(M), M_R));
+		UTSA = POINTVSM * cos(OMICRON) + unit(crossp(U_LOS, POINTVSM))*sin(OMICRON);
+		UTSB = U_LOS;
+		UTSBP = SCAXIS;
+
+		MAT = OrbMech::AXISGEN(UTSAP, UTSBP, UTSA, UTSB);
+		VECangles = OrbMech::CALCGAR(REFSMMAT, MAT);
 	}
 	else if (VECoption == 1)
 	{
