@@ -740,6 +740,8 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	TMAlt = 0.0;
 
 	t_LunarLiftoff = 0.0;
+	LAP_Phase = 0.0;
+	LAP_CR = 0.0;
 	AscentPADVersion = 0;
 	t_TPIguess = 0.0;
 
@@ -3941,9 +3943,8 @@ int ARCore::subThread()
 	break;
 	case 20: //Lunar Ascent Processor
 	{
-		SV sv_CSM, sv_Ins, sv_IG;
-		VECTOR3 R_LS;
-		double theta, dt, m0, dv;
+		RTCC::LunarAscentProcessorInputs asc_in;
+		RTCC::LunarAscentProcessorOutputs asc_out;
 
 		if (GC->MissionPlanningActive)
 		{
@@ -3955,10 +3956,7 @@ int ARCore::subThread()
 				break;
 			}
 
-			sv_CSM.R = EPHEM.R;
-			sv_CSM.V = EPHEM.V;
-			sv_CSM.MJD = OrbMech::MJDfromGET(EPHEM.GMT, GC->rtcc->GetGMTBase());
-			sv_CSM.gravref = GC->rtcc->GetGravref(EPHEM.RBI);
+			asc_in.sv_CSM = EPHEM;
 
 			PLAWDTInput pin;
 			PLAWDTOutput pout;
@@ -3966,7 +3964,7 @@ int ARCore::subThread()
 			pin.TableCode = RTCC_MPT_LM;
 			GC->rtcc->PLAWDT(pin, pout);
 
-			m0 = pout.LMAscWeight;
+			asc_in.m0 = pout.LMAscWeight;
 		}
 		else
 		{
@@ -3975,17 +3973,20 @@ int ARCore::subThread()
 				Result = DONE;
 				break;
 			}
-			sv_CSM = GC->rtcc->StateVectorCalc(GC->rtcc->pCSM);
+			asc_in.sv_CSM = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pCSM);
 			LEM *l = (LEM *)GC->rtcc->pLM;
-			m0 = l->GetAscentStageMass();
+			asc_in.m0 = l->GetAscentStageMass();
 		}
 
-		R_LS = OrbMech::r_from_latlong(GC->rtcc->BZLAND.lat[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.lng[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.rad[RTCC_LMPOS_BEST]);
+		asc_in.R_LS = OrbMech::r_from_latlong(GC->rtcc->BZLAND.lat[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.lng[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.rad[RTCC_LMPOS_BEST]);
+		asc_in.t_liftoff = GC->rtcc->GMTfromGET(t_LunarLiftoff);
+		asc_in.v_LH = GC->rtcc->PZLTRT.InsertionHorizontalVelocity;
+		asc_in.v_LV = GC->rtcc->PZLTRT.InsertionRadialVelocity;
 
-		GC->rtcc->LunarAscentProcessor(R_LS, m0, sv_CSM, t_LunarLiftoff, GC->rtcc->PZLTRT.InsertionHorizontalVelocity, GC->rtcc->PZLTRT.InsertionRadialVelocity, theta, dt, dv, sv_IG, sv_Ins);
+		GC->rtcc->LunarAscentProcessor(asc_in, asc_out);
 
-		GC->rtcc->PZLTRT.PoweredFlightArc = theta;
-		GC->rtcc->PZLTRT.PoweredFlightTime = dt;
+		GC->rtcc->PZLTRT.PoweredFlightArc = asc_out.theta;
+		GC->rtcc->PZLTRT.PoweredFlightTime = asc_out.dt_asc;
 
 		GC->rtcc->JZLAI.t_launch = t_LunarLiftoff;
 		GC->rtcc->JZLAI.R_D = 60000.0*0.3048;
@@ -3994,10 +3995,10 @@ int ARCore::subThread()
 		GC->rtcc->JZLAI.Y_D_dot = 0.0;
 		GC->rtcc->JZLAI.Z_D_dot = GC->rtcc->PZLTRT.InsertionHorizontalVelocity;
 
-		GC->rtcc->JZLAI.sv_Insertion.R = sv_Ins.R;
-		GC->rtcc->JZLAI.sv_Insertion.V = sv_Ins.V;
-		GC->rtcc->JZLAI.sv_Insertion.GMT = OrbMech::GETfromMJD(sv_Ins.MJD, GC->rtcc->GetGMTBase());
-		GC->rtcc->JZLAI.sv_Insertion.RBI = BODY_MOON;
+		GC->rtcc->JZLAI.sv_Insertion = asc_out.sv_Ins;
+
+		LAP_Phase = asc_out.phase;
+		LAP_CR = asc_out.CR;
 
 		Result = DONE;
 	}
