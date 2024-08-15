@@ -637,7 +637,19 @@ void EnckeFreeFlightIntegrator::adfunc()
 		}
 		if (VENT > 0.0)
 		{
-			VECTOR3 VENTDIR = unit(crossp(unit(crossp(R, V)), R));
+			VECTOR3 VENTDIR = crossp(R, V);
+			//Protect against radial trajectories
+			if (length(VENTDIR) < 1e-10)
+			{
+				//Apply along velocity vector instead
+				VENTDIR = unit(V);
+			}
+			else
+			{
+				//Normal case
+				VENTDIR = unit(crossp(unit(VENTDIR), R));
+			}
+
 			double TV = CurrentTime() - pRTCC->GetGMTLO()*3600.0 - pRTCC->SystemParameters.MCGVEN;
 
 			if (TV < 0.0)

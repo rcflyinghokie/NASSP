@@ -2040,7 +2040,8 @@ struct LunarDescentPlanningTable
 	double PD_GETTD;
 	char DescAzMode[4];
 	double DescAsc;
-	double SN_LK_A; //???
+	double SN_LK_A; //Sun look angle (elevation angle at landing site)
+	int error;
 };
 
 struct SunriseSunsetData
@@ -2208,7 +2209,7 @@ struct RTEDMEDData
 	bool HeadsUp;
 	int PrimaryReentryMode;
 	int BackupReentryMode;
-	int IRM; //REFSMMAT number: -1 = input, 0 = Reentry, 1 = deorbit, 2 = orbital preferred, 3 = TEI
+	int IRM; //REFSMMAT number: -1 = input, 0 = Reentry, 1 = deorbit, 2 = orbital preferred, 3 = TEI, 4 = Lunar Entry (LVLH 0,0,0), 5 = Lunar Entry (LVLH 0,180,0)
 	int StoppingMode; //-1 = Time, 1 = Gamma
 	bool ManualEntry;
 	int TrimInd;
@@ -2471,7 +2472,7 @@ public:
 	void BlockDataProcessor(EarthEntryOpt *opt, EntryResults *res);
 	void TranslunarInjectionProcessor(EphemerisData sv, PLAWDTOutput WeightsTable);
 	void TranslunarMidcourseCorrectionProcessor(EphemerisData sv0, double CSMmass, double LMmass);
-	int LunarDescentPlanningProcessor(SV sv);
+	int LunarDescentPlanningProcessor(EphemerisData sv, double W_LM);
 	bool GeneralManeuverProcessor(GMPOpt *opt, VECTOR3 &dV_i, double &P30TIG);
 	OBJHANDLE AGCGravityRef(VESSEL* vessel); // A sun referenced state vector wouldn't be much of a help for the AGC...
 	int DetermineSVBody(EphemerisData2 sv);
@@ -2625,9 +2626,9 @@ public:
 	//Central Manual Entry Device Decoder
 	bool GMGMED(char *str);
 	//MED Decoder for G, A and B MEDs
-	int EMGABMED(int type, std::string med, std::vector<std::string> data);
+	void EMGABMED(int type, std::string med, std::vector<std::string> data, int &err, unsigned &param);
 	//MED Decoder for C MEDs
-	int CMRMEDIN(std::string med, std::vector<std::string> data);
+	void CMRMEDIN(std::string med, std::vector<std::string> data, int &err, unsigned &param);
 	//'F' MED Module
 	int PMQAFMED(std::string med);
 	int PMQAFMED(std::string med, std::vector<std::string> data);
@@ -3967,6 +3968,7 @@ public:
 		double LDPPDescentFlightTime = 11.0*60.0; //Minutes
 		//Block 45
 		double LDPPDescentFlightArc = 15.0*RAD;
+		double LDPPLandingSiteOffset = 15.0*RAD;
 		//Block 46
 		double SPQDeltaH = 15.0*1852.0;
 		//Block 47
@@ -4097,10 +4099,10 @@ public:
 
 		//Block 12
 		std::string RTESite = "No Site!";
-		double RTEVectorTime;
-		double RTET0Min; //Time of abort or minimum time
-		double RTET0Max; //Maximum time
-		double RTETimeOfLanding;
+		double RTEVectorTime; //Vector time in GMT (hrs)
+		double RTET0Min; //Time of abort or minimum time in GMT (hrs)
+		double RTET0Max; //Maximum time in GMT (hrs)
+		double RTETimeOfLanding; //Landing time in GMT (hrs)
 		double RTEUADVMax;
 		double RTEPTPMissDistance;
 		double RTEInclination;
@@ -5024,7 +5026,6 @@ protected:
 	bool PMMXFRDeleteOption(int L, double GMTI);
 	int PMMMCDCallEMSMISS(EphemerisData sv0, double GMTI, EphemerisData &sv1);
 	int PMSVCTAuxVectorFetch(int L, double T_F, EphemerisData &sv);
-	bool MEDTimeInputHHMMSS(std::string vec, double &hours);
 public:
 	EphemerisData ConvertSVtoEphemData(SV sv);
 	SV ConvertEphemDatatoSV(EphemerisData sv, double mass = 0.0);
