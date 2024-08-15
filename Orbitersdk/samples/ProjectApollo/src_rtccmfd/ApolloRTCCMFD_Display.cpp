@@ -9243,8 +9243,16 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		}
 		skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
 
+		if (G->RTEASTType == 77)
+		{
+			skp->Text(1 * W / 16, 8 * H / 14, "MIN:", 4);
+		}
+		else
+		{
+			skp->Text(1 * W / 16, 8 * H / 14, "T0:", 3);
+		}
 		GET_Display(Buffer, GC->rtcc->med_f75_f77.T_0_min, false);
-		skp->Text(1 * W / 16, 8 * H / 14, Buffer, strlen(Buffer));
+		skp->Text(3 * W / 16, 8 * H / 14, Buffer, strlen(Buffer));
 
 		sprintf_s(Buffer, "%s", GC->rtcc->med_f75_f77.EntryProfile.c_str());
 		skp->Text(10 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
@@ -9257,7 +9265,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			sprintf_s(Buffer, "%s", GC->rtcc->med_f75.Type.c_str());
 			skp->Text(1 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
 
-			sprintf_s(Buffer, "%.0lf ft/s", GC->rtcc->med_f75.DVMAX);
+			sprintf_s(Buffer, "DVMAX: %.0lf ft/s", GC->rtcc->med_f75.DVMAX);
 			skp->Text(1 * W / 16, 10 * H / 14, Buffer, strlen(Buffer));
 		}
 		else if (G->RTEASTType == 76)
@@ -9272,6 +9280,11 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		{
 			sprintf_s(Buffer, "%s", GC->rtcc->med_f77.Site.c_str());
 			skp->Text(1 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
+
+			skp->Text(1 * W / 16, 10 * H / 14, "MAX:", 4);
+
+			GET_Display(Buffer, GC->rtcc->med_f77.T_max, false);
+			skp->Text(3 * W / 16, 10 * H / 14, Buffer, strlen(Buffer));
 
 			if (GC->rtcc->med_f77.Site != "FCUA")
 			{

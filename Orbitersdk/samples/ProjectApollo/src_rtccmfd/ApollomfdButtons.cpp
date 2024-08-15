@@ -3647,7 +3647,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 		{ "Enter AST site or area", 0, 'E' },
 		{ "CSM or vector time", 0, 'D' },
 		{ "Enter abort time", 0, 'G' },
-		{ "Enter desired DV", 0, 'A' },
+		{ "Max DV or Time", 0, 'A' },
 		{ "Enter landing time", 0, 'V' },
 
 		{ "Go to AST display", 0, 'C' },

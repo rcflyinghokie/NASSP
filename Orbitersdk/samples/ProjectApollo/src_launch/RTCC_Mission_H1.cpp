@@ -1571,18 +1571,22 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		VEHDATABUF.sv = sv_e;
 		VEHDATABUF.config = "C";
 
-		med_f75_f77.T_0_min = AbortGuess;
+		//Set F77 MED inputs (Lunar Search)
+		med_f75_f77.T_0_min = AbortGuess - 3600.0;
+		med_f77.T_max = AbortGuess += 3600.0;
 		med_f75_f77.T_Z = AbortGuess + DT_TEI_EI;
 
 		DetermineRTESite(med_f77.Site);
 
 		PZREAP.RTEVectorTime = GMTfromGET(med_f75_f77.T_V) / 3600.0;
 		PZREAP.RTET0Min = GMTfromGET(med_f75_f77.T_0_min) / 3600.0;
+		PZREAP.RTET0Max = GMTfromGET(med_f77.T_max) / 3600.0;
 		PZREAP.RTETimeOfLanding = GMTfromGET(med_f75_f77.T_Z) / 3600.0;
 		PZREAP.RTEPTPMissDistance = med_f77.MissDistance;
 
 		PMMREAST(77, &sv_e);
 
+		//Set F80 MED inputs (RTE Maneuver)
 		med_f80.ASTCode = PZREAP.AbortScanTableData[0].ASTCode;
 		med_f80.ManeuverCode = "CSUX";
 		med_f80.REFSMMAT = "TEI";

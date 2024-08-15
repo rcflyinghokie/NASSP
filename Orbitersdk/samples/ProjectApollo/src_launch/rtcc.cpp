@@ -7961,13 +7961,10 @@ SV RTCC::ExecuteManeuver(SV sv, double P30TIG, VECTOR3 dV_LVLH, double attachedM
 
 void RTCC::RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res)
 {
-	RTEMoon* teicalc;
 	SV sv0, sv1, sv2;
 	bool endi = false;
 	double GETbase, EMSAlt, dt22, MJDguess, LMmass, TZMINI;
 	VECTOR3 R05G, V05G;
-	OBJHANDLE hEarth = oapiGetObjectByName("Earth");
-	OBJHANDLE hMoon = oapiGetObjectByName("Moon");
 
 	GETbase = CalcGETBase();
 	EMSAlt = 297431.0*0.3048;
@@ -8027,16 +8024,16 @@ void RTCC::RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res)
 		TZMINI = opt->t_zmin;
 	}
 
-	double LINE[10];
+	RTEMoonInputsArray arr;
 
 	if (opt->entrylongmanual)
 	{
-		LINE[0] = PI05;
-		LINE[1] = opt->EntryLng;
-		LINE[2] = -PI05;
-		LINE[3] = opt->EntryLng;
-		LINE[4] = 1e10;
-		LINE[5] = 1e10;
+		arr.LINE[0] = PI05;
+		arr.LINE[1] = opt->EntryLng;
+		arr.LINE[2] = -PI05;
+		arr.LINE[3] = opt->EntryLng;
+		arr.LINE[4] = 1e10;
+		arr.LINE[5] = 1e10;
 	}
 	else
 	{
@@ -8047,41 +8044,92 @@ void RTCC::RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res)
 
 		for (int i = 0;i < 10;i++)
 		{
-			LINE[i] = PZREAP.ATPCoordinates[opt->ATPLine][i];
+			arr.LINE[i] = PZREAP.ATPCoordinates[opt->ATPLine][i];
 		}
 	}
-	
-	EphemerisData2 sv3;
-	sv3.R = sv2.R;
-	sv3.V = sv2.V;
-	sv3.GMT = OrbMech::GETfromMJD(sv2.MJD, GetGMTBase());
-	teicalc = new RTEMoon(this, sv3, GetGMTBase(), SystemParameters.MCLAMD);
-	teicalc->ATP(LINE);
-	teicalc->READ(opt->SMODE, PZREAP.IRMAX, PZREAP.VRMAX, PZREAP.RRBIAS, PZREAP.MOTION, PZREAP.HMINMC, 2, 0.3, PZREAP.DVMAX, 0.0, opt->Inclination, 1.0*1852.0, GMTfromGET(TZMINI), 0.0);
 
-	endi = teicalc->MASTER();
+	//Convert state vector
+	EphemerisData sv3 = ConvertSVtoEphemData(sv2);
+	//Error return
+	if (sv3.RBI != BODY_MOON) return;
+
+	//Generate ephemeris table, if required
+	if (opt->SMODE > 20)
+	{
+		//TBD: For tradeoff and lunar search cases, generate ephemeris table spanning from 1 hour before to one hour after time
+		EMSMISSInputTable inp;
+		PLAWDTOutput tab;
+
+		tab.CSMWeight = 1.0;
+		tab.CC[0] = true;
+
+		inp.AnchorVector = sv3;
+		inp.EphemerisLeftLimitGMT = sv3.GMT - 60.0*60.0; //Search +/- 1 hour from guess
+		inp.EphemerisRightLimitGMT = sv3.GMT + 60.0*60.0;
+		inp.DensityMultiplier = 0.0;
+		inp.MinEphemDT = 60.0;
+		inp.MCIEphemerisIndicator = true;
+		inp.EphemerisBuildIndicator = true;
+		inp.ManCutoffIndicator = 0;
+		inp.CutoffIndicator = 3; //Altitude
+		inp.VehicleCode = 1; //Not required, just to be safe
+		inp.MCIEphemTableIndicator = &arr.STAVEC;
+		inp.useInputWeights = true;
+		inp.WeightsTable = &tab;
+
+		EMSMISS(&inp);
+
+		if (inp.NIAuxOutputTable.ErrorCode != 0) return;
+	}
+	else
+	{
+		//Otherwise store just the single state vector at the desired time
+		EphemerisData2 sv4;
+		sv4.R = sv3.R;
+		sv4.V = sv3.V;
+		sv4.GMT = sv3.GMT;
+		arr.STAVEC.table.push_back(sv4);
+	}
+
+	arr.SMODEI = opt->SMODE;
+	arr.alpha_SID0 = SystemParameters.MCLAMD;
+	arr.TZMINI = GMTfromGET(TZMINI);
+	arr.TZMAXI = 0.0; //TBD
+	arr.IRMAXI = PZREAP.IRMAX;
+	arr.URMAXI = PZREAP.VRMAX;
+	arr.RRBI = PZREAP.RRBIAS;
+	arr.CIRI = PZREAP.MOTION;
+	arr.HMINI = PZREAP.HMINMC;
+	arr.EPI = 2;
+	arr.L2DI = 0.3;
+	arr.DVMAXI = PZREAP.DVMAX;
+	arr.MDMAXI = 1.0;
+	arr.IRKI = opt->Inclination;
+
+	RTEMoon teicalc(this);
+
+	endi = teicalc.MASTER(arr);	
 
 	if (endi == false)
 	{
-		delete teicalc;
 		return;
 	}
 
-	dt22 = OrbMech::time_radius(teicalc->R_EI, teicalc->V_EI, OrbMech::R_Earth + EMSAlt, -1, OrbMech::mu_Earth);
-	OrbMech::rv_from_r0v0(teicalc->R_EI, teicalc->V_EI, dt22, R05G, V05G, OrbMech::mu_Earth); //Entry Interface to 0.05g
+	dt22 = OrbMech::time_radius(teicalc.R_EI, teicalc.V_EI, OrbMech::R_Earth + EMSAlt, -1, OrbMech::mu_Earth);
+	OrbMech::rv_from_r0v0(teicalc.R_EI, teicalc.V_EI, dt22, R05G, V05G, OrbMech::mu_Earth); //Entry Interface to 0.05g
 
-	res->latitude = teicalc->EntryLatcor;
-	res->longitude = teicalc->EntryLngcor;
-	res->P30TIG = GETfromGMT(teicalc->sv0.GMT);
-	res->dV_LVLH = teicalc->Entry_DV;
-	res->ReA = teicalc->EntryAng;
-	res->GET400K = GETfromGMT(teicalc->t_R);
+	res->latitude = teicalc.EntryLatcor;
+	res->longitude = teicalc.EntryLngcor;
+	res->P30TIG = GETfromGMT(teicalc.sv0.GMT);
+	res->dV_LVLH = teicalc.Entry_DV;
+	res->ReA = teicalc.EntryAng;
+	res->GET400K = GETfromGMT(teicalc.t_R);
 	res->GET05G = res->GET400K + dt22;
 	res->RTGO = OrbMech::CMCEMSRangeToGo(SystemParameters.MAT_J2000_BRCS, R05G, OrbMech::MJDfromGET(res->GET05G, GETbase), res->latitude, res->longitude);
 	res->VIO = length(V05G);
-	res->precision = teicalc->precision;
-	res->Incl = teicalc->ReturnInclination;
-	res->FlybyAlt = teicalc->FlybyPeriAlt;
+	res->precision = 1;
+	res->Incl = teicalc.ReturnInclination;
+	res->FlybyAlt = teicalc.FlybyPeriAlt;
 	res->solutionfound = true;
 
 	if (opt->csmlmdocked)
@@ -8097,13 +8145,11 @@ void RTCC::RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res)
 
 	sv_tig.gravref = hMoon;
 	sv_tig.mass = sv0.mass;
-	sv_tig.MJD = OrbMech::MJDfromGET(teicalc->sv0.GMT, GetGMTBase());
-	sv_tig.R = teicalc->sv0.R;
-	sv_tig.V = teicalc->sv0.V;
+	sv_tig.MJD = OrbMech::MJDfromGET(teicalc.sv0.GMT, GetGMTBase());
+	sv_tig.R = teicalc.sv0.R;
+	sv_tig.V = teicalc.sv0.V;
 
-	PoweredFlightProcessor(sv_tig, 0.0, opt->enginetype, LMmass, teicalc->Vig_apo - teicalc->sv0.V, false, res->P30TIG, res->dV_LVLH, res->sv_preburn, res->sv_postburn);
-
-	delete teicalc;
+	PoweredFlightProcessor(sv_tig, 0.0, opt->enginetype, LMmass, teicalc.Vig_apo - teicalc.sv0.V, false, res->P30TIG, res->dV_LVLH, res->sv_preburn, res->sv_postburn);
 }
 
 void RTCC::LunarOrbitMapUpdate(EphemerisData sv0, AP10MAPUPDATE &pad, double pm)
@@ -25393,7 +25439,7 @@ void RTCC::PMMREAST(int med, EphemerisData *sv)
 	std::string EntryProfile;
 	int EPI;
 
-	EntryProfile = med_f75_f77.EntryProfile;
+	EntryProfile = PZREAP.EntryProfile;
 
 	if (PZREAP.TGTLN == 1)
 	{
@@ -25496,10 +25542,12 @@ void RTCC::PMMREAST(int med, EphemerisData *sv)
 	}
 	else
 	{
+		RTEMoonInputsArray arr;
+
 		int SMODE;
 		double Inclination, TZMINI, TZMAXI;
 
-		Inclination = med_f75_f77.Inclination;
+		Inclination = med_f75_f77.Inclination*DEG;
 
 		if (med == 75)
 		{
@@ -25563,34 +25611,88 @@ void RTCC::PMMREAST(int med, EphemerisData *sv)
 			}
 		}
 
-		EphemerisData2 sv_abort2;
-		sv_abort2.R = sv_abort.R;
-		sv_abort2.V = sv_abort.V;
-		sv_abort2.GMT = sv_abort.GMT;
-		RTEMoon rte(this, sv_abort2, GetGMTBase(), SystemParameters.MCLAMD);
+		//Error return
+		if (sv_abort.RBI != BODY_MOON) return;
+
+		//Generate ephemeris table, if required
+		if (SMODE > 20)
+		{
+			//TBD: For tradeoff and lunar search cases, generate ephemeris table spanning from 1 hour before to one hour after time
+			EMSMISSInputTable inp;
+			PLAWDTOutput tab;
+
+			tab.CSMWeight = 1.0;
+			tab.CC[0] = true;
+
+			inp.AnchorVector = sv_abort;
+			inp.EphemerisLeftLimitGMT = PZREAP.RTET0Min*3600.0;
+			inp.EphemerisRightLimitGMT = PZREAP.RTET0Max*3600.0;
+			inp.DensityMultiplier = 0.0;
+			inp.MinEphemDT = 60.0;
+			inp.MCIEphemerisIndicator = true;
+			inp.EphemerisBuildIndicator = true;
+			inp.ManCutoffIndicator = 0;
+			inp.CutoffIndicator = 3; //Altitude
+			inp.VehicleCode = 1; //Not required, just to be safe
+			inp.MCIEphemTableIndicator = &arr.STAVEC;
+			inp.useInputWeights = true;
+			inp.WeightsTable = &tab;
+
+			EMSMISS(&inp);
+
+			if (inp.NIAuxOutputTable.ErrorCode != 0) return;
+		}
+		else
+		{
+			//Otherwise store just the single state vector at the desired time
+			EphemerisData2 sv4;
+			sv4.R = sv_abort.R;
+			sv4.V = sv_abort.V;
+			sv4.GMT = sv_abort.GMT;
+			arr.STAVEC.table.push_back(sv4);
+		}
+
+		arr.SMODEI = SMODE;
+		arr.alpha_SID0 = SystemParameters.MCLAMD;
+		arr.TZMINI = TZMINI;
+		arr.TZMAXI = TZMAXI;
+		arr.IRMAXI = PZREAP.IRMAX;
+		arr.URMAXI = PZREAP.VRMAX;
+		arr.RRBI = PZREAP.RRBIAS;
+		arr.CIRI = PZREAP.MOTION;
+		arr.HMINI = PZREAP.HMINMC;
+		arr.EPI = 2;
+		arr.L2DI = 0.3;
+		arr.DVMAXI = PZREAP.DVMAX;
+		arr.MDMAXI = 1.0;
+		arr.IRKI = Inclination;
+
 		if (SMODE == 14 || SMODE == 34)
 		{
-			double LINE[10];
+			//ATP target line
+
 			if (PZREAP.RTEIsPTPSite)
 			{
-				for (int i = 0;i < 5;i++)
+				for (int i = 0; i < 5; i++)
 				{
-					LINE[2 * i] = 80.0*RAD - 40.0*RAD*(double)i;	//So table has 80, 40, 0, -40, -80 deg as latitude
-					LINE[2 * i + 1] = PZREAP.PTPLongitude[PZREAP.RTESiteNum];
+					arr.LINE[2 * i] = 80.0*RAD - 40.0*RAD*(double)i;	//So table has 80, 40, 0, -40, -80 deg as latitude
+					arr.LINE[2 * i + 1] = PZREAP.PTPLongitude[PZREAP.RTESiteNum];
 				}
 			}
 			else
 			{
-				for (int i = 0;i < 10;i++)
+				for (int i = 0; i < 10; i++)
 				{
-					LINE[i] = PZREAP.ATPCoordinates[PZREAP.RTESiteNum][i];
+					arr.LINE[i] = PZREAP.ATPCoordinates[PZREAP.RTESiteNum][i];
 				}
 			}
-			rte.ATP(LINE);
 		}
 
-		rte.READ(SMODE, PZREAP.IRMAX, PZREAP.VRMAX, PZREAP.RRBIAS, PZREAP.MOTION, PZREAP.HMINMC, EPI, 0.3, PZREAP.DVMAX, 0.0, Inclination, 1.0*1852.0, TZMINI, TZMAXI);
-		if (rte.MASTER() == false)
+		RTEMoon rte(this);
+
+		int endi = rte.MASTER(arr);
+
+		if (endi == false)
 		{
 			return;
 		}
@@ -26281,6 +26383,14 @@ void RTCC::PMMREDIG(bool mpt)
 		{
 			MED.IRM = 3;
 		}
+		else if (med_f80.REFSMMAT == "REI")
+		{
+			MED.IRM = 4;
+		}
+		else if (med_f80.REFSMMAT == "DEI")
+		{
+			MED.IRM = 5;
+		}
 		else
 		{
 			return;
@@ -26765,6 +26875,21 @@ void RTCC::PMMPAB(const RTEDMEDData &MED, const RTEDASTData &AST, const RTEDSPMD
 		XSM = _V(RFS.m11, RFS.m12, RFS.m13);
 		YSM = _V(RFS.m21, RFS.m22, RFS.m23);
 		ZSM = _V(RFS.m31, RFS.m32, RFS.m33);
+	}
+	else if (MED.IRM == 4 || MED.IRM == 5)
+	{
+		//Reentry related REFSMMAT
+		//LVLH attitude: REI = 0,0,0. DEI = 0,180,0
+		if (MED.IRM == 4)
+		{
+			ZSM = unit(outarray.R_r);
+		}
+		else
+		{
+			ZSM = unit(-outarray.R_r);
+		}
+		YSM = unit(crossp(outarray.V_r, outarray.R_r));
+		XSM = crossp(YSM, ZSM);
 	}
 	else
 	{
@@ -29210,6 +29335,7 @@ int RTCC::PMQAFMED(std::string med, std::vector<std::string> data)
 		//TBD: T_V greater than present time
 		PZREAP.RTEVectorTime = GMTfromGET(med_f75_f77.T_V) / 3600.0;
 		PZREAP.RTET0Min = GMTfromGET(med_f75_f77.T_0_min) / 3600.0;
+		PZREAP.RTET0Max = GMTfromGET(med_f77.T_max) / 3600.0;
 		PZREAP.RTETimeOfLanding = GMTfromGET(med_f75_f77.T_Z) / 3600.0;
 		if (PZREAP.TGTLN == 1)
 		{
