@@ -17175,6 +17175,7 @@ int RTCC::PMMLAI(PMMLAIInput in, RTCCNIAuxOutputTable &aux, EphemerisDataTable2 
 	asc_in.t_liftoff = in.t_liftoff;
 	asc_in.v_LH = in.v_LH;
 	asc_in.v_LV = in.v_LV;
+	asc_in.sv_CSM = in.sv_CSM;
 
 	LunarAscentProcessor(asc_in, asc_out);
 

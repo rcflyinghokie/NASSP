@@ -429,7 +429,7 @@ int ShortAscentRendezvousMonitor::Calc(const ShortARMInputs &in, ShortARMDisplay
 
 		if (res.SolutionFound == false) return 1;
 
-		out.tab[i].GETTPI = pRTCC->GETfromGMT(res.T1);
+		out.tab[i].GETTPI = res.T1;
 		out.tab[i].DV_TPI = length(res.dV);
 		out.tab[i].Y_H = atan2(res.dV_LVLH.y, res.dV_LVLH.x);
 		out.tab[i].P_H = -res.dV_LVLH.z / sqrt(res.dV_LVLH.x*res.dV_LVLH.x + res.dV_LVLH.y*res.dV_LVLH.y);
