@@ -330,6 +330,7 @@ public:
 	AP11LMASCPAD lmascentpad;
 	double t_LunarLiftoff;
 	int AscentPADVersion; //0 = Apollo 11-13, 1 = Apollo 14-17
+	double LAP_Phase, LAP_CR;
 
 	//Powered Descent Abort Program
 	int PDAPEngine;	//0 = DPS/APS, 1 = APS

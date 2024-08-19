@@ -13051,40 +13051,50 @@ bool RTCC::PoweredDescentProcessor(VECTOR3 R_LS, double TLAND, SV sv, RTCCNIAuxO
 	return true;
 }
 
-void RTCC::LunarAscentProcessor(VECTOR3 R_LS, double m0, SV sv_CSM, double t_liftoff, double v_LH, double v_LV, double &theta, double &dt_asc, double &dv, SV &sv_IG, SV &sv_Ins)
+void RTCC::LunarAscentProcessor(const LunarAscentProcessorInputs &in, LunarAscentProcessorOutputs &out)
 {
-	//Test
 	AscentGuidance asc;
 	AscDescIntegrator integ;
-	SV sv_CSM_TIG, sv_ins;
+	EphemerisData sv_CSM_TIG;
 	MATRIX3 Rot;
-	VECTOR3 R0, V0, R, V, U_FDP, U_M, u, R0_proj;
-	double t_go, Thrust, w_M, dt, t_total, isp, m1, t_total_old;
+	VECTOR3 R0, V0, R, V, U_FDP, U_M, u, R0_proj, U_R, Q;
+	double r_LS, t_go, Thrust, w_M, dt, t_total, dv, isp, m1, t_total_old, R_D, Y, CR;
 	bool stop = false;
 
+	//Null ascent dv and burn time
 	dv = 0.0;
 	t_total = 0.0;
-	dt = t_liftoff - OrbMech::GETfromMJD(sv_CSM.MJD, CalcGETBase());
-	sv_CSM_TIG = coast(sv_CSM, dt);
+	//Take CSM state vector to liftoff time
+	dt = in.t_liftoff - in.sv_CSM.GMT;
+	sv_CSM_TIG = coast(in.sv_CSM, dt);
 
-	asc.Init(sv_CSM_TIG.R, sv_CSM_TIG.V, m0, length(R_LS), v_LH, v_LV);
+	r_LS = length(in.R_LS);
+	asc.Init(sv_CSM_TIG.R, sv_CSM_TIG.V, in.m0, r_LS, in.v_LH, in.v_LV);
 
-	ELVCNV(OrbMech::GETfromMJD(sv_CSM_TIG.MJD, GetGMTBase()), RTCC_COORDINATES_MCT, RTCC_COORDINATES_MCI, Rot);
+	ELVCNV(sv_CSM_TIG.GMT, RTCC_COORDINATES_MCT, RTCC_COORDINATES_MCI, Rot);
 
-	R0 = mul(Rot, R_LS);
+	R0 = mul(Rot, in.R_LS);
 	w_M = OrbMech::w_Moon;
 	U_M = mul(Rot, _V(0, 0, 1));
 	V0 = crossp(U_M, R0)*w_M;
 
-	sv_IG.gravref = sv_CSM.gravref;
-	sv_IG.mass = m0;
-	sv_IG.MJD = sv_CSM_TIG.MJD;
-	sv_IG.R = R0;
-	sv_IG.V = V0;
+	//Store inertial LM state vector at liftoff
+	out.sv_IG.R = R0;
+	out.sv_IG.V = V0;
+	out.sv_IG.GMT = sv_CSM_TIG.GMT;
+	out.sv_IG.RBI = BODY_MOON;
 
+	//Calculate cross range
+	R_D = r_LS + 60000.0*0.3048;
+	U_R = unit(R0);
+	Q = unit(crossp(sv_CSM_TIG.V, sv_CSM_TIG.R));
+	Y = R_D * asin(dotp(U_R, Q));
+	CR = -Y;
+
+	//Set up powered ascent integration
 	R = R0;
 	V = V0;
-	m1 = m0;
+	m1 = in.m0;
 	t_total_old = t_total;
 	integ.Init(unit(R));
 
@@ -13096,17 +13106,24 @@ void RTCC::LunarAscentProcessor(VECTOR3 R_LS, double m0, SV sv_CSM, double t_lif
 		t_total_old = t_total;
 	}
 
+	//Calculate output parameters
 	u = unit(crossp(R, V));
 	R0_proj = unit(R0 - u * dotp(R0, u))*length(R0);
-	theta = acos(dotp(unit(R0_proj), unit(R)));
-	dt_asc = t_total;
 
-	sv_ins.R = R;
-	sv_ins.V = V;
-	sv_ins.mass = m1;
-	sv_ins.gravref = sv_CSM_TIG.gravref;
-	sv_ins.MJD = sv_CSM_TIG.MJD + dt_asc / 24.0 / 3600.0;
-	sv_Ins = sv_ins;
+	out.theta = acos(dotp(unit(R0_proj), unit(R)));
+	out.dt_asc = t_total;
+	out.dv = dv;
+	out.sv_Ins.R = R;
+	out.sv_Ins.V = V;
+	out.sv_Ins.GMT = sv_CSM_TIG.GMT + t_total;
+	out.sv_Ins.RBI = BODY_MOON;
+	out.m1 = m1;
+	out.CR = CR;
+
+	//Take CSM state vector to insertion
+	sv_CSM_TIG = coast(sv_CSM_TIG, out.sv_Ins.GMT - sv_CSM_TIG.GMT);
+	//Calculate phase angle
+	out.phase = OrbMech::PHSANG(sv_CSM_TIG.R, sv_CSM_TIG.V, out.sv_Ins.R);
 }
 
 bool RTCC::PDIIgnitionAlgorithm(SV sv, VECTOR3 R_LS, double TLAND, SV &sv_IG, double &t_go, double &CR, VECTOR3 &U_IG, MATRIX3 &REFSMMAT)
@@ -17194,58 +17211,59 @@ RTCC_PMMMPT_20_B:
 
 int RTCC::PMMLAI(PMMLAIInput in, RTCCNIAuxOutputTable &aux, EphemerisDataTable2 *E)
 {
+	LunarAscentProcessorInputs asc_in;
+	LunarAscentProcessorOutputs asc_out;
 	EphemerisData2 data;
-	VECTOR3 R_LS = OrbMech::r_from_latlong(BZLAND.lat[RTCC_LMPOS_BEST], BZLAND.lng[RTCC_LMPOS_BEST], BZLAND.rad[RTCC_LMPOS_BEST]);
-	double theta, dt_asc, dv;
-	SV sv_IG, sv_Ins;
-	LunarAscentProcessor(R_LS, in.m0, in.sv_CSM, GETfromGMT(in.t_liftoff), in.v_LH, in.v_LV, theta, dt_asc, dv, sv_IG, sv_Ins);
+
+	//Set up processor inputs
+	asc_in.R_LS = OrbMech::r_from_latlong(BZLAND.lat[RTCC_LMPOS_BEST], BZLAND.lng[RTCC_LMPOS_BEST], BZLAND.rad[RTCC_LMPOS_BEST]);
+	asc_in.m0 = in.m0;
+	asc_in.t_liftoff = in.t_liftoff;
+	asc_in.v_LH = in.v_LH;
+	asc_in.v_LV = in.v_LV;
+	asc_in.sv_CSM = in.sv_CSM;
+
+	LunarAscentProcessor(asc_in, asc_out);
 
 	if (E)
 	{
-		data.R = sv_IG.R;
-		data.V = sv_IG.V;
-		data.GMT = OrbMech::GETfromMJD(sv_IG.MJD, SystemParameters.GMTBASE);
+		data.R = asc_out.sv_IG.R;
+		data.V = asc_out.sv_IG.V;
+		data.GMT = asc_out.sv_IG.GMT;
 		E->table.push_back(data);
 	}
 
-	aux.A_T = unit(sv_IG.R);
-	aux.DT_B = (sv_Ins.MJD - sv_IG.MJD)*24.0*3600.0;
+	aux.A_T = unit(asc_out.sv_IG.R);
+	aux.DT_B = asc_out.sv_Ins.GMT - asc_out.sv_IG.GMT;
 	aux.DT_TO = 0.0;
-	aux.DV = dv;
-	aux.DV_C = dv;
+	aux.DV = asc_out.dv;
+	aux.DV_C = asc_out.dv;
 	aux.DV_cTO = 0.0;
 	aux.DV_TO = 0.0;
 	aux.DV_U = 0.0;
-	aux.MainFuelUsed = sv_IG.mass - sv_Ins.mass;
+	aux.MainFuelUsed = asc_out.m1 - in.m0;
 	aux.P_G = 0.0;
 	aux.RCSFuelUsed = 0.0;
 	aux.CSI = 2;
 	aux.RBI = BODY_MOON;
-	aux.R_1 = sv_IG.R;
-	aux.V_1 = sv_IG.V;
-	aux.GMT_1 = OrbMech::GETfromMJD(sv_IG.MJD,SystemParameters.GMTBASE);
-	aux.R_BI = sv_IG.R;
-	aux.V_BI = sv_IG.V;
-	aux.GMT_BI = OrbMech::GETfromMJD(sv_IG.MJD,SystemParameters.GMTBASE);
-	aux.R_BO = sv_Ins.R;
-	aux.V_BO = sv_Ins.V;
-	aux.GMT_BO = OrbMech::GETfromMJD(sv_Ins.MJD,SystemParameters.GMTBASE);
-	aux.sv_FF.R = sv_IG.R;
-	aux.sv_FF.V = sv_IG.V;
-	aux.sv_FF.GMT = OrbMech::GETfromMJD(sv_IG.MJD,SystemParameters.GMTBASE);
-	if (sv_IG.gravref == hEarth)
-	{
-		aux.sv_FF.RBI = BODY_EARTH;
-	}
-	else
-	{
-		aux.sv_FF.RBI = BODY_MOON;
-	}
-	aux.V_G = aux.A_T*dv;
-	aux.WTEND = sv_Ins.mass;
-	aux.WTENGON = sv_IG.mass;
+	aux.R_1 = asc_out.sv_IG.R;
+	aux.V_1 = asc_out.sv_IG.V;
+	aux.GMT_1 = asc_out.sv_IG.GMT;
+	aux.R_BI = asc_out.sv_IG.R;
+	aux.V_BI = asc_out.sv_IG.V;
+	aux.GMT_BI = asc_out.sv_IG.GMT;
+	aux.R_BO = asc_out.sv_Ins.R;
+	aux.V_BO = asc_out.sv_Ins.V;
+	aux.GMT_BO = asc_out.sv_Ins.GMT;
+	aux.sv_FF.R = asc_out.sv_IG.R;
+	aux.sv_FF.V = asc_out.sv_IG.V;
+	aux.sv_FF.GMT = asc_out.sv_IG.GMT;
+	aux.sv_FF.RBI = asc_out.sv_IG.RBI;
+	aux.V_G = aux.A_T*asc_out.dv;
+	aux.WTEND = asc_out.m1;
+	aux.WTENGON = asc_in.m0;
 	aux.W_CSM = 0.0;
-	aux.W_LMA = sv_IG.mass;
+	aux.W_LMA = asc_in.m0;
 	aux.W_LMD = 0.0;
 	aux.W_SIVB = 0.0;
 	aux.X_B = _V(1, 0, 0);
@@ -17255,9 +17273,9 @@ int RTCC::PMMLAI(PMMLAIInput in, RTCCNIAuxOutputTable &aux, EphemerisDataTable2 
 
 	if (E)
 	{
-		data.R = sv_Ins.R;
-		data.V = sv_Ins.V;
-		data.GMT = OrbMech::GETfromMJD(sv_Ins.MJD,SystemParameters.GMTBASE);
+		data.R = asc_out.sv_Ins.R;
+		data.V = asc_out.sv_Ins.V;
+		data.GMT = asc_out.sv_Ins.GMT;
 		E->table.push_back(data);
 
 		//Header
@@ -22940,6 +22958,12 @@ int RTCC::PMMXFR(int id, void *data)
 		else
 		{
 			CCP = mpt->mantable.back().CommonBlock.ConfigCode;
+		}
+		//Check if the ascent maneuver is defined
+		if (JZLAI.t_launch == 0.0)
+		{
+			PMXSPT("PMMXFR", 38);
+			return 38;
 		}
 
 		man.GMTI = GMTfromGET(JZLAI.t_launch);
