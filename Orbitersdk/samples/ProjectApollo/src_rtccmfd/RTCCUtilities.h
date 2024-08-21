@@ -27,192 +27,293 @@ See http://nassp.sourceforge.net/license/ for more details.
 
 namespace rtcc
 {
-	struct MEDProcessingDoubleOptions
+	union Numeric
 	{
-		int missing = 0;		// 0 = ignore, 1 = error
-		double scale = 1.0;		// Used as offset with time option
-		bool mincheck = false;
-		double minval = 0.0;	// Check on input value
-		bool maxcheck = false;
-		double maxval = 0.0;	// Check on input value
-		double defaultval = 0.0;
+		int i;
+		double d;
 	};
 
-	int MEDProcessingDouble(const std::vector<std::string> &data, unsigned i, MEDProcessingDoubleOptions opt, double &val)
+	struct MEDProcessingOptions
 	{
-		//missing: 0 = ignore, 1 = error
-		std::string item;
-		bool isMissing;
-
-		item = data[i];
-		isMissing = (item == "");
-
-		if (isMissing)
-		{
-			//Error
-			if (opt.missing == 1)
-			{
-				return 1;
-			}
-			//Ignore
-			else
-			{
-				return 0;
-			}
-		}
-
-		double valtemp;
-
-		if (sscanf(item.c_str(), "%lf", &valtemp) != 1)
-		{
-			return 2;
-		}
-
-		//Limit checking
-		if (opt.mincheck)
-		{
-			if (valtemp < opt.minval)
-			{
-				return 2;
-			}
-		}
-		if (opt.maxcheck)
-		{
-			if (valtemp > opt.maxval)
-			{
-				return 2;
-			}
-		}
-
-		//Scale
-		valtemp *= opt.scale;
-
-		val = valtemp;
-		return 0;
-	}
-
-	struct MEDProcessingIntegerOptions
-	{
-		int missing = 0; //0 = ignore, 1 = error
+		//0 = Text (up to 7 characters), 1 = Integer, 2 = Double, 3 = Time
+		int Format = 0;
+		//0 = ignore, 1 = error, 2 = insert default value
+		int MissingItemOption = 1;
+		//For format 2 only
+		double ScaleFactor = 1.0;
+		//For format 1-3, check on input
 		bool mincheck = false;
-		int minval = 0;
+		//For format 1-3, check on input
 		bool maxcheck = false;
-		int maxval = 0;
-		int defaultval = 0;
+		//Values for formats 1-3
+		Numeric MinVal;
+		Numeric MaxVal;
+		//Default value (all formats) if item is missing
+		Numeric DefaultValue;
+		//For format 0
+		std::vector<std::string> TextTable;
 	};
 
-	int MEDProcessingInteger(const std::vector<std::string> &data, unsigned i, MEDProcessingDoubleOptions opt, int &val)
+	struct MEDProcessingOutput
 	{
-		//missing: 0 = ignore, 1 = error
-		std::string item;
+		std::vector<bool> Ignored;
+		std::vector<Numeric> Values;
+		int errorItem = 0;
+	};
+
+	void AddTextMEDItem(std::vector<rtcc::MEDProcessingOptions> &opt, int MissingItemOption, std::vector<std::string> TextTable, int DefaultValue = 0)
+	{
+		MEDProcessingOptions temp;
+
+		temp.Format = 0;
+		temp.MissingItemOption = MissingItemOption;
+		temp.DefaultValue.i = DefaultValue;
+		temp.TextTable = TextTable;
+
+		opt.push_back(temp);
+	}
+
+	void AddIntegerMEDItem(std::vector<rtcc::MEDProcessingOptions> &opt, int MissingItemOption, bool mincheck, bool maxcheck, int MinVal = 0, int MaxVal = 0, int DefaultValue = 0)
+	{
+		MEDProcessingOptions temp;
+
+		temp.Format = 1;
+		temp.MissingItemOption = MissingItemOption;
+		temp.mincheck = mincheck;
+		temp.maxcheck = maxcheck;
+		temp.MinVal.i = MinVal;
+		temp.MaxVal.i = MaxVal;
+		temp.DefaultValue.i = DefaultValue;
+
+		opt.push_back(temp);
+	}
+
+	void AddDoubleMEDItem(std::vector<rtcc::MEDProcessingOptions> &opt, int MissingItemOption, bool mincheck, bool maxcheck, double ScaleFactor, double MinVal = 0.0, double MaxVal = 0.0, double DefaultValue = 0.0)
+	{
+		MEDProcessingOptions temp;
+
+		temp.Format = 2;
+		temp.MissingItemOption = MissingItemOption;
+		temp.mincheck = mincheck;
+		temp.maxcheck = maxcheck;
+		temp.MinVal.d = MinVal;
+		temp.MaxVal.d = MaxVal;
+		temp.DefaultValue.d = DefaultValue;
+		temp.ScaleFactor = ScaleFactor;
+
+		opt.push_back(temp);
+	}
+
+	void AddTimeMEDItem(std::vector<rtcc::MEDProcessingOptions> &opt, int MissingItemOption, bool mincheck, bool maxcheck, double ScaleFactor = 1.0, double MinVal = 0.0, double MaxVal = 0.0, double DefaultValue = 0.0)
+	{
+		MEDProcessingOptions temp;
+
+		temp.Format = 3;
+		temp.MissingItemOption = MissingItemOption;
+		temp.mincheck = mincheck;
+		temp.maxcheck = maxcheck;
+		temp.MinVal.d = MinVal;
+		temp.MaxVal.d = MaxVal;
+		temp.DefaultValue.d = DefaultValue;
+		temp.ScaleFactor = ScaleFactor;
+
+		opt.push_back(temp);
+	}
+
+	int GenericMEDProcessingItem(const MEDProcessingOptions &opt, std::string data, Numeric &out, bool &Ignored)
+	{
 		bool isMissing;
 
-		item = data[i];
-		isMissing = (item == "");
+		isMissing = (data == "");
+		Ignored = false;
 
 		if (isMissing)
 		{
-			//Error
-			if (opt.missing == 1)
+			//Process missing MED item
+			switch (opt.MissingItemOption)
 			{
-				return 1;
+			case 0: //Ignore
+				Ignored = true;
+				return 0;
+			case 1: //Error
+				return 2;
+			case 2: //Insert default value
+				switch (opt.Format)
+				{
+				case 0:
+				case 1:
+					out.i = opt.DefaultValue.i;
+					return 0;
+				case 2:
+				case 3:
+					out.d = opt.DefaultValue.d;
+					return 0;
+				}
 			}
-			//Ignore
+		}
+
+		switch (opt.Format)
+		{
+		case 0: //Text
+		//Compare to table of inputs
+			for (unsigned i = 0; i < opt.TextTable.size(); i++)
+			{
+				if (data == opt.TextTable[i])
+				{
+					//Found it
+					out.i = i;
+					return 0;
+				}
+			}
+			return 2;
+		case 1: //Integer
+		{
+			int valtemp;
+			if (sscanf(data.c_str(), "%d", &valtemp) != 1)
+			{
+				return 2;
+			}
+
+			//Limit checking
+			if (opt.mincheck)
+			{
+				if (valtemp < opt.MinVal.i)
+				{
+					return 2;
+				}
+			}
+			if (opt.maxcheck)
+			{
+				if (valtemp > opt.MaxVal.i)
+				{
+					return 2;
+				}
+			}
+
+			out.i = valtemp;
+		}
+		return 0;
+		case 2: //Double
+		case 3: //Time
+		{
+			double valtemp;
+			if (opt.Format == 2)
+			{
+				if (sscanf(data.c_str(), "%lf", &valtemp) != 1)
+				{
+					return 2;
+				}
+			}
 			else
 			{
-				return 0;
+				double ss;
+				int hh, mm;
+				bool pos;
+
+				if (sscanf(data.c_str(), "%d:%d:%lf", &hh, &mm, &ss) != 3)
+				{
+					return 2;
+				}
+
+				pos = true;
+				if (data[0] == '-')
+				{
+					pos = false;
+					hh = abs(hh);
+				}
+				valtemp = 3600.0*(double)hh + 60.0*(double)mm + ss;
+				if (pos == false)
+				{
+					valtemp = -valtemp;
+				}
 			}
-		}
 
-		int valtemp;
-
-		if (sscanf(item.c_str(), "%d", &valtemp) != 1)
-		{
-			return 2;
-		}
-
-		//Limit checking
-		if (opt.mincheck)
-		{
-			if (valtemp < opt.minval)
+			//Limit checking
+			if (opt.mincheck)
 			{
-				return 2;
+				if (valtemp < opt.MinVal.d)
+				{
+					return 2;
+				}
 			}
-		}
-		if (opt.maxcheck)
-		{
-			if (valtemp > opt.maxval)
+			if (opt.maxcheck)
 			{
-				return 2;
+				if (valtemp > opt.MaxVal.d)
+				{
+					return 2;
+				}
 			}
-		}
 
-		val = valtemp;
+			//Scale
+			valtemp *= opt.ScaleFactor;
+
+			out.d = valtemp;
+		}
 		return 0;
+		}
+		//Invalid format
+		return 4;
 	}
 
-	int MEDProcessingTime(const std::vector<std::string> &data, unsigned i, MEDProcessingDoubleOptions opt, double &secs)
+	int GenericMEDProcessing(const std::vector<MEDProcessingOptions> &def, std::vector<std::string> data, MEDProcessingOutput &out, unsigned start = 0, unsigned stop = 0)
 	{
-		//missing: 0 = ignore, 1 = error
-		std::string item;
-		bool isMissing;
+		int err;
+		bool btemp;
 
-		item = data[i];
-		isMissing = (item == "");
+		//Adjust size
+		data.resize(def.size());
+		out.Values.clear();
+		out.Values.resize(def.size());
+		out.Ignored.clear();
+		out.Ignored.resize(def.size());
 
-		if (isMissing)
+		//Choose MEDs to process
+		if (stop == 0)
 		{
-			//Error
-			if (opt.missing == 1)
+			stop = def.size();
+		}
+		else
+		{
+			stop++;
+			if (def.size() >= stop)
 			{
-				return 1;
+				//Use stop
 			}
-			//Ignore
 			else
 			{
-				return 0;
+				stop = def.size();
 			}
 		}
 
-		double valtemp, ss;
-		int hh, mm;
-		bool pos;
-
-		if (sscanf(item.c_str(), "%d:%d:%lf", &hh, &mm, &ss) != 3)
+		for (unsigned i = start; i < stop; i++)
 		{
-			return 2;
-		}
-
-		pos = true;
-		if (item[0] == '-')
-		{
-			pos = false;
-			hh = abs(hh);
-		}
-		valtemp = 3600.0*(double)hh + 60.0*(double)mm + ss;
-		if (pos == false)
-		{
-			valtemp = -valtemp;
-		}
-
-		//Limit checking
-		if (opt.mincheck)
-		{
-			if (valtemp < opt.minval)
+			err = GenericMEDProcessingItem(def[i], data[i], out.Values[i], btemp);
+			out.Ignored[i] = btemp;
+			if (err)
 			{
-				return 3;
+				out.errorItem = i;
+				return err;
 			}
 		}
-		if (opt.maxcheck)
-		{
-			if (valtemp > opt.maxval)
-			{
-				return 4;
-			}
-		}
-
-		secs = valtemp + opt.scale;
 		return 0;
 	}
 
+	bool MEDTimeInputHHMMSS(std::string data, double &hrs)
+	{
+		MEDProcessingOptions opt;
+		Numeric out;
+		int err;
+		bool Ignored;
+
+		opt.Format = 3;
+		opt.MissingItemOption = 1;
+		opt.mincheck = false;
+		opt.maxcheck = false;
+		opt.ScaleFactor = 1.0;
+
+		err = GenericMEDProcessingItem(opt, data, out, Ignored);
+		hrs = out.d / 3600.0;
+
+		return (err != 0);
+	}
 }

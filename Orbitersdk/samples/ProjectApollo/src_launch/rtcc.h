@@ -1750,7 +1750,7 @@ struct PMMLDIInput
 struct PMMLAIInput
 {
 	double m0;
-	SV sv_CSM;
+	EphemerisData sv_CSM;
 	double t_liftoff;
 	double v_LH;
 	double v_LV;
@@ -2209,7 +2209,7 @@ struct RTEDMEDData
 	bool HeadsUp;
 	int PrimaryReentryMode;
 	int BackupReentryMode;
-	int IRM; //REFSMMAT number: -1 = input, 0 = Reentry, 1 = deorbit, 2 = orbital preferred, 3 = TEI
+	int IRM; //REFSMMAT number: -1 = input, 0 = Reentry, 1 = deorbit, 2 = orbital preferred, 3 = TEI, 4 = Lunar Entry (LVLH 0,0,0), 5 = Lunar Entry (LVLH 0,180,0)
 	int StoppingMode; //-1 = Time, 1 = Gamma
 	bool ManualEntry;
 	int TrimInd;
@@ -2511,7 +2511,42 @@ public:
 	void LLWP_HMALIT(AEGHeader Header, AEGDataBlock *sv, AEGDataBlock *sv_temp, int M, int P, int I_CDH, double DH, double &dv_CSI, double &dv_CDH, double &t_CDH);
 	void LunarLaunchWindowProcessor(const LunarLiftoffTimeOpt &opt);
 	bool LunarLiftoffTimePredictionDT(const LLTPOpt &opt, LunarLaunchTargetingTable &res);
-	void LunarAscentProcessor(VECTOR3 R_LS, double m0, SV sv_CSM, double t_liftoff, double v_LH, double v_LV, double &theta, double &dt_asc, double &dv, SV &sv_IG, SV &sv_Ins);
+
+	struct LunarAscentProcessorInputs
+	{
+		//Landing site vector in MCT coordinates
+		VECTOR3 R_LS;
+		//LM mass at liftoff
+		double m0;
+		//CSM state vector near liftoff
+		EphemerisData sv_CSM;
+		//GMT of liftof
+		double t_liftoff;
+		//Insertion velocity
+		double v_LH, v_LV;
+	};
+
+	struct LunarAscentProcessorOutputs
+	{
+		//Ascent powered flight arc
+		double theta;
+		//Ascent powered flight time
+		double dt_asc;
+		//Ascent total DV
+		double dv;
+		//LM state vector at ignition
+		EphemerisData sv_IG;
+		//Cross range at ignition
+		double CR;
+		//Phase angle at insertion
+		double phase;
+		//LM state vector at insertion
+		EphemerisData sv_Ins;
+		//LM mass at insertion
+		double m1;
+	};
+
+	void LunarAscentProcessor(const LunarAscentProcessorInputs &in, LunarAscentProcessorOutputs &out);
 	bool PoweredDescentProcessor(VECTOR3 R_LS, double TLAND, SV sv, RTCCNIAuxOutputTable &aux, EphemerisDataTable2 *E, SV &sv_PDI, SV &sv_land, double &dv);
 	void EntryUpdateCalc(SV sv0, double entryrange, bool highspeed, EntryResults *res);
 	void PMMDKI(SPQOpt &opt, SPQResults &res);
@@ -2626,9 +2661,9 @@ public:
 	//Central Manual Entry Device Decoder
 	bool GMGMED(char *str);
 	//MED Decoder for G, A and B MEDs
-	int EMGABMED(int type, std::string med, std::vector<std::string> data);
+	void EMGABMED(int type, std::string med, std::vector<std::string> data, int &err, unsigned &param);
 	//MED Decoder for C MEDs
-	int CMRMEDIN(std::string med, std::vector<std::string> data);
+	void CMRMEDIN(std::string med, std::vector<std::string> data, int &err, unsigned &param);
 	//'F' MED Module
 	int PMQAFMED(std::string med);
 	int PMQAFMED(std::string med, std::vector<std::string> data);
@@ -4099,10 +4134,10 @@ public:
 
 		//Block 12
 		std::string RTESite = "No Site!";
-		double RTEVectorTime;
-		double RTET0Min; //Time of abort or minimum time
-		double RTET0Max; //Maximum time
-		double RTETimeOfLanding;
+		double RTEVectorTime; //Vector time in GMT (hrs)
+		double RTET0Min; //Time of abort or minimum time in GMT (hrs)
+		double RTET0Max; //Maximum time in GMT (hrs)
+		double RTETimeOfLanding; //Landing time in GMT (hrs)
 		double RTEUADVMax;
 		double RTEPTPMissDistance;
 		double RTEInclination;
@@ -4258,7 +4293,7 @@ public:
 
 	struct LAIInputOutput
 	{
-		double t_launch;
+		double t_launch = 0.0;
 		double R_D, Y_D;
 		double R_D_dot, Y_D_dot, Z_D_dot;
 		EphemerisData sv_Insertion;
@@ -5026,7 +5061,6 @@ protected:
 	bool PMMXFRDeleteOption(int L, double GMTI);
 	int PMMMCDCallEMSMISS(EphemerisData sv0, double GMTI, EphemerisData &sv1);
 	int PMSVCTAuxVectorFetch(int L, double T_F, EphemerisData &sv);
-	bool MEDTimeInputHHMMSS(std::string vec, double &hours);
 public:
 	EphemerisData ConvertSVtoEphemData(SV sv);
 	SV ConvertEphemDatatoSV(EphemerisData sv, double mass = 0.0);

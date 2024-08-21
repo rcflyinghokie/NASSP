@@ -868,6 +868,7 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 		{
 			sprintf(manname, "TEI-1");
 			entopt.t_zmin = 122.0*3600.0;
+			sv1 = coast(sv1, 0.5*3600.0);
 		}
 		else
 		{

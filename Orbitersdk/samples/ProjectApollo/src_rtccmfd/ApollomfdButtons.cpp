@@ -517,11 +517,11 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	static const MFDBUTTONMENU mnu15[] =
 	{
 		{ "CSM or LM", 0, 'P' },
-		{ "Pointing body", 0, 'P' },
+		{ "Object to point at", 0, 'P' },
 		{ "Vessel axis", 0, 'D' },
-		{ "", 0, ' ' },
-		{ "", 0, ' ' },
-		{ "", 0, ' ' },
+		{ "Choose the direction", 0, 'D' },
+		{ "Choose pitch and yaw", 0, 'E' },
+		{ "Choose omicron angle", 0, 'F' },
 
 		{ "Select Vessel", 0, 'T' },
 		{ "Calculate attitude", 0, 'C' },
@@ -535,10 +535,10 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 
 	RegisterFunction("VES", OAPI_KEY_P, &ApolloRTCCMFD::CycleCSMOrLMSelection);
 	RegisterFunction("OPT", OAPI_KEY_G, &ApolloRTCCMFD::cycleVECPOINTOpt);
-	RegisterFunction("BOD", OAPI_KEY_P, &ApolloRTCCMFD::vecbodydialogue);
+	RegisterFunction("OBJ", OAPI_KEY_P, &ApolloRTCCMFD::vecbodydialogue);
 	RegisterFunction("DIR", OAPI_KEY_D, &ApolloRTCCMFD::cycleVECDirOpt);
-	RegisterFunction("", OAPI_KEY_E, &ApolloRTCCMFD::menuVoid);
-	RegisterFunction("", OAPI_KEY_F, &ApolloRTCCMFD::menuVoid);
+	RegisterFunction("PY", OAPI_KEY_E, &ApolloRTCCMFD::menuVECPOINTSelectAttitude);
+	RegisterFunction("OMI", OAPI_KEY_F, &ApolloRTCCMFD::menuVECPOINTOmicron);
 
 	RegisterFunction("SEL", OAPI_KEY_T, &ApolloRTCCMFD::set_Vessel);
 	RegisterFunction("CLC", OAPI_KEY_C, &ApolloRTCCMFD::menuVECPOINTCalc);
@@ -3647,7 +3647,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 		{ "Enter AST site or area", 0, 'E' },
 		{ "CSM or vector time", 0, 'D' },
 		{ "Enter abort time", 0, 'G' },
-		{ "Enter desired DV", 0, 'A' },
+		{ "Max DV or Time", 0, 'A' },
 		{ "Enter landing time", 0, 'V' },
 
 		{ "Go to AST display", 0, 'C' },

@@ -4686,7 +4686,7 @@ void Saturn::StageSix(double simt){
 			
 			double O2Tank1Mass = O2Tanks[0]->mass/1E3;
 
-			SetThrusterLevel(th_o2_vent, O2Tank1Mass/145149.5584);
+			SetThrusterLevel(th_o2_vent, O2Tank1Mass/145.1495584);
 
 			SetPropellantMass(ph_o2_vent, O2Tank1Mass);
 		}
