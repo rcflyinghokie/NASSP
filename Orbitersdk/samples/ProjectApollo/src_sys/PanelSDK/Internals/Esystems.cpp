@@ -1385,35 +1385,34 @@ AtmRegen::AtmRegen(char* i_name, int i_pump, int i_pumpH2o, e_object* i_SRC, dou
 	H20waste = i_H2Owaste;
 	loaded = 0;
 
-	co2removalrate = 0;
+	//co2removalrate = 0;
 	//fanrate = 0;
 }
 
 void AtmRegen::refresh(double dt) {
 
-	co2removalrate = 0;
-	pumping = 0;
+	//co2removalrate = 0;
+	pumping = false;
 
 	if (h_pump == 0) {
 		return;
 	}
 
 	if (SRC) {
-		if (SRC->Voltage() < SP_MIN_DCVOLTAGE)
-			return;
-		SRC->DrawPower(241.5);
-	}
-	else {
-		return;
+		if (SRC->Voltage() > SP_MIN_DCVOLTAGE)
+		{
+			SRC->DrawPower(241.5);
+			pumping = true;
+		}
 	}
 
-	pumping = 1;
-
-	double delta_p = in->GetPress() - out->GetPress() + fan_cap;
+	double delta_p = in->GetPress() - out->GetPress() + (pumping ? fan_cap : 0.0);
 	if (delta_p < 0)
 		delta_p = 0;
 
 	h_volume fanned = in->GetFlow(dt * delta_p);
+
+	/*
 	co2removalrate = fanned.composition[SUBSTANCE_CO2].mass / dt;
 
 	if (co2removalrate <= 0.0356) {
@@ -1430,6 +1429,7 @@ void AtmRegen::refresh(double dt) {
 
 		co2removalrate = removedmass / dt;
 	}
+	*/
 
 	// separate water
 	if (h_pumpH2o) {

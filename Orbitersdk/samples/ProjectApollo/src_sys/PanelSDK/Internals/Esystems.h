@@ -512,7 +512,7 @@ public:
 	h_Valve* out;
 	h_Valve *H20waste;
 
-	bool IsOn() { return (pumping != 0); }
+	bool IsOn() { return pumping; }
 	virtual void refresh(double dt);
 	virtual void Load(char *line);
 	virtual void Save(FILEHANDLE scn);

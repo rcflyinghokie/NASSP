@@ -377,9 +377,9 @@ void Saturn::SystemsInit() {
 	
 	Crew = (h_crew *) Panelsdk.GetPointerByString("HYDRAULIC:CREW");
 
-	SuitCompressor1 = (AtmRegen *) Panelsdk.GetPointerByString("ELECTRIC:SUITCOMPRESSORCO2ABSORBER1");
+	SuitCompressor1 = (AtmRegen *) Panelsdk.GetPointerByString("ELECTRIC:SUITCOMPRESSOR1");
 	SuitCompressor1->WireTo(&SuitCompressor1Switch);
-	SuitCompressor2 = (AtmRegen *) Panelsdk.GetPointerByString("ELECTRIC:SUITCOMPRESSORCO2ABSORBER2");
+	SuitCompressor2 = (AtmRegen *) Panelsdk.GetPointerByString("ELECTRIC:SUITCOMPRESSOR2");
 	SuitCompressor2->WireTo(&SuitCompressor2Switch);
 
 	SuitCompressor1Feeder.WireToBuses(&SuitCompressorsAc1ACircuitBraker, &SuitCompressorsAc1BCircuitBraker, &SuitCompressorsAc1CCircuitBraker);
@@ -530,7 +530,7 @@ void Saturn::SystemsInit() {
 	WasteH2OQtySensor.Init(&ECSWastePotTransducerFeeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:WASTEH2OTANK"));
 	PotH2OQtySensor.Init(&ECSWastePotTransducerFeeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:POTABLEH2OTANK"));
 	SuitPressSensor.Init(&ECSPressGroups1Feeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:SUIT"));
-	SuitCompressorDeltaPSensor.Init(&ECSPressGroups1Feeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:SUIT"), (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:SUITCIRCUITRETURNVALVE"));
+	SuitCompressorDeltaPSensor.Init(&ECSPressGroups1Feeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:CO2SCRUBBERMANIFOLD"), (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:SUITCOMPRESSORMANIFOLD"));
 	GlycolPumpOutPressSensor.Init(&ECSPressGroups1Feeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:PRIMRADIATORINLET"));
 	GlyEvapOutSteamTempSensor.Init(&ECSTempTransducerFeeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:PRIMEVAPORATOROUTLET")); //Should be steam, not glycol temperature
 	GlyEvapOutTempSensor.Init(&ECSTempTransducerFeeder, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:PRIMEVAPORATOROUTLET"));
@@ -946,8 +946,8 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 					CabinPressureRegulator.Close();
 
 					// Suit compressors to prelaunch configuration
-					SuitCompressor1->fan_cap = 110000.0;
-					SuitCompressor2->fan_cap = 110000.0;
+					//SuitCompressor1->fan_cap = 110000.0;
+					//SuitCompressor2->fan_cap = 110000.0;
 
 					// Open suit relief valve and close O2 demand regulator in order to 
 					// equalize suit cabin pressure difference
@@ -1053,6 +1053,12 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 					*(int*) Panelsdk.GetPointerByString("HYDRAULIC:SECEVAPGSEHEATEXCHANGER:PUMP") = SP_PUMP_OFF;
 					*(int*) Panelsdk.GetPointerByString("ELECTRIC:GSECHILLER:PUMP") = SP_PUMP_OFF;
 
+					// Close Service Module GSE Cryogenic Valves
+					O2Tanks[0]->IN_valve.Close();
+					O2Tanks[1]->IN_valve.Close();
+					H2Tanks[0]->IN_valve.Close();
+					H2Tanks[1]->IN_valve.Close();
+
 					// Next state
 					systemsState = SATSYSTEMS_READYTOLAUNCH;
 					lastSystemsMissionTime = MissionTime; 
@@ -1070,8 +1076,8 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 					CabinPressureReliefValve1.SetLeakSize(0.001);
 
 					// Suit compressors to flight configuration
-					SuitCompressor1->fan_cap = 65000.0;
-					SuitCompressor2->fan_cap = 65000.0;
+					//SuitCompressor1->fan_cap = 65000.0;
+					//SuitCompressor2->fan_cap = 65000.0;
 
 					// ECS radiators now working normally
 					PrimEcsRadiatorExchanger1->SetLength(10.0);
@@ -1104,8 +1110,8 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 			case SATSYSTEMS_FLIGHT:
 				if (GetAtmPressure() > 4. / PSI) {					
 					// Suit compressors to landing configuration
-					SuitCompressor1->fan_cap = 110000.0;
-					SuitCompressor2->fan_cap = 110000.0;
+					//SuitCompressor1->fan_cap = 110000.0;
+					//SuitCompressor2->fan_cap = 110000.0;
 
 					// Next state
 					systemsState = SATSYSTEMS_LANDING;
@@ -1140,6 +1146,37 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 //------------------------------------------------------------------------------------
 // Various debug prints
 //------------------------------------------------------------------------------------
+//Suit Compressor Debug Lines
+
+	double *InletPress = (double *)Panelsdk.GetPointerByString("HYDRAULIC:SUITCOMPRESSORMANIFOLD:PRESS");
+	double *OutletPress = (double *)Panelsdk.GetPointerByString("HYDRAULIC:CO2SCRUBBERMANIFOLD:PRESS");
+	double *CO21Press = (double *)Panelsdk.GetPointerByString("HYDRAULIC:CO2SCRUBBER1:PRESS");
+	double *CO22Press = (double *)Panelsdk.GetPointerByString("HYDRAULIC:CO2SCRUBBER2:PRESS");
+	double *CO21Flow = (double *)Panelsdk.GetPointerByString("HYDRAULIC:CO2ABSORBER1:FLOW");
+	double *CO21FlowMax = (double *)Panelsdk.GetPointerByString("HYDRAULIC:CO2ABSORBER1:FLOWMAX");
+	double *CO21Removal = (double *)Panelsdk.GetPointerByString("HYDRAULIC:CO2ABSORBER1:CO2REMOVALRATE");
+	double *CO22Flow = (double *)Panelsdk.GetPointerByString("HYDRAULIC:CO2ABSORBER2:FLOW");
+	double *CO22FlowMax = (double *)Panelsdk.GetPointerByString("HYDRAULIC:CO2ABSORBER2:FLOWMAX");
+	double *CO22Removal = (double *)Panelsdk.GetPointerByString("HYDRAULIC:CO2ABSORBER2:CO2REMOVALRATE");
+
+
+	//sprintf(oapiDebugString(), "Inlet Press: %.3f Outlet Press: %.3f CO2 1 Press: %.3f CO2 2 Press %.3f", *InletPress *PSI, *OutletPress *PSI, *CO21Press *PSI, *CO22Press *PSI);
+	sprintf(oapiDebugString(), "CO21: Flow: %.3f FM: %.3f REM: %.3f CO22: Flow: %.3f FM: %.3f REM: %.3f", *CO21Flow, *CO21FlowMax, *CO21Removal, *CO22Flow, *CO22FlowMax, *CO22Removal);
+
+//GSE Cryo Debug Lines
+
+	double *GSEO2CryoPress = (double *)Panelsdk.GetPointerByString("HYDRAULIC:GSECRYOO2DEWAR:PRESS");
+	double *GSEO2CryoTemp = (double *)Panelsdk.GetPointerByString("HYDRAULIC:GSECRYOO2DEWAR:TEMP");
+	double *O2Tank1Temp = (double *)Panelsdk.GetPointerByString("HYDRAULIC:O2TANK1:TEMP");
+	double *O2Tank2Temp = (double *)Panelsdk.GetPointerByString("HYDRAULIC:O2TANK2:TEMP");
+
+	double *GSEH2CryoPress = (double *)Panelsdk.GetPointerByString("HYDRAULIC:GSECRYOH2DEWAR:PRESS");
+	double *GSEH2CryoTemp = (double *)Panelsdk.GetPointerByString("HYDRAULIC:GSECRYOH2DEWAR:TEMP");
+	double *H2Tank1Temp = (double *)Panelsdk.GetPointerByString("HYDRAULIC:H2TANK1:TEMP");
+	double *H2Tank2Temp = (double *)Panelsdk.GetPointerByString("HYDRAULIC:H2TANK2:TEMP");
+
+	//sprintf(oapiDebugString(), "GSEPress: %.3f GSETemp: %.3f O2T1Temp: %.3f O2T2Temp: %.3f", *GSEO2CryoPress *PSI, KelvinToFahrenheit(*GSEO2CryoTemp), KelvinToFahrenheit(*O2Tank1Temp), KelvinToFahrenheit(*O2Tank2Temp));
+	//sprintf(oapiDebugString(), "GSEPress: %.3f GSETemp: %.3f H2T1Temp: %.3f H2T2Temp: %.3f", *GSEH2CryoPress *PSI, KelvinToFahrenheit(*GSEH2CryoTemp), KelvinToFahrenheit(*H2Tank1Temp), KelvinToFahrenheit(*H2Tank2Temp));
 
 //	FC Nitrogen system.
 	//h_Tank* pHeader = (h_Tank*)Panelsdk.GetPointerByString("HYDRAULIC:N2FUELCELL1HEADERTANK");
@@ -1343,7 +1380,7 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 	double *tempCabin=(double*)Panelsdk.GetPointerByString("HYDRAULIC:CABIN:TEMP");
 	double *pressCabin=(double*)Panelsdk.GetPointerByString("HYDRAULIC:CABIN:PRESS");
 	double *pressCabinCO2=(double*)Panelsdk.GetPointerByString("HYDRAULIC:CABIN:CO2_PPRESS");
-	double *co2removalrate=(double*)Panelsdk.GetPointerByString("ELECTRIC:SUITCOMPRESSORCO2ABSORBER1:CO2REMOVALRATE");
+	//double *co2removalrate=(double*)Panelsdk.GetPointerByString("ELECTRIC:SUITCOMPRESSORCO2ABSORBER1:CO2REMOVALRATE");
 
 	double *massEarth=(double*)Panelsdk.GetPointerByString("HYDRAULIC:EARTH:MASS");
 	double *tempEarth=(double*)Panelsdk.GetPointerByString("HYDRAULIC:EARTH:TEMP");
@@ -2660,14 +2697,14 @@ void Saturn::CabinFansSystemTimestep()
 
 		PrimCabinHeatExchanger->SetPumpAuto();
 		SecCabinHeatExchanger->SetPumpAuto();
-		CabinHeater->SetPumpAuto(); 
+		//CabinHeater->SetPumpAuto(); 
 
 		CabinFanSound();
 	} 
 	else {
 		PrimCabinHeatExchanger->SetPumpOff();
 		SecCabinHeatExchanger->SetPumpOff();
-		CabinHeater->SetPumpOff(); 
+		//CabinHeater->SetPumpOff(); 
 
 		StopCabinFanSound();
 	}
