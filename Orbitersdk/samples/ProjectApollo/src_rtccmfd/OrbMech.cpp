@@ -4358,7 +4358,7 @@ void ITER(double &c, int &s, double e, double &p, double &x, double &eo, double 
 	}
 }
 
-bool QDRTPI(int Epoch, VECTOR3 R, VECTOR3 V, double MJD, OBJHANDLE gravref, double mu, double dh, double E_L, int s, VECTOR3 &R_J, VECTOR3 &V_J)
+bool QDRTPI(int Epoch, VECTOR3 R, VECTOR3 V, double MJD, int gravref, double mu, double dh, double E_L, int s, VECTOR3 &R_J, VECTOR3 &V_J)
 {
 	int s_F;
 	double c, t, e_T, e_To, to, eps1, p;
@@ -6219,9 +6219,12 @@ SV PositionMatch(int Epoch, SV sv_A, SV sv_P, double mu)
 	SV sv_A1, sv_P1;
 	VECTOR3 u, R_A1, U_L;
 	double phase, n, dt, ddt;
+	int nmax, nn;
 	bool error;
 
 	dt = 0.0;
+	nn = 0;
+	nmax = 100;
 
 	u = unit(crossp(sv_P.R, sv_P.V));
 	U_L = unit(crossp(u, sv_P.R));
@@ -6230,7 +6233,7 @@ SV PositionMatch(int Epoch, SV sv_A, SV sv_P, double mu)
 	do
 	{
 		R_A1 = unit(sv_A1.R - u * dotp(sv_A1.R, u))*length(sv_A1.R);
-		phase = acos(dotp(unit(R_A1), unit(sv_P.R)));
+		phase = acos2(dotp(unit(R_A1), unit(sv_P.R)));
 		if (dotp(U_L, R_A1) > 0)
 		{
 			phase = -phase;
@@ -6239,7 +6242,8 @@ SV PositionMatch(int Epoch, SV sv_A, SV sv_P, double mu)
 		ddt = phase / n;
 		sv_A1 = coast(Epoch, sv_A1, ddt);
 		dt += ddt;
-	} while (abs(ddt) > 0.01);
+		nn++;
+	} while (abs(ddt) > 0.01 && nmax > nn);
 
 	return sv_A1;
 }

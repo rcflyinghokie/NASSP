@@ -15,6 +15,7 @@
 #include "rtcc.h"
 #include "LunarTargetingProgram.h"
 #include "thread.h"
+#include "RTCCDisplayFormatting.h"
 #include <queue>
 
 struct ApolloRTCCMFDData {  // global data storage
@@ -90,6 +91,12 @@ public:
 	std::string AGOP_Error;
 	MATRIX3 AGOP_REFSMMAT;
 	int AGOP_REFSMMAT_Vehicle;
+
+	//MOCR DISPLAY
+	void DFLBackgroundSlide(oapi::Sketchpad *skp, DWORD W, DWORD H, unsigned display);
+
+protected:
+	const rtcc::RTCCBackgroundSlides BackgroundSlides;
 };
 
 class ARCore {
@@ -311,7 +318,8 @@ public:
 
 	//VECPOINT PAGE
 	int VECoption;		//0 = Point SC at body, 1 = Open hatch thermal control
-	int VECdirection;	//0 = +X, 1 = -X, 2 = +Y,3 = -Y,4 = +Z, 5 = -Z
+	int VECdirection;	//0 = +X, 1 = -X, 2 = Optics, 3 = SIM Bay, 4 = Selectable
+	VECTOR3 VECBodyVector; //Yaw, pitch for option 7 and Omicron
 	OBJHANDLE VECbody;	//handle for the desired body
 	VECTOR3 VECangles;	//IMU angles
 
@@ -322,6 +330,7 @@ public:
 	AP11LMASCPAD lmascentpad;
 	double t_LunarLiftoff;
 	int AscentPADVersion; //0 = Apollo 11-13, 1 = Apollo 14-17
+	double LAP_Phase, LAP_CR;
 
 	//Powered Descent Abort Program
 	int PDAPEngine;	//0 = DPS/APS, 1 = APS
