@@ -184,6 +184,8 @@ namespace mission {
 
 		char line[256];
 
+		AdditionalGroundStations.clear(); //Is this required?
+
 		while (hFile.getline(line, sizeof line))
 		{
 			if (!_strnicmp(line, "Name=", 5)) {
@@ -410,6 +412,15 @@ namespace mission {
 			}
 			else if (!_strnicmp(line, "LMPIPASCALEZ=", 13)) {
 				sscanf(line + 13, "%lf", &LM_PIPAScale.z);
+			}
+			else if (!_strnicmp(line, "GroundStation=", 14)) {
+				ReadGroundStationLine(line + 14);
+			}
+			else if (!_strnicmp(line, "GroundStationPosition=", 22)) {
+				ReadGroundStationPostionLine(line + 22);
+			}
+			else if (!_strnicmp(line, "GroundStationActive=", 20)) {
+				ReadGroundStationActiveLine(line + 20);
 			}
 		}
 		hFile.close();
@@ -689,5 +700,62 @@ namespace mission {
 	bool Mission::IsLMEventTimerReversingAtZero() const
 	{
 		return bLMEventTimerReverseAtZero;
+	}
+
+	std::vector<GroundStationData> Mission::GetGroundStationData() const
+	{
+		return AdditionalGroundStations;
+	}
+
+	std::vector<GroundStationPosition> Mission::GetGroundStationPosition() const
+	{
+		return GroundStationsPositions;
+	}
+
+	std::vector<GroundStationActive> Mission::GetGroundStationActive() const
+	{
+		return GroundStationsActive;
+	}
+
+	void Mission::ReadGroundStationLine(char *line)
+	{
+		GroundStationData temp;
+
+		int itemp[3];
+
+		if (sscanf(line, "%d %s %s %lf %lf %d %d %d %d %d %d %d %d %d %d %d %d",
+			&temp.Num, temp.Name, temp.Code, &temp.Position[0], &temp.Position[1], &itemp[0], &temp.TrackingCaps, &temp.USBCaps, &temp.SBandAntenna, &temp.TelemetryCaps,
+			&temp.CommCaps, &itemp[1], &itemp[2], &temp.DownTlmCaps, &temp.UpTlmCaps, &temp.StationType, &temp.StationPurpose) == 17)
+		{
+			temp.Active = (itemp[0] != 0);
+			temp.HasRadar = (itemp[1] != 0);
+			temp.HasAcqAid = (itemp[2] != 0);
+
+			AdditionalGroundStations.push_back(temp);
+		}
+	}
+
+	void Mission::ReadGroundStationPostionLine(char *line)
+	{
+		GroundStationPosition temp;
+
+		if (sscanf(line, "%d %lf %lf", &temp.Num, &temp.Position[0], &temp.Position[1]) == 3)
+		{
+			GroundStationsPositions.push_back(temp);
+		}
+	}
+
+	void Mission::ReadGroundStationActiveLine(char *line)
+	{
+		GroundStationActive temp;
+
+		int itemp;
+
+		if (sscanf(line, "%d %d", &temp.Num, &itemp) == 2)
+		{
+			temp.Active = (itemp != 0);
+
+			GroundStationsActive.push_back(temp);
+		}
 	}
 }
