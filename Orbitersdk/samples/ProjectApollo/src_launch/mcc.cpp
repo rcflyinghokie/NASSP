@@ -984,7 +984,7 @@ void MCC::AutoUpdateXmitGroundStation(VESSEL* Ves, TrackingVesselType Type, Trac
 			//Get local and global position if ground station
 			Connected = UpdateGroundStationPosition(StationIndex, GSVector, GSGlobalVector);
 
-			//Check if relay satellite is avaiable
+			//Check if relay satellite is available
 			if (Connected && GroundStations[StationIndex].StationType == GSTP_RELAY_SAT)
 			{
 				//Check if the satellite is connected to MSFN. For now, only consider lunar occulation for possible lunar relay satellites
@@ -1033,6 +1033,14 @@ void MCC::AutoUpdateXmitGroundStation(VESSEL* Ves, TrackingVesselType Type, Trac
 						char buf[MAX_MSGSIZE];
 						sprintf(buf, "AOS %s", GroundStations[StationIndex].Name);
 						addMessage(buf);
+					}
+					//S-Band station?
+					if (GroundStations[StationIndex].USBCaps) {
+						//Special logic for ASTP (mostly), relay satellites take precedent. So don't switch to the new station if the transmitting station is currently a satellite
+						if (TransmittingGroundStation[Slot] == 0 || GroundStations[TransmittingGroundStation[Slot]].StationType != GSTP_RELAY_SAT)
+						{
+							TransmittingGroundStation[Slot] = StationIndex; //only interested in picking a station to tx USB carrier
+						}
 					}
 				}
 			}
