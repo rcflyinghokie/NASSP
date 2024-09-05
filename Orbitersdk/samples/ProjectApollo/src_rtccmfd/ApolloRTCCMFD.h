@@ -354,14 +354,18 @@ public:
 	void cycleVECDirOpt();
 	void vecbodydialogue();
 	void set_vecbody(OBJHANDLE body);
+	void menuVECPOINTSelectAttitude();
+	void menuVECPOINTOmicron();
 	void menuVECPOINTCalc();
 	void menuSetLDPPVectorTime();
 	void menuLSRadius();
 	void menuSetLDPPDwellOrbits();
+	void menuSetLDPPLandingSiteOffset();
 	void menuSetLDPPDescentFlightArc();
 	void menuSetLDPPDescIgnHeight();
 	void cycleLDPPPoweredDescSimFlag();
 	void menuSetLDPPPoweredDescTime();
+	void menuLDPPSaveTLAND();
 	void menuLDPPCalc();
 	void menuSetDescPlanCalcPage();
 	void menuTranslunarPage();
@@ -632,7 +636,6 @@ public:
 	void menuSetDescPlanTablePage();
 	void menuSetLDPPAzimuth();
 	void menuSetLDPPDescentFlightTime();
-	void set_LDPPDescentFlightTime(double dt);
 	void cycleLDPPVehicle();
 	void menuSetLDPPDesiredHeight();
 	void menuLDPPThresholdTime1();
@@ -788,11 +791,8 @@ public:
 	void menuSetASTSiteOrType();
 	void set_ASTSiteOrType(char *site);
 	void menuASTVectorTime();
-	void set_ASTVectorTime(double get);
 	void menuASTAbortTime();
-	void set_ASTAbortTime(double get);
 	void menuASTLandingTime();
-	void set_ASTLandingTime(double get);
 	void menuSetAbortScanTablePage();
 	void menuASTTMAXandDVInput();
 	bool set_ASTTMaxandDV(char *str);
