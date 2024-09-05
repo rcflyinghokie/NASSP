@@ -959,8 +959,8 @@ The two nominally used modes are lunar search for TEI and the fuel critical, uns
 \textbf{TYP:} Cycle between the three AST types.\\
 \textbf{SIT:} Choose the landing site or type of abort.\\
 \textbf{VTI:} Choose the vector time for the abort (MPT mode only)\\
-\textbf{TIM:} Choose the time of abort, or initial guess in the case of lunar search.\\
-\textbf{TDV:} Choose the maximum DV for a time critical abort.\\
+\textbf{TIM:} Choose the time of abort, or minimum abort time in the case of lunar search.\\
+\textbf{TDV:} Choose the maximum DV for a time critical abort or the maximum abort time for the lunar search option.\\
 \textbf{TZ:} Choose the estimated landing time for PTP and ATP aborts.\\
 \textbf{AST:} Go to the AST display page.\\
 \textbf{ENT:} Choose the entry profile.\\
@@ -1020,7 +1020,15 @@ for a vector fetch, a time of abort, and maneuver targets. This type of manual e
 \paragraph{Inputs}\mbox{} \\
 \textbf{COL:} Solution will be shown in either primary or manual column.\\
 \textbf{AST:} Choose AST code for the calculation.\\
-\textbf{REF:} Choose REFSMMAT type for the calculation.\\
+\textbf{REF:} Choose REFSMMAT type for the calculation. This can be any REFSMMAT currently stored in the RTCC or any of the following additional types that are calculated with the RTED solution:
+\begin{itemize}
+	\item ROP: Attitude is 0, 0, 0 in burn attitude with heads up. This is identical to the preferred REFSMMAT in the AGC.
+	\item ROY: Attitude is 180, 180, 0 in burn attitude with heads up. This is the Earth orbit retrofire REFSMMAT.
+	\item ROZ: Attitude is 0, 180, 0 in burn attitude with heads up.
+	\item TEI: Attitude is 180, 0, 0 in burn attitude with heads down. This is the TEI REFSMMAT used on Apollo 12 and later.
+  \item DEI: Attitude is 0, 180, 0 at reentry in an LVLH orientation with heat shield forward, inplane, lift up, heads down. This is the standard lunar entry REFSMMAT.
+	\item REI: Attitude is 0, 0, 0 at reentry in an LVLH orientation with heat shield forward, inplane, lift up, heads down.
+\end{itemize}
 \textbf{MAN:} Choose maneuver code for the calculation. The code consists of four letters. The first letter is the spacecraft performing the maneuver, C for CSM and L for LM. The second letter is the thruster used for the maneuver. S for SPS, D for DPS or R for RCS. The third letter is the spacecraft configuration. D for docked, A for ascent stage docked and U for undocked. The last letter is always X for External DV guidance.\\
 \textbf{ULL:} Choose the ullage thrusters and duration for the burn. The ullage thruster options are 2 or 4. If the burn is an RCS burn then the options are +2, +4, -2 or -4 and these will be the thrusters used for the maneuver.\\
 \textbf{TRM:} Choose the trim angle option (calculated or system parameter)\\

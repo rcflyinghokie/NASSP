@@ -705,6 +705,7 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	VECdirection = 0;
 	VECbody = NULL;
 	VECangles = _V(0, 0, 0);
+	VECBodyVector = _V(0, 0, 0);
 
 	TPI_Mode = 0;
 	dt_TPI_sunrise = 16.0*60.0;
@@ -739,6 +740,8 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	TMAlt = 0.0;
 
 	t_LunarLiftoff = 0.0;
+	LAP_Phase = 0.0;
+	LAP_CR = 0.0;
 	AscentPADVersion = 0;
 	t_TPIguess = 0.0;
 
@@ -2435,56 +2438,72 @@ void ARCore::VecPointCalc(bool IsCSM)
 
 		if (v == NULL) return;
 
-		VECTOR3 vPos, pPos, relvec, UX, UY, UZ, loc;
-		MATRIX3 M, M_R;
-		double p_T, y_T;
-		OBJHANDLE gravref = GC->rtcc->AGCGravityRef(v);
+		EphemerisData sv;
+		MATRIX3 MAT, REFSMMAT;
+		VECTOR3 POINTVSM, vPos, pPos, dPos, U_LOS, UNITY, SCAXIS, UTSA, UTSB, UTSAP, UTSBP;
+		double UTPIT, UTYAW, OMICRON;
 
-		p_T = 0;
-		y_T = 0;
-
-		if (VECdirection == 1)
+		if (IsCSM)
 		{
-			p_T = PI;
-			y_T = 0;
+			REFSMMAT = GC->rtcc->EZJGMTX1.data[0].REFSMMAT;
 		}
-		else if (VECdirection == 2)
+		else
 		{
-			p_T = 0;
-			y_T = PI05;
-		}
-		else if (VECdirection == 3)
-		{
-			p_T = 0;
-			y_T = -PI05;
-		}
-		else if (VECdirection == 4)
-		{
-			p_T = -PI05;
-			y_T = 0;
-		}
-		else if (VECdirection == 5)
-		{
-			p_T = PI05;
-			y_T = 0;
+			REFSMMAT = GC->rtcc->EZJGMTX3.data[0].REFSMMAT;
 		}
 
+		switch (VECdirection)
+		{
+		case 0: //+X
+			UTYAW = 0;
+			UTPIT = 0;
+			break;
+		case 1: //-X
+			UTYAW = 0;
+			UTPIT = PI;
+			break;
+		case 2: //Optics
+			UTYAW = 0;
+			UTPIT = -(PI05 - 0.5676353234);
+			break;
+		case 3: //SIM Bay
+			UTYAW = PI05;
+			UTPIT = 52.25*RAD;
+			break;
+		default: //Selectable
+			UTYAW = VECBodyVector.x;
+			UTPIT = VECBodyVector.y;
+			break;
+		}
+
+		//State vector used in calculation
+		sv = GC->rtcc->StateVectorCalcEphem(v);
+		POINTVSM = unit(crossp(sv.V, sv.R));
+
+		//Pointing vector
 		v->GetGlobalPos(vPos);
 		oapiGetGlobalPos(VECbody, &pPos);
-		v->GetRelativePos(gravref, loc);
+		dPos = pPos - vPos;
+		dPos = mul(GC->rtcc->SystemParameters.MAT_J2000_BRCS, _V(dPos.x, dPos.z, dPos.y));
+		U_LOS = unit(dPos);
 
-		relvec = unit(pPos - vPos);
-		relvec = mul(GC->rtcc->SystemParameters.MAT_J2000_BRCS, _V(relvec.x, relvec.z, relvec.y));
-		loc = mul(GC->rtcc->SystemParameters.MAT_J2000_BRCS, _V(loc.x, loc.z, loc.y));
+		//Artemis calculations
+		OMICRON = VECBodyVector.z;
+		UNITY = _V(0, 1, 0);
+		SCAXIS = _V(cos(UTYAW)*cos(UTPIT), sin(UTYAW)*cos(UTPIT), -sin(UTPIT));
 
-		UX = relvec;
-		UY = unit(crossp(UX, -loc));
-		UZ = unit(crossp(UX, crossp(UX, -loc)));
+		UTSAP = crossp(SCAXIS, UNITY);
+		if (length(UTSAP) == 0.0) return;
+		UTSAP = unit(UTSAP);
 
-		M_R = _M(UX.x, UX.y, UX.z, UY.x, UY.y, UY.z, UZ.x, UZ.y, UZ.z);
-		M = _M(cos(y_T)*cos(p_T), sin(y_T), -cos(y_T)*sin(p_T), -sin(y_T)*cos(p_T), cos(y_T), sin(y_T)*sin(p_T), sin(p_T), 0.0, cos(p_T));
+		POINTVSM = unit(crossp(U_LOS, POINTVSM));
 
-		VECangles = OrbMech::CALCGAR(GC->rtcc->EZJGMTX1.data[0].REFSMMAT, mul(OrbMech::tmat(M), M_R));
+		UTSA = POINTVSM * cos(OMICRON) + unit(crossp(U_LOS, POINTVSM))*sin(OMICRON);
+		UTSB = U_LOS;
+		UTSBP = SCAXIS;
+
+		MAT = OrbMech::AXISGEN(UTSAP, UTSBP, UTSA, UTSB);
+		VECangles = OrbMech::CALCGAR(REFSMMAT, MAT);
 	}
 	else if (VECoption == 1)
 	{
@@ -3924,9 +3943,8 @@ int ARCore::subThread()
 	break;
 	case 20: //Lunar Ascent Processor
 	{
-		SV sv_CSM, sv_Ins, sv_IG;
-		VECTOR3 R_LS;
-		double theta, dt, m0, dv;
+		RTCC::LunarAscentProcessorInputs asc_in;
+		RTCC::LunarAscentProcessorOutputs asc_out;
 
 		if (GC->MissionPlanningActive)
 		{
@@ -3938,10 +3956,7 @@ int ARCore::subThread()
 				break;
 			}
 
-			sv_CSM.R = EPHEM.R;
-			sv_CSM.V = EPHEM.V;
-			sv_CSM.MJD = OrbMech::MJDfromGET(EPHEM.GMT, GC->rtcc->GetGMTBase());
-			sv_CSM.gravref = GC->rtcc->GetGravref(EPHEM.RBI);
+			asc_in.sv_CSM = EPHEM;
 
 			PLAWDTInput pin;
 			PLAWDTOutput pout;
@@ -3949,7 +3964,7 @@ int ARCore::subThread()
 			pin.TableCode = RTCC_MPT_LM;
 			GC->rtcc->PLAWDT(pin, pout);
 
-			m0 = pout.LMAscWeight;
+			asc_in.m0 = pout.LMAscWeight;
 		}
 		else
 		{
@@ -3958,17 +3973,20 @@ int ARCore::subThread()
 				Result = DONE;
 				break;
 			}
-			sv_CSM = GC->rtcc->StateVectorCalc(GC->rtcc->pCSM);
+			asc_in.sv_CSM = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pCSM);
 			LEM *l = (LEM *)GC->rtcc->pLM;
-			m0 = l->GetAscentStageMass();
+			asc_in.m0 = l->GetAscentStageMass();
 		}
 
-		R_LS = OrbMech::r_from_latlong(GC->rtcc->BZLAND.lat[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.lng[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.rad[RTCC_LMPOS_BEST]);
+		asc_in.R_LS = OrbMech::r_from_latlong(GC->rtcc->BZLAND.lat[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.lng[RTCC_LMPOS_BEST], GC->rtcc->BZLAND.rad[RTCC_LMPOS_BEST]);
+		asc_in.t_liftoff = GC->rtcc->GMTfromGET(t_LunarLiftoff);
+		asc_in.v_LH = GC->rtcc->PZLTRT.InsertionHorizontalVelocity;
+		asc_in.v_LV = GC->rtcc->PZLTRT.InsertionRadialVelocity;
 
-		GC->rtcc->LunarAscentProcessor(R_LS, m0, sv_CSM, t_LunarLiftoff, GC->rtcc->PZLTRT.InsertionHorizontalVelocity, GC->rtcc->PZLTRT.InsertionRadialVelocity, theta, dt, dv, sv_IG, sv_Ins);
+		GC->rtcc->LunarAscentProcessor(asc_in, asc_out);
 
-		GC->rtcc->PZLTRT.PoweredFlightArc = theta;
-		GC->rtcc->PZLTRT.PoweredFlightTime = dt;
+		GC->rtcc->PZLTRT.PoweredFlightArc = asc_out.theta;
+		GC->rtcc->PZLTRT.PoweredFlightTime = asc_out.dt_asc;
 
 		GC->rtcc->JZLAI.t_launch = t_LunarLiftoff;
 		GC->rtcc->JZLAI.R_D = 60000.0*0.3048;
@@ -3977,10 +3995,10 @@ int ARCore::subThread()
 		GC->rtcc->JZLAI.Y_D_dot = 0.0;
 		GC->rtcc->JZLAI.Z_D_dot = GC->rtcc->PZLTRT.InsertionHorizontalVelocity;
 
-		GC->rtcc->JZLAI.sv_Insertion.R = sv_Ins.R;
-		GC->rtcc->JZLAI.sv_Insertion.V = sv_Ins.V;
-		GC->rtcc->JZLAI.sv_Insertion.GMT = OrbMech::GETfromMJD(sv_Ins.MJD, GC->rtcc->GetGMTBase());
-		GC->rtcc->JZLAI.sv_Insertion.RBI = BODY_MOON;
+		GC->rtcc->JZLAI.sv_Insertion = asc_out.sv_Ins;
+
+		LAP_Phase = asc_out.phase;
+		LAP_CR = asc_out.CR;
 
 		Result = DONE;
 	}
@@ -4979,6 +4997,7 @@ int ARCore::subThread()
 				//TBD: T_V greater than present time
 				GC->rtcc->PZREAP.RTEVectorTime = GC->rtcc->GMTfromGET(GC->rtcc->med_f75_f77.T_V) / 3600.0;
 				GC->rtcc->PZREAP.RTET0Min = GC->rtcc->GMTfromGET(GC->rtcc->med_f75_f77.T_0_min) / 3600.0;
+				GC->rtcc->PZREAP.RTET0Max = GC->rtcc->GMTfromGET(GC->rtcc->med_f77.T_max) / 3600.0;
 				GC->rtcc->PZREAP.RTETimeOfLanding = GC->rtcc->GMTfromGET(GC->rtcc->med_f75_f77.T_Z) / 3600.0;
 				GC->rtcc->PZREAP.RTEPTPMissDistance = GC->rtcc->med_f77.MissDistance;
 			}
