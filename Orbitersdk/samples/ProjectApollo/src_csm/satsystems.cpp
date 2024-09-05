@@ -1226,8 +1226,10 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 	//double *CSMCabinN2 = (double*)Panelsdk.GetPointerByString("HYDRAULIC:CABIN:N2_PPRESS");
 	//double *WMFlow = (double*)Panelsdk.GetPointerByString("HYDRAULIC:WASTESTOWAGEPIPE:FLOW");
 	//int *WMValve = (int*)Panelsdk.GetPointerByString("HYDRAULIC:WASTESTOWAGEVALVE:ISOPEN");
+	//double *CSMCabinTemp = (double*)Panelsdk.GetPointerByString("HYDRAULIC:CABIN:TEMP");
 
 //sprintf(oapiDebugString(), "CSM PPO2: %lf PPN2: %lf WMFlowPPH %lf WMValve %d", *CSMCabinO2* PSI, *CSMCabinN2 * PSI, *WMFlow *LBH, *WMValve);
+//sprintf(oapiDebugString(), "Cabin Temp: %lf", KelvinToFahrenheit (*CSMCabinTemp));
 
 //CSM Connector Debug Lines
 	
