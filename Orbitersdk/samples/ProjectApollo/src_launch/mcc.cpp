@@ -2092,21 +2092,30 @@ void MCC::LoadState(FILEHANDLE scn) {
 		LOAD_DOUBLE("MCC_MoonRevTime", MoonRevTime);
 		LOAD_STRING("MCC_PCOption_Text", PCOption_Text, 32);
 		LOAD_STRING("MCC_NCOption_Text", NCOption_Text, 32);
-		LOAD_INT("MCC_TransmittingGroundstation", TransmittingGroundStation[TrackingSlot::SlotCM]);
-		LOAD_INT("MCC_TransmittingGroundstationLM", TransmittingGroundStation[TrackingSlot::SlotLM]);
+
+		if (papiReadScenario_int(line, "MCC_TransmittingGroundstation", iTemp[0]))
+		{
+			unsigned int i = iTemp[0];
+			if (GroundStations.size() > i) TransmittingGroundStation[TrackingSlot::SlotCM] = iTemp[0];
+		}
+		if (papiReadScenario_int(line, "MCC_TransmittingGroundstationLM", iTemp[0]))
+		{
+			unsigned int i = iTemp[0];
+			if (GroundStations.size() > i) TransmittingGroundStation[TrackingSlot::SlotLM] = iTemp[0];
+		}
 		LOAD_INT("MCC_padNumber", padNumber);
 		//LOAD_INT("MCC_padState", padState);
 
 		if (papiReadScenario_intarr(line, "MCC_GroundStationAOS_CM", iTemp, 2))
 		{
 			unsigned int i = iTemp[0];
-			if (!(i >= GroundStations.size())) GroundStations[i].AOS[TrackingSlot::SlotCM] = iTemp[1];
+			if (GroundStations.size() > i) GroundStations[i].AOS[TrackingSlot::SlotCM] = iTemp[1];
 		}
 
 		if (papiReadScenario_intarr(line, "MCC_GroundStationAOS_LM", iTemp, 2))
 		{
 			unsigned int i = iTemp[0];
-			if (!(i >= GroundStations.size())) GroundStations[i].AOS[TrackingSlot::SlotLM] = iTemp[1];
+			if (GroundStations.size() > i) GroundStations[i].AOS[TrackingSlot::SlotLM] = iTemp[1];
 		}
 
 		if (padNumber > 0)
