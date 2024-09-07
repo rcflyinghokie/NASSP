@@ -125,6 +125,8 @@ namespace mission
 		virtual const std::string& GetLMPSuitName() const;
 		//false = LM event timer continues to count down through zero, true = when reaching zero it starts counting up
 		virtual bool IsLMEventTimerReversingAtZero() const;
+		//Run special Apollo 13 failure and audio code
+		virtual bool DoApollo13Failures() const;
 	protected:
 		bool GetCueCards(const std::vector<CueCardConfig> &cue, unsigned &counter, unsigned &loc, std::string &meshname, VECTOR3 &ofs);
 
@@ -175,6 +177,7 @@ namespace mission
 		double dTEPHEM0;
 		int iLMNumber;
 		bool bLMEventTimerReverseAtZero;
+		bool bApollo13Failures;
 
 		MATRIX3 CM_IMUDriftRates;
 		VECTOR3 CM_PIPABias;
