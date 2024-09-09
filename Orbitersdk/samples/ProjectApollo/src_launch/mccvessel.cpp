@@ -170,7 +170,7 @@ void MCCVessel::clbkLoadStateEx(FILEHANDLE scn, void *status)
 				mcc->enableMissionTracking();
 			}
 		}
-		else if (!_strnicmp(line, "MISSION", 7))  //TBD: Problem with MISSIONTRACKING
+		else if (!_strnicmp(line, "MISSION ", 8))
 		{
 			CreateMCC();
 			strMission = line + 8;
@@ -281,12 +281,9 @@ void MCCVessel::SetConfiguration()
 		{
 			for (unsigned i = 0; i < data2.size(); i++)
 			{
-				if (data2[i].Num >= mcc->GroundStations.size())
+				if (mcc->GroundStations.size() > (unsigned)data2[i].Num)
 				{
-					//Nothing
-				}
-				else
-				{
+					mcc->GroundStations[data2[i].Num].Active = true; //Assumes we want to set the station active, if we are loading new positions
 					mcc->GroundStations[data2[i].Num].Position[0] = data2[i].Position[0];
 					mcc->GroundStations[data2[i].Num].Position[1] = data2[i].Position[1];
 				}
@@ -300,11 +297,7 @@ void MCCVessel::SetConfiguration()
 		{
 			for (unsigned i = 0; i < data3.size(); i++)
 			{
-				if (data3[i].Num >= mcc->GroundStations.size())
-				{
-					//Nothing
-				}
-				else
+				if (mcc->GroundStations.size() > (unsigned)data3[i].Num)
 				{
 					mcc->GroundStations[data3[i].Num].Active = data3[i].Active;
 				}
