@@ -1281,6 +1281,7 @@ public:
 	virtual SIBSystems *GetSIB() { return NULL; }
 	virtual SICSystems *GetSIC() { return NULL; }
 	SECS *GetSECS() { return &secs; }
+	mission::Mission *GetMission() { return pMission; }
 
 	void ClearMeshes();
 

@@ -164,6 +164,8 @@ namespace mission
 		std::vector<GroundStationPosition> GetGroundStationPosition() const;
 		//Set ground station active/inactive
 		std::vector<GroundStationActive> GetGroundStationActive() const;
+		//Run special Apollo 13 failure and audio code
+		virtual bool DoApollo13Failures() const;
 	protected:
 		bool GetCueCards(const std::vector<CueCardConfig> &cue, unsigned &counter, unsigned &loc, std::string &meshname, VECTOR3 &ofs);
 
@@ -221,6 +223,7 @@ namespace mission
 		std::vector<GroundStationData> AdditionalGroundStations;
 		std::vector<GroundStationPosition> GroundStationsPositions;
 		std::vector<GroundStationActive> GroundStationsActive;
+		bool bApollo13Failures;
 
 		MATRIX3 CM_IMUDriftRates;
 		VECTOR3 CM_PIPABias;
