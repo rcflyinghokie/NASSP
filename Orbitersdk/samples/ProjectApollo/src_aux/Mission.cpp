@@ -185,7 +185,9 @@ namespace mission {
 
 		char line[256];
 
-		AdditionalGroundStations.clear(); //Is this required?
+		AdditionalGroundStations.clear();
+		GroundStationsPositions.clear();
+		GroundStationsActive.clear();
 
 		while (hFile.getline(line, sizeof line))
 		{

@@ -981,7 +981,7 @@ void MCC::AutoUpdateXmitGroundStation(VESSEL* Ves, TrackingVesselType Type, Trac
 	for(unsigned int StationIndex = 1; StationIndex < GroundStations.size(); StationIndex++){
 		if (GroundStations[StationIndex].Active == true) {
 
-			//Get local and global position if ground station
+			//Get local and global position of ground station
 			Connected = UpdateGroundStationPosition(StationIndex, GSVector, GSGlobalVector);
 
 			//Check if relay satellite is available
@@ -1006,7 +1006,7 @@ void MCC::AutoUpdateXmitGroundStation(VESSEL* Ves, TrackingVesselType Type, Trac
 				Sight = OrbMech::sight(Vessel_Vector[Slot], GSVector, R_E) && OrbMech::sight(VesselGlobalPos[Slot] - MoonGlobalPos, GSGlobalVector - MoonGlobalPos, R_M);
 
 				//Now put it all together
-				InAOS = (Sight && Connected && ((GroundStations[StationIndex].USBCaps & GSSC_VOICE) || (GroundStations[StationIndex].CommCaps & GSGC_VHFAG_VOICE)) && length(Vessel_Vector[Slot] - GSVector) < LOSRange);
+				InAOS = (Sight && ((GroundStations[StationIndex].USBCaps & GSSC_VOICE) || (GroundStations[StationIndex].CommCaps & GSGC_VHFAG_VOICE)) && length(Vessel_Vector[Slot] - GSVector) < LOSRange);
 			}
 			else
 			{
