@@ -1348,7 +1348,7 @@ void Saturn::clbkPostCreation()
 	// Load Apollo-13 specific sounds.
 	//
 
-	if (ApolloNo == 1301) {
+	if (pMission->DoApollo13Failures()) {
 		if (!KranzPlayed)
 			soundlib.LoadMissionSound(SKranz, A13_KRANZ, NULL, INTERNAL_ONLY);
 		if (!CryoStir)
@@ -1749,7 +1749,7 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	if (AutoSlow) {
 		oapiWriteScenario_int (scn, "AUTOSLOW", 1);
 	}
-	if (ApolloNo == 1301) {
+	if (pMission->DoApollo13Failures()) {
 		oapiWriteScenario_int (scn, "A13STATE", GetA13State());
 	}
 	if (SIVBPayload != PAYLOAD_LEM) {
@@ -4550,7 +4550,7 @@ void Saturn::LoadDefaultSounds()
 void Saturn::StageSix(double simt){
 	UpdateMassAndCoG();
 
-	if (ApolloNo == 1301) {
+	if (pMission->DoApollo13Failures()) {
 
 		//
 		// Play cryo-stir audio.
