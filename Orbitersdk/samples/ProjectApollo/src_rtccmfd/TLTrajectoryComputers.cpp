@@ -571,8 +571,6 @@ bool TLTrajectoryComputers::IntegratedTrajectoryComputer(std::vector<double> &va
 		vars->dt_EPO = var[5] * 3600.0;
 		vars->delta_TLI = var[6];
 
-		dt_node = 0.0; //Not needed?
-
 		sv0 = vars->sv0;
 
 		//Propagate to TLI ignition
@@ -603,6 +601,11 @@ bool TLTrajectoryComputers::IntegratedTrajectoryComputer(std::vector<double> &va
 			pRTCC->PMMCEN(state_TLI2.sv, 0.0, 100.0*3600.0, 2, 0.0, 1.0, sv_ap, ITS);
 			arr[8] = (length(sv_ap.R) - R_E) / R_E;
 			return false;
+		}
+		
+		if (vars->NodeStopIndicator)
+		{
+			dt_node = vars->GMT_nd - vars->sv_tli_cut.GMT;
 		}
 	}
 	else

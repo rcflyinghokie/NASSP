@@ -6118,6 +6118,10 @@ void RTCC::TranslunarInjectionProcessor(EphemerisData sv, PLAWDTOutput WeightsTa
 	medquant.WeightsTable = WeightsTable;
 	medquant.h_ap = PZTLIPLN.h_ap*1852.0;
 	medquant.GMT_TIG = GMTfromGET(PZTLIPLN.GET_TLI);
+	medquant.IPOA = PZTLIPLN.IsPacficWindow ? 1 : 2;
+	medquant.h_PC = 60.0*1852.0; //TBD
+	medquant.lat_PC = 0.0; //TBD
+	medquant.lng_node = PI; //TBD
 
 	mccconst.delta = PZTLIPLN.DELTA;
 	mccconst.sigma = PZTLIPLN.SIGMA;

@@ -7211,7 +7211,14 @@ void ApolloRTCCMFD::menuTLIProcessorCalc()
 
 void ApolloRTCCMFD::menuTLIProcessorMode()
 {
-
+	if (GC->rtcc->PZTLIPLN.Mode == 4)
+	{
+		GC->rtcc->PZTLIPLN.Mode = 5;
+	}
+	else
+	{
+		GC->rtcc->PZTLIPLN.Mode = 4;
+	}
 }
 
 void ApolloRTCCMFD::menuTLIProcessorGET()

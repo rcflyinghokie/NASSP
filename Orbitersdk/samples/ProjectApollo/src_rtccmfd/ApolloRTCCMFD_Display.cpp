@@ -7108,6 +7108,10 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		{
 			skp->Text(1 * W / 16, 4 * H / 14, "Ellipse", 7);
 		}
+		else if (GC->rtcc->PZTLIPLN.Mode == 5)
+		{
+			skp->Text(1 * W / 16, 4 * H / 14, "Non-Free Return", 7);
+		}
 		else
 		{
 			skp->Text(1 * W / 16, 4 * H / 14, "TBD", 3);

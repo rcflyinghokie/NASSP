@@ -3772,10 +3772,12 @@ public:
 		//INPUT
 		//4 = E-type mission ellipse
 		int Mode = 4;
-		//TLI ignition for mode 4
+		//TLI ignition for mode 4, estimated TIG for mode 5
 		double GET_TLI = 0.0;
 		//Apogee height for mode 4, nautical miles
 		double h_ap = 5000.0;
+		//Launch window
+		bool IsPacficWindow = true;
 
 		//CONSTANTS - THESE SHOULD BE SYSTEM PARAMETERS
 		double DELTA = 0.0;
