@@ -150,6 +150,7 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src_aux\Mission.cpp" />
     <ClCompile Include="..\..\src_launch\mccvessel.cpp" />
     <ClCompile Include="..\..\src_launch\MCC_Mission_B.cpp" />
     <ClCompile Include="..\..\src_launch\MCC_Mission_C.cpp" />
@@ -199,6 +200,7 @@
     <ClCompile Include="..\..\src_launch\mccvc.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src_aux\Mission.h" />
     <ClInclude Include="..\..\src_aux\paCBGmessageID.h" />
     <ClInclude Include="..\..\src_launch\mccvessel.h" />
     <ClInclude Include="..\..\src_launch\MCC_Mission_B.h" />
