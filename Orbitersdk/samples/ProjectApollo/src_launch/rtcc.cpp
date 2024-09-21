@@ -6245,6 +6245,9 @@ bool RTCC::GeneralManeuverProcessor(GMPOpt *opt, VECTOR3 &dV_i, double &P30TIG)
 	case 8: //PMMAPD error for resultant apo/peri
 		PMXSPT("PMMGPM", 136);
 		break;
+	case 9: //Resultant orbit non-elliptical
+		PMXSPT("PMMGPM", 137);
+		break;
 	}
 
 	P30TIG = PZGPMDIS.GET_TIG;
