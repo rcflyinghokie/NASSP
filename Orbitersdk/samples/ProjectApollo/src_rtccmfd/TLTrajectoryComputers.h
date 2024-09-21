@@ -53,6 +53,7 @@ struct TLMCCGeneralizedIteratorArray
 	//For integrating trajectory computer
 	bool NodeStopIndicator;
 	bool EllipticalCaseIndicator;
+	bool TLIOnlyIndicator = false;
 	//For conic trajectory computer
 	bool FreeReturnIndicator;
 	bool FreeReturnOnlyIndicator;
@@ -148,8 +149,8 @@ struct TLMCCGeneralizedIteratorArray
 
 	//TLI only
 	double dv_TLI;
-	double C3_TLI;
-	double dt_EPO;
+	double C3_TLI; //Er^2/hr^2
+	double dt_EPO; //sec
 	double delta_TLI;
 	double sigma_TLI;
 };

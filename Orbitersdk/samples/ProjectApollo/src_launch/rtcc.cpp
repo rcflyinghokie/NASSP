@@ -6117,11 +6117,24 @@ void RTCC::TranslunarInjectionProcessor(EphemerisData sv, PLAWDTOutput WeightsTa
 	medquant.state = sv;
 	medquant.WeightsTable = WeightsTable;
 	medquant.h_ap = PZTLIPLN.h_ap*1852.0;
+	medquant.dv_available = PZTLIPLN.dv_available*0.3048;
 	medquant.GMT_TIG = GMTfromGET(PZTLIPLN.GET_TLI);
 	medquant.IPOA = PZTLIPLN.IsPacficWindow ? 1 : 2;
-	medquant.h_PC = 60.0*1852.0; //TBD
-	medquant.lat_PC = 0.0; //TBD
-	medquant.lng_node = PI; //TBD
+
+	if (PZTLIPLN.Mode == 2)
+	{
+		//Free return
+		medquant.h_PC = PZSFPTAB.blocks[PZMCCPLN.SFPBlockNum - 1].h_pc1;
+		medquant.lat_PC = PZSFPTAB.blocks[PZMCCPLN.SFPBlockNum - 1].lat_pc1;
+	}
+	else if (PZTLIPLN.Mode == 5)
+	{
+		//Non-free return
+		medquant.h_PC = PZSFPTAB.blocks[PZMCCPLN.SFPBlockNum - 1].h_nd;
+		medquant.lat_PC = PZSFPTAB.blocks[PZMCCPLN.SFPBlockNum - 1].lat_nd;
+		medquant.lng_node = PZSFPTAB.blocks[PZMCCPLN.SFPBlockNum - 1].lng_nd;
+		medquant.GMT_node = PZSFPTAB.blocks[PZMCCPLN.SFPBlockNum - 1].GMT_nd;
+	}
 
 	mccconst.delta = PZTLIPLN.DELTA;
 	mccconst.sigma = PZTLIPLN.SIGMA;
@@ -6140,6 +6153,7 @@ void RTCC::TranslunarInjectionProcessor(EphemerisData sv, PLAWDTOutput WeightsTa
 	PZTPDDIS.GET_TIG = GETfromGMT(out.uplink_data.GMT_TIG);
 	PZTPDDIS.GET_TB6 = PZTPDDIS.GET_TIG - SystemParameters.MDVSTP.DTIG;
 	PZTPDDIS.dv_TLI = out.dv_TLI / 0.3048;
+	PZTPDDIS.T_b = out.sv_TLI_cut.GMT - out.sv_TLI_ign.GMT;
 }
 
 void RTCC::TranslunarMidcourseCorrectionProcessor(EphemerisData sv0, double CSMmass, double LMmass)

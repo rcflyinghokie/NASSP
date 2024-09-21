@@ -120,16 +120,20 @@ struct TLIMEDQuantities
 	int Mode;
 	EphemerisData state;
 	PLAWDTOutput WeightsTable;
+	double GMT_TIG; //TIG or estimated TIG
+
+	//Mode 2/5
+	int IPOA; //1 = Pacific window (AZ2V <= 90°), 2 = Atlantic window (AZ2V > 90°), for first guess logic
+	double h_PC; //Pericynthion flyby altitude, meters
+	double lat_PC; //Latitude of pericynthion (mode 2) or of node (mode 5)
+	double lng_node; //Longitude of node (mode 5)
+	double GMT_node; //Time at node (mode 5)
+
+	//Mode 3
+	double dv_available; //DV available for TLI
 
 	//Mode 4
-	double GMT_TIG;
-	double h_ap;
-
-	//Mode 5
-	int IPOA; //1 = Pacific window (AZ2V <= 90°), 2 = Atlantic window (AZ2V > 90°)
-	double h_PC; //Pericynthion flyby altitude, meters
-	double lat_PC; //Latitude of pericynthion, or of node
-	double lng_node; //Longitude of node
+	double h_ap;	//Desired apogee altitude at TLI cutoff
 };
 
 struct SevenParameterUpdate
@@ -160,14 +164,18 @@ public:
 	void Main(TLIOutputData &out);
 	void Init(TLIMEDQuantities med, TLMCCMissionConstants constants, double GMTBase);
 protected:
+	//Free return or non-free return
+	void Option2_5(bool freereturn);
+	//Hybrid ellipse
+	void Option3();
 	//Desired apogee
 	void Option4();
-	//Non-free return
-	void Option5();
 
+	bool HybridMission(double C3_guess, double dv_TLI);
 	bool ConicTLIIEllipse(double C3_guess, double h_ap);
 	bool IntegratedTLIIEllipse(double C3_guess_ER, double h_ap);
-	bool IntegratedTLIToNode(double C3_guess_ER, double T_c_hrs, double delta, bool free_return);
+	bool IntegratedTLIToNode(double C3_guess_ER, double T_c_hrs, double delta, double sigma, double GMT_nd, double lat_nd, double lng_nd);
+	bool IntegratedTLIFlyby(double C3_guess_ER, double T_c_hrs, double delta, double sigma, double lat_pc);
 
 	OELEMENTS LVTAR(OELEMENTS coe, double lng_PAD, double RAGL) const;
 

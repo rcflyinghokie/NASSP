@@ -3770,7 +3770,7 @@ public:
 	struct TLIPlanningTable
 	{
 		//INPUT
-		//4 = E-type mission ellipse
+		//2 = free-return, 3 = hybrid ellipse, 4 = E-type mission ellipse, 5 = non-free return
 		int Mode = 4;
 		//TLI ignition for mode 4, estimated TIG for mode 5
 		double GET_TLI = 0.0;
@@ -3778,6 +3778,8 @@ public:
 		double h_ap = 5000.0;
 		//Launch window
 		bool IsPacficWindow = true;
+		//Available DV, for mode 3, feet per second
+		double dv_available = 5000.0;
 
 		//CONSTANTS - THESE SHOULD BE SYSTEM PARAMETERS
 		double DELTA = 0.0;

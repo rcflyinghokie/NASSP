@@ -690,11 +690,17 @@ void TLIProcessor::Main(TLIOutputData &out)
 
 	switch (MEDQuantities.Mode)
 	{
+	case 2:
+		Option2_5(true);
+		break;
+	case 3:
+		Option3();
+		break;
 	case 4:
 		Option4();
 		break;
 	case 5:
-		Option5();
+		Option2_5(false);
 		break;
 	default:
 		out.ErrorIndicator = 1;
@@ -705,10 +711,9 @@ void TLIProcessor::Main(TLIOutputData &out)
 	if (out.ErrorIndicator) return;
 
 	//Convert to LVDC parameters
-	if (MEDQuantities.Mode == 4)
+	if (MEDQuantities.Mode != 1)
 	{
 		//7 parameters
-
 
 		//Convert to ECT at GRR
 
@@ -738,6 +743,50 @@ void TLIProcessor::Main(TLIOutputData &out)
 	}
 
 	out.dv_TLI = outarray.dv_TLI;
+	out.sv_TLI_ign = outarray.sv_tli_ign;
+	out.sv_TLI_cut = outarray.sv_tli_cut;
+}
+
+//Hybrid ellipse
+void TLIProcessor::Option3()
+{
+	//Propagate state to TIG
+	EMSMISSInputTable in;
+
+	in.AnchorVector = MEDQuantities.state;
+	in.MaxIntegTime = MEDQuantities.GMT_TIG - MEDQuantities.state.GMT;
+	if (in.MaxIntegTime < 0)
+	{
+		in.MaxIntegTime = abs(in.MaxIntegTime);
+		in.IsForwardIntegration = false;
+	}
+	in.VehicleCode = RTCC_MPT_CSM;
+	in.useInputWeights = true;
+	in.WeightsTable = &MEDQuantities.WeightsTable;
+
+	pRTCC->EMSMISS(&in);
+
+	if (in.NIAuxOutputTable.ErrorCode)
+	{
+		ErrorIndicator = 1;
+		return;
+	}
+
+	outarray.sv0 = in.NIAuxOutputTable.sv_cutoff;
+	outarray.M_i = in.NIAuxOutputTable.CutoffWeight;
+
+	//Calculate initial guess for C3
+	double C3_guess, R_I;
+
+	R_I = length(outarray.sv0.R);
+	C3_guess = pow(MEDQuantities.dv_available, 2) - OrbMech::mu_Earth / R_I + 2.0*MEDQuantities.dv_available*sqrt(OrbMech::mu_Earth / R_I);
+
+	bool err = HybridMission(C3_guess, MEDQuantities.dv_available);
+	if (err)
+	{
+		ErrorIndicator = 2;
+		return;
+	}
 }
 
 void TLIProcessor::Option4()
@@ -789,7 +838,7 @@ void TLIProcessor::Option4()
 	}
 }
 
-void TLIProcessor::Option5()
+void TLIProcessor::Option2_5(bool freereturn)
 {
 	//Initial guess
 	TLIFirstGuessInputs fgin;
@@ -820,6 +869,7 @@ void TLIProcessor::Option5()
 
 	outarray.sv0 = in.NIAuxOutputTable.sv_cutoff;
 	outarray.M_i = in.NIAuxOutputTable.CutoffWeight;
+	outarray.rad_lls = OrbMech::R_Moon;
 
 	double rmag, vmag, rtasc, decl, fpav, az;
 	OrbMech::rv_from_adbar(outarray.sv0.R, outarray.sv0.V, rmag, vmag, rtasc, decl, fpav, az);
@@ -846,14 +896,79 @@ void TLIProcessor::Option5()
 	}
 	cist.GetOutput(fgout);
 
-
 	//Step 3: Converge trajectory
-	err = IntegratedTLIToNode(fgout.C3, fgout.CTIO, fgout.DEL, false);
+	double GMT_node, lat_nd, lng_nd;
+	if (freereturn)
+	{
+		GMT_node = outarray.sv0.GMT + fgout.TOPCY*3600.0;
+		lat_nd = MEDQuantities.lat_PC;
+		lng_nd = PI;
+	}
+	else
+	{
+		GMT_node = MEDQuantities.GMT_node;
+		lat_nd = MEDQuantities.lat_PC;
+		lng_nd = MEDQuantities.lng_node;
+	}
+	err = IntegratedTLIToNode(fgout.C3, fgout.CTIO, fgout.DEL / 4.0, fgout.S, GMT_node, lat_nd, lng_nd);
 	if (err)
 	{
 		ErrorIndicator = 2;
 		return;
 	}
+
+	if (freereturn)
+	{
+		err = IntegratedTLIFlyby(outarray.C3_TLI, outarray.dt_EPO / 3600.0, outarray.delta_TLI, fgout.S, MEDQuantities.lat_PC);
+		if (err)
+		{
+			ErrorIndicator = 2;
+			return;
+		}
+	}
+}
+
+bool TLIProcessor::HybridMission(double C3_guess, double dv_TLI)
+{
+	double C3_guess_ER = C3_guess / pow(R_E / 3600.0, 2);
+
+	void *constPtr;
+	outarray.TLIIndicator = true;
+	outarray.TLIOnlyIndicator = true;
+	//EllipticalCaseIndicator is used to decide between the nominal vs. alternate mission TLI polynomials
+	if (C3_guess_ER < -5.0)
+	{
+		outarray.EllipticalCaseIndicator = true;
+	}
+	else
+	{
+		outarray.EllipticalCaseIndicator = false;
+	}
+	outarray.sigma_TLI = MissionConstants.sigma;
+	constPtr = &outarray;
+
+	bool IntegratedTrajectoryComputerPointer(void *data, std::vector<double> &var, void *varPtr, std::vector<double>& arr, bool mode);
+	bool(*fptr)(void *, std::vector<double>&, void*, std::vector<double>&, bool) = &IntegratedTrajectoryComputerPointer;
+
+	GenIterator::GeneralizedIteratorBlock block;
+
+	block.IndVarSwitch[4] = true;
+
+	block.IndVarGuess[4] = C3_guess_ER;
+	block.IndVarGuess[5] = 0.0; //dt_EPO
+	block.IndVarGuess[6] = MissionConstants.delta;
+
+	block.IndVarStep[4] = pow(2, -23);
+	block.IndVarWeight[4] = 4.0;
+
+	block.DepVarSwitch[9] = true;
+	block.DepVarLowerLimit[9] = dv_TLI - 1.0*0.3048;
+	block.DepVarUpperLimit[9] = dv_TLI + 1.0*0.3048;
+	block.DepVarClass[9] = 1;
+
+	std::vector<double> result;
+	std::vector<double> y_vals;
+	return GenIterator::GeneralizedIterator(fptr, block, constPtr, (void*)this, result, y_vals);
 }
 
 bool TLIProcessor::ConicTLIIEllipse(double C3_guess, double h_ap)
@@ -923,22 +1038,14 @@ bool TLIProcessor::IntegratedTLIIEllipse(double C3_guess_ER, double h_ap)
 	return GenIterator::GeneralizedIterator(fptr, block, constPtr, (void*)this, result, y_vals);
 }
 
-bool TLIProcessor::IntegratedTLIToNode(double C3_guess_ER, double T_c_hrs, double delta, bool free_return)
+bool TLIProcessor::IntegratedTLIToNode(double C3_guess_ER, double T_c_hrs, double delta, double sigma, double GMT_nd, double lat_nd, double lng_nd)
 {
 	void *constPtr;
 	outarray.TLIIndicator = true;
 	outarray.EllipticalCaseIndicator = false;
-	outarray.sigma_TLI = MissionConstants.sigma;
-
-	if (free_return)
-	{
-		outarray.NodeStopIndicator = false;
-	}
-	else
-	{
-		outarray.NodeStopIndicator = true;
-		outarray.GMT_nd = 0.0; //TBD
-	}
+	outarray.sigma_TLI = sigma;
+	outarray.NodeStopIndicator = true;
+	outarray.GMT_nd = GMT_nd;
 
 	constPtr = &outarray;
 
@@ -966,30 +1073,83 @@ bool TLIProcessor::IntegratedTLIToNode(double C3_guess_ER, double T_c_hrs, doubl
 	double R_nd;
 	R_nd = OrbMech::R_Moon + MEDQuantities.h_PC;
 
-	if (free_return)
-	{
-		
-	}
-	else
-	{
-		block.DepVarSwitch[0] = true;
-		block.DepVarSwitch[1] = true;
-		block.DepVarSwitch[2] = true;
-		block.DepVarSwitch[3] = true;
-		block.DepVarLowerLimit[0] = (R_nd - 0.5*1852.0) / R_E;
-		block.DepVarLowerLimit[1] = MEDQuantities.lat_PC - 0.01*RAD;
-		block.DepVarLowerLimit[2] = MEDQuantities.lng_node - 0.01*RAD;
-		block.DepVarLowerLimit[3] = 90.0*RAD;
-		block.DepVarUpperLimit[0] = (R_nd + 0.5*1852.0) / R_E;
-		block.DepVarUpperLimit[1] = MEDQuantities.lat_PC + 0.01*RAD;
-		block.DepVarUpperLimit[2] = MEDQuantities.lng_node + 0.01*RAD;
-		block.DepVarUpperLimit[3] = 182.0*RAD;
-		block.DepVarWeight[3] = 64.0;
-		block.DepVarClass[0] = 1;
-		block.DepVarClass[1] = 1;
-		block.DepVarClass[2] = 1;
-		block.DepVarClass[3] = 2;
-	}
+	block.DepVarSwitch[0] = true;
+	block.DepVarSwitch[1] = true;
+	block.DepVarSwitch[2] = true;
+	block.DepVarSwitch[3] = true;
+	block.DepVarLowerLimit[0] = (R_nd - 0.5*1852.0) / R_E;
+	block.DepVarLowerLimit[1] = lat_nd - 0.01*RAD;
+	block.DepVarLowerLimit[2] = lng_nd - 0.01*RAD;
+	block.DepVarLowerLimit[3] = 90.0*RAD;
+	block.DepVarUpperLimit[0] = (R_nd + 0.5*1852.0) / R_E;
+	block.DepVarUpperLimit[1] = lat_nd + 0.01*RAD;
+	block.DepVarUpperLimit[2] = lng_nd + 0.01*RAD;
+	block.DepVarUpperLimit[3] = 182.0*RAD;
+	block.DepVarWeight[3] = 64.0;
+	block.DepVarClass[0] = 1;
+	block.DepVarClass[1] = 1;
+	block.DepVarClass[2] = 1;
+	block.DepVarClass[3] = 2;
+
+	std::vector<double> result;
+	std::vector<double> y_vals;
+	return GenIterator::GeneralizedIterator(fptr, block, constPtr, (void*)this, result, y_vals);
+}
+
+bool TLIProcessor::IntegratedTLIFlyby(double C3_guess_ER, double T_c_hrs, double delta, double sigma, double lat_pc)
+{
+	void *constPtr;
+	outarray.TLIIndicator = true;
+	outarray.EllipticalCaseIndicator = false;
+	outarray.sigma_TLI = sigma;
+	outarray.NodeStopIndicator = false;
+	outarray.LunarFlybyIndicator = false;
+
+	constPtr = &outarray;
+
+	bool IntegratedTrajectoryComputerPointer(void *data, std::vector<double> &var, void *varPtr, std::vector<double>& arr, bool mode);
+	bool(*fptr)(void *, std::vector<double>&, void*, std::vector<double>&, bool) = &IntegratedTrajectoryComputerPointer;
+
+	GenIterator::GeneralizedIteratorBlock block;
+
+	block.IndVarSwitch[4] = true; //C3
+	block.IndVarSwitch[5] = true; //DT EPO
+	block.IndVarSwitch[6] = true; //TLI plane change
+
+	block.IndVarGuess[4] = C3_guess_ER;
+	block.IndVarGuess[5] = T_c_hrs;
+	block.IndVarGuess[6] = delta;
+
+	block.IndVarStep[4] = pow(2, -21);
+	block.IndVarStep[5] = pow(2, -22);
+	block.IndVarStep[6] = pow(2, -21);
+
+	block.IndVarWeight[4] = 1.0;
+	block.IndVarWeight[5] = 1.0;
+	block.IndVarWeight[6] = 1.0;
+
+	block.DepVarSwitch[3] = true;
+	block.DepVarSwitch[4] = true;
+	block.DepVarSwitch[5] = true;
+	block.DepVarSwitch[6] = true;
+	block.DepVarSwitch[7] = true;
+	block.DepVarLowerLimit[3] = 90.0*RAD;
+	block.DepVarLowerLimit[4] = (MEDQuantities.h_PC - 0.5*1852.0) / R_E;
+	block.DepVarLowerLimit[5] = lat_pc - 0.01*RAD;
+	block.DepVarLowerLimit[6] = 0.0;
+	block.DepVarLowerLimit[7] = (60.85*1852.0) / R_E;
+	block.DepVarUpperLimit[3] = 182.0*RAD;
+	block.DepVarUpperLimit[4] = (MEDQuantities.h_PC + 0.5*1852.0) / R_E;
+	block.DepVarUpperLimit[5] = lat_pc + 0.01*RAD;
+	block.DepVarUpperLimit[6] = 90.0*RAD;
+	block.DepVarUpperLimit[7] = (70.85*1852.0) / R_E;
+	block.DepVarWeight[3] = 64.0;
+	block.DepVarWeight[6] = 8.0;
+	block.DepVarClass[3] = 2;
+	block.DepVarClass[4] = 1;
+	block.DepVarClass[5] = 1;
+	block.DepVarClass[6] = 2;
+	block.DepVarClass[7] = 1;
 
 	std::vector<double> result;
 	std::vector<double> y_vals;

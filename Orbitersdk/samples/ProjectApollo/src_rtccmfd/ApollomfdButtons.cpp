@@ -2696,7 +2696,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 		{ "Mode", 0, 'G' },
 		{ "Time of ignition", 0, 'Q' },
 		{ "Apogee height", 0, 'V' },
-		{ "", 0, ' ' },
+		{ "Cycle SFP table", 0, 'H' },
 		{ "", 0, ' ' },
 
 		{ "Calculate solution", 0, 'C' },
@@ -2713,7 +2713,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	RegisterFunction("MOD", OAPI_KEY_G, &ApolloRTCCMFD::menuTLIProcessorMode);
 	RegisterFunction("TIG", OAPI_KEY_Q, &ApolloRTCCMFD::menuTLIProcessorGET);
 	RegisterFunction("APO", OAPI_KEY_V, &ApolloRTCCMFD::menuTLIEllipseApogee);
-	RegisterFunction("", OAPI_KEY_H, &ApolloRTCCMFD::menuVoid);
+	RegisterFunction("SFP", OAPI_KEY_H, &ApolloRTCCMFD::menuCycleTLCCCSFPBlockNumber);
 	RegisterFunction("", OAPI_KEY_Q, &ApolloRTCCMFD::menuVoid);
 
 	RegisterFunction("CLC", OAPI_KEY_C, &ApolloRTCCMFD::menuTLIProcessorCalc);

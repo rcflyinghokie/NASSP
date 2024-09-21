@@ -7211,13 +7211,13 @@ void ApolloRTCCMFD::menuTLIProcessorCalc()
 
 void ApolloRTCCMFD::menuTLIProcessorMode()
 {
-	if (GC->rtcc->PZTLIPLN.Mode == 4)
+	if (GC->rtcc->PZTLIPLN.Mode < 5)
 	{
-		GC->rtcc->PZTLIPLN.Mode = 5;
+		GC->rtcc->PZTLIPLN.Mode++;
 	}
 	else
 	{
-		GC->rtcc->PZTLIPLN.Mode = 4;
+		GC->rtcc->PZTLIPLN.Mode = 2;
 	}
 }
 
@@ -7228,7 +7228,18 @@ void ApolloRTCCMFD::menuTLIProcessorGET()
 
 void ApolloRTCCMFD::menuTLIEllipseApogee()
 {
-	GenericDoubleInput(&GC->rtcc->PZTLIPLN.h_ap, "Input height of apogee (2700 to 7000 NM):");
+	if (GC->rtcc->PZTLIPLN.Mode == 3)
+	{
+		GenericDoubleInput(&GC->rtcc->PZTLIPLN.dv_available, "Available Delta V for TLI (0 to 10000 ft/s):");
+	}
+	else if (GC->rtcc->PZTLIPLN.Mode == 4)
+	{
+		GenericDoubleInput(&GC->rtcc->PZTLIPLN.h_ap, "Input height of apogee (2700 to 7000 NM):");
+	}
+	else
+	{
+		GC->rtcc->PZTLIPLN.IsPacficWindow = !GC->rtcc->PZTLIPLN.IsPacficWindow;
+	}
 }
 
 void ApolloRTCCMFD::menuLunarLiftoffCalc()
