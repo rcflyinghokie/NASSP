@@ -688,8 +688,34 @@ void TLIProcessor::Main(TLIOutputData &out)
 {
 	ErrorIndicator = 0;
 
+	//Get time of mixture ratio shift
+	TLITargetingParametersTable *tlitab = NULL;
+	int LD;
+
+	LD = pRTCC->GZGENCSN.RefDayOfYear;
+
+	for (int counter = 0; counter < 10; counter++)
+	{
+		if (LD == pRTCC->PZSTARGP.data[counter].Day)
+		{
+			tlitab = &pRTCC->PZSTARGP.data[counter];
+			break;
+		}
+	}
+
+	if (tlitab == NULL)
+	{
+		//Error
+		out.ErrorIndicator = 5;
+		return;
+	}
+	T_MRS_SIVB = tlitab->T2[MEDQuantities.Opportunity - 1] / 3600.0;
+
 	switch (MEDQuantities.Mode)
 	{
+	case 1:
+		Option1();
+		break;
 	case 2:
 		Option2_5(true);
 		break;
@@ -745,6 +771,81 @@ void TLIProcessor::Main(TLIOutputData &out)
 	out.dv_TLI = outarray.dv_TLI;
 	out.sv_TLI_ign = outarray.sv_tli_ign;
 	out.sv_TLI_cut = outarray.sv_tli_cut;
+}
+
+void TLIProcessor::Option1()
+{
+	PMMSPTInput in;
+
+	in.QUEID = 34;
+	in.GMT = MEDQuantities.state.GMT;
+	in.R = MEDQuantities.state.R;
+	in.V = MEDQuantities.state.V;
+	in.Table = MEDQuantities.mpt;
+	in.InjOpp = MEDQuantities.Opportunity;
+	in.mpt = NULL;
+	in.CurMan = NULL;
+
+	int err = pRTCC->PMMSPT(in);
+
+	if (err)
+	{
+		ErrorIndicator = 1;
+		return;
+	}
+	//Data is now in PZTTLIPL
+
+	//Propagate state to TIG
+	EMSMISSInputTable emsin;
+
+	emsin.AnchorVector.R = pRTCC->PZTTLIPL.R;
+	emsin.AnchorVector.V = pRTCC->PZTTLIPL.V;
+	emsin.AnchorVector.GMT = pRTCC->PZTTLIPL.TB6;
+	emsin.AnchorVector.RBI = BODY_EARTH;
+
+	emsin.MaxIntegTime = pRTCC->PZTTLIPL.TIG - emsin.AnchorVector.GMT;
+	emsin.VehicleCode = MEDQuantities.mpt;
+	emsin.useInputWeights = true;
+	emsin.WeightsTable = &MEDQuantities.WeightsTable;
+
+	pRTCC->EMSMISS(&emsin);
+
+	if (emsin.NIAuxOutputTable.ErrorCode)
+	{
+		ErrorIndicator = 1;
+		return;
+	}
+
+
+
+	std::vector<double> var, arr;
+	var.resize(20);
+	arr.resize(20);
+
+	var[4] = pRTCC->PZTTLIPL.C3 / pow(R_E / 3600.0, 2);
+	var[5] = 0.0;
+
+	VECTOR3 N_I;
+
+	N_I = unit(crossp(pRTCC->PZTTLIPL.R, pRTCC->PZTTLIPL.V));
+
+	var[6] = asin(dotp(pRTCC->PZTTLIPL.T, N_I));
+
+	void *constPtr;
+
+	outarray.TLIIndicator = true;
+	outarray.EllipticalCaseIndicator = false;
+	outarray.TLIOnlyIndicator = true;
+
+	outarray.sv0.R = pRTCC->PZTTLIPL.R;
+	outarray.sv0.V = pRTCC->PZTTLIPL.V;
+	outarray.sv0.GMT = pRTCC->PZTTLIPL.TIG;
+	outarray.sv0.RBI = BODY_EARTH;
+	outarray.M_i = MEDQuantities.WeightsTable.ConfigWeight;
+	outarray.sigma_TLI = pRTCC->PZTTLIPL.sigma;
+	constPtr = &outarray;
+
+	IntegratedTrajectoryComputer(var, constPtr, arr, false);
 }
 
 //Hybrid ellipse

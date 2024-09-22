@@ -1255,6 +1255,15 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		{
 			skp->Text(4 * W / 8, (int)(0.5 * H / 14), "TLI PAD", 7);
 
+			if (G->TLIPAD_StudyAid)
+			{
+				skp->Text(1 * W / 16, 6 * H / 14, "TLI Processor", 13);
+			}
+			else
+			{
+				skp->Text(1 * W / 16, 6 * H / 14, "Nominal", 7);
+			}
+
 			GET_Display(Buffer, GC->tlipad.TB6P);
 			sprintf(Buffer, "%s TB6p", Buffer);
 			skp->Text(3 * W / 8, 3 * H / 20, Buffer, strlen(Buffer));
@@ -7094,6 +7103,9 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 	{
 		skp->Text(2 * W / 8, 1 * H / 14, "TLI PLANNING DISPLAY (MSK 0080)", 31);
 
+		skp->Text(1 * W / 44, (marker + 3) * H / 22, "*", 1);
+
+		skp->Text(1 * W / 22, 3 * H / 22, "IU:", 3);
 		if (G->iuvessel == NULL)
 		{
 			sprintf_s(Buffer, 127, "No IU!");
@@ -7102,51 +7114,80 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		{
 			sprintf_s(Buffer, 127, G->iuvessel->GetName());
 		}
-		skp->Text(1 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
+		skp->Text(5 * W / 22, 3 * H / 22, Buffer, strlen(Buffer));
 
-		switch (GC->rtcc->PZTLIPLN.Mode)
+		if (GC->MissionPlanningActive)
 		{
-		case 2:
-			skp->Text(1 * W / 16, 4 * H / 14, "Free Return", 11);
-			break;
-		case 3:
-			skp->Text(1 * W / 16, 4 * H / 14, "Hybrid Ellipse", 14);
-			break;
-		case 4:
-			skp->Text(1 * W / 16, 4 * H / 14, "Specified Apogee", 16);
-			break;
-		case 5:
-			skp->Text(1 * W / 16, 4 * H / 14, "Non-Free Return", 15);
-			break;
-		default:
-			skp->Text(1 * W / 16, 4 * H / 14, "TBD", 3);
-			break;
-		}
-		
-		GET_Display(Buffer, GC->rtcc->PZTLIPLN.GET_TLI, false);
-		skp->Text(1 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
-
-		if (GC->rtcc->PZTLIPLN.Mode == 3)
-		{
-			sprintf_s(Buffer, "%.0lf ft/s", GC->rtcc->PZTLIPLN.dv_available);
-			skp->Text(1 * W / 16, 8 * H / 14, Buffer, strlen(Buffer));
-		}
-		else if (GC->rtcc->PZTLIPLN.Mode == 4)
-		{
-			sprintf_s(Buffer, "%.0lf NM", GC->rtcc->PZTLIPLN.h_ap);
-			skp->Text(1 * W / 16, 8 * H / 14, Buffer, strlen(Buffer));
-		}
-		else
-		{
-			if (GC->rtcc->PZTLIPLN.IsPacficWindow)
+			skp->Text(1 * W / 22, 4 * H / 22, "MPT:", 4);
+			if (GC->rtcc->PZTLIPLN.mpt == RTCC_MPT_CSM)
 			{
-				skp->Text(1 * W / 16, 8 * H / 14, "Pacific Window", 14);
+				sprintf(Buffer, "CSM");
 			}
 			else
 			{
-				skp->Text(1 * W / 16, 8 * H / 14, "Atlantic Window", 15);
+				sprintf(Buffer, "LEM");
+			}
+			skp->Text(5 * W / 22, 4 * H / 22, Buffer, strlen(Buffer));
+
+			skp->Text(1 * W / 22, 5 * H / 22, "Vec:", 4);
+			skp->Text(5 * W / 22, 5 * H / 22, GC->rtcc->PZTLIPLN.VectorType.c_str(), GC->rtcc->PZTLIPLN.VectorType.size());
+		}
+
+		skp->Text(1 * W / 22, 6 * H / 22, "Opp:", 4);
+		sprintf(Buffer, "%d", GC->rtcc->PZTLIPLN.Opportunity);
+		skp->Text(5 * W / 22, 6 * H / 22, Buffer, strlen(Buffer));
+
+		skp->Text(1 * W / 22, 7 * H / 22, "Mode:", 5);
+		switch (GC->rtcc->PZTLIPLN.Mode)
+		{
+		case 2:
+			skp->Text(5 * W / 22, 7 * H / 22, "Free Return", 11);
+			break;
+		case 3:
+			skp->Text(5 * W / 22, 7 * H / 22, "Hybrid Ellipse", 14);
+			break;
+		case 4:
+			skp->Text(5 * W / 22, 7 * H / 22, "Specified Apogee", 16);
+			break;
+		case 5:
+			skp->Text(5 * W / 22, 7 * H / 22, "Non-Free Return", 15);
+			break;
+		default:
+			skp->Text(5 * W / 22, 7 * H / 22, "Hypersurface", 12);
+			break;
+		}
+		
+		skp->Text(1 * W / 22, 8 * H / 22, "TIG:", 4);
+		GET_Display(Buffer, GC->rtcc->PZTLIPLN.GET_TLI, false);
+		skp->Text(5 * W / 22, 8 * H / 22, Buffer, strlen(Buffer));
+
+		if (GC->rtcc->PZTLIPLN.Mode == 3)
+		{
+			skp->Text(1 * W / 22, 9 * H / 22, "DV:", 3);
+			sprintf_s(Buffer, "%.0lf ft/s", GC->rtcc->PZTLIPLN.dv_available);
+			skp->Text(5 * W / 22, 9 * H / 22, Buffer, strlen(Buffer));
+		}
+		else if (GC->rtcc->PZTLIPLN.Mode == 4)
+		{
+			skp->Text(1 * W / 22, 9 * H / 22, "APO:", 4);
+
+			sprintf_s(Buffer, "%.0lf NM", GC->rtcc->PZTLIPLN.h_ap);
+			skp->Text(5 * W / 22, 9 * H / 22, Buffer, strlen(Buffer));
+		}
+		else
+		{
+			skp->Text(1 * W / 22, 9 * H / 22, "Window:", 7);
+
+			if (GC->rtcc->PZTLIPLN.IsPacficWindow)
+			{
+				skp->Text(5 * W / 22, 9 * H / 22, "Pacific", 14);
+			}
+			else
+			{
+				skp->Text(5 * W / 22, 9 * H / 22, "Atlantic", 15);
 			}
 
+			skp->Text(1 * W / 22, 10 * H / 22, "SFP:", 4);
 			if (GC->rtcc->PZMCCPLN.SFPBlockNum == 1)
 			{
 				sprintf(Buffer, "1 (Preflight)");
@@ -7155,7 +7196,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			{
 				sprintf(Buffer, "2 (Nominal Targets)");
 			}
-			skp->Text(1 * W / 16, 10 * H / 14, Buffer, strlen(Buffer));
+			skp->Text(5 * W / 22, 10 * H / 22, Buffer, strlen(Buffer));
 
 			/*
 			if (GC->rtcc->PZTLIPLN.Mode == 2)

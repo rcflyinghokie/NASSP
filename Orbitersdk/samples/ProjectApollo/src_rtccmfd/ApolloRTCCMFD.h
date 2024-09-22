@@ -416,10 +416,8 @@ public:
 	void menuTerrainModelCalc();
 	void set_TLand(double time);
 	void menuTLCCCalc();
+	void menuSetTLIProcessorInput();
 	void menuTLIProcessorCalc();
-	void menuTLIProcessorMode();
-	void menuTLIProcessorGET();
-	void menuTLIEllipseApogee();
 	void menuNavCheckPADCalc();
 	void menuSetNavCheckGET();
 	void menuLAPCalc();
@@ -864,6 +862,7 @@ public:
 	void CycleCSMOrLMSelection();
 	void CycleEnableCalculation();
 
+	void SetMEDInputPageM75();
 	void SetMEDInputPageP13();
 	void SetMEDInputPageP14();
 	void SetMEDInputPage(std::string med);

@@ -219,7 +219,7 @@ protected:
 	double F_I_SIVB; //S-IVB thrust magnitude from ignition to MRS
 	double F_SIVB; //S-IVB thrust magnitude from MRS to cutoff
 	double WDOT_SIVB; //Mass flow rate of S-IVB
-	double T_MRS_SIVB; //TEstimated time of MRS, measured from ignition
+	double T_MRS_SIVB; //Estimated time of MRS, measured from ignition
 	double gamma_reentry;
 	double Reentry_dt;
 };

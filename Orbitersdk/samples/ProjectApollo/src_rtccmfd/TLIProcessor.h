@@ -116,11 +116,15 @@ private:
 
 struct TLIMEDQuantities
 {
+	//1 = CSM, 3 = LEM
+	int mpt;
+
 	//1 = S-IVB hypersurface solution, 2 = integrated free-return, 3 = hybrid ellipse, 4 = E-type mission ellipse, 5 = non-free return
 	int Mode;
 	EphemerisData state;
 	PLAWDTOutput WeightsTable;
 	double GMT_TIG; //TIG or estimated TIG
+	int Opportunity; //1 or 2
 
 	//Mode 2/5
 	int IPOA; //1 = Pacific window (AZ2V <= 90°), 2 = Atlantic window (AZ2V > 90°), for first guess logic
@@ -164,6 +168,8 @@ public:
 	void Main(TLIOutputData &out);
 	void Init(TLIMEDQuantities med, TLMCCMissionConstants constants, double GMTBase);
 protected:
+	//Hypersurface
+	void Option1();
 	//Free return or non-free return
 	void Option2_5(bool freereturn);
 	//Hybrid ellipse
