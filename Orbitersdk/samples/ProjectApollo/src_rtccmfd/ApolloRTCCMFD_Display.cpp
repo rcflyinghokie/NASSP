@@ -7156,10 +7156,13 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			skp->Text(5 * W / 22, 7 * H / 22, "Hypersurface", 12);
 			break;
 		}
-		
-		skp->Text(1 * W / 22, 8 * H / 22, "TIG:", 4);
-		GET_Display(Buffer, GC->rtcc->PZTLIPLN.GET_TLI, false);
-		skp->Text(5 * W / 22, 8 * H / 22, Buffer, strlen(Buffer));
+
+		if (GC->rtcc->PZTLIPLN.Mode != 1)
+		{
+			skp->Text(1 * W / 22, 8 * H / 22, "TIG:", 4);
+			GET_Display(Buffer, GC->rtcc->PZTLIPLN.GET_TLI, false);
+			skp->Text(5 * W / 22, 8 * H / 22, Buffer, strlen(Buffer));
+		}
 
 		if (GC->rtcc->PZTLIPLN.Mode == 3)
 		{
@@ -7174,7 +7177,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			sprintf_s(Buffer, "%.0lf NM", GC->rtcc->PZTLIPLN.h_ap);
 			skp->Text(5 * W / 22, 9 * H / 22, Buffer, strlen(Buffer));
 		}
-		else
+		else if (GC->rtcc->PZTLIPLN.Mode == 2 || GC->rtcc->PZTLIPLN.Mode == 5)
 		{
 			skp->Text(1 * W / 22, 9 * H / 22, "Window:", 7);
 

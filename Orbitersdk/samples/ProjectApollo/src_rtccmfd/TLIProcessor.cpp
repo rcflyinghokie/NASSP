@@ -737,36 +737,28 @@ void TLIProcessor::Main(TLIOutputData &out)
 	if (out.ErrorIndicator) return;
 
 	//Convert to LVDC parameters
-	if (MEDQuantities.Mode != 1)
-	{
-		//7 parameters
 
-		//Convert to ECT at GRR
+	//Convert to ECT at GRR
 
-		EphemerisData2 sv, sv_ECT;
+	EphemerisData2 sv, sv_ECT;
 
-		sv.R = outarray.sv_tli_cut.R;
-		sv.V = outarray.sv_tli_cut.V;
-		sv.GMT = pRTCC->SystemParameters.MCGRIC*3600.0;
-		pRTCC->ELVCNV(sv, 0, 1, sv_ECT);
+	sv.R = outarray.sv_tli_cut.R;
+	sv.V = outarray.sv_tli_cut.V;
+	sv.GMT = pRTCC->SystemParameters.MCGRIC*3600.0;
+	pRTCC->ELVCNV(sv, 0, 1, sv_ECT);
 
-		OELEMENTS coe = OrbMech::coe_from_sv(sv_ECT.R, sv_ECT.V, mu_E);
-		coe.h = dotp(sv_ECT.V, sv_ECT.V) - 2.0*mu_E / length(sv_ECT.R);
+	OELEMENTS coe = OrbMech::coe_from_sv(sv_ECT.R, sv_ECT.V, mu_E);
+	coe.h = dotp(sv_ECT.V, sv_ECT.V) - 2.0*mu_E / length(sv_ECT.R);
 
-		OELEMENTS coe2 = LVTAR(coe, pRTCC->SystemParameters.MCLGRA, pRTCC->SystemParameters.MCERTS*pRTCC->SystemParameters.MCGRIC);
+	OELEMENTS coe2 = LVTAR(coe, pRTCC->SystemParameters.MCLGRA, pRTCC->SystemParameters.MCERTS*pRTCC->SystemParameters.MCGRIC);
 
-		out.uplink_data.Inclination = coe2.i;
-		out.uplink_data.theta_N = coe2.RA;
-		out.uplink_data.e = coe2.e;
-		out.uplink_data.C3 = coe2.h;
-		out.uplink_data.alpha_D = coe2.w;
-		out.uplink_data.f = coe2.TA;
-		out.uplink_data.GMT_TIG = outarray.sv_tli_ign.GMT;
-	}
-	else
-	{
-		//10 parameters
-	}
+	out.uplink_data.Inclination = coe2.i;
+	out.uplink_data.theta_N = coe2.RA;
+	out.uplink_data.e = coe2.e;
+	out.uplink_data.C3 = coe2.h;
+	out.uplink_data.alpha_D = coe2.w;
+	out.uplink_data.f = coe2.TA;
+	out.uplink_data.GMT_TIG = outarray.sv_tli_ign.GMT;
 
 	out.dv_TLI = outarray.dv_TLI;
 	out.sv_TLI_ign = outarray.sv_tli_ign;
@@ -816,19 +808,16 @@ void TLIProcessor::Option1()
 		return;
 	}
 
-
-
 	std::vector<double> var, arr;
 	var.resize(20);
 	arr.resize(20);
 
-	var[4] = pRTCC->PZTTLIPL.C3 / pow(R_E / 3600.0, 2);
-	var[5] = 0.0;
+	var[4] = pRTCC->PZTTLIPL.C3 / pow(R_E / 3600.0, 2); //C3 in Er^2/hr^2
+	var[5] = 0.0; //dt_EPO
 
+	//Calculate delta
 	VECTOR3 N_I;
-
 	N_I = unit(crossp(pRTCC->PZTTLIPL.R, pRTCC->PZTTLIPL.V));
-
 	var[6] = asin(dotp(pRTCC->PZTTLIPL.T, N_I));
 
 	void *constPtr;

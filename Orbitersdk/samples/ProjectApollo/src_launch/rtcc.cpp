@@ -8697,8 +8697,10 @@ RTCC_PMMSPT_8_2:
 	RR = dotp(R, R);
 	COSB = cos(beta);
 	SINB = sin(beta);
+	//T_RP input?
 	if (OrigTLIInd < 0)
 	{
+		//Yes
 		goto RTCC_PMMSPT_13_2;
 	}
 	alpha_TS = alpha_TSS + tlitab->K_a1*dt4_apo + tlitab->K_a2*dt4_apo*dt4_apo;
@@ -19237,14 +19239,30 @@ RTCC_PMSVCT_5:
 	//Page 7
 	//DTREAD MPT Header
 RTCC_PMSVCT_8:
-	bool tli = false;
 	for (unsigned i = 0;i < mpt->mantable.size();i++)
 	{
 		if (mpt->mantable[i].AttitudeCode == RTCC_ATTITUDE_SIVB_IGM || mpt->mantable[i].AttitudeCode == RTCC_ATTITUDE_PGNS_DESCENT)
 		{
 			if (mpt->mantable[i].GMTMAN > sv0.Vector.GMT)
 			{
-				if (mpt->mantable[i].FrozenManeuverInd == false)
+				//Iterable?
+				int temp;
+				if (mpt->mantable[i].FrozenManeuverInd)
+				{
+					temp = false;
+				}
+				else
+				{
+					if (mpt->mantable[i].AttitudeCode == RTCC_ATTITUDE_SIVB_IGM)
+					{
+						temp = mpt->mantable[i].Word78i[1] != 0;
+					}
+					else
+					{
+						temp = true;
+					}
+				}
+				if (temp)
 				{
 					//EMSMISS and PMMSPT for TLI/PDI
 					EMSMISSInputTable intab;

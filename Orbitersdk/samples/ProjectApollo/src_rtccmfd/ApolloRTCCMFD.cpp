@@ -7241,7 +7241,7 @@ void ApolloRTCCMFD::menuSetTLIProcessorInput()
 		}
 		else
 		{
-			GC->rtcc->PZTLIPLN.Mode = 2;
+			GC->rtcc->PZTLIPLN.Mode = 1;
 		}
 		break;
 	case 5:
