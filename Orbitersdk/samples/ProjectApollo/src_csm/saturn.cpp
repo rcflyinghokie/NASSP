@@ -72,7 +72,6 @@ extern "C" {
 using namespace nassp;
 
 //extern FILE *PanelsdkLogFile;
-//extern FILE* IMUDriftLogger;
 
 //
 // CAUTION: This disables the warning, which is triggered by the use of the "this" pointer in the 
@@ -510,8 +509,8 @@ void Saturn::initSaturn()
 
 	agc.ControlVessel(this);
 	imu.SetVessel(this, false);
-	dsky.Init(&LightingNumIntLMDCCB, &CMCDCBusFeeder, &NumericRotarySwitch);
-	dsky2.Init(&LightingNumIntLEBCB, &CMCDCBusFeeder, &Panel100NumericRotarySwitch);
+	dsky.Init(&LightingNumIntLMDCCB, &CMCDCBusFeeder, &NumericRotarySwitch, &IntegralRotarySwitch, NULL, NULL);
+	dsky2.Init(&LightingNumIntLEBCB, &CMCDCBusFeeder, &Panel100NumericRotarySwitch, &Panel100IntegralRotarySwitch, NULL, NULL);
 
 	//
 	// Configure SECS.
@@ -1062,7 +1061,7 @@ void Saturn::clbkPostCreation()
 	// Load Apollo-13 specific sounds.
 	//
 
-	if (ApolloNo == 1301) {
+	if (pMission->DoApollo13Failures()) {
 		if (!KranzPlayed)
 			soundlib.LoadMissionSound(SKranz, A13_KRANZ, NULL, INTERNAL_ONLY);
 		if (!CryoStir)
@@ -1269,18 +1268,12 @@ void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 	//
 	// Subclass specific handling
 	//
-	//VECTOR3 ATTITUDEFORTESTING = imu.GetTotalAttitude();
-	VECTOR3 ATTITUDEFORTESTING = imu.getPlatformEulerAnglesZYX();
-	VECTOR3 DRIFTRATEFORTESTING = imu.GetNBDriftRates();
-	VECTOR3 IMURESOLVERPHASEERROR = imu.getResolverPhaseError();
-	//sprintf(oapiDebugString(), "<%0.10f, %0.10f, %0.10f>, <%0.10f, %0.10f, %0.10f>, <%0.10f, %0.10f, %0.10f>", 
-	//	ATTITUDEFORTESTING.x, ATTITUDEFORTESTING.y, ATTITUDEFORTESTING.z, 
-	//	DRIFTRATEFORTESTING.x, DRIFTRATEFORTESTING.y, DRIFTRATEFORTESTING.z,
-	//	IMURESOLVERPHASEERROR.x, IMURESOLVERPHASEERROR.y, IMURESOLVERPHASEERROR.z);
-	//fprintf(IMUDriftLogger, "%0.15f, %0.15f, %0.15f, %0.15f\n", simt, ATTITUDEFORTESTING.x, ATTITUDEFORTESTING.y, ATTITUDEFORTESTING.z);
-	//fflush(IMUDriftLogger);
+
 	Timestep(simt, simdt, mjd);
-	
+
+	if (oapiGetFocusObject() == GetHandle()) {
+		dsky.SendNetworkPacketDSKY();
+	}
 
 	sprintf(buffer, "End time(0) %lld", time(0)); 
 	TRACE(buffer);
@@ -1469,7 +1462,7 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	if (AutoSlow) {
 		oapiWriteScenario_int (scn, "AUTOSLOW", 1);
 	}
-	if (ApolloNo == 1301) {
+	if (pMission->DoApollo13Failures()) {
 		oapiWriteScenario_int (scn, "A13STATE", GetA13State());
 	}
 	if (SIVBPayload != PAYLOAD_LEM) {
@@ -4217,7 +4210,7 @@ void Saturn::LoadDefaultSounds()
 void Saturn::StageSix(double simt){
 	UpdateMassAndCoG();
 
-	if (ApolloNo == 1301) {
+	if (pMission->DoApollo13Failures()) {
 
 		//
 		// Play cryo-stir audio.
@@ -4353,7 +4346,7 @@ void Saturn::StageSix(double simt){
 			
 			double O2Tank1Mass = O2Tanks[0]->mass/1E3;
 
-			SetThrusterLevel(th_o2_vent, O2Tank1Mass/145149.5584);
+			SetThrusterLevel(th_o2_vent, O2Tank1Mass/145.1495584);
 
 			SetPropellantMass(ph_o2_vent, O2Tank1Mass);
 		}

@@ -123,6 +123,7 @@ namespace mission {
 		bCrossPointerShades = false;
 		iLMNumber = 5; //LM-5
 		bLMEventTimerReverseAtZero = false;
+		bApollo13Failures = false;
 		strCDRName = "CDR";
 		strCMPName = "CMP";
 		strLMPName = "LMP";
@@ -183,6 +184,10 @@ namespace mission {
 		}
 
 		char line[256];
+
+		AdditionalGroundStations.clear();
+		GroundStationsPositions.clear();
+		GroundStationsActive.clear();
 
 		while (hFile.getline(line, sizeof line))
 		{
@@ -290,6 +295,10 @@ namespace mission {
 			else if (!_strnicmp(line, "LMEventTimerReverseAtZero=", 26)) {
 				strncpy(buffer, line + 26, 255);
 				bLMEventTimerReverseAtZero = !_strnicmp(buffer, "TRUE", 4);
+			}
+			else if (!_strnicmp(line, "Apollo13Failures=", 17)) {
+				strncpy(buffer, line + 17, 255);
+				bApollo13Failures = !_strnicmp(buffer, "TRUE", 4);
 			}
 			else if (!_strnicmp(line, "CDRVesselName=", 14)) {
 				strncpy(buffer, line + 14, 255);
@@ -411,75 +420,19 @@ namespace mission {
 			else if (!_strnicmp(line, "LMPIPASCALEZ=", 13)) {
 				sscanf(line + 13, "%lf", &LM_PIPAScale.z);
 			}
+			else if (!_strnicmp(line, "GroundStation=", 14)) {
+				ReadGroundStationLine(line + 14);
+			}
+			else if (!_strnicmp(line, "GroundStationPosition=", 22)) {
+				ReadGroundStationPostionLine(line + 22);
+			}
+			else if (!_strnicmp(line, "GroundStationActive=", 20)) {
+				ReadGroundStationActiveLine(line + 20);
+			}
 		}
-		//LoadIMU_AndPIPA_RatesAndBiases(hFile);
 		hFile.close();
 
 		return true;
-	}
-
-	void Mission::LoadIMU_AndPIPA_RatesAndBiases(std::ifstream &hFile) {
-		//char line[256];
-
-		//for (std::string line; std::getline(hFile, line);) {
-		//	if (!line.compare(0,7,"CMNBDX=")) {
-		//		CM_IMUDriftRates.m11 = std::stod(line.substr(7));
-		//	}
-		//	else if (!line.compare(0, 7, "CMNBDY=")) {
-		//		CM_IMUDriftRates.m12 = std::stod(line.substr(7));
-		//	}
-		//	else if (!line.compare(0, 7, "CMNBDZ=")) {
-		//		CM_IMUDriftRates.m13 = std::stod(line.substr(7));
-		//	}
-		//}
-
-		//while (hFile.getline(line, sizeof line)) {
-		//	if (!_strnicmp(line, "CMNBDX=", 7)) {
-		//		sscanf(line + 7, "%lf", &CM_IMUDriftRates.m11);
-		//	}
-		//	else if (!_strnicmp(line, "CMNBDY=", 7)) {
-		//		sscanf(line + 7, "%lf", &CM_IMUDriftRates.m12);
-		//	}
-		//	else if (!_strnicmp(line, "CMNBDZ=", 7)) {
-		//		sscanf(line + 7, "%lf", &CM_IMUDriftRates.m13);
-		//	}
-		//}
-
-		/*oapiReadItem_float(hFile, "CMNBDX", CM_IMUDriftRates.m11);
-		oapiReadItem_float(hFile, "CMNBDY", CM_IMUDriftRates.m12);
-		oapiReadItem_float(hFile, "CMNBDZ", CM_IMUDriftRates.m13);
-		oapiReadItem_float(hFile, "CMADSRAX", CM_IMUDriftRates.m21);
-		oapiReadItem_float(hFile, "CMADSRAY", CM_IMUDriftRates.m22);
-		oapiReadItem_float(hFile, "CMADSRAZ", CM_IMUDriftRates.m23);
-		oapiReadItem_float(hFile, "CMADIAX", CM_IMUDriftRates.m31);
-		oapiReadItem_float(hFile, "CMADIAY", CM_IMUDriftRates.m32);
-		oapiReadItem_float(hFile, "CMADIAZ", CM_IMUDriftRates.m33);
-
-		oapiReadItem_float(hFile, "CMPIPABIASX", CM_PIPABias.x);
-		oapiReadItem_float(hFile, "CMPIPABIASY", CM_PIPABias.y);
-		oapiReadItem_float(hFile, "CMPIPABIASZ", CM_PIPABias.z);
-
-		oapiReadItem_float(hFile, "CMPIPASCALEX", CM_PIPAScale.x);
-		oapiReadItem_float(hFile, "CMPIPASCALEY", CM_PIPAScale.y);
-		oapiReadItem_float(hFile, "CMPIPASCALEZ", CM_PIPAScale.z);
-
-		oapiReadItem_float(hFile, "LMNBDX", LM_IMUDriftRates.m11);
-		oapiReadItem_float(hFile, "LMNBDY", LM_IMUDriftRates.m12);
-		oapiReadItem_float(hFile, "LMNBDZ", LM_IMUDriftRates.m13);
-		oapiReadItem_float(hFile, "LMADSRAX", LM_IMUDriftRates.m21);
-		oapiReadItem_float(hFile, "LMADSRAY", LM_IMUDriftRates.m22);
-		oapiReadItem_float(hFile, "LMADSRAZ", LM_IMUDriftRates.m23);
-		oapiReadItem_float(hFile, "LMADIAX", LM_IMUDriftRates.m31);
-		oapiReadItem_float(hFile, "LMADIAY", LM_IMUDriftRates.m32);
-		oapiReadItem_float(hFile, "LMADIAZ", LM_IMUDriftRates.m33);
-
-		oapiReadItem_float(hFile, "LMPIPABIASX", LM_PIPABias.x);
-		oapiReadItem_float(hFile, "LMPIPABIASY", LM_PIPABias.y);
-		oapiReadItem_float(hFile, "LMPIPABIASZ", LM_PIPABias.z);
-
-		oapiReadItem_float(hFile, "LMPIPASCALEX", LM_PIPAScale.x);
-		oapiReadItem_float(hFile, "LMPIPASCALEY", LM_PIPAScale.y);
-		oapiReadItem_float(hFile, "LMPIPASCALEZ", LM_PIPAScale.z);*/
 	}
 
 	MATRIX3 Mission::GetCM_IMU_Drift() const {
@@ -754,5 +707,67 @@ namespace mission {
 	bool Mission::IsLMEventTimerReversingAtZero() const
 	{
 		return bLMEventTimerReverseAtZero;
+	}
+
+	std::vector<GroundStationData> Mission::GetGroundStationData() const
+	{
+		return AdditionalGroundStations;
+	}
+
+	std::vector<GroundStationPosition> Mission::GetGroundStationPosition() const
+	{
+		return GroundStationsPositions;
+	}
+
+	std::vector<GroundStationActive> Mission::GetGroundStationActive() const
+	{
+		return GroundStationsActive;
+	}
+
+	void Mission::ReadGroundStationLine(char *line)
+	{
+		GroundStationData temp;
+
+		int itemp[3];
+
+		if (sscanf(line, "%d %s %s %lf %lf %d %d %d %d %d %d %d %d %d %d %d %d",
+			&temp.Num, temp.Name, temp.Code, &temp.Position[0], &temp.Position[1], &itemp[0], &temp.TrackingCaps, &temp.USBCaps, &temp.SBandAntenna, &temp.TelemetryCaps,
+			&temp.CommCaps, &itemp[1], &itemp[2], &temp.DownTlmCaps, &temp.UpTlmCaps, &temp.StationType, &temp.StationPurpose) == 17)
+		{
+			temp.Active = (itemp[0] != 0);
+			temp.HasRadar = (itemp[1] != 0);
+			temp.HasAcqAid = (itemp[2] != 0);
+
+			AdditionalGroundStations.push_back(temp);
+		}
+	}
+
+	void Mission::ReadGroundStationPostionLine(char *line)
+	{
+		GroundStationPosition temp;
+
+		if (sscanf(line, "%d %lf %lf", &temp.Num, &temp.Position[0], &temp.Position[1]) == 3)
+		{
+			GroundStationsPositions.push_back(temp);
+		}
+	}
+
+	void Mission::ReadGroundStationActiveLine(char *line)
+	{
+		GroundStationActive temp;
+
+		int itemp;
+
+		if (sscanf(line, "%d %d", &temp.Num, &itemp) == 2)
+		{
+			temp.Active = (itemp != 0);
+
+			GroundStationsActive.push_back(temp);
+		}
+	}
+
+	bool Mission::DoApollo13Failures() const
+	{
+		return bApollo13Failures;
 	}
 }
