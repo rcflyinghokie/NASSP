@@ -1451,6 +1451,7 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		GZGENCSN.LDPPHeightofPDI = 50000.0*0.3048;
 		GZGENCSN.LDPPPoweredDescentSimFlag = false;
 		GZGENCSN.LDPPDwellOrbits = 0;
+		GZGENCSN.LDPPDescentFlightArc = GZGENCSN.LDPPLandingSiteOffset = 14.51*RAD;
 		//MED K16
 		med_k16.Mode = 4;
 		med_k16.Sequence = 1;
@@ -1656,6 +1657,7 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		GZGENCSN.LDPPHeightofPDI = 50000.0*0.3048;
 		GZGENCSN.LDPPPoweredDescentSimFlag = false;
 		GZGENCSN.LDPPDwellOrbits = 0;
+		GZGENCSN.LDPPDescentFlightArc = GZGENCSN.LDPPLandingSiteOffset = 14.51*RAD;
 		//MED K16
 		med_k16.Mode = 4;
 		med_k16.Sequence = 1;
