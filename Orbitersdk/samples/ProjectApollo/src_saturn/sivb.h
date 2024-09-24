@@ -104,6 +104,7 @@ struct SIVBSettings
 	double LMDescentEmptyMassKg;	///< Empty mass of descent stage of LEM.
 	double LMAscentEmptyMassKg;		///< Empty mass of ascent stage of LEM.
 	char PayloadName[64];			///< Payload Name
+	char customPayloadClass[256];	///< Class of custom vessel in SLA for Payload Type 9
 	char CSMName[64];
 	bool Crewed;
 
@@ -448,6 +449,8 @@ protected:
 	int AEAPadValueCount;
 
 	char PayloadName[64];			///< Name of payload, if appropriate.
+
+	char customPayloadClass[256];	///< Class of vessel in the SLA for Payload Type 9.
 
 	bool Payloaddatatransfer;		///< Have we transferred data to the payload?
 

@@ -609,10 +609,12 @@ void SIVB::SetS4b()
 		i++;
 		break;
 	case PAYLOAD_CUSTOM:
-		dockpos = _V(0.0, 0.0, 9.0);
+		dockpos = { 0, 0, 9.0 };
 		SetDockParams(dockpos, dockdir, dockrot);
 		hDock = GetDockHandle(0);
-		mass += PayloadMass;
+		RegisterConnector(i, &payloadSeparationConnector);
+		CreatePayload();
+		i++;
 		break;
 	}
 
@@ -1621,6 +1623,11 @@ void SIVB::SetState(SIVBSettings &state)
 			strcpy(PayloadName, state.PayloadName);
 		}
 
+		if (state.customPayloadClass[0])
+		{
+			strcpy(customPayloadClass, state.customPayloadClass);
+		}
+
 		if (state.LEMCheck[0]) {
 			strcpy(payloadSettings.checklistFile, state.LEMCheck);
 		}
@@ -1809,7 +1816,8 @@ void SIVB::CreatePayload() {
 		plName = "ProjectApollo/ASTP";
 		break;
 	case PAYLOAD_CUSTOM:
-		plName = "Carina";
+		if (customPayloadClass == "") { strcpy(customPayloadClass, "ProjectApollo/ASTP"); } //Avoid weird stuff in case the user doesn't load a vessel class
+		plName = customPayloadClass;
 		break;
 
 	default:
@@ -1855,7 +1863,7 @@ void SIVB::CreatePayload() {
 	//
 
 	payloadvessel = static_cast<Payload *> (oapiGetVesselInterface(hPayload));
-	payloadvessel->SetupPayload(payloadSettings);
+	if (PayloadType != PAYLOAD_CUSTOM) { payloadvessel->SetupPayload(payloadSettings); }
 	Payloaddatatransfer = true;
 
 	GetStatusEx(&vslm2);
@@ -1867,11 +1875,6 @@ void SIVB::CreatePayload() {
 	vslm2.ndockinfo = 1;
 	vslm2.flag = VS_DOCKINFOLIST;
 	vslm2.version = 2;
-
-	if (PayloadType == PAYLOAD_CUSTOM) {
-		DOCKHANDLE newPayloadDock = payloadvessel->CreateDock(_V(0, 0, 0), _V(0, 1, 0), _V(0, 0, 0));
-		vslm2.dockinfo[0].ridx = (DWORD)payloadvessel->DockCount();
-	}
 
 	DefSetStateEx(&vslm2);
 

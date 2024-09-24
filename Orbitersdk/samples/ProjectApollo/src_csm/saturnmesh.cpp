@@ -1155,6 +1155,7 @@ void Saturn::CreateSIVBStage(char *config, VESSELSTATUS &vs1, bool SaturnVStage)
 	S4Config.SettingsType.SIVB_SETTINGS_ENGINES = 1;
 	S4Config.SettingsType.SIVB_SETTINGS_PAYLOAD_INFO = 1;
 	S4Config.Payload = SIVBPayload;
+	strncpy(S4Config.customPayloadClass, customPayloadClass, 255);
 	S4Config.VehicleNo = VehicleNo;
 	S4Config.EmptyMass = S4B_EmptyMass;
 	S4Config.MainFuelKg = GetPropellantMass(ph_3rd);

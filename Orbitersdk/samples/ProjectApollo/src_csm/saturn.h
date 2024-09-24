@@ -4400,6 +4400,12 @@ protected:
 	double LMAscentEmptyMassKg;
 
 	//
+	// Custom Payload data.
+	//
+	double customPayloadMass;
+	char customPayloadClass[256];
+
+	//
 	// Random motion.
 	//
 

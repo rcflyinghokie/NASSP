@@ -1105,6 +1105,9 @@ void Saturn::initSaturn()
 	LMAscentEmptyMassKg = 2150.0;
 	LMDescentEmptyMassKg = 2224.0;
 
+	customPayloadMass = 0;
+	customPayloadClass[0] = 0;
+
 	UseATC = false;
 
 	SIISepState = false;
@@ -1758,6 +1761,10 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 		oapiWriteScenario_int (scn, "S4PL", SIVBPayload);
 	}
 	oapiWriteScenario_int(scn, "WIDESLA", UseWideSLA);
+	oapiWriteScenario_float(scn, "CUSTOMPAYLOADMASS", customPayloadMass);
+	if (customPayloadClass[0])
+		oapiWriteScenario_string(scn, "CUSTOMPAYLOADCLASS", customPayloadClass);
+
 	oapiWriteScenario_string (scn, "LANG", AudioLanguage);
 	
 	if (PayloadName[0])
@@ -2359,6 +2366,13 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 		sscanf(line + 7, "%d", &i);
 		UseWideSLA = (i != 0);
 	}
+	else if (!strnicmp(line, "CUSTOMPAYLOADMASS", 17)) {
+		sscanf(line + 17, "%f", &ftcp);
+		customPayloadMass = ftcp;
+	}
+	else if (!strnicmp(line, "CUSTOMPAYLOADCLASS", 18)) {
+		strncpy(customPayloadClass, line + 19, 256);
+	}
 	else if (!strnicmp(line, "SMFUELLOAD", 10)) {
 		sscanf(line + 10, "%f", &ftcp);
 		SM_FuelMass = ftcp;
@@ -2891,6 +2905,10 @@ void Saturn::UpdatePayloadMass()
 
 	case PAYLOAD_DOCKING_ADAPTER:
 		S4PL_Mass = 4700.0; // see http://www.ibiblio.org/mscorbit/mscforum/index.php?topic=2064.0
+		break;
+
+	case PAYLOAD_CUSTOM:
+		S4PL_Mass = customPayloadMass;
 		break;
 
 	default:
