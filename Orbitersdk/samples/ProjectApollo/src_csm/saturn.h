@@ -1384,6 +1384,12 @@ protected:
 	///
 	bool SLAWillSeparate;
 
+	///
+	/// True if wide ELS-type SLA panels are installed.
+	/// \brief Use wide ELS-type SLA panels.
+	///
+	bool UseWideSLA;
+
 	bool SIMBayPanelJett;
 
 	bool DeleteLaunchSite;

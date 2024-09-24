@@ -716,6 +716,8 @@ void Saturn::initSaturn()
 	SLARotationLimit = 45;
 	SLAWillSeparate = true;
 
+	UseWideSLA = false;
+
 	hStage1Mesh = 0;
 	hStage2Mesh = 0;
 	hStage3Mesh = 0;
@@ -1755,6 +1757,7 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	if (SIVBPayload != PAYLOAD_LEM) {
 		oapiWriteScenario_int (scn, "S4PL", SIVBPayload);
 	}
+	oapiWriteScenario_int(scn, "WIDESLA", UseWideSLA);
 	oapiWriteScenario_string (scn, "LANG", AudioLanguage);
 	
 	if (PayloadName[0])
@@ -2350,6 +2353,11 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	}
 	else if (!strnicmp(line, "S4PL", 4)) {
 		sscanf(line + 4, "%d", &SIVBPayload);
+	}
+	else if (!strnicmp(line, "WIDESLA", 7)) {
+		int i;
+		sscanf(line + 7, "%d", &i);
+		UseWideSLA = (i != 0);
 	}
 	else if (!strnicmp(line, "SMFUELLOAD", 10)) {
 		sscanf(line + 10, "%f", &ftcp);
