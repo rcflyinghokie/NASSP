@@ -236,7 +236,7 @@ void MCC::MissionSequence_F()
 		UpdateMacro(UTP_PADONLY, PT_AP10DAPDATA, MoonRev >= 11 && MoonRevTime > 30.0*60.0, 61, MST_F_LUNAR_ORBIT_DOI_DAY_5);
 		break;
 	case MST_F_LUNAR_ORBIT_DOI_DAY_5: //LM DAP Load PAD to LM IMU gyro torquing angle update
-		UpdateMacro(UTP_PADONLY, PT_AP10DAPDATA, MoonRev >= 11 && MoonRevTime > 50.0*60.0, 62, MST_F_LUNAR_ORBIT_DOI_DAY_8);
+		UpdateMacro(UTP_PADONLY, PT_AP10DAPDATA, MoonRev >= 11 && MoonRevTime > 55.0*60.0, 62, MST_F_LUNAR_ORBIT_DOI_DAY_8);
 		break;
 	case MST_F_LUNAR_ORBIT_DOI_DAY_8: //LM IMU gyro torquing angle update to LGC activation update
 		UpdateMacro(UTP_PADONLY, PT_TORQANG, MoonRev >= 11 && MoonRevTime > 60.0*60.0, 63, MST_F_LUNAR_ORBIT_DOI_DAY_9);
