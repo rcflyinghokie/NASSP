@@ -6130,12 +6130,20 @@ void RTCC::TranslunarInjectionProcessor(bool mpt, EphemerisData *sv, PLAWDTOutpu
 		else
 		{
 			int val = GetStateVectorTableEntry(PZTLIPLN.VectorType, PZTLIPLN.mpt);
-			if (val < 0) return;
+			if (val < 0)
+			{
+				PMXSPT("PMMEPP", 300);
+				return;
+			}
 
 			medquant.state = BZUSEVEC.data[val].Vector;
 		}
 
-		if (medquant.state.GMT == 0.0) return;
+		if (medquant.state.GMT == 0.0)
+		{
+			PMXSPT("PMMEPP", 300);
+			return;
+		}
 
 		//Get weight
 		PLAWDTInput inp;
@@ -6163,19 +6171,31 @@ void RTCC::TranslunarInjectionProcessor(bool mpt, EphemerisData *sv, PLAWDTOutpu
 	medquant.IPOA = PZTLIPLN.IsPacficWindow ? 1 : 2;
 	medquant.Opportunity = PZTLIPLN.Opportunity;
 
-	if (PZTLIPLN.Mode == 2)
+	if (PZTLIPLN.Mode == 2 || PZTLIPLN.Mode == 5)
 	{
-		//Free return
-		medquant.h_PC = PZSFPTAB.blocks[PZMCCPLN.SFPBlockNum - 1].h_pc1;
-		medquant.lat_PC = PZSFPTAB.blocks[PZMCCPLN.SFPBlockNum - 1].lat_pc1;
-	}
-	else if (PZTLIPLN.Mode == 5)
-	{
-		//Non-free return
-		medquant.h_PC = PZSFPTAB.blocks[PZMCCPLN.SFPBlockNum - 1].h_nd;
-		medquant.lat_PC = PZSFPTAB.blocks[PZMCCPLN.SFPBlockNum - 1].lat_nd;
-		medquant.lng_node = PZSFPTAB.blocks[PZMCCPLN.SFPBlockNum - 1].lng_nd;
-		medquant.GMT_node = PZSFPTAB.blocks[PZMCCPLN.SFPBlockNum - 1].GMT_nd;
+		TLMCCDataTable *tab = &PZSFPTAB.blocks[PZMCCPLN.SFPBlockNum - 1];
+
+		//Error return if SFP is not loaded
+		if (tab->GMTTimeFlag == 0.0)
+		{
+			PMXSPT("PMMEPP", 302);
+			return;
+		}
+
+		if (PZTLIPLN.Mode == 2)
+		{
+			//Free return
+			medquant.h_PC = tab->h_pc1;
+			medquant.lat_PC = tab->lat_pc1;
+		}
+		else
+		{
+			//Non-free return
+			medquant.h_PC = tab->h_nd;
+			medquant.lat_PC = tab->lat_nd;
+			medquant.lng_node = tab->lng_nd;
+			medquant.GMT_node = tab->GMT_nd;
+		}
 	}
 
 	mccconst.delta = PZTLIPLN.DELTA;
@@ -6186,7 +6206,12 @@ void RTCC::TranslunarInjectionProcessor(bool mpt, EphemerisData *sv, PLAWDTOutpu
 	tli.Init(medquant, mccconst, GetGMTBase());
 	tli.Main(out);
 
-	if (out.ErrorIndicator) return;
+	if (out.ErrorIndicator)
+	{
+		RTCCONLINEMON.IntBuffer[0] = out.ErrorIndicator;
+		PMXSPT("PMMEPP", 301);
+		return;
+	}
 
 	//Output table
 	PZTTLIPL.DataIndicator = 1;
@@ -6218,6 +6243,16 @@ void RTCC::TranslunarMidcourseCorrectionProcessor(EphemerisData sv0, double CSMm
 	TLMCCOutputData out;
 
 	datatab = PZSFPTAB.blocks[PZMCCPLN.SFPBlockNum - 1];
+
+	//TBD: Some old scenarios have a filled SFP, but GMTTimeFlag is zero
+	/*
+	//Error return if SFP is not loaded
+	if (datatab.GMTTimeFlag == 0.0)
+	{
+		PMXSPT("PMMLCP", 302);
+		return;
+	}
+	*/
 
 	medquant.Mode = PZMCCPLN.Mode;
 	medquant.Config = PZMCCPLN.Config;
@@ -14208,6 +14243,16 @@ void RTCC::PMXSPT(std::string source, int n)
 		break;
 	case 201:
 		message.push_back(RTCCONLINEMON.TextBuffer[0]);
+		break;
+	case 300:
+		message.push_back("VECTOR NOT AVAILABLE");
+		break;
+	case 301:
+		sprintf_s(Buffer, "COMPUTATION FAILED WITH ERROR CODE %d", RTCCONLINEMON.IntBuffer[0]);
+		message.push_back(Buffer);
+		break;
+	case 302:
+		message.push_back("SKELETON FLIGHT PLAN TABLE NOT AVAILABLE");
 		break;
 	default:
 		return;

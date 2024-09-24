@@ -156,11 +156,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			skp->Text(6 * W / 8, 4 * H / 14, Buffer, strlen(Buffer));
 		}
 		break;
-	}
-
-	//Old
-	if (screen == 2)
-	{
+	case 2:
 		skp->SetTextAlign(oapi::Sketchpad::CENTER);
 		skp->Text(4 * W / 8, 2 * H / 32, "TWO IMPULSE MULTIPLE SOLUTION (MSK 0063)", 40);
 
@@ -218,11 +214,11 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			skp->Text(49 * W / 64, 11 * H / 32, "YAW", 3);
 			skp->Text(28 * W / 32, 11 * H / 32, "PITCH", 5);
 		}
-		
+
 		skp->Text(60 * W / 64, 11 * H / 32, "L", 1);
 		skp->Text(63 * W / 64, 11 * H / 32, "C", 1);
-		
-		for (int i = 0;i < GC->rtcc->TwoImpMultDispBuffer.Solutions;i++)
+
+		for (int i = 0; i < GC->rtcc->TwoImpMultDispBuffer.Solutions; i++)
 		{
 			sprintf(Buffer, "%.2lf", GC->rtcc->TwoImpMultDispBuffer.data[i].DELV1);
 			skp->Text(5 * W / 32, (12 + i) * H / 32, Buffer, strlen(Buffer));
@@ -246,15 +242,14 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 				sprintf(Buffer, "%.2lf", GC->rtcc->TwoImpMultDispBuffer.data[i].PITCH2);
 				skp->Text(57 * W / 64, (12 + i) * H / 32, Buffer, strlen(Buffer));
 			}
-			
+
 			sprintf(Buffer, "%c", GC->rtcc->TwoImpMultDispBuffer.data[i].L);
 			skp->Text(60 * W / 64, (12 + i) * H / 32, Buffer, strlen(Buffer));
 			sprintf(Buffer, "%d", GC->rtcc->TwoImpMultDispBuffer.data[i].C);
 			skp->Text(63 * W / 64, (12 + i) * H / 32, Buffer, strlen(Buffer));
 		}
-	}
-	else if (screen == 3)
-	{
+		break;
+	case 3:
 		skp->Text(6 * W / 8, (int)(0.5 * H / 14), "Coelliptic", 10);
 
 		skp->Text(1 * W / 16, 2 * H / 14, "SPQ Initialization", 18);
@@ -371,8 +366,11 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		skp->Text(6 * W / 8, 17 * H / 21, Buffer, strlen(Buffer));
 		AGC_Display(Buffer, G->SPQDeltaV.z / 0.3048);
 		skp->Text(6 * W / 8, 18 * H / 21, Buffer, strlen(Buffer));
+		break;
 	}
-	else if (screen == 4)
+
+	//Old
+	if (screen == 4)
 	{
 		skp->Text(4 * W / 8, (int)(0.5 * H / 14), "General Purpose Maneuver", 24);
 
@@ -7197,43 +7195,36 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			}
 			else
 			{
-				sprintf(Buffer, "2 (Nominal Targets)");
+				sprintf(Buffer, "2 (Nominal)");
 			}
 			skp->Text(5 * W / 22, 10 * H / 22, Buffer, strlen(Buffer));
 
-			/*
 			if (GC->rtcc->PZTLIPLN.Mode == 2)
 			{
-				skp->Text(1 * W / 16, 11 * H / 14, "Pericynthion:", 13);
+				skp->Text(5 * W / 22, 12 * H / 22, "Pericynthion:", 13);
 
 				sprintf_s(Buffer, "Lat %.3lf", GC->rtcc->PZSFPTAB.blocks[GC->rtcc->PZMCCPLN.SFPBlockNum - 1].lat_pc1 * DEG);
-				skp->Text(1 * W / 16, 24 * H / 28, Buffer, strlen(Buffer));
+				skp->Text(5 * W / 22, 13 * H / 22, Buffer, strlen(Buffer));
 
 				sprintf_s(Buffer, "Height %.3lf", GC->rtcc->PZSFPTAB.blocks[GC->rtcc->PZMCCPLN.SFPBlockNum - 1].h_pc1 / 1852.0);
-				skp->Text(1 * W / 16, 25 * H / 28, Buffer, strlen(Buffer));
+				skp->Text(5 * W / 22, 14 * H / 22, Buffer, strlen(Buffer));
 			}
 			else
 			{
-				skp->Text(1 * W / 16, 11 * H / 14, "Node:", 5);
+				skp->Text(5 * W / 22, 12 * H / 22, "Node:", 5);
 
 				GET_Display2(Buffer, GC->rtcc->PZSFPTAB.blocks[GC->rtcc->PZMCCPLN.SFPBlockNum - 1].GMT_nd);
-				skp->Text(1 * W / 16, 24 * H / 28, Buffer, strlen(Buffer));
+				skp->Text(5 * W / 22, 13 * H / 22, Buffer, strlen(Buffer));
 
 				sprintf_s(Buffer, "Lat %.3lf", GC->rtcc->PZSFPTAB.blocks[GC->rtcc->PZMCCPLN.SFPBlockNum - 1].lat_nd * DEG);
-				skp->Text(1 * W / 16, 25 * H / 28, Buffer, strlen(Buffer));
+				skp->Text(5 * W / 22, 14 * H / 22, Buffer, strlen(Buffer));
 
 				sprintf_s(Buffer, "Lng %.3lf", GC->rtcc->PZSFPTAB.blocks[GC->rtcc->PZMCCPLN.SFPBlockNum - 1].lng_nd * DEG);
-				skp->Text(1 * W / 16, 26 * H / 28, Buffer, strlen(Buffer));
+				skp->Text(5 * W / 22, 15 * H / 22, Buffer, strlen(Buffer));
 
 				sprintf_s(Buffer, "Height %.3lf", GC->rtcc->PZSFPTAB.blocks[GC->rtcc->PZMCCPLN.SFPBlockNum - 1].h_nd / 1852.0);
-				skp->Text(1 * W / 16, 27 * H / 28, Buffer, strlen(Buffer));
-
-
-				GC->rtcc->PZSFPTAB.blocks[GC->rtcc->PZMCCPLN.SFPBlockNum - 1].GMT_nd;
-				GC->rtcc->PZSFPTAB.blocks[GC->rtcc->PZMCCPLN.SFPBlockNum - 1].lat_nd;
-				GC->rtcc->PZSFPTAB.blocks[GC->rtcc->PZMCCPLN.SFPBlockNum - 1].lng_nd;
-				GC->rtcc->PZSFPTAB.blocks[GC->rtcc->PZMCCPLN.SFPBlockNum - 1].h_nd;
-			}*/
+				skp->Text(5 * W / 22, 16 * H / 22, Buffer, strlen(Buffer));
+			}
 		}
 
 		skp->Text(9 * W / 16, 4 * H / 14, "GET RP", 6);
@@ -10761,6 +10752,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		sprintf(Buffer, "MGA: %+.2lf°", G->IMUParkingAngles.z * DEG);
 		skp->Text(10 * W / 16, 8 * H / 14, Buffer, strlen(Buffer));
 	}
+
 	return true;
 }
 
