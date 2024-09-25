@@ -263,12 +263,56 @@ The output from the GPM Processor is a display containing such maneuver informat
 \textbf{CLC:} Calculate the maneuver.\\
 \textbf{MPT:} Create finite maneuver from impulsive burn.\\
 \textbf{BCK:} Go back to the main menu.\\
-
-\subsection{TLI Planning}
-
-To be determined.\\
 \newpage
+\subsection{TLI Planning}
+\subsubsection{Introduction}
+On a typical lunar mission all the targeting needed for TLI has been loaded into the Saturn computer (LVDC) before launch. For a dispersed Earth orbit or an alternative mission the RTCC has the capability to target a new TLI or an alternative second S-IVB burn. The options available in the TLI processor are
 
+\begin{enumerate}
+	\item S-IVB hypersurface solution. Evaluates the preloaded targeting in the LVDC
+	\item Integrated free-return trajectory to the nominal lunar flyby conditions
+	\item Specified total Delta V
+	\item Specified apogee altitude
+	\item Integrated non-free return trajectory to the nominal nodal position at the Moon
+\end{enumerate}
+
+\subsubsection{Inputs}
+\textbf{IU:} Select the vessel that is used for the uplink of the updated TLI targeting. In non-MPT mode also used as the vessel from which the state vector and weights are taken for the TLI processor calculation.\\
+\textbf{MPT:} Select CSM or LM mission plan table (MPT mode only).\\
+\textbf{VEC:} Select the state vector used in the calculation. Normally the anchor vector of the CSM or LM ephemeris is used, but any vector in the useable vector table can be specified (MPT mode only).\\
+\textbf{Opp:} Select the TLI opportunity. For option 1 this is the input to choose when the TLI is done and for all options this changes certain parameters associated with one of the opportunities in the LVDC, mostly the time of S-IVB mixture ratio shift from ignition.\\
+\textbf{Mode:} Choose the TLI processor calculation mode, see list above.\\
+\textbf{TIG:} Time of ignition. Not used for option 1. Used as a very rough initial guess in option 2 and 5, that only has to be accurate to a full orbit. In options 3 and 4 this is the exact time of ignition used.\\
+\textbf{DV:} Delta V of the maneuver (option 3 only).\\
+\textbf{APO:} Apogee altitude to be achieved by the maneuver (option 4 only).\\
+\textbf{Window:} Pacific or Atlantic TLI window, for the lunar mission options (2 and 5) this is used to generate the initial guess.\\
+\textbf{SFP:} For the lunar mission options (2 and 5) the target parameters are taken from the Skeleton Flight Plan table, which has two sets of data. See the Midcourse Correction Processor for more details about the SFP.\\
+
+\textbf{CLC:} Calculate solution.\\
+\textbf{MPT:} Transfer maneuver to MPT.\\
+\textbf{UPL:} Uplink solution to IU.\\
+\newpage
+\subsubsection{Display}
+
+\begin{figure}[hp]
+	\centering
+		\includegraphics{./ApolloRTCCMFDFiles/TLIProcessorDisplayExample.png}
+	\caption{TLI Planning Display}
+	\label{fig:TLIProcessorDisplayExample}
+\end{figure}
+
+\textbf{Display Parameters}\\
+
+\textbf{GET RP:} Ground Elapsed Time of Restart Preparations (TB6)\\
+\textbf{GET TIG:} Ground Elapsed Time of main engine ignition\\
+\textbf{INCL:} Inclination at cutoff\\
+\textbf{DESC:} Longitude of the descending node at cutoff\\
+\textbf{ECC:} Eccentricity at cutoff\\
+\textbf{C3:} Orbital energy at cutoff\\
+\textbf{ALPHA:} Angle from perigee of cutoff ellipse to descending node of cutoff ellipse\\
+\textbf{TA:} True anomaly at cutoff\\
+\textbf{BT:} Burn time of maneuver\\
+\newpage
 \subsection{Midcourse Correction Processor}
 
 \subsubsection{Introduction}

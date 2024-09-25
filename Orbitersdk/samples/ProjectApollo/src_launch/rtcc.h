@@ -572,6 +572,7 @@ struct TLIPADOpt
 	VECTOR3 SeparationAttitude; //LVLH IMU angles
 	double ConfigMass;
 	int InjOpp; //Injection opportunity (1 or 2)
+	bool StudyAid = false; //false = Planned TLI, true = from TLI processor
 };
 
 struct P27Opt
@@ -1363,11 +1364,20 @@ struct MPTManeuver
 	//Word 59, DPS scale factor (0 to 1)
 	double DPSScaleFactor;
 	//Word 61-63
-	//For ascent maneuver this is: R_D, Y_D
-	VECTOR3 dV_inertial; //In RTCC coordinates
-	//Word 64-66, In P30 coordinates
-	//For ascent maneuver this is: R_D_dot, Y_D_dot, Z_D_dot
-	VECTOR3 dV_LVLH;
+	union
+	{
+		VECTOR3 dV_inertial; //In RTCC coordinates
+		struct { double R_D, Y_D; }; //Ascent
+		struct { double Inclination, theta_N, Eccentricity; }; //TLI
+	};
+	//Word 64-66
+	union
+	{
+		VECTOR3 dV_LVLH; //In P30 coordinates
+		struct { double R_D_dot, Y_D_dot, Z_D_dot; }; //Ascent
+		struct { double C3, alpha_D, f; }; //TLI
+	};
+	//Word 67
 	union
 	{
 		//ExtDVCoordInd and 
@@ -1702,13 +1712,23 @@ struct PMMSPTInput
 	unsigned ReplaceCode;
 	int InjOpp;
 	//Word 12 (Time of ignition for TLI confirmation, negative if not input)
-	double T_RP = -1;
+	double T_RP = -1.;
 	//Word 13
 	int ThrusterCode;
 	int AttitudeMode;
-	//Word 14-19
+	//Word 14
 	std::string StationID;
-	//Targeting Parameters
+	double i; //Inclination of target orbit
+	//Word 15, Longitude of descending node of target orbit
+	double theta_N;
+	//Word 16, Eccentricity of target conic (negative of targeting parameters not input)
+	double e = -1.;
+	//Word 17, equals (-mu/a), where a is semi-major axis of target conic
+	double C3;
+	//Word 18, true anomaly of the descending node of the target conic
+	double alpha_D;
+	//Word 19, estimated true anomaly at cutoff
+	double f;
 	//Word 20 (DT of burn for maneuver confirmation, negative if not input)
 	double dt;
 	//Word 29, configuration change indicator
@@ -2470,7 +2490,9 @@ public:
 	MATRIX3 REFSMMATCalc(REFSMMATOpt *opt);
 	void EntryTargeting(EntryOpt *opt, EntryResults *res);//VECTOR3 &dV_LVLH, double &P30TIG, double &latitude, double &longitude, double &GET05G, double &RTGO, double &VIO, double &ReA, int &precision);
 	void BlockDataProcessor(EarthEntryOpt *opt, EntryResults *res);
-	void TranslunarInjectionProcessor(EphemerisData sv, PLAWDTOutput WeightsTable);
+	//RTCC module name PMMEPP
+	void TranslunarInjectionProcessor(bool mpt, EphemerisData *sv = NULL, PLAWDTOutput *WeightsTable = NULL);
+	//RTCC module name PMMLCP
 	void TranslunarMidcourseCorrectionProcessor(EphemerisData sv0, double CSMmass, double LMmass);
 	int LunarDescentPlanningProcessor(EphemerisData sv, double W_LM);
 	bool GeneralManeuverProcessor(GMPOpt *opt, VECTOR3 &dV_i, double &P30TIG);
@@ -2794,6 +2816,7 @@ public:
 	//Vector Panel Summary Control
 	void BMSVPS(int queid, int PBIID);
 	int BMSVPSVectorFetch(const std::string &vecid, EphemerisData &sv_out);
+	int GetStateVectorTableEntry(std::string VectorType, int mpt);
 
 	// DIGITAL COMMAND SYSTEM (C)
 
@@ -3770,12 +3793,22 @@ public:
 	struct TLIPlanningTable
 	{
 		//INPUT
-		//4 = E-type mission ellipse
+		//
+		int mpt = 1;
+		//Vector type. CMC, LGC, AGS, IU, HSR, DC or ANC
+		std::string VectorType = "ANC";
+		//2 = free-return, 3 = hybrid ellipse, 4 = E-type mission ellipse, 5 = non-free return
 		int Mode = 4;
-		//TLI ignition for mode 4
+		//TLI opportunity (1-2)
+		int Opportunity = 1;
+		//TLI ignition for mode 4, estimated TIG for mode 5
 		double GET_TLI = 0.0;
 		//Apogee height for mode 4, nautical miles
 		double h_ap = 5000.0;
+		//Launch window
+		bool IsPacficWindow = true;
+		//Available DV, for mode 3, feet per second
+		double dv_available = 5000.0;
 
 		//CONSTANTS - THESE SHOULD BE SYSTEM PARAMETERS
 		double DELTA = 0.0;
@@ -3793,6 +3826,20 @@ public:
 		double lat_ign = 0.0;
 		double lng_ign = 0.0;
 	} PZTPDDIS;
+
+	struct TLIPlanningMPTInterfaceDataTable
+	{
+		bool DataIndicator = false; //false = nothing here, true = good data
+
+		double T_RP;
+		double i;
+		double theta_N;
+		double e;
+		double C3;
+		double alpha_D;
+		double f;
+		int Opportunity; //1-2
+	} PZTPDXFR;
 
 	struct TLIPlanningOutputTable
 	{
