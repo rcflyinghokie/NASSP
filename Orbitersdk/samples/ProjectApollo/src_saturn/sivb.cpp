@@ -1816,7 +1816,7 @@ void SIVB::CreatePayload() {
 		plName = "ProjectApollo/ASTP";
 		break;
 	case PAYLOAD_CUSTOM:
-		if (customPayloadClass == "") { strcpy(customPayloadClass, "ProjectApollo/ASTP"); } //Avoid weird stuff in case the user doesn't load a vessel class
+		if (strcmp(customPayloadClass, "") == 0) { strcpy(customPayloadClass, "ProjectApollo/ASTP"); } //Avoid weird stuff in case the user doesn't load a vessel class
 		plName = customPayloadClass;
 		break;
 
