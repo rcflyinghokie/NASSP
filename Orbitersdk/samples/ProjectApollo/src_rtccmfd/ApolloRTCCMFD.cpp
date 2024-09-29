@@ -1129,6 +1129,8 @@ void ApolloRTCCMFD::menuMidcourseTradeoffPage()
 
 void ApolloRTCCMFD::menuTLIPlanningPage()
 {
+	marker = 0;
+	markermax = 7;
 	SelectPage(79);
 }
 
@@ -6005,7 +6007,14 @@ void ApolloRTCCMFD::menuCycleTwoImpulseOption()
 
 void ApolloRTCCMFD::menuSwitchHeadsUp()
 {
-	G->HeadsUp = !G->HeadsUp;
+	if (G->manpadopt == 3)
+	{
+		G->TLIPAD_StudyAid = !G->TLIPAD_StudyAid;
+	}
+	else
+	{
+		G->HeadsUp = !G->HeadsUp;
+	}
 }
 
 void ApolloRTCCMFD::menuCalcManPAD()
@@ -7209,19 +7218,53 @@ void ApolloRTCCMFD::menuTLIProcessorCalc()
 	G->TLIProcessorCalc();
 }
 
-void ApolloRTCCMFD::menuTLIProcessorMode()
+void ApolloRTCCMFD::menuSetTLIProcessorInput()
 {
-
-}
-
-void ApolloRTCCMFD::menuTLIProcessorGET()
-{
-	GenericGETInput(&GC->rtcc->PZTLIPLN.GET_TLI, "Input time of ignition or threshold time. Format HH:MM:SS:");
-}
-
-void ApolloRTCCMFD::menuTLIEllipseApogee()
-{
-	GenericDoubleInput(&GC->rtcc->PZTLIPLN.h_ap, "Input height of apogee (2700 to 7000 NM):");
+	switch (marker)
+	{
+	case 0:
+		set_IUVessel();
+		break;
+	case 1:
+		GC->rtcc->PZTLIPLN.mpt = 4 - GC->rtcc->PZTLIPLN.mpt;
+		break;
+	case 2:
+		GenericStringInput(&GC->rtcc->PZTLIPLN.VectorType, "Vector type (CMC, LGC, AGS, IU, HSR, DC, ANC):");
+		break;
+	case 3:
+		GC->rtcc->PZTLIPLN.Opportunity = 3 - GC->rtcc->PZTLIPLN.Opportunity;
+		break;
+	case 4:
+		if (GC->rtcc->PZTLIPLN.Mode < 5)
+		{
+			GC->rtcc->PZTLIPLN.Mode++;
+		}
+		else
+		{
+			GC->rtcc->PZTLIPLN.Mode = 1;
+		}
+		break;
+	case 5:
+		GenericGETInput(&GC->rtcc->PZTLIPLN.GET_TLI, "Input time of ignition or threshold time. Format HH:MM:SS:");
+		break;
+	case 6:
+		if (GC->rtcc->PZTLIPLN.Mode == 3)
+		{
+			GenericDoubleInput(&GC->rtcc->PZTLIPLN.dv_available, "Available Delta V for TLI (0 to 10000 ft/s):");
+		}
+		else if (GC->rtcc->PZTLIPLN.Mode == 4)
+		{
+			GenericDoubleInput(&GC->rtcc->PZTLIPLN.h_ap, "Input height of apogee (2700 to 7000 NM):");
+		}
+		else
+		{
+			GC->rtcc->PZTLIPLN.IsPacficWindow = !GC->rtcc->PZTLIPLN.IsPacficWindow;
+		}
+		break;
+	case 7:
+		menuCycleTLCCCSFPBlockNumber();
+		break;
+	}
 }
 
 void ApolloRTCCMFD::menuLunarLiftoffCalc()
@@ -9817,6 +9860,11 @@ void ApolloRTCCMFD::CycleEnableCalculation()
 	EnableCalculation = !EnableCalculation;
 }
 
+void ApolloRTCCMFD::SetMEDInputPageM75()
+{
+	SetMEDInputPage("M75");
+}
+
 void ApolloRTCCMFD::SetMEDInputPageP13()
 {
 	SetMEDInputPage("P13");
@@ -9914,6 +9962,13 @@ void ApolloRTCCMFD::SetMEDInputPage(std::string med)
 		AddMEDInput(MEDInputData.table, "IMU Y (O):", "IMU yaw gimbal angle:", Buff, "degrees");
 
 		MEDInputData.display = 100;
+	}
+	else if (med == "M75")
+	{
+		AddMEDInputTitle(MEDInputData, "M75", "Transfer of TLI maneuver from study aid");
+
+		AddMEDInput(MEDInputData.table, "VEH:", "Vehicle (CSM or LEM):", "CSM", "");
+		AddMEDInput(MEDInputData.table, "REP:", "Replace code (1-15 or 0 if no replacement):", "0", "");
 	}
 	else if (med == "P13")
 	{

@@ -716,6 +716,8 @@ void Saturn::initSaturn()
 	SLARotationLimit = 45;
 	SLAWillSeparate = true;
 
+	UseWideSLA = false;
+
 	hStage1Mesh = 0;
 	hStage2Mesh = 0;
 	hStage3Mesh = 0;
@@ -1103,6 +1105,9 @@ void Saturn::initSaturn()
 	LMAscentEmptyMassKg = 2150.0;
 	LMDescentEmptyMassKg = 2224.0;
 
+	customPayloadMass = 0;
+	customPayloadClass[0] = 0;
+
 	UseATC = false;
 
 	SIISepState = false;
@@ -1348,7 +1353,7 @@ void Saturn::clbkPostCreation()
 	// Load Apollo-13 specific sounds.
 	//
 
-	if (ApolloNo == 1301) {
+	if (pMission->DoApollo13Failures()) {
 		if (!KranzPlayed)
 			soundlib.LoadMissionSound(SKranz, A13_KRANZ, NULL, INTERNAL_ONLY);
 		if (!CryoStir)
@@ -1749,12 +1754,17 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	if (AutoSlow) {
 		oapiWriteScenario_int (scn, "AUTOSLOW", 1);
 	}
-	if (ApolloNo == 1301) {
+	if (pMission->DoApollo13Failures()) {
 		oapiWriteScenario_int (scn, "A13STATE", GetA13State());
 	}
 	if (SIVBPayload != PAYLOAD_LEM) {
 		oapiWriteScenario_int (scn, "S4PL", SIVBPayload);
 	}
+	oapiWriteScenario_int(scn, "WIDESLA", UseWideSLA);
+	oapiWriteScenario_float(scn, "CUSTOMPAYLOADMASS", customPayloadMass);
+	if (customPayloadClass[0])
+		oapiWriteScenario_string(scn, "CUSTOMPAYLOADCLASS", customPayloadClass);
+
 	oapiWriteScenario_string (scn, "LANG", AudioLanguage);
 	
 	if (PayloadName[0])
@@ -2351,6 +2361,18 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	else if (!strnicmp(line, "S4PL", 4)) {
 		sscanf(line + 4, "%d", &SIVBPayload);
 	}
+	else if (!strnicmp(line, "WIDESLA", 7)) {
+		int i;
+		sscanf(line + 7, "%d", &i);
+		UseWideSLA = (i != 0);
+	}
+	else if (!strnicmp(line, "CUSTOMPAYLOADMASS", 17)) {
+		sscanf(line + 17, "%f", &ftcp);
+		customPayloadMass = ftcp;
+	}
+	else if (!strnicmp(line, "CUSTOMPAYLOADCLASS", 18)) {
+		strncpy(customPayloadClass, line + 19, 256);
+	}
 	else if (!strnicmp(line, "SMFUELLOAD", 10)) {
 		sscanf(line + 10, "%f", &ftcp);
 		SM_FuelMass = ftcp;
@@ -2883,6 +2905,10 @@ void Saturn::UpdatePayloadMass()
 
 	case PAYLOAD_DOCKING_ADAPTER:
 		S4PL_Mass = 4700.0; // see http://www.ibiblio.org/mscorbit/mscforum/index.php?topic=2064.0
+		break;
+
+	case PAYLOAD_CUSTOM:
+		S4PL_Mass = customPayloadMass;
 		break;
 
 	default:
@@ -4550,7 +4576,7 @@ void Saturn::LoadDefaultSounds()
 void Saturn::StageSix(double simt){
 	UpdateMassAndCoG();
 
-	if (ApolloNo == 1301) {
+	if (pMission->DoApollo13Failures()) {
 
 		//
 		// Play cryo-stir audio.

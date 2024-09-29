@@ -1281,6 +1281,7 @@ public:
 	virtual SIBSystems *GetSIB() { return NULL; }
 	virtual SICSystems *GetSIC() { return NULL; }
 	SECS *GetSECS() { return &secs; }
+	mission::Mission *GetMission() { return pMission; }
 
 	void ClearMeshes();
 
@@ -1382,6 +1383,12 @@ protected:
 	/// \brief SLA panels separation flag.
 	///
 	bool SLAWillSeparate;
+
+	///
+	/// True if wide ELS-type SLA panels are installed.
+	/// \brief Use wide ELS-type SLA panels.
+	///
+	bool UseWideSLA;
 
 	bool SIMBayPanelJett;
 
@@ -4391,6 +4398,12 @@ protected:
 	double LMAscentFuelMassKg;	///< Mass of fuel in ascent stage of LEM.
 	double LMDescentEmptyMassKg;
 	double LMAscentEmptyMassKg;
+
+	//
+	// Custom Payload data.
+	//
+	double customPayloadMass;
+	char customPayloadClass[256];
 
 	//
 	// Random motion.
