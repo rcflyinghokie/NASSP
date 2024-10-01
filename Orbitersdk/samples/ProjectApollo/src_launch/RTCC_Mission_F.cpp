@@ -2008,7 +2008,7 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		SPQResults res;
 		SV sv_CSM, sv_LM;
 		VECTOR3 dV_LVLH;
-		double GETbase, dt_apo;
+		double GETbase;
 		PLAWDTOutput WeightsTable;
 
 		AP10CSI * form = (AP10CSI *)pad;
@@ -2017,10 +2017,6 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		sv_LM = StateVectorCalc(calcParams.tgt);
 		WeightsTable = GetWeightsTable(calcParams.tgt, false, false);
 		GETbase = CalcGETBase();
-
-		//CSI at apolune
-		dt_apo = OrbMech::timetoapo(sv_LM.R, sv_LM.V, OrbMech::mu_Moon);
-		calcParams.CSI = OrbMech::GETfromMJD(sv_LM.MJD, GETbase) + dt_apo;
 
 		opt.DH = 15.0*1852.0;
 		opt.E = 26.6*RAD;
