@@ -3182,7 +3182,7 @@ void MCC::drawPad(bool writetofile){
 
 		length += sprintf(buffer + length, "%+07.1f DVY LOCAL\n%+07.1f DVZ VERT\n", form->dV.y, form->dV.z);
 
-		if (MissionType != MTP_D)
+		if (!(MissionType == MTP_D || MissionType == MTP_F)) //Not Apollo 9 or 10
 		{
 			length += sprintf(buffer + length, "%+07.1f HA N42\n%+07.1f HP\n", form->HA, form->HP);
 		}
