@@ -283,19 +283,22 @@ void MCC::MissionSequence_F()
 	case MST_F_LUNAR_ORBIT_DOI_DAY_22: //CMC LM state vector update to CSI update
 		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, SubStateTime > 1.0*60.0, 102, MST_F_LUNAR_ORBIT_DOI_DAY_23);
 		break;
-	case MST_F_LUNAR_ORBIT_DOI_DAY_23: //CSI update to APS depletion PAD update
-		UpdateMacro(UTP_PADONLY, PT_AP10CSI, MoonRev >= 16 && MoonRevTime > 40.0*60.0 && cm->DockingStatus(0), 79, MST_F_LUNAR_ORBIT_DOI_DAY_24);
+	case MST_F_LUNAR_ORBIT_DOI_DAY_23: //CSI update to LM weight update
+		UpdateMacro(UTP_PADONLY, PT_AP10CSI, MoonRev >= 16 && MoonRevTime > 37.0*60.0 && cm->DockingStatus(0), 79, MST_F_LUNAR_ORBIT_DOI_DAY_24);
 		break;
-	case MST_F_LUNAR_ORBIT_DOI_DAY_24: //APS depletion PAD update to TEI-22 update
-		UpdateMacro(UTP_PADWITHLGCUPLINK, PT_AP11LMMNV, MoonRev >= 16 && MoonRevTime > 1.0*3600.0 + 15.0*60.0, 80, MST_F_LUNAR_ORBIT_DOI_DAY_25);
+	case MST_F_LUNAR_ORBIT_DOI_DAY_24: //LM weight update to APS depletion PAD update
+		UpdateMacro(UTP_PADONLY, PT_GENERIC, SubStateTime > 3.0*60.0, 80, MST_F_LUNAR_ORBIT_DOI_DAY_25);
 		break;
-	case MST_F_LUNAR_ORBIT_DOI_DAY_25: //TEI-22 update to state vector update
-		UpdateMacro(UTP_PADONLY, PT_AP11MNV, MoonRev >= 17 && MoonRevTime > 1.0*3600.0 + 15.0*60.0, 34, MST_F_LUNAR_ORBIT_DOI_DAY_27);
+	case MST_F_LUNAR_ORBIT_DOI_DAY_25: //APS depletion PAD update to TEI-22 update
+		UpdateMacro(UTP_PADWITHLGCUPLINK, PT_AP11LMMNV, MoonRev >= 16 && MoonRevTime > 1.0*3600.0 + 15.0*60.0, 81, MST_F_LUNAR_ORBIT_DOI_DAY_26);
 		break;
-	case MST_F_LUNAR_ORBIT_DOI_DAY_27: //State vector update to rev 22 map update
-		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, true, 103, MST_F_LUNAR_ORBIT_DOI_DAY_28);
+	case MST_F_LUNAR_ORBIT_DOI_DAY_26: //TEI-22 update to state vector update
+		UpdateMacro(UTP_PADONLY, PT_AP11MNV, MoonRev >= 17 && MoonRevTime > 1.0*3600.0 + 15.0*60.0, 34, MST_F_LUNAR_ORBIT_DOI_DAY_28);
 		break;
-	case MST_F_LUNAR_ORBIT_DOI_DAY_28: //Rev 22 map update to rev 23 map update
+	case MST_F_LUNAR_ORBIT_DOI_DAY_28: //State vector update to rev 22 map update
+		UpdateMacro(UTP_CMCUPLINKONLY, PT_NONE, true, 103, MST_F_LUNAR_ORBIT_DOI_DAY_29);
+		break;
+	case MST_F_LUNAR_ORBIT_DOI_DAY_29: //Rev 22 map update to rev 23 map update
 		UpdateMacro(UTP_PADONLY, PT_AP10MAPUPDATE, MoonRev >= 22 && MoonRevTime > 55.0*60.0, 45, MST_F_LUNAR_ORBIT_LMK_TRACK_DAY_1);
 		break;
 	case MST_F_LUNAR_ORBIT_LMK_TRACK_DAY_1: //Rev 23 map update to TEI-23 update

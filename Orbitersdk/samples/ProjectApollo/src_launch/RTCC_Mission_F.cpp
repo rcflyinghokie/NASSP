@@ -2044,7 +2044,18 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		form->type = 0;
 	}
 	break;
-	case 80: //APS DEPLETION UPDATE
+	case 80: //LM WEIGHT UPDATE
+	{
+		GENERICPAD * form = (GENERICPAD *)pad;
+
+		double mass;
+
+		mass = calcParams.tgt->GetMass();
+
+		sprintf(form->paddata, "LM weight is %.0lf", mass / LBS2KG);
+	}
+	break;
+	case 81: //APS DEPLETION UPDATE
 	{
 		AP11LMManPADOpt opt;
 		SV sv, sv1, sv2;
