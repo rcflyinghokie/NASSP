@@ -161,6 +161,8 @@ void Saturn1b::initSaturn1b()
 	//
 	SLAWillSeparate = false;
 
+	UseWideSLA = false;
+
 	// Moved to instantiation time
 	// lvdc.init(this);
 }
