@@ -677,6 +677,7 @@ ARCore::ARCore(VESSEL* v, AR_GCore* gcin)
 	manpad_ullage_opt = true;
 	ManPADMPT = 1;
 	ManPADMPTManeuver = 1;
+	TLIPAD_StudyAid = false;
 
 	mapupdate.LOSGET = 0.0;
 	mapupdate.AOSGET = 0.0;
@@ -3252,6 +3253,7 @@ int ARCore::subThread()
 		opt.REFSMMAT= GC->rtcc->EZJGMTX1.data[0].REFSMMAT;
 		opt.SeparationAttitude = lvdc->XLunarAttitude;
 		opt.sv0 = GC->rtcc->StateVectorCalcEphem(GC->rtcc->pCSM);
+		opt.StudyAid = TLIPAD_StudyAid;
 
 		GC->rtcc->TLI_PAD(opt, GC->tlipad);
 
@@ -3515,16 +3517,23 @@ int ARCore::subThread()
 		EphemerisData state;
 		PLAWDTOutput WeightsTable;
 
-		if (iuvessel == NULL)
+		if (GC->MissionPlanningActive)
 		{
-			Result = DONE;
-			break;
+			GC->rtcc->TranslunarInjectionProcessor(true);
 		}
+		else
+		{
+			if (iuvessel == NULL)
+			{
+				Result = DONE;
+				break;
+			}
 
-		state = GC->rtcc->StateVectorCalcEphem(iuvessel);
-		WeightsTable = GC->rtcc->GetWeightsTable(iuvessel, true, false);
+			state = GC->rtcc->StateVectorCalcEphem(iuvessel);
+			WeightsTable = GC->rtcc->GetWeightsTable(iuvessel, true, false);
 
-		GC->rtcc->TranslunarInjectionProcessor(state, WeightsTable);
+			GC->rtcc->TranslunarInjectionProcessor(false, &state, &WeightsTable);
+		}
 
 		Result = DONE;
 	}
