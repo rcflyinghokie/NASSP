@@ -64,3 +64,4 @@
 #define DS_GRP_SupportStruts2Left 48
 #define DS_GRP_SupportStruts2Right 49
 #define DS_GRP_Plaque 50
+#define DS_GRP_LRAntenna 51

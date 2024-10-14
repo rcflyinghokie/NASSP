@@ -32,6 +32,7 @@ public:
 	void LoadState(FILEHANDLE scn, char *end_str);
 	void Timestep(double simdt);
 	void SystemTimestep(double simdt);
+	void DefineAnimations(UINT idx);
 	double GetAntennaTempF();
 	bool IsRangeDataGood() { return rangeGood == 1; };
 	bool IsVelocityDataGood() { return velocityGood == 1; };

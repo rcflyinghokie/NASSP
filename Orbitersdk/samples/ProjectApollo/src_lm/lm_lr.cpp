@@ -30,6 +30,7 @@ See http://nassp.sourceforge.net/license/ for more details.
 #include "papi.h"
 #include "LEM.h"
 #include "lm_lr.h"
+#include <LM_DescentStageResource.h>
 
 // Landing Radar
 LEM_LR::LEM_LR()
@@ -387,6 +388,15 @@ void LEM_LR::SystemTimestep(double simdt)
 	{
 		lrheat->GenerateHeat(118);
 	}
+}
+
+void LEM_LR::DefineAnimations(UINT idx) {
+
+	//LR Mode Animation
+	ANIMATIONCOMPONENT_HANDLE LR_Pitch;
+	const VECTOR3 LM_LR_PIVOT = { -1.4439, -1.37200, -1.0404 }; //Pivot Point
+	static UINT meshgroup_LRPIVOT = DS_GRP_LRAntenna;
+	static MGROUP_ROTATE LR_Pitch(idx, meshgroup_LRPIVOT, 1, LM_LR_PIVOT, _V(-1, 0, 0), (float)(RAD * 24));
 }
 
 void LEM_LR::SaveState(FILEHANDLE scn, char *start_str, char *end_str) {

@@ -2075,6 +2075,7 @@ void LEM::DefineAnimations()
 {
 	// Call Animation Definitions where required
 	RR.DefineAnimations(ascidx);
+	LR.DefineAnimations(ascidx);
 	SBandSteerable.DefineAnimations(ascidx);
 	OverheadHatch.DefineAnimations(ascidx);
 	ForwardHatch.DefineAnimations(ascidx);
