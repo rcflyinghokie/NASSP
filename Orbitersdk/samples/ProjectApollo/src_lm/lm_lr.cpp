@@ -38,6 +38,8 @@ LEM_LR::LEM_LR()
 	lem = NULL;
 	lrheat = 0;
 	antennaAngle = 24; // Position 1
+	anim_LR = -1;
+
 }
 
 void LEM_LR::Init(LEM *s, e_object *dc_src, h_Radiator *ant, Boiler *anheat, h_HeatLoad *hl) {
@@ -138,6 +140,10 @@ double LEM_LR::GetVelTransmitterPower()
 }
 
 void LEM_LR::Timestep(double simdt) {
+
+	//LR Mesh Animation
+
+
 	if (lem == NULL) { return; }
 	// char debugmsg[256];
 	ChannelValue val12;
@@ -393,10 +399,13 @@ void LEM_LR::SystemTimestep(double simdt)
 void LEM_LR::DefineAnimations(UINT idx) {
 
 	//LR Mode Animation
-	ANIMATIONCOMPONENT_HANDLE LR_Pitch;
+	ANIMATIONCOMPONENT_HANDLE LR_Rotate;
 	const VECTOR3 LM_LR_PIVOT = { -1.4439, -1.37200, -1.0404 }; //Pivot Point
-	static UINT meshgroup_LRPIVOT = DS_GRP_LRAntenna;
-	static MGROUP_ROTATE LR_Pitch(idx, &meshgroup_LRPIVOT, 1, LM_LR_PIVOT, _V(-1, 0, 0), (float)(RAD * 24));
+	static UINT meshgroup_LR = DS_GRP_LRAntenna;
+	static MGROUP_ROTATE LRAnt(idx, &meshgroup_LR, 1, LM_LR_PIVOT, _V(-1, 0, 0), (float)(RAD * 24));
+	anim_LR = lem->CreateAnimation(0.0);
+	LR_Rotate = lem->AddAnimationComponent(anim_LR, 0, 1, &LRAnt);
+
 }
 
 void LEM_LR::SaveState(FILEHANDLE scn, char *start_str, char *end_str) {
