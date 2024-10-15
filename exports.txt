@@ -1,0 +1,1290 @@
+__int64 __cdecl LaunchpadVideoWndProc(struct HWND__ * __ptr64,unsigned int,unsigned __int64,__int64) 
+__int64 __cdecl oapiDefDialogProc(struct HWND__ * __ptr64,unsigned int,unsigned __int64,__int64) 
+__int64 __cdecl WndProc(struct HWND__ * __ptr64,unsigned int,unsigned __int64,__int64) 
+bool __cdecl oapiAcceptDelayedKey(char,double) 
+bool __cdecl oapiAddMeshGroupBlock(void * __ptr64,unsigned long,struct NTVERTEX const * __ptr64,unsigned long,unsigned short const * __ptr64,unsigned long) 
+bool __cdecl oapiAddTitleButton(unsigned long,struct HBITMAP__ * __ptr64,unsigned long) 
+bool __cdecl oapiAsyncScriptCmd(void * __ptr64,char const * __ptr64) 
+bool __cdecl oapiBltPanelAreaBackground(int,void * __ptr64) 
+bool __cdecl oapiCameraInternal(void) 
+bool __cdecl oapiDelAnnotation(void * __ptr64) 
+bool __cdecl oapiDeleteMaterial(void * __ptr64,unsigned long) 
+bool __cdecl oapiDeleteVessel(void * __ptr64,void * __ptr64) 
+bool __cdecl oapiExecScriptCmd(void * __ptr64,char const * __ptr64) 
+bool __cdecl oapiGetAirspeedVector(void * __ptr64,enum REFFRAME,union VECTOR3 * __ptr64) 
+bool __cdecl oapiGetBasePadEquPos(void * __ptr64,unsigned long,double * __ptr64,double * __ptr64,double * __ptr64) 
+bool __cdecl oapiGetBasePadStatus(void * __ptr64,unsigned long,int * __ptr64) 
+bool __cdecl oapiGetGroundspeedVector(void * __ptr64,enum REFFRAME,union VECTOR3 * __ptr64) 
+bool __cdecl oapiGetPause(void) 
+bool __cdecl oapiGetShowGrapplePoints(void) 
+bool __cdecl oapiGetSurfaceSize(void * __ptr64,int * __ptr64,int * __ptr64) 
+bool __cdecl oapiIsVessel(void * __ptr64) 
+bool __cdecl oapiMoveGroundCamera(double,double,double) 
+bool __cdecl oapiNavInRange(void * __ptr64,union VECTOR3 const & __ptr64) 
+bool __cdecl oapiOpenHelp(struct HELPCONTEXT * __ptr64) 
+bool __cdecl oapiOpenLaunchpadHelp(struct HELPCONTEXT * __ptr64) 
+bool __cdecl oapiPlanetHasAtmosphere(void * __ptr64) 
+bool __cdecl oapiProcessMFDButton(int,int,int) 
+bool __cdecl oapiReadItem_bool(void * __ptr64,char * __ptr64,bool & __ptr64) 
+bool __cdecl oapiReadItem_float(void * __ptr64,char * __ptr64,double & __ptr64) 
+bool __cdecl oapiReadItem_int(void * __ptr64,char * __ptr64,int & __ptr64) 
+bool __cdecl oapiReadItem_string(void * __ptr64,char * __ptr64,char * __ptr64) 
+bool __cdecl oapiReadItem_vec(void * __ptr64,char * __ptr64,union VECTOR3 & __ptr64) 
+bool __cdecl oapiReadScenario_nextline(void * __ptr64,char * __ptr64 & __ptr64) 
+bool __cdecl oapiRegisterExternalCameraControl(class ExternalCameraControl * __ptr64) 
+bool __cdecl oapiRegisterGraphicsClient(class oapi::GraphicsClient * __ptr64) 
+bool __cdecl oapiRegisterWindow(struct HINSTANCE__ * __ptr64,struct HWND__ * __ptr64,unsigned long) 
+bool __cdecl oapiSaveScenario(char const * __ptr64,char const * __ptr64) 
+bool __cdecl oapiSaveSurface(char const * __ptr64,void * __ptr64,enum oapi::ImageFileFormat,float) 
+bool __cdecl oapiSetAttitudeMode(void * __ptr64,int) 
+bool __cdecl oapiSetCameraMode(class CameraMode const & __ptr64) 
+bool __cdecl oapiSetFocusAttitudeMode(int) 
+bool __cdecl oapiSetHUDMode(int) 
+bool __cdecl oapiSetHUDMode(int,union HUDPARAM const * __ptr64) 
+bool __cdecl oapiSetMeshProperty(int * __ptr64,unsigned long,unsigned long) 
+bool __cdecl oapiSetMeshProperty(void * __ptr64,unsigned long,unsigned long) 
+bool __cdecl oapiSetSimMJD(double,int) 
+bool __cdecl oapiSetTexture(int * __ptr64,unsigned long,void * __ptr64) 
+bool __cdecl oapiSetTexture(void * __ptr64,unsigned long,void * __ptr64) 
+bool __cdecl oapiSetTitleButtonState(struct HWND__ * __ptr64,unsigned long,unsigned long) 
+bool __cdecl oapiSimulateBufferedKey(unsigned long,unsigned long * __ptr64,unsigned long,bool) 
+bool __cdecl oapiSimulateImmediateKey(char * __ptr64 const,bool) 
+bool __cdecl oapiUnregisterCustomCmd(int) 
+bool __cdecl oapiUnregisterExternalCameraControl(void) 
+bool __cdecl oapiUnregisterExternMFD(class ExternMFD * __ptr64) 
+bool __cdecl oapiUnregisterGraphicsClient(class oapi::GraphicsClient * __ptr64) 
+bool __cdecl oapiUnregisterLaunchpadItem(class LaunchpadItem * __ptr64) 
+bool __cdecl oapiUnregisterMFDMode(int) 
+char * __ptr64 __cdecl oapiDebugString(void) 
+char const * __ptr64 __cdecl oapiGetCmdLine(void) 
+char const * __ptr64 __cdecl oapiGetMeshFilename(void * __ptr64) 
+char const * __ptr64 __cdecl oapiGetObjectFileName(void * __ptr64) 
+char const * __ptr64 __cdecl oapiMFDButtonLabel(int,int) 
+class CELBODY * __ptr64 __cdecl oapiGetCelbodyInterface(void * __ptr64) 
+class oapi::Brush * __ptr64 __cdecl oapiCreateBrush(unsigned long) 
+class oapi::Font * __ptr64 __cdecl oapiCreateFont(int,bool,char * __ptr64,enum FontStyle) 
+class oapi::Font * __ptr64 __cdecl oapiCreateFont(int,bool,char const * __ptr64,enum FontStyle,int) 
+class oapi::Font * __ptr64 __cdecl oapiCreateFontEx(int,char * __ptr64,int,int,enum FontStyle,float) 
+class oapi::Pen * __ptr64 __cdecl oapiCreatePen(int,int,unsigned long) 
+class oapi::Sketchpad * __ptr64 __cdecl oapiGetSketchpad(void * __ptr64) 
+class std::vector<struct ElevationTile,class std::allocator<struct ElevationTile> > * __ptr64 __cdecl InitTileCache(int) 
+class VESSEL * __ptr64 __cdecl oapiGetFocusInterface(void) 
+class VESSEL * __ptr64 __cdecl oapiGetVesselInterface(void * __ptr64) 
+const ATMOSPHERE::`vftable' 
+const CameraMode::`vftable' 
+const CameraMode_Cockpit::`vftable' 
+const CameraMode_Ground::`vftable' 
+const CameraMode_Track::`vftable' 
+const CELBODY::`vftable' 
+const CELBODY2::`vftable' 
+const ExternalCameraControl::`vftable' 
+const ExternMFD::`vftable' 
+const GraphMFD::`vftable' 
+const LaunchpadItem::`vftable' 
+const MFD::`vftable' 
+const MFD2::`vftable' 
+const oapi::Brush::`vftable' 
+const oapi::CelestialSphere::`vftable' 
+const oapi::DrawingTool::`vftable' 
+const oapi::Font::`vftable' 
+const oapi::GraphicsClient::`vftable' 
+const oapi::Module::`vftable' 
+const oapi::Pen::`vftable' 
+const oapi::Sketchpad::`vftable' 
+const VESSEL2::`vftable' 
+const VESSEL3::`vftable' 
+const VESSEL4::`vftable' 
+double __cdecl oapiCameraAperture(void) 
+double __cdecl oapiCameraAzimuth(void) 
+double __cdecl oapiCameraPolar(void) 
+double __cdecl oapiCameraTargetDist(void) 
+double __cdecl oapiGetEmptyMass(void * __ptr64) 
+double __cdecl oapiGetFrameRate(void) 
+double __cdecl oapiGetFuelMass(void * __ptr64) 
+double __cdecl oapiGetHUDIntensity(void) 
+double __cdecl oapiGetInducedDrag(double,double,double) 
+double __cdecl oapiGetMass(void * __ptr64) 
+double __cdecl oapiGetMaxFuelMass(void * __ptr64) 
+double __cdecl oapiGetNavSignal(void * __ptr64,union VECTOR3 const & __ptr64) 
+double __cdecl oapiGetPanel2DScale(void) 
+double __cdecl oapiGetPanelScale(void) 
+double __cdecl oapiGetPlanetCurrentRotation(void * __ptr64) 
+double __cdecl oapiGetPlanetJCoeff(void * __ptr64,unsigned long) 
+double __cdecl oapiGetPlanetObliquity(void * __ptr64) 
+double __cdecl oapiGetPlanetPeriod(void * __ptr64) 
+double __cdecl oapiGetPlanetTheta(void * __ptr64) 
+double __cdecl oapiGetPropellantMass(void * __ptr64) 
+double __cdecl oapiGetPropellantMaxMass(void * __ptr64) 
+double __cdecl oapiGetSimMJD(void) 
+double __cdecl oapiGetSimStep(void) 
+double __cdecl oapiGetSimTime(void) 
+double __cdecl oapiGetSize(void * __ptr64) 
+double __cdecl oapiGetSysMJD(void) 
+double __cdecl oapiGetSysStep(void) 
+double __cdecl oapiGetSysTime(void) 
+double __cdecl oapiGetTimeAcceleration(void) 
+double __cdecl oapiGetWaveDrag(double,double,double,double,double) 
+double __cdecl oapiOrthodome(double,double,double,double) 
+double __cdecl oapiRand(void) 
+double __cdecl oapiSetMFDRefreshIntervalMultiplier(int,double) 
+double __cdecl oapiSurfaceElevation(void * __ptr64,double,double) 
+double __cdecl oapiSurfaceElevationEx(void * __ptr64,double,double,int,class std::vector<struct ElevationTile,class std::allocator<struct ElevationTile> > * __ptr64,union VECTOR3 * __ptr64,int * __ptr64) 
+double __cdecl oapiTime2MJD(double) 
+float __cdecl oapiGetNavFreq(void * __ptr64) 
+float __cdecl oapiGetNavRange(void * __ptr64) 
+int __cdecl Date2Int(char * __ptr64) 
+int __cdecl oapiBeginBltGroup(void * __ptr64) 
+int __cdecl oapiBroadcastMFDMessage(int,int,void * __ptr64) 
+int __cdecl oapiCameraMode(void) 
+int __cdecl oapiCockpitMode(void) 
+int __cdecl oapiDelInterpreter(void * __ptr64) 
+int __cdecl oapiEditMeshGroup(int * __ptr64,unsigned long,struct GROUPEDITSPEC * __ptr64) 
+int __cdecl oapiEditMeshGroup(void * __ptr64,unsigned long,struct GROUPEDITSPEC * __ptr64) 
+int __cdecl oapiEndBltGroup(void) 
+int __cdecl oapiGetAirspeed(void * __ptr64,double * __ptr64) 
+int __cdecl oapiGetAirspeedVector(void * __ptr64,union VECTOR3 * __ptr64) 
+int __cdecl oapiGetAltitude(void * __ptr64,double * __ptr64) 
+int __cdecl oapiGetAltitude(void * __ptr64,enum AltitudeMode,double * __ptr64) 
+int __cdecl oapiGetAttitudeMode(void * __ptr64) 
+int __cdecl oapiGetBank(void * __ptr64,double * __ptr64) 
+int __cdecl oapiGetEquPos(void * __ptr64,double * __ptr64,double * __ptr64,double * __ptr64) 
+int __cdecl oapiGetFocusAirspeed(double * __ptr64) 
+int __cdecl oapiGetFocusAirspeedVector(union VECTOR3 * __ptr64) 
+int __cdecl oapiGetFocusAltitude(double * __ptr64) 
+int __cdecl oapiGetFocusAttitudeMode(void) 
+int __cdecl oapiGetFocusBank(double * __ptr64) 
+int __cdecl oapiGetFocusEquPos(double * __ptr64,double * __ptr64,double * __ptr64) 
+int __cdecl oapiGetFocusHeading(double * __ptr64) 
+int __cdecl oapiGetFocusPitch(double * __ptr64) 
+int __cdecl oapiGetFocusShipAirspeedVector(union VECTOR3 * __ptr64) 
+int __cdecl oapiGetGroundspeed(void * __ptr64,double * __ptr64) 
+int __cdecl oapiGetHeading(void * __ptr64,double * __ptr64) 
+int __cdecl oapiGetHUDMode(union HUDPARAM * __ptr64) 
+int __cdecl oapiGetHUDMode(void) 
+int __cdecl oapiGetMeshGroup(int * __ptr64,unsigned long,struct GROUPREQUESTSPEC * __ptr64) 
+int __cdecl oapiGetMFDMode(int) 
+int __cdecl oapiGetMFDModeSpec(char * __ptr64,struct MFDMODESPEC * __ptr64 * __ptr64) 
+int __cdecl oapiGetMFDModeSpecEx(char * __ptr64,struct MFDMODESPECEX * __ptr64 * __ptr64) 
+int __cdecl oapiGetNavData(void * __ptr64,struct NAVDATA * __ptr64) 
+int __cdecl oapiGetNavDescr(void * __ptr64,char * __ptr64,int) 
+int __cdecl oapiGetObjectType(void * __ptr64) 
+int __cdecl oapiGetOrbiterVersion(void) 
+int __cdecl oapiGetPitch(void * __ptr64,double * __ptr64) 
+int __cdecl oapiGetShipAirspeedVector(void * __ptr64,union VECTOR3 * __ptr64) 
+int __cdecl oapiMeshMaterial(int * __ptr64,unsigned long,struct MATERIAL * __ptr64) 
+int __cdecl oapiMeshMaterialEx(int * __ptr64,unsigned long,enum MatProp,union oapi::FVECTOR4 * __ptr64) 
+int __cdecl oapiRegisterMFDMode(struct MFDMODESPEC & __ptr64) 
+int __cdecl oapiRegisterMFDMode(struct MFDMODESPECEX & __ptr64) 
+int __cdecl oapiSendMFDKey(int,unsigned long) 
+int __cdecl oapiSetMaterial(int * __ptr64,unsigned long,struct MATERIAL const * __ptr64) 
+int __cdecl oapiSetMaterialEx(int * __ptr64,unsigned long,enum MatProp,union oapi::FVECTOR4 const * __ptr64) 
+int __cdecl oapiSetPanel(int) 
+int __cdecl oapiSwitchPanel(int) 
+int __cdecl oapiToggleAttitudeMode(void * __ptr64) 
+int __cdecl oapiToggleFocusAttitudeMode(void) 
+private: class std::vector<struct oapi::CelestialSphere::LineDataRec,class std::allocator<struct oapi::CelestialSphere::LineDataRec> > const __cdecl oapi::CelestialSphere::LoadConstellationBoundaryData(void)const __ptr64 
+private: class std::vector<struct oapi::CelestialSphere::LineDataRec,class std::allocator<struct oapi::CelestialSphere::LineDataRec> > const __cdecl oapi::CelestialSphere::LoadConstellationLineData(void)const __ptr64 
+private: class std::vector<struct oapi::CelestialSphere::LineDataRec,class std::allocator<struct oapi::CelestialSphere::LineDataRec> > const __cdecl oapi::CelestialSphere::LoadEclipticLineArray(class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const & __ptr64)const __ptr64 
+private: class std::vector<struct oapi::CelestialSphere::StarDataRec,class std::allocator<struct oapi::CelestialSphere::StarDataRec> > const __cdecl oapi::CelestialSphere::LoadStarData(double)const __ptr64 
+private: class std::vector<struct oapi::CelestialSphere::StarRenderRec,class std::allocator<struct oapi::CelestialSphere::StarRenderRec> > const __cdecl oapi::CelestialSphere::StarData2RenderData(class std::vector<struct oapi::CelestialSphere::StarDataRec,class std::allocator<struct oapi::CelestialSphere::StarDataRec> > const & __ptr64,struct StarRenderPrm const & __ptr64)const __ptr64 
+private: class std::vector<union VECTOR3,class std::allocator<union VECTOR3> > const __cdecl oapi::CelestialSphere::EclipticLineData2RenderData(class std::vector<struct oapi::CelestialSphere::LineDataRec,class std::allocator<struct oapi::CelestialSphere::LineDataRec> > const & __ptr64)const __ptr64 
+private: struct HWND__ * __ptr64 __cdecl oapi::GraphicsClient::InitRenderWnd(struct HWND__ * __ptr64) __ptr64 
+protected: __cdecl oapi::Brush::Brush(unsigned long) __ptr64 
+protected: __cdecl oapi::Font::Font(int,bool,char const * __ptr64,enum FontStyle,int) __ptr64 
+protected: __cdecl oapi::Pen::Pen(int,int,unsigned long) __ptr64 
+protected: bool __cdecl CELBODY2::FreeAtmosphere(void) __ptr64 
+protected: bool __cdecl CELBODY2::FreeAtmosphereModule(void) __ptr64 
+protected: bool __cdecl CELBODY2::LoadAtmosphereModule(char const * __ptr64) __ptr64 
+protected: bool __cdecl oapi::CelestialSphere::LocalHorizon_Ecliptic(union MATRIX3 & __ptr64)const __ptr64 
+protected: bool __cdecl oapi::GraphicsClient::WriteImageDataToFile(struct oapi::ImageData const & __ptr64,char const * __ptr64,enum oapi::ImageFileFormat,float) __ptr64 
+protected: class std::array<int,256> __cdecl oapi::CelestialSphere::ComputeStarBrightnessCutoff(class std::vector<struct oapi::CelestialSphere::StarRenderRec,class std::allocator<struct oapi::CelestialSphere::StarRenderRec> > const & __ptr64)const __ptr64 
+protected: class std::vector<struct oapi::CelestialSphere::StarRenderRec,class std::allocator<struct oapi::CelestialSphere::StarRenderRec> > const __cdecl oapi::CelestialSphere::LoadStars(void)const __ptr64 
+protected: class std::vector<struct oapi::GraphicsClient::ConstLabelRec,class std::allocator<struct oapi::GraphicsClient::ConstLabelRec> > const __cdecl oapi::CelestialSphere::LoadConstellationLabelData(void)const __ptr64 
+protected: class std::vector<struct oapi::GraphicsClient::LABELSPEC,class std::allocator<struct oapi::GraphicsClient::LABELSPEC> > const & __ptr64 __cdecl oapi::CelestialSphere::ConstellationLabels(void)const __ptr64 
+protected: class std::vector<struct oapi::GraphicsClient::LABELSPEC,class std::allocator<struct oapi::GraphicsClient::LABELSPEC> > const __cdecl oapi::CelestialSphere::ConstellationLabelData2RenderData(class std::vector<struct oapi::GraphicsClient::ConstLabelRec,class std::allocator<struct oapi::GraphicsClient::ConstLabelRec> > const & __ptr64)const __ptr64 
+protected: class std::vector<union VECTOR3,class std::allocator<union VECTOR3> > const __cdecl oapi::CelestialSphere::LoadConstellationBoundaries(void)const __ptr64 
+protected: class std::vector<union VECTOR3,class std::allocator<union VECTOR3> > const __cdecl oapi::CelestialSphere::LoadConstellationLines(void)const __ptr64 
+protected: double __cdecl oapi::CelestialSphere::ElevationScaleRotation(union MATRIX3 const & __ptr64)const __ptr64 
+protected: double __cdecl oapi::CelestialSphere::GetSkyBrightness(void)const __ptr64 
+protected: struct HBITMAP__ * __ptr64 __cdecl oapi::GraphicsClient::ReadImageFromFile(char const * __ptr64,unsigned int,unsigned int) __ptr64 
+protected: struct HBITMAP__ * __ptr64 __cdecl oapi::GraphicsClient::ReadImageFromMemory(unsigned char * __ptr64,unsigned long,unsigned int,unsigned int) __ptr64 
+protected: struct HINSTANCE__ * __ptr64 __cdecl oapi::GraphicsClient::ModuleInstance(void)const __ptr64 
+protected: struct HINSTANCE__ * __ptr64 __cdecl oapi::GraphicsClient::OrbiterInstance(void)const __ptr64 
+protected: struct HWND__ * __ptr64 __cdecl oapi::GraphicsClient::LaunchpadVideoTab(void)const __ptr64 
+protected: union MATRIX3 __cdecl oapi::CelestialSphere::Ecliptic_CelestialAtEpoch(void)const __ptr64 
+protected: union MATRIX3 const & __ptr64 __cdecl oapi::CelestialSphere::CelestialJ2000_Galactic(void)const __ptr64 
+protected: union MATRIX3 const & __ptr64 __cdecl oapi::CelestialSphere::Ecliptic_CelestialJ2000(void)const __ptr64 
+protected: union MATRIX3 const & __ptr64 __cdecl oapi::CelestialSphere::Ecliptic_Galactic(void)const __ptr64 
+protected: union oapi::FVECTOR4 __cdecl oapi::CelestialSphere::ColorAdjusted(union oapi::FVECTOR4 const & __ptr64)const __ptr64 
+protected: union VECTOR3 const & __ptr64 __cdecl oapi::CelestialSphere::GetSkyColour(void)const __ptr64 
+protected: unsigned long __cdecl oapi::CelestialSphere::MarkerColorAdjusted(union oapi::FVECTOR4 const & __ptr64)const __ptr64 
+protected: unsigned long __cdecl oapi::CelestialSphere::TextColorAdjusted(union oapi::FVECTOR4 const & __ptr64)const __ptr64 
+protected: virtual bool __cdecl oapi::GraphicsClient::clbkDisplayFrame(void) __ptr64 
+protected: virtual bool __cdecl oapi::GraphicsClient::clbkSplashLoadMsg(char const * __ptr64,int) __ptr64 
+protected: virtual bool __cdecl oapi::GraphicsClient::clbkUseLaunchpadVideoTab(void)const __ptr64 
+protected: virtual struct HWND__ * __ptr64 __cdecl oapi::GraphicsClient::clbkCreateRenderWindow(void) __ptr64 
+protected: virtual void __cdecl oapi::CelestialSphere::LoadConstellationLabels(void) __ptr64 
+protected: virtual void __cdecl oapi::GraphicsClient::clbkCloseSession(bool) __ptr64 
+protected: virtual void __cdecl oapi::GraphicsClient::clbkDestroyRenderWindow(bool) __ptr64 
+protected: virtual void __cdecl oapi::GraphicsClient::clbkPostCreation(void) __ptr64 
+protected: virtual void __cdecl oapi::GraphicsClient::clbkStoreMeshPersistent(void * __ptr64,char const * __ptr64) __ptr64 
+protected: virtual void __cdecl oapi::GraphicsClient::clbkUpdate(bool) __ptr64 
+protected: void * __ptr64 __cdecl LightEmitter::Attach(void * __ptr64) __ptr64 
+protected: void * __ptr64 __cdecl LightEmitter::Detach(void) __ptr64 
+protected: void * __ptr64 __cdecl oapi::CelestialSphere::GridLabelMesh(void) __ptr64 
+protected: void __cdecl CELBODY::Pol2Crt(double * __ptr64,double * __ptr64) __ptr64 
+protected: void __cdecl CELBODY2::SetAtmosphere(class ATMOSPHERE * __ptr64) __ptr64 
+protected: void __cdecl oapi::CelestialSphere::SetSkyColour(union VECTOR3 const & __ptr64) __ptr64 
+protected: void __cdecl oapi::GraphicsClient::Render2DOverlay(void) __ptr64 
+protected: void __cdecl oapi::GraphicsClient::ShowDefaultSplash(void) __ptr64 
+public: __cdecl ATMOSPHERE::ATMOSPHERE(class ATMOSPHERE && __ptr64) __ptr64 
+public: __cdecl ATMOSPHERE::ATMOSPHERE(class ATMOSPHERE const & __ptr64) __ptr64 
+public: __cdecl ATMOSPHERE::ATMOSPHERE(class CELBODY2 * __ptr64) __ptr64 
+public: __cdecl CameraMode::CameraMode(class CameraMode && __ptr64) __ptr64 
+public: __cdecl CameraMode::CameraMode(class CameraMode const & __ptr64) __ptr64 
+public: __cdecl CameraMode::CameraMode(void) __ptr64 
+public: __cdecl CameraMode_Cockpit::CameraMode_Cockpit(class CameraMode_Cockpit && __ptr64) __ptr64 
+public: __cdecl CameraMode_Cockpit::CameraMode_Cockpit(class CameraMode_Cockpit const & __ptr64) __ptr64 
+public: __cdecl CameraMode_Cockpit::CameraMode_Cockpit(void) __ptr64 
+public: __cdecl CameraMode_Ground::CameraMode_Ground(class CameraMode_Ground && __ptr64) __ptr64 
+public: __cdecl CameraMode_Ground::CameraMode_Ground(class CameraMode_Ground const & __ptr64) __ptr64 
+public: __cdecl CameraMode_Ground::CameraMode_Ground(void) __ptr64 
+public: __cdecl CameraMode_Track::CameraMode_Track(class CameraMode_Track && __ptr64) __ptr64 
+public: __cdecl CameraMode_Track::CameraMode_Track(class CameraMode_Track const & __ptr64) __ptr64 
+public: __cdecl CameraMode_Track::CameraMode_Track(void) __ptr64 
+public: __cdecl CELBODY::CELBODY(class CELBODY && __ptr64) __ptr64 
+public: __cdecl CELBODY::CELBODY(class CELBODY const & __ptr64) __ptr64 
+public: __cdecl CELBODY::CELBODY(void) __ptr64 
+public: __cdecl CELBODY2::CELBODY2(class CELBODY2 const & __ptr64) __ptr64 
+public: __cdecl CELBODY2::CELBODY2(void * __ptr64) __ptr64 
+public: __cdecl ExternalCameraControl::ExternalCameraControl(class ExternalCameraControl && __ptr64) __ptr64 
+public: __cdecl ExternalCameraControl::ExternalCameraControl(class ExternalCameraControl const & __ptr64) __ptr64 
+public: __cdecl ExternalCameraControl::ExternalCameraControl(unsigned long,unsigned long) __ptr64 
+public: __cdecl ExternMFD::ExternMFD(class ExternMFD const & __ptr64) __ptr64 
+public: __cdecl ExternMFD::ExternMFD(struct MFDSPEC const & __ptr64) __ptr64 
+public: __cdecl GraphMFD::GraphMFD(class GraphMFD const & __ptr64) __ptr64 
+public: __cdecl GraphMFD::GraphMFD(unsigned long,unsigned long,class VESSEL * __ptr64) __ptr64 
+public: __cdecl LaunchpadItem::LaunchpadItem(class LaunchpadItem const & __ptr64) __ptr64 
+public: __cdecl LaunchpadItem::LaunchpadItem(void) __ptr64 
+public: __cdecl LightEmitter::LightEmitter(struct COLOUR4,struct COLOUR4,struct COLOUR4) __ptr64 
+public: __cdecl LightEmitter::LightEmitter(void) __ptr64 
+public: __cdecl MFD::MFD(class MFD const & __ptr64) __ptr64 
+public: __cdecl MFD::MFD(unsigned long,unsigned long,class VESSEL * __ptr64) __ptr64 
+public: __cdecl MFD2::MFD2(class MFD2 const & __ptr64) __ptr64 
+public: __cdecl MFD2::MFD2(unsigned long,unsigned long,class VESSEL * __ptr64) __ptr64 
+public: __cdecl oapi::Brush::Brush(class oapi::Brush const & __ptr64) __ptr64 
+public: __cdecl oapi::CelestialSphere::CelestialSphere(class oapi::CelestialSphere const & __ptr64) __ptr64 
+public: __cdecl oapi::CelestialSphere::CelestialSphere(class oapi::GraphicsClient * __ptr64) __ptr64 
+public: __cdecl oapi::DrawingTool::DrawingTool(class oapi::DrawingTool const & __ptr64) __ptr64 
+public: __cdecl oapi::DrawingTool::DrawingTool(void) __ptr64 
+public: __cdecl oapi::Font::Font(class oapi::Font const & __ptr64) __ptr64 
+public: __cdecl oapi::GraphicsClient::GraphicsClient(class oapi::GraphicsClient const & __ptr64) __ptr64 
+public: __cdecl oapi::GraphicsClient::GraphicsClient(struct HINSTANCE__ * __ptr64) __ptr64 
+public: __cdecl oapi::Module::Module(class oapi::Module const & __ptr64) __ptr64 
+public: __cdecl oapi::Module::Module(struct HINSTANCE__ * __ptr64) __ptr64 
+public: __cdecl oapi::ModuleNV::ModuleNV(struct HINSTANCE__ * __ptr64) __ptr64 
+public: __cdecl oapi::ParticleStream::~ParticleStream(void) __ptr64 
+public: __cdecl oapi::ParticleStream::ParticleStream(class oapi::GraphicsClient * __ptr64,struct PARTICLESTREAMSPEC * __ptr64) __ptr64 
+public: __cdecl oapi::Pen::Pen(class oapi::Pen const & __ptr64) __ptr64 
+public: __cdecl oapi::Sketchpad::Sketchpad(class oapi::Sketchpad const & __ptr64) __ptr64 
+public: __cdecl oapi::Sketchpad::Sketchpad(void * __ptr64) __ptr64 
+public: __cdecl PointLight::PointLight(void * __ptr64,union VECTOR3 const & __ptr64,double,double,double,double) __ptr64 
+public: __cdecl PointLight::PointLight(void * __ptr64,union VECTOR3 const & __ptr64,double,double,double,double,struct COLOUR4,struct COLOUR4,struct COLOUR4) __ptr64 
+public: __cdecl SpotLight::SpotLight(void * __ptr64,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,double,double,double,double,double,double) __ptr64 
+public: __cdecl SpotLight::SpotLight(void * __ptr64,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,double,double,double,double,double,double,struct COLOUR4,struct COLOUR4,struct COLOUR4) __ptr64 
+public: __cdecl VESSEL::VESSEL(void * __ptr64,int) __ptr64 
+public: __cdecl VESSEL2::VESSEL2(class VESSEL2 && __ptr64) __ptr64 
+public: __cdecl VESSEL2::VESSEL2(class VESSEL2 const & __ptr64) __ptr64 
+public: __cdecl VESSEL2::VESSEL2(void * __ptr64,int) __ptr64 
+public: __cdecl VESSEL3::VESSEL3(class VESSEL3 && __ptr64) __ptr64 
+public: __cdecl VESSEL3::VESSEL3(class VESSEL3 const & __ptr64) __ptr64 
+public: __cdecl VESSEL3::VESSEL3(void * __ptr64,int) __ptr64 
+public: __cdecl VESSEL4::VESSEL4(class VESSEL4 && __ptr64) __ptr64 
+public: __cdecl VESSEL4::VESSEL4(class VESSEL4 const & __ptr64) __ptr64 
+public: __cdecl VESSEL4::VESSEL4(void * __ptr64,int) __ptr64 
+public: bool __cdecl CameraMode_Cockpit::GetLeaningSmooth(void)const __ptr64 
+public: bool __cdecl CameraMode_Ground::GetAltMode(void)const __ptr64 
+public: bool __cdecl CameraMode_Ground::GetTgtLock(void)const __ptr64 
+public: bool __cdecl ExternMFD::Active(void)const __ptr64 
+public: bool __cdecl ExternMFD::OpenModeHelp(void)const __ptr64 
+public: bool __cdecl ExternMFD::ProcessButton(int,int) __ptr64 
+public: bool __cdecl ExternMFD::Resize(struct MFDSPEC const & __ptr64) __ptr64 
+public: bool __cdecl ExternMFD::SendKey(unsigned long) __ptr64 
+public: bool __cdecl ExternMFD::SetMode(int) __ptr64 
+public: bool __cdecl LightEmitter::IsActive(void)const __ptr64 
+public: bool __cdecl oapi::GraphicsClient::ElevationGrid(void * __ptr64,int,int,int,int,int,int,short * __ptr64,float * __ptr64,double * __ptr64)const __ptr64 
+public: bool __cdecl oapi::GraphicsClient::ElevationGrid(void * __ptr64,int,int,int,int,int,int,short * __ptr64,short * __ptr64,double * __ptr64)const __ptr64 
+public: bool __cdecl oapi::GraphicsClient::PlanetTexturePath(char const * __ptr64,char * __ptr64)const __ptr64 
+public: bool __cdecl oapi::GraphicsClient::TexturePath(char const * __ptr64,char * __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::ActivateNavmode(int) __ptr64 
+public: bool __cdecl VESSEL::AddAnimComp(unsigned int,struct ANIMCOMP * __ptr64) __ptr64 
+public: bool __cdecl VESSEL::AttachChild(void * __ptr64,void * __ptr64,void * __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::DeactivateNavmode(int) __ptr64 
+public: bool __cdecl VESSEL::DelAirfoil(void * __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::DelAnimation(unsigned int)const __ptr64 
+public: bool __cdecl VESSEL::DelAnimationComponent(unsigned int,void * __ptr64) __ptr64 
+public: bool __cdecl VESSEL::DelAttachment(void * __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::DelBeacon(struct BEACONLIGHTSPEC * __ptr64) __ptr64 
+public: bool __cdecl VESSEL::DelControlSurface(void * __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::DelDock(void * __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::DelExhaust(unsigned int)const __ptr64 
+public: bool __cdecl VESSEL::DelExhaustStream(void * __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::DelLightEmitter(class LightEmitter * __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::DelMesh(unsigned int,bool)const __ptr64 
+public: bool __cdecl VESSEL::DelThruster(void * __ptr64 & __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::DelThrusterGroup(enum THGROUP_TYPE,bool)const __ptr64 
+public: bool __cdecl VESSEL::DelThrusterGroup(void * __ptr64 & __ptr64,enum THGROUP_TYPE,bool)const __ptr64 
+public: bool __cdecl VESSEL::DelThrusterGroup(void * __ptr64,bool)const __ptr64 
+public: bool __cdecl VESSEL::DetachChild(void * __ptr64,double)const __ptr64 
+public: bool __cdecl VESSEL::GetAirfoilParam(void * __ptr64,union VECTOR3 * __ptr64,void (__cdecl** __ptr64)(double,double,double,double * __ptr64,double * __ptr64,double * __ptr64),void * __ptr64 * __ptr64,double * __ptr64,double * __ptr64,double * __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::GetAirspeedVector(enum REFFRAME,union VECTOR3 & __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::GetDragVector(union VECTOR3 & __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::GetEditorModule(char * __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::GetElements(void * __ptr64,struct ELEMENTS & __ptr64,struct ORBITPARAM * __ptr64,double,int)const __ptr64 
+public: bool __cdecl VESSEL::GetEnableFocus(void)const __ptr64 
+public: bool __cdecl VESSEL::GetExhaustSpec(unsigned int,double * __ptr64,double * __ptr64,union VECTOR3 * __ptr64,union VECTOR3 * __ptr64,void * __ptr64 * __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::GetExhaustSpec(unsigned int,struct EXHAUSTSPEC * __ptr64) __ptr64 
+public: bool __cdecl VESSEL::GetForceVector(union VECTOR3 & __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::GetGroundspeedVector(enum REFFRAME,union VECTOR3 & __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::GetHorizonAirspeedVector(union VECTOR3 & __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::GetHoverHoldAltitude(double & __ptr64,bool & __ptr64) __ptr64 
+public: bool __cdecl VESSEL::GetLiftVector(union VECTOR3 & __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::GetMeshOffset(unsigned int,union VECTOR3 & __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::GetNavmodeState(int) __ptr64 
+public: bool __cdecl VESSEL::GetNosewheelSteering(void)const __ptr64 
+public: bool __cdecl VESSEL::GetShipAirspeedVector(union VECTOR3 & __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::GetSideForceVector(union VECTOR3 & __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::GetSuperstructureCG(union VECTOR3 & __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::GetTargetDockAlignment(void * __ptr64,void * __ptr64,union VECTOR3 * __ptr64,union VECTOR3 * __ptr64,union VECTOR3 * __ptr64,union VECTOR3 * __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::GetThrustVector(union VECTOR3 & __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::GetTorqueVector(union VECTOR3 & __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::GetTouchdownPoint(struct TOUCHDOWNVTX & __ptr64,unsigned long)const __ptr64 
+public: bool __cdecl VESSEL::GetWeightVector(union VECTOR3 & __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::GroundContact(void)const __ptr64 
+public: bool __cdecl VESSEL::MeshgroupTransform(void * __ptr64,struct MESHGROUP_TRANSFORM const & __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::NonsphericalGravityEnabled(void)const __ptr64 
+public: bool __cdecl VESSEL::OrbitStabilised(void)const __ptr64 
+public: bool __cdecl VESSEL::Playback(void)const __ptr64 
+public: bool __cdecl VESSEL::Recording(void)const __ptr64 
+public: bool __cdecl VESSEL::SetAnimation(unsigned int,double)const __ptr64 
+public: bool __cdecl VESSEL::SetAnimState(unsigned int,double) __ptr64 
+public: bool __cdecl VESSEL::SetAttitudeMode(int)const __ptr64 
+public: bool __cdecl VESSEL::SetElements(void * __ptr64,struct ELEMENTS const & __ptr64,struct ORBITPARAM * __ptr64,double,int)const __ptr64 
+public: bool __cdecl VESSEL::SetGravityGradientDamping(double)const __ptr64 
+public: bool __cdecl VESSEL::SetIDSChannel(void * __ptr64,unsigned long)const __ptr64 
+public: bool __cdecl VESSEL::SetNavChannel(unsigned long,unsigned long)const __ptr64 
+public: bool __cdecl VESSEL::SetNavRecv(unsigned long,unsigned long)const __ptr64 
+public: bool __cdecl VESSEL::SetTransponderChannel(unsigned long)const __ptr64 
+public: bool __cdecl VESSEL::ShiftMesh(unsigned int,union VECTOR3 const & __ptr64)const __ptr64 
+public: bool __cdecl VESSEL::ThrusterGroupDefined(enum THGROUP_TYPE)const __ptr64 
+public: bool __cdecl VESSEL::ToggleNavmode(int) __ptr64 
+public: bool __cdecl VESSEL::Undock(unsigned int,void * __ptr64 const)const __ptr64 
+public: bool __cdecl VESSEL4::UnregisterMFDMode(int) __ptr64 
+public: char * __ptr64 __cdecl VESSEL::GetClassNameA(void)const __ptr64 
+public: char * __ptr64 __cdecl VESSEL::GetName(void)const __ptr64 
+public: char const * __ptr64 __cdecl ExternMFD::GetButtonLabel(int)const __ptr64 
+public: char const * __ptr64 __cdecl VESSEL::GetAttachmentId(void * __ptr64)const __ptr64 
+public: char const * __ptr64 __cdecl VESSEL::GetMeshName(unsigned int)const __ptr64 
+public: class ATMOSPHERE & __ptr64 __cdecl ATMOSPHERE::operator=(class ATMOSPHERE && __ptr64) __ptr64 
+public: class ATMOSPHERE & __ptr64 __cdecl ATMOSPHERE::operator=(class ATMOSPHERE const & __ptr64) __ptr64 
+public: class ATMOSPHERE * __ptr64 __cdecl CELBODY2::GetAtmosphere(void)const __ptr64 
+public: class CameraMode & __ptr64 __cdecl CameraMode::operator=(class CameraMode && __ptr64) __ptr64 
+public: class CameraMode & __ptr64 __cdecl CameraMode::operator=(class CameraMode const & __ptr64) __ptr64 
+public: class CameraMode_Cockpit & __ptr64 __cdecl CameraMode_Cockpit::operator=(class CameraMode_Cockpit && __ptr64) __ptr64 
+public: class CameraMode_Cockpit & __ptr64 __cdecl CameraMode_Cockpit::operator=(class CameraMode_Cockpit const & __ptr64) __ptr64 
+public: class CameraMode_Ground & __ptr64 __cdecl CameraMode_Ground::operator=(class CameraMode_Ground && __ptr64) __ptr64 
+public: class CameraMode_Ground & __ptr64 __cdecl CameraMode_Ground::operator=(class CameraMode_Ground const & __ptr64) __ptr64 
+public: class CameraMode_Track & __ptr64 __cdecl CameraMode_Track::operator=(class CameraMode_Track && __ptr64) __ptr64 
+public: class CameraMode_Track & __ptr64 __cdecl CameraMode_Track::operator=(class CameraMode_Track const & __ptr64) __ptr64 
+public: class CELBODY & __ptr64 __cdecl CELBODY::operator=(class CELBODY && __ptr64) __ptr64 
+public: class CELBODY & __ptr64 __cdecl CELBODY::operator=(class CELBODY const & __ptr64) __ptr64 
+public: class CELBODY2 & __ptr64 __cdecl CELBODY2::operator=(class CELBODY2 const & __ptr64) __ptr64 
+public: class ExternalCameraControl & __ptr64 __cdecl ExternalCameraControl::operator=(class ExternalCameraControl && __ptr64) __ptr64 
+public: class ExternalCameraControl & __ptr64 __cdecl ExternalCameraControl::operator=(class ExternalCameraControl const & __ptr64) __ptr64 
+public: class ExternMFD & __ptr64 __cdecl ExternMFD::operator=(class ExternMFD const & __ptr64) __ptr64 
+public: class GraphMFD & __ptr64 __cdecl GraphMFD::operator=(class GraphMFD const & __ptr64) __ptr64 
+public: class LaunchpadItem & __ptr64 __cdecl LaunchpadItem::operator=(class LaunchpadItem const & __ptr64) __ptr64 
+public: class LightEmitter & __ptr64 __cdecl LightEmitter::operator=(class LightEmitter && __ptr64) __ptr64 
+public: class LightEmitter & __ptr64 __cdecl LightEmitter::operator=(class LightEmitter const & __ptr64) __ptr64 
+public: class LightEmitter * __ptr64 __cdecl VESSEL::AddPointLight(union VECTOR3 const & __ptr64,double,double,double,double,struct COLOUR4,struct COLOUR4,struct COLOUR4)const __ptr64 
+public: class LightEmitter * __ptr64 __cdecl VESSEL::AddSpotLight(union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,double,double,double,double,double,double,struct COLOUR4,struct COLOUR4,struct COLOUR4)const __ptr64 
+public: class LightEmitter const * __ptr64 __cdecl VESSEL::GetLightEmitter(unsigned long)const __ptr64 
+public: class MFD & __ptr64 __cdecl MFD::operator=(class MFD const & __ptr64) __ptr64 
+public: class MFD2 & __ptr64 __cdecl MFD2::operator=(class MFD2 const & __ptr64) __ptr64 
+public: class oapi::Brush & __ptr64 __cdecl oapi::Brush::operator=(class oapi::Brush const & __ptr64) __ptr64 
+public: class oapi::CelestialSphere & __ptr64 __cdecl oapi::CelestialSphere::operator=(class oapi::CelestialSphere const & __ptr64) __ptr64 
+public: class oapi::DrawingTool & __ptr64 __cdecl oapi::DrawingTool::operator=(class oapi::DrawingTool const & __ptr64) __ptr64 
+public: class oapi::Font & __ptr64 __cdecl oapi::Font::operator=(class oapi::Font const & __ptr64) __ptr64 
+public: class oapi::Font * __ptr64 __cdecl MFD2::GetDefaultFont(unsigned long)const __ptr64 
+public: class oapi::GraphicsClient & __ptr64 __cdecl oapi::GraphicsClient::operator=(class oapi::GraphicsClient const & __ptr64) __ptr64 
+public: class oapi::Module & __ptr64 __cdecl oapi::Module::operator=(class oapi::Module const & __ptr64) __ptr64 
+public: class oapi::ModuleNV & __ptr64 __cdecl oapi::ModuleNV::operator=(class oapi::ModuleNV && __ptr64) __ptr64 
+public: class oapi::ModuleNV & __ptr64 __cdecl oapi::ModuleNV::operator=(class oapi::ModuleNV const & __ptr64) __ptr64 
+public: class oapi::ParticleStream & __ptr64 __cdecl oapi::ParticleStream::operator=(class oapi::ParticleStream const & __ptr64) __ptr64 
+public: class oapi::Pen & __ptr64 __cdecl oapi::Pen::operator=(class oapi::Pen const & __ptr64) __ptr64 
+public: class oapi::Pen * __ptr64 __cdecl MFD2::GetDefaultPen(unsigned long,unsigned long,unsigned long)const __ptr64 
+public: class oapi::Sketchpad & __ptr64 __cdecl oapi::Sketchpad::operator=(class oapi::Sketchpad const & __ptr64) __ptr64 
+public: class PointLight & __ptr64 __cdecl PointLight::operator=(class PointLight && __ptr64) __ptr64 
+public: class PointLight & __ptr64 __cdecl PointLight::operator=(class PointLight const & __ptr64) __ptr64 
+public: class SpotLight & __ptr64 __cdecl SpotLight::operator=(class SpotLight && __ptr64) __ptr64 
+public: class SpotLight & __ptr64 __cdecl SpotLight::operator=(class SpotLight const & __ptr64) __ptr64 
+public: class std::vector<struct oapi::GraphicsClient::LABELLIST,class std::allocator<struct oapi::GraphicsClient::LABELLIST> > const & __ptr64 __cdecl oapi::GraphicsClient::GetCelestialMarkers(void)const __ptr64 
+public: class VESSEL & __ptr64 __cdecl VESSEL::operator=(class VESSEL && __ptr64) __ptr64 
+public: class VESSEL & __ptr64 __cdecl VESSEL::operator=(class VESSEL const & __ptr64) __ptr64 
+public: class VESSEL2 & __ptr64 __cdecl VESSEL2::operator=(class VESSEL2 && __ptr64) __ptr64 
+public: class VESSEL2 & __ptr64 __cdecl VESSEL2::operator=(class VESSEL2 const & __ptr64) __ptr64 
+public: class VESSEL3 & __ptr64 __cdecl VESSEL3::operator=(class VESSEL3 && __ptr64) __ptr64 
+public: class VESSEL3 & __ptr64 __cdecl VESSEL3::operator=(class VESSEL3 const & __ptr64) __ptr64 
+public: class VESSEL4 & __ptr64 __cdecl VESSEL4::operator=(class VESSEL4 && __ptr64) __ptr64 
+public: class VESSEL4 & __ptr64 __cdecl VESSEL4::operator=(class VESSEL4 const & __ptr64) __ptr64 
+public: double * __ptr64 __cdecl VESSEL::GetMainThrustModPtr(void)const __ptr64 
+public: double __cdecl CameraMode::GetFOV(void)const __ptr64 
+public: double __cdecl CELBODY2::SidRotPeriod(void)const __ptr64 
+public: double __cdecl LightEmitter::GetIntensity(void)const __ptr64 
+public: double __cdecl oapi::ModuleNV::GetSimMJD(void)const __ptr64 
+public: double __cdecl oapi::ModuleNV::GetSimStep(void)const __ptr64 
+public: double __cdecl oapi::ModuleNV::GetSimTime(void)const __ptr64 
+public: double __cdecl PointLight::GetRange(void)const __ptr64 
+public: double __cdecl SpotLight::GetPenumbra(void)const __ptr64 
+public: double __cdecl SpotLight::GetUmbra(void)const __ptr64 
+public: double __cdecl VESSEL::GetAirspeed(void)const __ptr64 
+public: double __cdecl VESSEL::GetAltitude(enum AltitudeMode,int * __ptr64) __ptr64 
+public: double __cdecl VESSEL::GetAltitude(void)const __ptr64 
+public: double __cdecl VESSEL::GetAnimation(unsigned int)const __ptr64 
+public: double __cdecl VESSEL::GetAOA(void)const __ptr64 
+public: double __cdecl VESSEL::GetAtmDensity(void)const __ptr64 
+public: double __cdecl VESSEL::GetAtmPressure(void)const __ptr64 
+public: double __cdecl VESSEL::GetAtmTemperature(void)const __ptr64 
+public: double __cdecl VESSEL::GetBank(void)const __ptr64 
+public: double __cdecl VESSEL::GetBankMomentScale(void)const __ptr64 
+public: double __cdecl VESSEL::GetClipRadius(void)const __ptr64 
+public: double __cdecl VESSEL::GetCOG_elev(void)const __ptr64 
+public: double __cdecl VESSEL::GetControlSurfaceLevel(enum AIRCTRL_TYPE)const __ptr64 
+public: double __cdecl VESSEL::GetDrag(void)const __ptr64 
+public: double __cdecl VESSEL::GetDynPressure(void)const __ptr64 
+public: double __cdecl VESSEL::GetEmptyMass(void)const __ptr64 
+public: double __cdecl VESSEL::GetEngineLevel(enum ENGINETYPE)const __ptr64 
+public: double __cdecl VESSEL::GetExhaustLevel(unsigned int)const __ptr64 
+public: double __cdecl VESSEL::GetFuelMass(void)const __ptr64 
+public: double __cdecl VESSEL::GetFuelRate(void)const __ptr64 
+public: double __cdecl VESSEL::GetGravityGradientDamping(void)const __ptr64 
+public: double __cdecl VESSEL::GetGroundspeed(void)const __ptr64 
+public: double __cdecl VESSEL::GetISP(void)const __ptr64 
+public: double __cdecl VESSEL::GetLift(void)const __ptr64 
+public: double __cdecl VESSEL::GetMachNumber(void)const __ptr64 
+public: double __cdecl VESSEL::GetManualControlLevel(enum THGROUP_TYPE,unsigned long,unsigned long)const __ptr64 
+public: double __cdecl VESSEL::GetMass(void)const __ptr64 
+public: double __cdecl VESSEL::GetMaxFuelMass(void)const __ptr64 
+public: double __cdecl VESSEL::GetMaxThrust(enum ENGINETYPE)const __ptr64 
+public: double __cdecl VESSEL::GetPitch(void)const __ptr64 
+public: double __cdecl VESSEL::GetPitchMomentScale(void)const __ptr64 
+public: double __cdecl VESSEL::GetPropellantEfficiency(void * __ptr64)const __ptr64 
+public: double __cdecl VESSEL::GetPropellantFlowrate(void * __ptr64)const __ptr64 
+public: double __cdecl VESSEL::GetPropellantMass(void * __ptr64)const __ptr64 
+public: double __cdecl VESSEL::GetPropellantMaxMass(void * __ptr64)const __ptr64 
+public: double __cdecl VESSEL::GetSideForce(void)const __ptr64 
+public: double __cdecl VESSEL::GetSize(void)const __ptr64 
+public: double __cdecl VESSEL::GetSlipAngle(void)const __ptr64 
+public: double __cdecl VESSEL::GetSurfaceElevation(void)const __ptr64 
+public: double __cdecl VESSEL::GetThrusterGroupLevel(enum THGROUP_TYPE)const __ptr64 
+public: double __cdecl VESSEL::GetThrusterGroupLevel(void * __ptr64)const __ptr64 
+public: double __cdecl VESSEL::GetThrusterIsp(void * __ptr64)const __ptr64 
+public: double __cdecl VESSEL::GetThrusterIsp(void * __ptr64,double)const __ptr64 
+public: double __cdecl VESSEL::GetThrusterIsp0(void * __ptr64)const __ptr64 
+public: double __cdecl VESSEL::GetThrusterLevel(void * __ptr64)const __ptr64 
+public: double __cdecl VESSEL::GetThrusterMax(void * __ptr64)const __ptr64 
+public: double __cdecl VESSEL::GetThrusterMax(void * __ptr64,double)const __ptr64 
+public: double __cdecl VESSEL::GetThrusterMax0(void * __ptr64)const __ptr64 
+public: double __cdecl VESSEL::GetTotalPropellantFlowrate(void)const __ptr64 
+public: double __cdecl VESSEL::GetTotalPropellantMass(void)const __ptr64 
+public: double __cdecl VESSEL::GetTrimScale(void)const __ptr64 
+public: double __cdecl VESSEL::GetWheelbrakeLevel(int)const __ptr64 
+public: double __cdecl VESSEL::GetWingAspect(void)const __ptr64 
+public: double __cdecl VESSEL::GetWingEffectiveness(void)const __ptr64 
+public: double __cdecl VESSEL::GetYaw(void)const __ptr64 
+public: double __cdecl VESSEL::GetYawMomentScale(void)const __ptr64 
+public: double const * __ptr64 __cdecl LightEmitter::GetIntensityRef(void)const __ptr64 
+public: double const * __ptr64 __cdecl oapi::ParticleStream::Level(void)const __ptr64 
+public: double const * __ptr64 __cdecl PointLight::GetAttenuation(void)const __ptr64 
+public: enum CameraMode_Cockpit::CockpitMode __cdecl CameraMode_Cockpit::GetCockpitMode(void)const __ptr64 
+public: enum CameraMode_Track::TrackMode __cdecl CameraMode_Track::GetTrackMode(void)const __ptr64 
+public: enum LightEmitter::TYPE __cdecl LightEmitter::GetType(void)const __ptr64 
+public: enum LightEmitter::VISIBILITY __cdecl LightEmitter::GetVisibility(void)const __ptr64 
+public: float __cdecl VESSEL::GetNavRecvFreq(unsigned long)const __ptr64 
+public: int * __ptr64 __cdecl VESSEL::GetDevMesh(void * __ptr64,unsigned int)const __ptr64 
+public: int __cdecl CameraMode_Cockpit::GetLeaning(void)const __ptr64 
+public: int __cdecl CameraMode_Cockpit::GetPosition(void)const __ptr64 
+public: int __cdecl CELBODY::Version(void)const __ptr64 
+public: int __cdecl GraphMFD::AddGraph(void) __ptr64 
+public: int __cdecl oapi::ModuleNV::Version(void)const __ptr64 
+public: int __cdecl VESSEL::Dock(void * __ptr64,unsigned int,unsigned int,unsigned int)const __ptr64 
+public: int __cdecl VESSEL::Dock(void * __ptr64,void * __ptr64,unsigned long)const __ptr64 
+public: int __cdecl VESSEL::GetAttitudeMode(void)const __ptr64 
+public: int __cdecl VESSEL::GetDamageModel(void)const __ptr64 
+public: int __cdecl VESSEL::GetDockIndex(void * __ptr64)const __ptr64 
+public: int __cdecl VESSEL::GetFlightModel(void)const __ptr64 
+public: int __cdecl VESSEL::MeshModified(void * __ptr64,unsigned int,unsigned long) __ptr64 
+public: int __cdecl VESSEL::SendBufferedKey(unsigned long,bool,char * __ptr64) __ptr64 
+public: int __cdecl VESSEL::ToggleAttitudeMode(void)const __ptr64 
+public: int __cdecl VESSEL::Version(void)const __ptr64 
+public: int __cdecl VESSEL3::RegisterPanelArea(void * __ptr64,int,struct tagRECT const & __ptr64,int,int,void * __ptr64,void * __ptr64) __ptr64 
+public: int __cdecl VESSEL3::RegisterPanelArea(void * __ptr64,int,struct tagRECT const & __ptr64,struct tagRECT const & __ptr64,int,int,int) __ptr64 
+public: int __cdecl VESSEL3::RegisterPanelMFDGeometry(void * __ptr64,int,int,int) __ptr64 
+public: int __cdecl VESSEL3::SetPanelBackground(void * __ptr64,void * __ptr64 * __ptr64,unsigned long,void * __ptr64,unsigned long,unsigned long,unsigned long,unsigned long) __ptr64 
+public: int __cdecl VESSEL3::SetPanelScaling(void * __ptr64,double,double) __ptr64 
+public: int __cdecl VESSEL4::RegisterMFDMode(struct MFDMODESPECEX const & __ptr64) __ptr64 
+public: int __cdecl VESSEL4::RegisterPanelArea(void * __ptr64,int,struct tagRECT const & __ptr64,int,struct tagRECT const & __ptr64,int,int,int) __ptr64 
+public: static class CameraMode * __ptr64 __cdecl CameraMode::Create(char * __ptr64) 
+public: static void * __ptr64 __cdecl VESSEL::Create(char const * __ptr64,char const * __ptr64,struct VESSELSTATUS const & __ptr64) 
+public: struct BEACONLIGHTSPEC const * __ptr64 __cdecl VESSEL::GetBeacon(unsigned long)const __ptr64 
+public: struct COLOUR4 const & __ptr64 __cdecl LightEmitter::GetAmbientColour(void)const __ptr64 
+public: struct COLOUR4 const & __ptr64 __cdecl LightEmitter::GetDiffuseColour(void)const __ptr64 
+public: struct COLOUR4 const & __ptr64 __cdecl LightEmitter::GetSpecularColour(void)const __ptr64 
+public: struct ExternalCameraControl::TrackMode const * __ptr64 __cdecl ExternalCameraControl::GetTrackMode(void)const __ptr64 
+public: struct ExternalCameraControl::VCMode const * __ptr64 __cdecl ExternalCameraControl::GetVCMode(void)const __ptr64 
+public: struct HFONT__ * __ptr64 __cdecl MFD::SelectDefaultFont(struct HDC__ * __ptr64,unsigned long)const __ptr64 
+public: struct HINSTANCE__ * __ptr64 __cdecl oapi::ModuleNV::GetModule(void)const __ptr64 
+public: struct HPEN__ * __ptr64 __cdecl MFD::SelectDefaultPen(struct HDC__ * __ptr64,unsigned long)const __ptr64 
+public: struct HWND__ * __ptr64 __cdecl oapi::GraphicsClient::GetRenderWindow(void)const __ptr64 
+public: struct oapi::GraphicsClient::VIDEODATA * __ptr64 __cdecl oapi::GraphicsClient::GetVideoData(void) __ptr64 
+public: union VECTOR3 __cdecl LightEmitter::GetDirection(void)const __ptr64 
+public: union VECTOR3 __cdecl LightEmitter::GetPosition(void)const __ptr64 
+public: union VECTOR3 __cdecl VESSEL::GetSupervesselCG(void)const __ptr64 
+public: union VECTOR3 __cdecl VESSEL::GetSurfaceNormal(void)const __ptr64 
+public: union VECTOR3 const * __ptr64 __cdecl LightEmitter::GetDirectionRef(void)const __ptr64 
+public: union VECTOR3 const * __ptr64 __cdecl LightEmitter::GetPositionRef(void)const __ptr64 
+public: unsigned __int64 __cdecl ExternMFD::Id(void)const __ptr64 
+public: unsigned int __cdecl VESSEL::AddAttExhaustRef(union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,double,double)const __ptr64 
+public: unsigned int __cdecl VESSEL::AddExhaust(struct EXHAUSTSPEC * __ptr64) __ptr64 
+public: unsigned int __cdecl VESSEL::AddExhaust(void * __ptr64,double,double,double,void * __ptr64)const __ptr64 
+public: unsigned int __cdecl VESSEL::AddExhaust(void * __ptr64,double,double,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,void * __ptr64)const __ptr64 
+public: unsigned int __cdecl VESSEL::AddExhaust(void * __ptr64,double,double,void * __ptr64)const __ptr64 
+public: unsigned int __cdecl VESSEL::AddExhaustRef(enum EXHAUSTTYPE,union VECTOR3 & __ptr64,double,double,union VECTOR3 * __ptr64)const __ptr64 
+public: unsigned int __cdecl VESSEL::AddMesh(char const * __ptr64,union VECTOR3 const * __ptr64)const __ptr64 
+public: unsigned int __cdecl VESSEL::AddMesh(void * __ptr64,union VECTOR3 const * __ptr64)const __ptr64 
+public: unsigned int __cdecl VESSEL::CreateAnimation(double)const __ptr64 
+public: unsigned int __cdecl VESSEL::DockCount(void)const __ptr64 
+public: unsigned int __cdecl VESSEL::DockingStatus(unsigned int)const __ptr64 
+public: unsigned int __cdecl VESSEL::GetAnimPtr(struct ANIMATION * __ptr64 * __ptr64)const __ptr64 
+public: unsigned int __cdecl VESSEL::GetMeshCount(void)const __ptr64 
+public: unsigned int __cdecl VESSEL::InsertMesh(char const * __ptr64,unsigned int,union VECTOR3 const * __ptr64)const __ptr64 
+public: unsigned int __cdecl VESSEL::InsertMesh(void * __ptr64,unsigned int,union VECTOR3 const * __ptr64)const __ptr64 
+public: unsigned int __cdecl VESSEL::RegisterAnimSequence(double)const __ptr64 
+public: unsigned long __cdecl ExternalCameraControl::GetCameraMode(void)const __ptr64 
+public: unsigned long __cdecl ExternalCameraControl::GetDataMode(void)const __ptr64 
+public: unsigned long __cdecl MFD2::GetDefaultColour(unsigned long,unsigned long)const __ptr64 
+public: unsigned long __cdecl MFD2::GetHeight(void)const __ptr64 
+public: unsigned long __cdecl MFD2::GetWidth(void)const __ptr64 
+public: unsigned long __cdecl oapi::GraphicsClient::GetBaseTileList(void * __ptr64,struct SurftileSpec const * __ptr64 * __ptr64)const __ptr64 
+public: unsigned long __cdecl oapi::GraphicsClient::GetPopupList(struct HWND__ * __ptr64 const * __ptr64 * __ptr64)const __ptr64 
+public: unsigned long __cdecl oapi::GraphicsClient::GetSurfaceMarkerLegend(void * __ptr64,struct oapi::GraphicsClient::LABELTYPE const * __ptr64 * __ptr64)const __ptr64 
+public: unsigned long __cdecl oapi::GraphicsClient::GetSurfaceMarkers(void * __ptr64,struct oapi::GraphicsClient::LABELLIST const * __ptr64 * __ptr64)const __ptr64 
+public: unsigned long __cdecl VESSEL::AttachmentCount(bool)const __ptr64 
+public: unsigned long __cdecl VESSEL::GetADCtrlMode(void)const __ptr64 
+public: unsigned long __cdecl VESSEL::GetAttachmentIndex(void * __ptr64)const __ptr64 
+public: unsigned long __cdecl VESSEL::GetExhaustCount(void)const __ptr64 
+public: unsigned long __cdecl VESSEL::GetFlightStatus(void)const __ptr64 
+public: unsigned long __cdecl VESSEL::GetGroupThrusterCount(enum THGROUP_TYPE)const __ptr64 
+public: unsigned long __cdecl VESSEL::GetGroupThrusterCount(void * __ptr64)const __ptr64 
+public: unsigned long __cdecl VESSEL::GetNavChannel(unsigned long)const __ptr64 
+public: unsigned long __cdecl VESSEL::GetNavCount(void)const __ptr64 
+public: unsigned long __cdecl VESSEL::GetNavRecv(unsigned long)const __ptr64 
+public: unsigned long __cdecl VESSEL::GetPropellantCount(void)const __ptr64 
+public: unsigned long __cdecl VESSEL::GetThrusterCount(void)const __ptr64 
+public: unsigned long __cdecl VESSEL::GetTouchdownPointCount(void)const __ptr64 
+public: unsigned long __cdecl VESSEL::GetUserThrusterGroupCount(void)const __ptr64 
+public: unsigned long __cdecl VESSEL::LightEmitterCount(void)const __ptr64 
+public: unsigned short __cdecl VESSEL::GetMeshVisibilityMode(unsigned int)const __ptr64 
+public: virtual __cdecl CELBODY2::~CELBODY2(void) __ptr64 
+public: virtual __cdecl ExternMFD::~ExternMFD(void) __ptr64 
+public: virtual __cdecl GraphMFD::~GraphMFD(void) __ptr64 
+public: virtual __cdecl LaunchpadItem::~LaunchpadItem(void) __ptr64 
+public: virtual __cdecl MFD::~MFD(void) __ptr64 
+public: virtual __cdecl MFD2::~MFD2(void) __ptr64 
+public: virtual __cdecl oapi::Brush::~Brush(void) __ptr64 
+public: virtual __cdecl oapi::CelestialSphere::~CelestialSphere(void) __ptr64 
+public: virtual __cdecl oapi::DrawingTool::~DrawingTool(void) __ptr64 
+public: virtual __cdecl oapi::Font::~Font(void) __ptr64 
+public: virtual __cdecl oapi::GraphicsClient::~GraphicsClient(void) __ptr64 
+public: virtual __cdecl oapi::Module::~Module(void) __ptr64 
+public: virtual __cdecl oapi::Pen::~Pen(void) __ptr64 
+public: virtual __cdecl oapi::Sketchpad::~Sketchpad(void) __ptr64 
+public: virtual __int64 __cdecl oapi::GraphicsClient::LaunchpadVideoWndProc(struct HWND__ * __ptr64,unsigned int,unsigned __int64,__int64) __ptr64 
+public: virtual __int64 __cdecl oapi::GraphicsClient::RenderWndProc(struct HWND__ * __ptr64,unsigned int,unsigned __int64,__int64) __ptr64 
+public: virtual bool __cdecl ATMOSPHERE::clbkConstants(struct ATMCONST * __ptr64)const __ptr64 
+public: virtual bool __cdecl ATMOSPHERE::clbkParams(struct ATMOSPHERE::PRM_IN const * __ptr64,struct ATMOSPHERE::PRM_OUT * __ptr64) __ptr64 
+public: virtual bool __cdecl CELBODY::bEphemeris(void)const __ptr64 
+public: virtual bool __cdecl CELBODY::clbkAtmParam(double,struct ATMPARAM * __ptr64) __ptr64 
+public: virtual bool __cdecl CELBODY2::LegacyAtmosphereInterface(void)const __ptr64 
+public: virtual bool __cdecl LaunchpadItem::clbkOpen(struct HWND__ * __ptr64) __ptr64 
+public: virtual bool __cdecl LaunchpadItem::OpenDialog(struct HINSTANCE__ * __ptr64,struct HWND__ * __ptr64,int,__int64 (__cdecl*)(struct HWND__ * __ptr64,unsigned int,unsigned __int64,__int64)) __ptr64 
+public: virtual bool __cdecl MFD::ConsumeButton(int,int) __ptr64 
+public: virtual bool __cdecl MFD::ConsumeKeyBuffered(unsigned long) __ptr64 
+public: virtual bool __cdecl MFD::ConsumeKeyImmediate(char * __ptr64) __ptr64 
+public: virtual bool __cdecl MFD2::Update(class oapi::Sketchpad * __ptr64) __ptr64 
+public: virtual bool __cdecl oapi::GraphicsClient::clbkBlt(void * __ptr64,unsigned long,unsigned long,void * __ptr64,unsigned long)const __ptr64 
+public: virtual bool __cdecl oapi::GraphicsClient::clbkBlt(void * __ptr64,unsigned long,unsigned long,void * __ptr64,unsigned long,unsigned long,unsigned long,unsigned long,unsigned long)const __ptr64 
+public: virtual bool __cdecl oapi::GraphicsClient::clbkCopyBitmap(void * __ptr64,struct HBITMAP__ * __ptr64,int,int,int,int) __ptr64 
+public: virtual bool __cdecl oapi::GraphicsClient::clbkFillSurface(void * __ptr64,unsigned long)const __ptr64 
+public: virtual bool __cdecl oapi::GraphicsClient::clbkFillSurface(void * __ptr64,unsigned long,unsigned long,unsigned long,unsigned long,unsigned long)const __ptr64 
+public: virtual bool __cdecl oapi::GraphicsClient::clbkFilterElevation(void * __ptr64,int,int,int,double,short * __ptr64) __ptr64 
+public: virtual bool __cdecl oapi::GraphicsClient::clbkGetSurfaceSize(void * __ptr64,unsigned long * __ptr64,unsigned long * __ptr64) __ptr64 
+public: virtual bool __cdecl oapi::GraphicsClient::clbkInitialise(void) __ptr64 
+public: virtual bool __cdecl oapi::GraphicsClient::clbkReleaseSurface(void * __ptr64) __ptr64 
+public: virtual bool __cdecl oapi::GraphicsClient::clbkSaveSurfaceToImage(void * __ptr64,char const * __ptr64,enum oapi::ImageFileFormat,float) __ptr64 
+public: virtual bool __cdecl oapi::GraphicsClient::clbkScaleBlt(void * __ptr64,unsigned long,unsigned long,unsigned long,unsigned long,void * __ptr64,unsigned long,unsigned long,unsigned long,unsigned long,unsigned long)const __ptr64 
+public: virtual bool __cdecl oapi::GraphicsClient::clbkSetMeshProperty(int * __ptr64,unsigned long,unsigned long) __ptr64 
+public: virtual bool __cdecl oapi::GraphicsClient::clbkSetMeshTexture(int * __ptr64,unsigned long,void * __ptr64) __ptr64 
+public: virtual bool __cdecl oapi::GraphicsClient::clbkSetSurfaceColourKey(void * __ptr64,unsigned long) __ptr64 
+public: virtual bool __cdecl oapi::Module::clbkProcessKeyboardBuffered(unsigned long,char * __ptr64 const,bool) __ptr64 
+public: virtual bool __cdecl oapi::Module::clbkProcessKeyboardImmediate(char * __ptr64 const,bool) __ptr64 
+public: virtual bool __cdecl oapi::Module::clbkProcessMouse(unsigned int,unsigned long,unsigned long,unsigned long) __ptr64 
+public: virtual bool __cdecl oapi::Sketchpad::Text(int,int,char const * __ptr64,int) __ptr64 
+public: virtual bool __cdecl oapi::Sketchpad::TextBox(int,int,int,int,char const * __ptr64,int) __ptr64 
+public: virtual bool __cdecl oapi::Sketchpad::TextW(int,int,wchar_t * __ptr64 const,int) __ptr64 
+public: virtual bool __cdecl VESSEL2::clbkLoadGenericCockpit(void) __ptr64 
+public: virtual bool __cdecl VESSEL2::clbkLoadPanel(int) __ptr64 
+public: virtual bool __cdecl VESSEL2::clbkLoadVC(int) __ptr64 
+public: virtual bool __cdecl VESSEL2::clbkPanelMouseEvent(int,int,int,int) __ptr64 
+public: virtual bool __cdecl VESSEL2::clbkPanelRedrawEvent(int,int,void * __ptr64) __ptr64 
+public: virtual bool __cdecl VESSEL2::clbkPlaybackEvent(double,double,char const * __ptr64,char const * __ptr64) __ptr64 
+public: virtual bool __cdecl VESSEL2::clbkVCMouseEvent(int,int,union VECTOR3 & __ptr64) __ptr64 
+public: virtual bool __cdecl VESSEL2::clbkVCRedrawEvent(int,int,void * __ptr64) __ptr64 
+public: virtual bool __cdecl VESSEL3::clbkDrawHUD(int,struct HUDPAINTSPEC const * __ptr64,class oapi::Sketchpad * __ptr64) __ptr64 
+public: virtual bool __cdecl VESSEL3::clbkLoadPanel2D(int,void * __ptr64,unsigned long,unsigned long) __ptr64 
+public: virtual bool __cdecl VESSEL3::clbkPanelMouseEvent(int,int,int,int,void * __ptr64) __ptr64 
+public: virtual bool __cdecl VESSEL3::clbkPanelRedrawEvent(int,int,void * __ptr64,void * __ptr64) __ptr64 
+public: virtual char * __ptr64 __cdecl LaunchpadItem::Description(void) __ptr64 
+public: virtual char * __ptr64 __cdecl LaunchpadItem::Name(void) __ptr64 
+public: virtual char * __ptr64 __cdecl MFD::ButtonLabel(int) __ptr64 
+public: virtual class oapi::Brush * __ptr64 __cdecl oapi::GraphicsClient::clbkCreateBrush(unsigned long)const __ptr64 
+public: virtual class oapi::Brush * __ptr64 __cdecl oapi::Sketchpad::SetBrush(class oapi::Brush * __ptr64) __ptr64 
+public: virtual class oapi::Font * __ptr64 __cdecl oapi::CelestialSphere::MarkerFont(void)const __ptr64 
+public: virtual class oapi::Font * __ptr64 __cdecl oapi::GraphicsClient::clbkCreateFont(int,bool,char const * __ptr64,enum FontStyle,int)const __ptr64 
+public: virtual class oapi::Font * __ptr64 __cdecl oapi::GraphicsClient::clbkCreateFontEx(int,char * __ptr64,int,int,enum FontStyle,float)const __ptr64 
+public: virtual class oapi::Font * __ptr64 __cdecl oapi::Sketchpad::SetFont(class oapi::Font * __ptr64) __ptr64 
+public: virtual class oapi::ParticleStream * __ptr64 __cdecl oapi::GraphicsClient::clbkCreateExhaustStream(struct PARTICLESTREAMSPEC * __ptr64,void * __ptr64,double const * __ptr64,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64) __ptr64 
+public: virtual class oapi::ParticleStream * __ptr64 __cdecl oapi::GraphicsClient::clbkCreateExhaustStream(struct PARTICLESTREAMSPEC * __ptr64,void * __ptr64,double const * __ptr64,union VECTOR3 const * __ptr64,union VECTOR3 const * __ptr64) __ptr64 
+public: virtual class oapi::ParticleStream * __ptr64 __cdecl oapi::GraphicsClient::clbkCreateParticleStream(struct PARTICLESTREAMSPEC * __ptr64) __ptr64 
+public: virtual class oapi::ParticleStream * __ptr64 __cdecl oapi::GraphicsClient::clbkCreateReentryStream(struct PARTICLESTREAMSPEC * __ptr64,void * __ptr64) __ptr64 
+public: virtual class oapi::Pen * __ptr64 __cdecl oapi::CelestialSphere::MarkerPen(unsigned long)const __ptr64 
+public: virtual class oapi::Pen * __ptr64 __cdecl oapi::GraphicsClient::clbkCreatePen(int,int,unsigned long)const __ptr64 
+public: virtual class oapi::Pen * __ptr64 __cdecl oapi::Sketchpad::SetPen(class oapi::Pen * __ptr64) __ptr64 
+public: virtual class oapi::ScreenAnnotation * __ptr64 __cdecl oapi::GraphicsClient::clbkCreateAnnotation(void) __ptr64 
+public: virtual class oapi::Sketchpad * __ptr64 __cdecl oapi::GraphicsClient::clbkGetSketchpad(void * __ptr64) __ptr64 
+public: virtual enum CameraMode::Mode __cdecl CameraMode_Cockpit::GetMode(void)const __ptr64 
+public: virtual enum CameraMode::Mode __cdecl CameraMode_Ground::GetMode(void)const __ptr64 
+public: virtual enum CameraMode::Mode __cdecl CameraMode_Track::GetMode(void)const __ptr64 
+public: virtual int __cdecl CELBODY::clbkEphemeris(double,int,double * __ptr64) __ptr64 
+public: virtual int __cdecl CELBODY::clbkFastEphemeris(double,int,double * __ptr64) __ptr64 
+public: virtual int __cdecl LaunchpadItem::clbkWriteConfig(void) __ptr64 
+public: virtual int __cdecl MFD::ButtonMenu(struct MFDBUTTONMENU const * __ptr64 * __ptr64)const __ptr64 
+public: virtual int __cdecl oapi::GraphicsClient::clbkBeginBltGroup(void * __ptr64) __ptr64 
+public: virtual int __cdecl oapi::GraphicsClient::clbkEditMeshGroup(int * __ptr64,unsigned long,struct GROUPEDITSPEC * __ptr64) __ptr64 
+public: virtual int __cdecl oapi::GraphicsClient::clbkEndBltGroup(void) __ptr64 
+public: virtual int __cdecl oapi::GraphicsClient::clbkGetMeshGroup(int * __ptr64,unsigned long,struct GROUPREQUESTSPEC * __ptr64) __ptr64 
+public: virtual int __cdecl oapi::GraphicsClient::clbkMeshMaterial(int * __ptr64,unsigned long,struct MATERIAL * __ptr64) __ptr64 
+public: virtual int __cdecl oapi::GraphicsClient::clbkMeshMaterialEx(int * __ptr64,unsigned long,enum MatProp,union oapi::FVECTOR4 * __ptr64) __ptr64 
+public: virtual int __cdecl oapi::GraphicsClient::clbkSetMeshMaterial(int * __ptr64,unsigned long,struct MATERIAL const * __ptr64) __ptr64 
+public: virtual int __cdecl oapi::GraphicsClient::clbkSetMeshMaterialEx(int * __ptr64,unsigned long,enum MatProp,union oapi::FVECTOR4 const * __ptr64) __ptr64 
+public: virtual int __cdecl oapi::GraphicsClient::clbkVisEvent(void * __ptr64,void * __ptr64,unsigned long,unsigned __int64) __ptr64 
+public: virtual int __cdecl oapi::Sketchpad::DrawMeshGroup(void * __ptr64 const,unsigned long,enum oapi::Sketchpad::MeshFlags,void * __ptr64 const) __ptr64 
+public: virtual int __cdecl oapi::Sketchpad::GetVersion(void) __ptr64 
+public: virtual int __cdecl VESSEL2::clbkConsumeBufferedKey(unsigned long,bool,char * __ptr64) __ptr64 
+public: virtual int __cdecl VESSEL2::clbkConsumeDirectKey(char * __ptr64) __ptr64 
+public: virtual int __cdecl VESSEL3::clbkGeneric(int,int,void * __ptr64) __ptr64 
+public: virtual int __cdecl VESSEL4::clbkNavProcess(int) __ptr64 
+public: virtual struct HDC__ * __ptr64 __cdecl oapi::GraphicsClient::clbkGetSurfaceDC(void * __ptr64) __ptr64 
+public: virtual struct HDC__ * __ptr64 __cdecl oapi::Sketchpad::GetDC(void) __ptr64 
+public: virtual struct HFONT__ * __ptr64 __cdecl oapi::Font::GetGDIFont(void)const __ptr64 
+public: virtual union oapi::FMATRIX4 __cdecl oapi::Sketchpad::GetWorldTransform(void)const __ptr64 
+public: virtual union oapi::FMATRIX4 const * __ptr64 __cdecl oapi::Sketchpad::GetColorMatrix(void) __ptr64 
+public: virtual union oapi::FMATRIX4 const * __ptr64 __cdecl oapi::Sketchpad::GetViewProjectionMatrix(void)const __ptr64 
+public: virtual union oapi::FMATRIX4 const * __ptr64 __cdecl oapi::Sketchpad::ProjectionMatrix(void)const __ptr64 
+public: virtual union oapi::FMATRIX4 const * __ptr64 __cdecl oapi::Sketchpad::ViewMatrix(void)const __ptr64 
+public: virtual union oapi::FVECTOR4 __cdecl oapi::CelestialSphere::MarkerColorFloat(unsigned long)const __ptr64 
+public: virtual union oapi::FVECTOR4 __cdecl oapi::Sketchpad::GetRenderParam(enum oapi::Sketchpad::RenderParam) __ptr64 
+public: virtual unsigned long __cdecl oapi::CelestialSphere::MarkerColor(unsigned long)const __ptr64 
+public: virtual unsigned long __cdecl oapi::GraphicsClient::clbkGetDeviceColour(unsigned char,unsigned char,unsigned char) __ptr64 
+public: virtual unsigned long __cdecl oapi::Sketchpad::GetCharSize(void) __ptr64 
+public: virtual unsigned long __cdecl oapi::Sketchpad::GetTextWidth(char const * __ptr64,int) __ptr64 
+public: virtual unsigned long __cdecl oapi::Sketchpad::SetBackgroundColor(unsigned long) __ptr64 
+public: virtual unsigned long __cdecl oapi::Sketchpad::SetTextColor(unsigned long) __ptr64 
+public: virtual void * __ptr64 __cdecl oapi::GraphicsClient::clbkCreateSurface(struct HBITMAP__ * __ptr64) __ptr64 
+public: virtual void * __ptr64 __cdecl oapi::GraphicsClient::clbkCreateSurface(unsigned long,unsigned long,void * __ptr64) __ptr64 
+public: virtual void * __ptr64 __cdecl oapi::GraphicsClient::clbkCreateSurfaceEx(unsigned long,unsigned long,unsigned long) __ptr64 
+public: virtual void * __ptr64 __cdecl oapi::GraphicsClient::clbkCreateTexture(unsigned long,unsigned long) __ptr64 
+public: virtual void * __ptr64 __cdecl oapi::GraphicsClient::clbkGetMesh(void * __ptr64,unsigned int) __ptr64 
+public: virtual void * __ptr64 __cdecl oapi::GraphicsClient::clbkLoadSurface(char const * __ptr64,unsigned long,bool) __ptr64 
+public: virtual void * __ptr64 __cdecl oapi::GraphicsClient::clbkLoadTexture(char const * __ptr64,unsigned long) __ptr64 
+public: virtual void __cdecl CameraMode_Cockpit::GetDescr(char * __ptr64,int) __ptr64 
+public: virtual void __cdecl CameraMode_Cockpit::Init(char * __ptr64) __ptr64 
+public: virtual void __cdecl CameraMode_Cockpit::Store(char * __ptr64) __ptr64 
+public: virtual void __cdecl CameraMode_Ground::GetDescr(char * __ptr64,int) __ptr64 
+public: virtual void __cdecl CameraMode_Ground::Init(char * __ptr64) __ptr64 
+public: virtual void __cdecl CameraMode_Ground::Store(char * __ptr64) __ptr64 
+public: virtual void __cdecl CameraMode_Track::GetDescr(char * __ptr64,int) __ptr64 
+public: virtual void __cdecl CameraMode_Track::Init(char * __ptr64) __ptr64 
+public: virtual void __cdecl CameraMode_Track::Store(char * __ptr64) __ptr64 
+public: virtual void __cdecl CELBODY::clbkInit(void * __ptr64) __ptr64 
+public: virtual void __cdecl CELBODY2::clbkInit(void * __ptr64) __ptr64 
+public: virtual void __cdecl ExternMFD::clbkFocusChanged(void * __ptr64) __ptr64 
+public: virtual void __cdecl ExternMFD::clbkRefreshButtons(void) __ptr64 
+public: virtual void __cdecl ExternMFD::clbkRefreshDisplay(void * __ptr64) __ptr64 
+public: virtual void __cdecl ExternMFD::clbkUpdate(void) __ptr64 
+public: virtual void __cdecl ExternMFD::SetVessel(void * __ptr64) __ptr64 
+public: virtual void __cdecl MFD::ReadStatus(void * __ptr64) __ptr64 
+public: virtual void __cdecl MFD::RecallStatus(void) __ptr64 
+public: virtual void __cdecl MFD::StoreStatus(void)const __ptr64 
+public: virtual void __cdecl MFD::WriteStatus(void * __ptr64)const __ptr64 
+public: virtual void __cdecl MFD2::Update(struct HDC__ * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::CelestialSphere::EnsureMarkerDrawingContext(class oapi::Sketchpad * __ptr64 * __ptr64,class oapi::Font * __ptr64,unsigned long,class oapi::Pen * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::CelestialSphere::RenderCelestialMarkers(class oapi::Sketchpad * __ptr64 * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::CelestialSphere::RenderConstellationLabels(class oapi::Sketchpad * __ptr64 * __ptr64,bool) __ptr64 
+public: virtual void __cdecl oapi::CelestialSphere::RenderMarker(class oapi::Sketchpad * __ptr64,union VECTOR3 const & __ptr64,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const & __ptr64,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const & __ptr64,int,int) __ptr64 
+public: virtual void __cdecl oapi::GraphicsClient::clbkDebugString(char const * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::GraphicsClient::clbkIncrSurfaceRef(void * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::GraphicsClient::clbkOptionChanged(unsigned long,unsigned long) __ptr64 
+public: virtual void __cdecl oapi::GraphicsClient::clbkPreOpenPopup(void) __ptr64 
+public: virtual void __cdecl oapi::GraphicsClient::clbkRefreshVideoData(void) __ptr64 
+public: virtual void __cdecl oapi::GraphicsClient::clbkReleaseBrush(class oapi::Brush * __ptr64)const __ptr64 
+public: virtual void __cdecl oapi::GraphicsClient::clbkReleaseFont(class oapi::Font * __ptr64)const __ptr64 
+public: virtual void __cdecl oapi::GraphicsClient::clbkReleasePen(class oapi::Pen * __ptr64)const __ptr64 
+public: virtual void __cdecl oapi::GraphicsClient::clbkReleaseSketchpad(class oapi::Sketchpad * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::GraphicsClient::clbkReleaseSurfaceDC(void * __ptr64,struct HDC__ * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::GraphicsClient::clbkReleaseTexture(void * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::GraphicsClient::clbkRender2DPanel(void * __ptr64 * __ptr64,void * __ptr64,union MATRIX3 * __ptr64,bool) __ptr64 
+public: virtual void __cdecl oapi::GraphicsClient::clbkRender2DPanel(void * __ptr64 * __ptr64,void * __ptr64,union MATRIX3 * __ptr64,float,bool) __ptr64 
+public: virtual void __cdecl oapi::Module::clbkDeleteVessel(void * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::Module::clbkFocusChanged(void * __ptr64,void * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::Module::clbkNewVessel(void * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::Module::clbkPause(bool) __ptr64 
+public: virtual void __cdecl oapi::Module::clbkPostStep(double,double,double) __ptr64 
+public: virtual void __cdecl oapi::Module::clbkPreStep(double,double,double) __ptr64 
+public: virtual void __cdecl oapi::Module::clbkSimulationEnd(void) __ptr64 
+public: virtual void __cdecl oapi::Module::clbkSimulationStart(enum oapi::Module::RenderMode) __ptr64 
+public: virtual void __cdecl oapi::Module::clbkTimeAccChanged(double,double) __ptr64 
+public: virtual void __cdecl oapi::Module::clbkTimeJump(double,double,double) __ptr64 
+public: virtual void __cdecl oapi::Module::clbkVesselJump(void * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::Clear(unsigned long,bool,bool) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::Clipper(int,union VECTOR3 const * __ptr64,double,double) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::ClipRect(struct tagRECT * __ptr64 const) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::ColorCompatibility(bool) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::ColorFill(unsigned long,struct tagRECT * __ptr64 const) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::ColorKey(void * __ptr64 const,struct tagRECT * __ptr64 const,int,int) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::CopyRect(void * __ptr64 const,struct tagRECT * __ptr64 const,int,int) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::CopyTetragon(void * __ptr64 const,struct tagRECT * __ptr64 const,struct oapi::FVECTOR2 const * __ptr64 const) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::DepthEnable(bool) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::DrawPoly(void * __ptr64 const,unsigned long) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::Ellipse(int,int,int,int) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::FillTetragon(unsigned long,struct oapi::FVECTOR2 const * __ptr64 const) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::GetOrigin(int * __ptr64,int * __ptr64)const __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::GetRenderSurfaceSize(struct tagSIZE * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::GradientFillRect(struct tagRECT * __ptr64 const,unsigned long,unsigned long,bool) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::Line(int,int,int,int) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::Lines(struct oapi::FVECTOR2 const * __ptr64,int) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::LineTo(int,int) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::MoveTo(int,int) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::Pixel(int,int,unsigned long) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::Polygon(union oapi::IVECTOR2 const * __ptr64,int) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::Polyline(union oapi::IVECTOR2 const * __ptr64,int) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::PolyPolygon(union oapi::IVECTOR2 const * __ptr64,int const * __ptr64,int) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::PolyPolyline(union oapi::IVECTOR2 const * __ptr64,int const * __ptr64,int) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::PopWorldTransform(void) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::PushWorldTransform(void) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::QuickBrush(unsigned long) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::QuickPen(unsigned long,float,unsigned long) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::Rectangle(int,int,int,int) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::RotateRect(void * __ptr64 const,struct tagRECT * __ptr64 const,int,int,float,float,float) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::SetBackgroundMode(enum oapi::Sketchpad::BkgMode) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::SetBlendState(enum oapi::Sketchpad::BlendState) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::SetBrightness(union oapi::FVECTOR4 const * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::SetClipDistance(float,float) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::SetColorMatrix(union oapi::FMATRIX4 const * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::SetGlobalLineScale(float,float) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::SetOrigin(int,int) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::SetProjectionMatrix(union oapi::FMATRIX4 const * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::SetRenderParam(enum oapi::Sketchpad::RenderParam,union oapi::FVECTOR4 const * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::SetTextAlign(enum oapi::Sketchpad::TAlign_horizontal,enum oapi::Sketchpad::TAlign_vertical) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::SetViewMatrix(union oapi::FMATRIX4 const * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::SetViewMode(enum oapi::Sketchpad::SkpView) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::SetWorldBillboard(union oapi::FVECTOR3 const & __ptr64,float,bool,union oapi::FVECTOR3 const * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::SetWorldScaleTransform2D(struct oapi::FVECTOR2 const * __ptr64,union oapi::IVECTOR2 const * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::SetWorldTransform(union oapi::FMATRIX4 const * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::SetWorldTransform2D(float,float,union oapi::IVECTOR2 const * __ptr64,union oapi::IVECTOR2 const * __ptr64) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::StretchRect(void * __ptr64 const,struct tagRECT * __ptr64 const,struct tagRECT * __ptr64 const) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::StretchRegion(struct oapi::Sketchpad::skpRegion const * __ptr64,void * __ptr64 const,struct tagRECT * __ptr64 const) __ptr64 
+public: virtual void __cdecl oapi::Sketchpad::TextEx(float,float,char const * __ptr64,float,float) __ptr64 
+public: virtual void __cdecl VESSEL2::clbkADCtrlMode(unsigned long) __ptr64 
+public: virtual void __cdecl VESSEL2::clbkAnimate(double) __ptr64 
+public: virtual void __cdecl VESSEL2::clbkDockEvent(int,void * __ptr64) __ptr64 
+public: virtual void __cdecl VESSEL2::clbkDrawHUD(int,struct HUDPAINTSPEC const * __ptr64,struct HDC__ * __ptr64) __ptr64 
+public: virtual void __cdecl VESSEL2::clbkFocusChanged(bool,void * __ptr64,void * __ptr64) __ptr64 
+public: virtual void __cdecl VESSEL2::clbkHUDMode(int) __ptr64 
+public: virtual void __cdecl VESSEL2::clbkLoadStateEx(void * __ptr64,void * __ptr64) __ptr64 
+public: virtual void __cdecl VESSEL2::clbkMFDMode(int,int) __ptr64 
+public: virtual void __cdecl VESSEL2::clbkNavMode(int,bool) __ptr64 
+public: virtual void __cdecl VESSEL2::clbkPostCreation(void) __ptr64 
+public: virtual void __cdecl VESSEL2::clbkPostStep(double,double,double) __ptr64 
+public: virtual void __cdecl VESSEL2::clbkPreStep(double,double,double) __ptr64 
+public: virtual void __cdecl VESSEL2::clbkRCSMode(int) __ptr64 
+public: virtual void __cdecl VESSEL2::clbkSaveState(void * __ptr64) __ptr64 
+public: virtual void __cdecl VESSEL2::clbkSetClassCaps(void * __ptr64) __ptr64 
+public: virtual void __cdecl VESSEL2::clbkSetStateEx(void const * __ptr64) __ptr64 
+public: virtual void __cdecl VESSEL2::clbkVisualCreated(void * __ptr64,int) __ptr64 
+public: virtual void __cdecl VESSEL2::clbkVisualDestroyed(void * __ptr64,int) __ptr64 
+public: virtual void __cdecl VESSEL3::clbkGetRadiationForce(union VECTOR3 const & __ptr64,union VECTOR3 & __ptr64,union VECTOR3 & __ptr64) __ptr64 
+public: virtual void __cdecl VESSEL3::clbkRenderHUD(int,struct HUDPAINTSPEC const * __ptr64,void * __ptr64) __ptr64 
+public: void * __ptr64 __cdecl CameraMode::GetTarget(void)const __ptr64 
+public: void * __ptr64 __cdecl CameraMode_Ground::GetRef(void)const __ptr64 
+public: void * __ptr64 __cdecl CameraMode_Track::GetRef(void)const __ptr64 
+public: void * __ptr64 __cdecl CELBODY2::GetChild(unsigned long)const __ptr64 
+public: void * __ptr64 __cdecl CELBODY2::GetHandle(void)const __ptr64 
+public: void * __ptr64 __cdecl CELBODY2::GetParent(void)const __ptr64 
+public: void * __ptr64 __cdecl ExternMFD::GetDisplaySurface(void)const __ptr64 
+public: void * __ptr64 __cdecl ExternMFD::GetVessel(void)const __ptr64 
+public: void * __ptr64 __cdecl LightEmitter::GetObjectHandle(void)const __ptr64 
+public: void * __ptr64 __cdecl oapi::GraphicsClient::GetMFDSurface(int)const __ptr64 
+public: void * __ptr64 __cdecl oapi::GraphicsClient::GetVCHUDSurface(struct VCHUDSPEC const * __ptr64 * __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl oapi::GraphicsClient::GetVCMFDSurface(int,struct VCMFDSPEC const * __ptr64 * __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl oapi::Sketchpad::GetSurface(void)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::AddAnimationComponent(unsigned int,double,double,class MGROUP_TRANSFORM * __ptr64,void * __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::AddExhaustStream(void * __ptr64,struct PARTICLESTREAMSPEC * __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::AddExhaustStream(void * __ptr64,union VECTOR3 const & __ptr64,struct PARTICLESTREAMSPEC * __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::AddParticleStream(struct PARTICLESTREAMSPEC * __ptr64,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,double * __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::AddReentryStream(struct PARTICLESTREAMSPEC * __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::CopyMeshFromTemplate(unsigned int)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::CreateAirfoil2(enum AIRFOIL_ORIENTATION,union VECTOR3 const & __ptr64,void (__cdecl*)(double,double,double,double * __ptr64,double * __ptr64,double * __ptr64),double,double,double)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::CreateAirfoil3(enum AIRFOIL_ORIENTATION,union VECTOR3 const & __ptr64,void (__cdecl*)(class VESSEL * __ptr64,double,double,double,void * __ptr64,double * __ptr64,double * __ptr64,double * __ptr64),void * __ptr64,double,double,double)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::CreateAirfoil4(union VECTOR3 const & __ptr64,void (__cdecl*)(class VESSEL * __ptr64,union VECTOR3,double,double,double,double,double,void * __ptr64,double * __ptr64,double * __ptr64,double * __ptr64,double * __ptr64,double * __ptr64,double * __ptr64),void * __ptr64,double,double,double)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::CreateAttachment(bool,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,char const * __ptr64,bool)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::CreateControlSurface2(enum AIRCTRL_TYPE,double,double,union VECTOR3 const & __ptr64,int,unsigned int)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::CreateControlSurface3(enum AIRCTRL_TYPE,double,double,union VECTOR3 const & __ptr64,int,double,unsigned int)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::CreateDock(union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::CreatePropellantResource(double,double,double)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::CreateThruster(union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,double,void * __ptr64,double,double,double)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::CreateThrusterGroup(void * __ptr64 * __ptr64,int,enum THGROUP_TYPE)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetApDist(double & __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetArgPer(double & __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetAtmRef(void)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetAttachmentHandle(bool,unsigned long)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetAttachmentStatus(void * __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetDefaultPropellantResource(void)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetDockHandle(unsigned int)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetDockStatus(void * __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetElements(struct ELEMENTS & __ptr64,double & __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetEquPos(double & __ptr64,double & __ptr64,double & __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetGravityRef(void)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetGroupThruster(enum THGROUP_TYPE,unsigned long)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetGroupThruster(void * __ptr64,unsigned long)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetHandle(void)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetIDS(void * __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetMesh(void * __ptr64,unsigned int)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetMeshTemplate(unsigned int)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetNavSource(unsigned long)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetPeDist(double & __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetPropellantHandleByIndex(unsigned long)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetProxyDock(void * __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetSMi(double & __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetSupervessel(void)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetSurfaceRef(void)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetThrusterGroupHandle(enum THGROUP_TYPE)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetThrusterHandleByIndex(unsigned long)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetThrusterResource(void * __ptr64)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetTransponder(void)const __ptr64 
+public: void * __ptr64 __cdecl VESSEL::GetUserThrusterGroupHandleByIndex(unsigned long)const __ptr64 
+public: void __cdecl CameraMode::SetFOV(double) __ptr64 
+public: void __cdecl CameraMode::SetTarget(void * __ptr64) __ptr64 
+public: void __cdecl CameraMode_Ground::GetOrientation(double * __ptr64,double * __ptr64)const __ptr64 
+public: void __cdecl CameraMode_Ground::GetPosition(double * __ptr64,double * __ptr64,double * __ptr64,void * __ptr64 * __ptr64)const __ptr64 
+public: void __cdecl CameraMode_Ground::SetOrientation(double,double) __ptr64 
+public: void __cdecl CameraMode_Ground::SetPosition(double,double,double,void * __ptr64) __ptr64 
+public: void __cdecl CameraMode_Track::GetPosition(double * __ptr64,double * __ptr64,double * __ptr64)const __ptr64 
+public: void __cdecl CameraMode_Track::SetPosition(double,double,double) __ptr64 
+public: void __cdecl CameraMode_Track::SetTrackMode(enum CameraMode_Track::TrackMode,void * __ptr64) __ptr64 
+public: void __cdecl ExternalCameraControl::SetCameraMode(unsigned long) __ptr64 
+public: void __cdecl ExternalCameraControl::SetDataMode(unsigned long) __ptr64 
+public: void __cdecl GraphMFD::AddPlot(int,float * __ptr64,float * __ptr64,int,int,int * __ptr64) __ptr64 
+public: void __cdecl GraphMFD::FindRange(float * __ptr64,int,float & __ptr64,float & __ptr64)const __ptr64 
+public: void __cdecl GraphMFD::Plot(struct HDC__ * __ptr64,int,int,int,char const * __ptr64) __ptr64 
+public: void __cdecl GraphMFD::SetAutoRange(int,int,int) __ptr64 
+public: void __cdecl GraphMFD::SetAutoTicks(int,int) __ptr64 
+public: void __cdecl GraphMFD::SetAxisTitle(int,int,char * __ptr64) __ptr64 
+public: void __cdecl GraphMFD::SetRange(int,int,float,float) __ptr64 
+public: void __cdecl LightEmitter::Activate(bool) __ptr64 
+public: void __cdecl LightEmitter::SetDirection(union VECTOR3 const & __ptr64) __ptr64 
+public: void __cdecl LightEmitter::SetDirectionRef(union VECTOR3 const * __ptr64) __ptr64 
+public: void __cdecl LightEmitter::SetIntensity(double) __ptr64 
+public: void __cdecl LightEmitter::SetIntensityRef(double * __ptr64) __ptr64 
+public: void __cdecl LightEmitter::SetPosition(union VECTOR3 const & __ptr64) __ptr64 
+public: void __cdecl LightEmitter::SetPositionRef(union VECTOR3 const * __ptr64) __ptr64 
+public: void __cdecl LightEmitter::SetVisibility(enum LightEmitter::VISIBILITY) __ptr64 
+public: void __cdecl LightEmitter::ShiftExplicitPosition(union VECTOR3 const & __ptr64) __ptr64 
+public: void __cdecl MFD::InvalidateButtons(void) __ptr64 
+public: void __cdecl MFD::InvalidateDisplay(void) __ptr64 
+public: void __cdecl MFD::Title(struct HDC__ * __ptr64,char const * __ptr64)const __ptr64 
+public: void __cdecl MFD2::Title(class oapi::Sketchpad * __ptr64,char const * __ptr64)const __ptr64 
+public: void __cdecl oapi::GraphicsClient::GetBaseShadowGeometry(void * __ptr64,void * __ptr64 * __ptr64 * __ptr64,double * __ptr64 * __ptr64,unsigned long * __ptr64)const __ptr64 
+public: void __cdecl oapi::GraphicsClient::GetBaseStructures(void * __ptr64,void * __ptr64 * __ptr64 * __ptr64,unsigned long * __ptr64,void * __ptr64 * __ptr64 * __ptr64,unsigned long * __ptr64)const __ptr64 
+public: void __cdecl oapi::GraphicsClient::RegisterVisObject(void * __ptr64,void * __ptr64) __ptr64 
+public: void __cdecl oapi::GraphicsClient::UnregisterVisObject(void * __ptr64) __ptr64 
+public: void __cdecl oapi::ParticleStream::Attach(void * __ptr64,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,double const * __ptr64) __ptr64 
+public: void __cdecl oapi::ParticleStream::Attach(void * __ptr64,union VECTOR3 const * __ptr64,union VECTOR3 const * __ptr64,double const * __ptr64) __ptr64 
+public: void __cdecl oapi::ParticleStream::Detach(void) __ptr64 
+public: void __cdecl oapi::ParticleStream::SetFixedDir(union VECTOR3 const & __ptr64) __ptr64 
+public: void __cdecl oapi::ParticleStream::SetFixedPos(union VECTOR3 const & __ptr64) __ptr64 
+public: void __cdecl oapi::ParticleStream::SetLevelPtr(double const * __ptr64) __ptr64 
+public: void __cdecl oapi::ParticleStream::SetVariableDir(union VECTOR3 const * __ptr64) __ptr64 
+public: void __cdecl oapi::ParticleStream::SetVariablePos(union VECTOR3 const * __ptr64) __ptr64 
+public: void __cdecl PointLight::SetAttenuation(double,double,double) __ptr64 
+public: void __cdecl PointLight::SetRange(double) __ptr64 
+public: void __cdecl SpotLight::SetAperture(double,double) __ptr64 
+public: void __cdecl VESSEL::AddAttExhaustMode(unsigned int,enum ATTITUDEMODE,int,int)const __ptr64 
+public: void __cdecl VESSEL::AddBeacon(struct BEACONLIGHTSPEC * __ptr64) __ptr64 
+public: void __cdecl VESSEL::AddForce(union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::ClearAirfoilDefinitions(void)const __ptr64 
+public: void __cdecl VESSEL::ClearAttachments(void)const __ptr64 
+public: void __cdecl VESSEL::ClearAttExhaustRefs(void)const __ptr64 
+public: void __cdecl VESSEL::ClearBeacons(void) __ptr64 
+public: void __cdecl VESSEL::ClearControlSurfaceDefinitions(void)const __ptr64 
+public: void __cdecl VESSEL::ClearDockDefinitions(void)const __ptr64 
+public: void __cdecl VESSEL::ClearExhaustRefs(void)const __ptr64 
+public: void __cdecl VESSEL::ClearLightEmitters(void)const __ptr64 
+public: void __cdecl VESSEL::ClearMeshes(bool)const __ptr64 
+public: void __cdecl VESSEL::ClearMeshes(void)const __ptr64 
+public: void __cdecl VESSEL::ClearPropellantResources(void)const __ptr64 
+public: void __cdecl VESSEL::ClearThrusterDefinitions(void)const __ptr64 
+public: void __cdecl VESSEL::ClearVariableDragElements(void)const __ptr64 
+public: void __cdecl VESSEL::CreateAirfoil(enum AIRFOIL_ORIENTATION,union VECTOR3 const & __ptr64,void (__cdecl*)(double,double,double,double * __ptr64,double * __ptr64,double * __ptr64),double,double,double)const __ptr64 
+public: void __cdecl VESSEL::CreateControlSurface(enum AIRCTRL_TYPE,double,double,union VECTOR3 const & __ptr64,int,unsigned int)const __ptr64 
+public: void __cdecl VESSEL::CreateVariableDragElement(double * __ptr64,double,union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::CreateVariableDragElement(double const * __ptr64,double,union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::DefSetState(struct VESSELSTATUS const * __ptr64)const __ptr64 
+public: void __cdecl VESSEL::DefSetStateEx(void const * __ptr64)const __ptr64 
+public: void __cdecl VESSEL::DelExhaustRef(enum EXHAUSTTYPE,unsigned short)const __ptr64 
+public: void __cdecl VESSEL::DelPropellantResource(void * __ptr64 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::EditAirfoil(void * __ptr64,unsigned long,union VECTOR3 const & __ptr64,void (__cdecl*)(double,double,double,double * __ptr64,double * __ptr64,double * __ptr64),double,double,double)const __ptr64 
+public: void __cdecl VESSEL::EnableIDS(void * __ptr64,bool)const __ptr64 
+public: void __cdecl VESSEL::EnableTransponder(bool)const __ptr64 
+public: void __cdecl VESSEL::GetAngularAcc(union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetAngularMoment(union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetAngularVel(union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetAttachmentParams(void * __ptr64,union VECTOR3 & __ptr64,union VECTOR3 & __ptr64,union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetAttitudeLinLevel(union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetAttitudeRotLevel(union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetCameraDefaultDirection(union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetCameraOffset(union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetCrossSections(union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetCW(double & __ptr64,double & __ptr64,double & __ptr64,double & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetDockParams(void * __ptr64,union VECTOR3 & __ptr64,union VECTOR3 & __ptr64,union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetGlobalOrientation(union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetGlobalPos(union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetGlobalVel(union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetLinearMoment(union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetPMI(union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetRelativePos(void * __ptr64,union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetRelativeVel(void * __ptr64,union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetRotationMatrix(union MATRIX3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetRotDrag(union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetStatus(struct VESSELSTATUS & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetStatusEx(void * __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetThrusterDir(void * __ptr64,union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetThrusterMoment(void * __ptr64,union VECTOR3 & __ptr64,union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetThrusterRef(void * __ptr64,union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GetTouchdownPoints(union VECTOR3 & __ptr64,union VECTOR3 & __ptr64,union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::Global2Local(union VECTOR3 const & __ptr64,union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::GlobalRot(union VECTOR3 const & __ptr64,union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::HorizonInvRot(union VECTOR3 const & __ptr64,union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::HorizonRot(union VECTOR3 const & __ptr64,union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::IncEngineLevel(enum ENGINETYPE,double)const __ptr64 
+public: void __cdecl VESSEL::IncThrusterGroupLevel(enum THGROUP_TYPE,double)const __ptr64 
+public: void __cdecl VESSEL::IncThrusterGroupLevel(void * __ptr64,double)const __ptr64 
+public: void __cdecl VESSEL::IncThrusterGroupLevel_SingleStep(enum THGROUP_TYPE,double)const __ptr64 
+public: void __cdecl VESSEL::IncThrusterGroupLevel_SingleStep(void * __ptr64,double)const __ptr64 
+public: void __cdecl VESSEL::IncThrusterLevel(void * __ptr64,double)const __ptr64 
+public: void __cdecl VESSEL::IncThrusterLevel_SingleStep(void * __ptr64,double)const __ptr64 
+public: void __cdecl VESSEL::InitNavRadios(unsigned long)const __ptr64 
+public: void __cdecl VESSEL::Local2Global(union VECTOR3 const & __ptr64,union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::Local2Rel(union VECTOR3 const & __ptr64,union VECTOR3 & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::MoveDock(void * __ptr64,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64) __ptr64 
+public: void __cdecl VESSEL::ParseScenarioLine(char * __ptr64,struct VESSELSTATUS * __ptr64)const __ptr64 
+public: void __cdecl VESSEL::ParseScenarioLineEx(char * __ptr64,void * __ptr64)const __ptr64 
+public: void __cdecl VESSEL::RecordEvent(char const * __ptr64,char const * __ptr64)const __ptr64 
+public: void __cdecl VESSEL::RegisterAnimation(void)const __ptr64 
+public: void __cdecl VESSEL::SaveDefaultState(void * __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetADCtrlMode(unsigned long)const __ptr64 
+public: void __cdecl VESSEL::SetAlbedoRGB(union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetAngularVel(union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetAttachmentParams(void * __ptr64,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetAttitudeLinLevel(int,double)const __ptr64 
+public: void __cdecl VESSEL::SetAttitudeLinLevel(union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetAttitudeRotLevel(int,double)const __ptr64 
+public: void __cdecl VESSEL::SetAttitudeRotLevel(union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetBankMomentScale(double)const __ptr64 
+public: void __cdecl VESSEL::SetCameraCatchAngle(double)const __ptr64 
+public: void __cdecl VESSEL::SetCameraDefaultDirection(union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetCameraDefaultDirection(union VECTOR3 const & __ptr64,double)const __ptr64 
+public: void __cdecl VESSEL::SetCameraMovement(union VECTOR3 const & __ptr64,double,double,union VECTOR3 const & __ptr64,double,double,union VECTOR3 const & __ptr64,double,double)const __ptr64 
+public: void __cdecl VESSEL::SetCameraOffset(union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetCameraRotationRange(double,double,double,double)const __ptr64 
+public: void __cdecl VESSEL::SetCameraShiftRange(union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetClipRadius(double)const __ptr64 
+public: void __cdecl VESSEL::SetCOG_elev(double)const __ptr64 
+public: void __cdecl VESSEL::SetControlSurfaceLevel(enum AIRCTRL_TYPE,double)const __ptr64 
+public: void __cdecl VESSEL::SetControlSurfaceLevel(enum AIRCTRL_TYPE,double,bool)const __ptr64 
+public: void __cdecl VESSEL::SetCrossSections(union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetCW(double,double,double,double)const __ptr64 
+public: void __cdecl VESSEL::SetDefaultPropellantResource(void * __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetDockMode(int)const __ptr64 
+public: void __cdecl VESSEL::SetDockParams(union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetDockParams(void * __ptr64,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetEmptyMass(double)const __ptr64 
+public: void __cdecl VESSEL::SetEnableFocus(bool)const __ptr64 
+public: void __cdecl VESSEL::SetEngineLevel(enum ENGINETYPE,double)const __ptr64 
+public: void __cdecl VESSEL::SetExhaustScales(enum EXHAUSTTYPE,unsigned short,double,double)const __ptr64 
+public: void __cdecl VESSEL::SetFuelMass(double)const __ptr64 
+public: void __cdecl VESSEL::SetGlobalOrientation(union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetHoverHoldAltitude(double,bool) __ptr64 
+public: void __cdecl VESSEL::SetISP(double)const __ptr64 
+public: void __cdecl VESSEL::SetLiftCoeffFunc(double (__cdecl*)(double))const __ptr64 
+public: void __cdecl VESSEL::SetMaxFuelMass(double)const __ptr64 
+public: void __cdecl VESSEL::SetMaxThrust(enum ENGINETYPE,double)const __ptr64 
+public: void __cdecl VESSEL::SetMaxWheelbrakeForce(double)const __ptr64 
+public: void __cdecl VESSEL::SetMeshVisibilityMode(unsigned int,unsigned short)const __ptr64 
+public: void __cdecl VESSEL::SetMeshVisibleInternal(unsigned int,bool)const __ptr64 
+public: void __cdecl VESSEL::SetNosewheelSteering(bool)const __ptr64 
+public: void __cdecl VESSEL::SetPitchMomentScale(double)const __ptr64 
+public: void __cdecl VESSEL::SetPMI(union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetPropellantEfficiency(void * __ptr64,double)const __ptr64 
+public: void __cdecl VESSEL::SetPropellantMass(void * __ptr64,double)const __ptr64 
+public: void __cdecl VESSEL::SetPropellantMaxMass(void * __ptr64,double)const __ptr64 
+public: void __cdecl VESSEL::SetReentryTexture(void * __ptr64,double,double,double)const __ptr64 
+public: void __cdecl VESSEL::SetRotationMatrix(union MATRIX3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetRotDrag(union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetSize(double)const __ptr64 
+public: void __cdecl VESSEL::SetSurfaceFrictionCoeff(double,double)const __ptr64 
+public: void __cdecl VESSEL::SetThrusterDir(void * __ptr64,union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetThrusterGroupLevel(enum THGROUP_TYPE,double)const __ptr64 
+public: void __cdecl VESSEL::SetThrusterGroupLevel(void * __ptr64,double)const __ptr64 
+public: void __cdecl VESSEL::SetThrusterIsp(void * __ptr64,double)const __ptr64 
+public: void __cdecl VESSEL::SetThrusterIsp(void * __ptr64,double,double,double)const __ptr64 
+public: void __cdecl VESSEL::SetThrusterLevel(void * __ptr64,double)const __ptr64 
+public: void __cdecl VESSEL::SetThrusterLevel_SingleStep(void * __ptr64,double)const __ptr64 
+public: void __cdecl VESSEL::SetThrusterMax0(void * __ptr64,double)const __ptr64 
+public: void __cdecl VESSEL::SetThrusterRef(void * __ptr64,union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetThrusterResource(void * __ptr64,void * __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetTouchdownPoints(struct TOUCHDOWNVTX const * __ptr64,unsigned long)const __ptr64 
+public: void __cdecl VESSEL::SetTouchdownPoints(union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::SetTrimScale(double)const __ptr64 
+public: void __cdecl VESSEL::SetVisibilityLimit(double,double)const __ptr64 
+public: void __cdecl VESSEL::SetWheelbrakeLevel(double,int,bool)const __ptr64 
+public: void __cdecl VESSEL::SetWingAspect(double)const __ptr64 
+public: void __cdecl VESSEL::SetWingEffectiveness(double)const __ptr64 
+public: void __cdecl VESSEL::SetYawMomentScale(double)const __ptr64 
+public: void __cdecl VESSEL::ShiftCentreOfMass(union VECTOR3 const & __ptr64) __ptr64 
+public: void __cdecl VESSEL::ShiftCG(union VECTOR3 const & __ptr64) __ptr64 
+public: void __cdecl VESSEL::ShiftMeshes(union VECTOR3 const & __ptr64)const __ptr64 
+public: void __cdecl VESSEL::TriggerPanelRedrawArea(int,int) __ptr64 
+public: void __cdecl VESSEL::TriggerRedrawArea(int,int,int) __ptr64 
+public: void __cdecl VESSEL::UnregisterAnimation(void)const __ptr64 
+public: void const * __ptr64 __cdecl oapi::GraphicsClient::GetConfigParam(unsigned long)const __ptr64 
+struct ATMCONST const * __ptr64 __cdecl oapiGetPlanetAtmConstants(void * __ptr64) 
+struct HDC__ * __ptr64 __cdecl oapiGetDC(void * __ptr64) 
+struct HINSTANCE__ * __ptr64 __cdecl oapiGetOrbiterInstance(void) 
+struct HWND__ * __ptr64 __cdecl oapiFindDialog(struct HINSTANCE__ * __ptr64,int) 
+struct HWND__ * __ptr64 __cdecl oapiOpenDialog(struct HINSTANCE__ * __ptr64,int,__int64 (__cdecl*)(struct HWND__ * __ptr64,unsigned int,unsigned __int64,__int64),void * __ptr64) 
+struct HWND__ * __ptr64 __cdecl oapiOpenDialogEx(struct HINSTANCE__ * __ptr64,int,__int64 (__cdecl*)(struct HWND__ * __ptr64,unsigned int,unsigned __int64,__int64),unsigned long,void * __ptr64) 
+struct lua_State * __ptr64 __cdecl oapiGetLua(void * __ptr64) 
+struct MATERIAL * __ptr64 __cdecl oapiMeshMaterial(void * __ptr64,unsigned long) 
+struct MESHGROUP * __ptr64 __cdecl oapiMeshGroup(int * __ptr64,unsigned long) 
+struct MESHGROUP * __ptr64 __cdecl oapiMeshGroup(void * __ptr64,unsigned long) 
+struct MESHGROUPEX * __ptr64 __cdecl oapiMeshGroupEx(void * __ptr64,unsigned long) 
+union VECTOR3 __cdecl oapiGetGroundVector(void * __ptr64,double,double,int) 
+union VECTOR3 __cdecl oapiGetWindVector(void * __ptr64,double,double,double,int,double * __ptr64) 
+unsigned long __cdecl oapiAddMaterial(void * __ptr64,struct MATERIAL * __ptr64) 
+unsigned long __cdecl oapiAddMeshGroup(void * __ptr64,struct MESHGROUP * __ptr64) 
+unsigned long __cdecl oapiDeflate(unsigned char const * __ptr64,unsigned long,unsigned char * __ptr64,unsigned long) 
+unsigned long __cdecl oapiGetBaseCount(void * __ptr64) 
+unsigned long __cdecl oapiGetBasePadCount(void * __ptr64) 
+unsigned long __cdecl oapiGetColour(unsigned long,unsigned long,unsigned long) 
+unsigned long __cdecl oapiGetGbodyCount(void) 
+unsigned long __cdecl oapiGetMainInfoVisibilityMode(void) 
+unsigned long __cdecl oapiGetMainMenuVisibilityMode(void) 
+unsigned long __cdecl oapiGetMeshFlags(void * __ptr64) 
+unsigned long __cdecl oapiGetNavChannel(void * __ptr64) 
+unsigned long __cdecl oapiGetNavType(void * __ptr64) 
+unsigned long __cdecl oapiGetObjectCount(void) 
+unsigned long __cdecl oapiGetPlanetJCoeffCount(void * __ptr64) 
+unsigned long __cdecl oapiGetStationCount(void) 
+unsigned long __cdecl oapiGetTitleButtonState(struct HWND__ * __ptr64,unsigned long) 
+unsigned long __cdecl oapiGetVesselCount(void) 
+unsigned long __cdecl oapiInflate(unsigned char const * __ptr64,unsigned long,unsigned char * __ptr64,unsigned long) 
+unsigned long __cdecl oapiMeshGroupCount(void * __ptr64) 
+unsigned long __cdecl oapiMeshMaterialCount(void * __ptr64) 
+unsigned long __cdecl oapiMeshTextureCount(void * __ptr64) 
+unsigned long __cdecl oapiRegisterCustomCmd(char * __ptr64,char * __ptr64,void (__cdecl*)(void * __ptr64),void * __ptr64) 
+void * __ptr64 * __ptr64 __cdecl oapiObjectVisualPtr(void * __ptr64) 
+void * __ptr64 __cdecl oapiCameraProxyGbody(void) 
+void * __ptr64 __cdecl oapiCameraTarget(void) 
+void * __ptr64 __cdecl oapiCreateAnnotation(bool,double,union VECTOR3 const & __ptr64) 
+void * __ptr64 __cdecl oapiCreateInterpreter(void) 
+void * __ptr64 __cdecl oapiCreateMesh(unsigned long,struct MESHGROUP * __ptr64) 
+void * __ptr64 __cdecl oapiCreateSurface(int,int) 
+void * __ptr64 __cdecl oapiCreateSurface(struct HBITMAP__ * __ptr64,bool) 
+void * __ptr64 __cdecl oapiCreateSurfaceEx(int,int,unsigned long) 
+void * __ptr64 __cdecl oapiCreateTextureSurface(int,int) 
+void * __ptr64 __cdecl oapiCreateVessel(char const * __ptr64,char const * __ptr64,struct VESSELSTATUS const & __ptr64) 
+void * __ptr64 __cdecl oapiCreateVesselEx(char const * __ptr64,char const * __ptr64,void const * __ptr64) 
+void * __ptr64 __cdecl oapiElevationManager(void * __ptr64) 
+void * __ptr64 __cdecl oapiFindLaunchpadItem(char const * __ptr64,void * __ptr64) 
+void * __ptr64 __cdecl oapiGetBaseByIndex(void * __ptr64,int) 
+void * __ptr64 __cdecl oapiGetBaseByName(void * __ptr64,char * __ptr64) 
+void * __ptr64 __cdecl oapiGetBasePadNav(void * __ptr64,unsigned long) 
+void * __ptr64 __cdecl oapiGetBasePlanet(void * __ptr64) 
+void * __ptr64 __cdecl oapiGetDialogContext(struct HWND__ * __ptr64) 
+void * __ptr64 __cdecl oapiGetDockHandle(void * __ptr64,unsigned int) 
+void * __ptr64 __cdecl oapiGetDockOwner(void * __ptr64) 
+void * __ptr64 __cdecl oapiGetDockStatus(void * __ptr64) 
+void * __ptr64 __cdecl oapiGetFocusObject(void) 
+void * __ptr64 __cdecl oapiGetGbodyByIndex(int) 
+void * __ptr64 __cdecl oapiGetGbodyByName(char * __ptr64) 
+void * __ptr64 __cdecl oapiGetGbodyChild(void * __ptr64,unsigned long) 
+void * __ptr64 __cdecl oapiGetGbodyParent(void * __ptr64) 
+void * __ptr64 __cdecl oapiGetObjectByIndex(int) 
+void * __ptr64 __cdecl oapiGetObjectByName(char * __ptr64) 
+void * __ptr64 __cdecl oapiGetPropellantHandle(void * __ptr64,unsigned long) 
+void * __ptr64 __cdecl oapiGetStationByIndex(int) 
+void * __ptr64 __cdecl oapiGetStationByName(char * __ptr64) 
+void * __ptr64 __cdecl oapiGetTextureHandle(void * __ptr64,unsigned long) 
+void * __ptr64 __cdecl oapiGetVesselByIndex(int) 
+void * __ptr64 __cdecl oapiGetVesselByName(char * __ptr64) 
+void * __ptr64 __cdecl oapiLoadMesh(char const * __ptr64) 
+void * __ptr64 __cdecl oapiLoadMeshGlobal(char const * __ptr64) 
+void * __ptr64 __cdecl oapiLoadMeshGlobal(char const * __ptr64,void (__cdecl*)(void * __ptr64,bool)) 
+void * __ptr64 __cdecl oapiLoadSurfaceEx(char const * __ptr64,unsigned long,bool) 
+void * __ptr64 __cdecl oapiLoadTexture(char const * __ptr64,bool) 
+void * __ptr64 __cdecl oapiOpenFile(char const * __ptr64,enum FileAccessMode,enum PathRoot) 
+void * __ptr64 __cdecl oapiRegisterExhaustTexture(char * __ptr64) 
+void * __ptr64 __cdecl oapiRegisterLaunchpadItem(class LaunchpadItem * __ptr64,void * __ptr64) 
+void * __ptr64 __cdecl oapiRegisterParticleTexture(char * __ptr64) 
+void * __ptr64 __cdecl oapiRegisterReentryTexture(char * __ptr64) 
+void * __ptr64 __cdecl oapiSetFocusObject(void * __ptr64) 
+void __cdecl __writeLogError(char const * __ptr64,char const * __ptr64,int,char const * __ptr64,...) 
+void __cdecl ExitLib(struct HINSTANCE__ * __ptr64) 
+void __cdecl FormatValue(char * __ptr64,int,double,int) 
+void __cdecl InitLib(struct HINSTANCE__ * __ptr64) 
+void __cdecl oapiAnnotationSetColour(void * __ptr64,union VECTOR3 const & __ptr64) 
+void __cdecl oapiAnnotationSetPos(void * __ptr64,double,double,double,double) 
+void __cdecl oapiAnnotationSetSize(void * __ptr64,double) 
+void __cdecl oapiAnnotationSetText(void * __ptr64,char * __ptr64) 
+void __cdecl oapiBlt(void * __ptr64,void * __ptr64,int,int,int,int,int,int,unsigned long) 
+void __cdecl oapiBlt(void * __ptr64,void * __ptr64,struct tagRECT * __ptr64,struct tagRECT * __ptr64,unsigned long,unsigned long) 
+void __cdecl oapiCameraAttach(void * __ptr64,int) 
+void __cdecl oapiCameraGlobalDir(union VECTOR3 * __ptr64) 
+void __cdecl oapiCameraGlobalPos(union VECTOR3 * __ptr64) 
+void __cdecl oapiCameraRotationMatrix(union MATRIX3 * __ptr64) 
+void __cdecl oapiCameraRotAzimuth(double) 
+void __cdecl oapiCameraRotPolar(double) 
+void __cdecl oapiCameraScaleDist(double) 
+void __cdecl oapiCameraSetAperture(double) 
+void __cdecl oapiCameraSetCockpitDir(double,double,bool) 
+void __cdecl oapiClearSurface(void * __ptr64,unsigned long) 
+void __cdecl oapiClearSurfaceColourKey(void * __ptr64) 
+void __cdecl oapiCloseDialog(struct HWND__ * __ptr64) 
+void __cdecl oapiCloseFile(void * __ptr64,enum FileAccessMode) 
+void __cdecl oapiColourFill(void * __ptr64,unsigned long,int,int,int,int) 
+void __cdecl oapiDebugString(char const * __ptr64) 
+void __cdecl oapiDecHUDIntensity(void) 
+void __cdecl oapiDeleteMesh(void * __ptr64) 
+void __cdecl oapiDestroySurface(void * __ptr64) 
+void __cdecl oapiDisableMFDMode(int) 
+void __cdecl oapiEquToGlobal(void * __ptr64,double,double,double,union VECTOR3 * __ptr64) 
+void __cdecl oapiEquToLocal(void * __ptr64,double,double,double,union VECTOR3 * __ptr64) 
+void __cdecl oapiExitOrbiter(int) 
+void __cdecl oapiGetAtm(void * __ptr64,struct ATMPARAM * __ptr64,void * __ptr64 * __ptr64) 
+void __cdecl oapiGetAtmPressureDensity(void * __ptr64,double * __ptr64,double * __ptr64) 
+void __cdecl oapiGetBarycentre(void * __ptr64,union VECTOR3 * __ptr64) 
+void __cdecl oapiGetBaseEquPos(void * __ptr64,double * __ptr64,double * __ptr64,double * __ptr64) 
+void __cdecl oapiGetEngineStatus(void * __ptr64,struct ENGINESTATUS * __ptr64) 
+void __cdecl oapiGetFocusAtmPressureDensity(double * __ptr64,double * __ptr64) 
+void __cdecl oapiGetFocusEngineStatus(struct ENGINESTATUS * __ptr64) 
+void __cdecl oapiGetFocusGlobalPos(union VECTOR3 * __ptr64) 
+void __cdecl oapiGetFocusGlobalVel(union VECTOR3 * __ptr64) 
+void __cdecl oapiGetFocusRelativePos(void * __ptr64,union VECTOR3 * __ptr64) 
+void __cdecl oapiGetFocusRelativeVel(void * __ptr64,union VECTOR3 * __ptr64) 
+void __cdecl oapiGetGlobalPos(void * __ptr64,union VECTOR3 * __ptr64) 
+void __cdecl oapiGetGlobalVel(void * __ptr64,union VECTOR3 * __ptr64) 
+void __cdecl oapiGetNavPos(void * __ptr64,union VECTOR3 * __ptr64) 
+void __cdecl oapiGetObjectName(void * __ptr64,char * __ptr64,int) 
+void __cdecl oapiGetPlanetAtmParams(void * __ptr64,double,double,double,struct ATMPARAM * __ptr64) 
+void __cdecl oapiGetPlanetAtmParams(void * __ptr64,double,struct ATMPARAM * __ptr64) 
+void __cdecl oapiGetPlanetObliquityMatrix(void * __ptr64,union MATRIX3 * __ptr64) 
+void __cdecl oapiGetRelativePos(void * __ptr64,void * __ptr64,union VECTOR3 * __ptr64) 
+void __cdecl oapiGetRelativeVel(void * __ptr64,void * __ptr64,union VECTOR3 * __ptr64) 
+void __cdecl oapiGetRotationMatrix(void * __ptr64,union MATRIX3 * __ptr64) 
+void __cdecl oapiGetViewportSize(unsigned long * __ptr64,unsigned long * __ptr64,unsigned long * __ptr64) 
+void __cdecl oapiGlobalToEqu(void * __ptr64,union VECTOR3 const & __ptr64,double * __ptr64,double * __ptr64,double * __ptr64) 
+void __cdecl oapiGlobalToLocal(void * __ptr64,union VECTOR3 const * __ptr64,union VECTOR3 * __ptr64) 
+void __cdecl oapiIncHUDIntensity(void) 
+void __cdecl oapiLocalToEqu(void * __ptr64,union VECTOR3 const & __ptr64,double * __ptr64,double * __ptr64,double * __ptr64) 
+void __cdecl oapiLocalToGlobal(void * __ptr64,union VECTOR3 const * __ptr64,union VECTOR3 * __ptr64) 
+void __cdecl oapiOpenInputBox(char * __ptr64,bool (__cdecl*)(void * __ptr64,char * __ptr64,void * __ptr64),char * __ptr64,int,void * __ptr64) 
+void __cdecl oapiOpenInputBoxEx(char const * __ptr64,bool (__cdecl*)(void * __ptr64,char * __ptr64,void * __ptr64),bool (__cdecl*)(void * __ptr64,char * __ptr64,void * __ptr64),char * __ptr64,int,void * __ptr64,unsigned long) 
+void __cdecl oapiOpenMFD(int,int) 
+void __cdecl oapiParticleSetLevelRef(void * __ptr64,double * __ptr64) 
+void __cdecl oapiRefreshMFDButtons(int,void * __ptr64) 
+void __cdecl oapiRegisterExternMFD(class ExternMFD * __ptr64,struct MFDSPEC const & __ptr64) 
+void __cdecl oapiRegisterMFD(int,struct EXTMFDSPEC const * __ptr64) 
+void __cdecl oapiRegisterMFD(int,struct MFDSPEC const & __ptr64) 
+void __cdecl oapiRegisterModule(class oapi::Module * __ptr64) 
+void __cdecl oapiRegisterPanelArea(int,struct tagRECT const & __ptr64,int,int,int) 
+void __cdecl oapiRegisterPanelBackground(struct HBITMAP__ * __ptr64,unsigned long,unsigned long) 
+void __cdecl oapiReleaseBrush(class oapi::Brush * __ptr64) 
+void __cdecl oapiReleaseDC(void * __ptr64,struct HDC__ * __ptr64) 
+void __cdecl oapiReleaseFont(class oapi::Font * __ptr64) 
+void __cdecl oapiReleasePen(class oapi::Pen * __ptr64) 
+void __cdecl oapiReleaseSketchpad(class oapi::Sketchpad * __ptr64) 
+void __cdecl oapiReleaseTexture(void * __ptr64) 
+void __cdecl oapiRenderHUD(void * __ptr64,void * __ptr64 * __ptr64) 
+void __cdecl oapiSetAutoCapture(void * __ptr64,bool) 
+void __cdecl oapiSetDefNavDisplay(int) 
+void __cdecl oapiSetDefRCSDisplay(int) 
+void __cdecl oapiSetEmptyMass(void * __ptr64,double) 
+void __cdecl oapiSetEngineLevel(void * __ptr64,enum ENGINETYPE,double) 
+void __cdecl oapiSetHUDIntensity(double) 
+void __cdecl oapiSetMainInfoVisibilityMode(unsigned long) 
+void __cdecl oapiSetMainMenuVisibilityMode(unsigned long) 
+void __cdecl oapiSetPanelBlink(union VECTOR3 * __ptr64 const) 
+void __cdecl oapiSetPanelNeighbours(int,int,int,int) 
+void __cdecl oapiSetPause(bool) 
+void __cdecl oapiSetShowGrapplePoints(bool) 
+void __cdecl oapiSetSurfaceColourKey(void * __ptr64,unsigned long) 
+void __cdecl oapiSetTimeAcceleration(double) 
+void __cdecl oapiToggleHUDColour(void) 
+void __cdecl oapiToggleMFD_on(int) 
+void __cdecl oapiTriggerPanelRedrawArea(int,int) 
+void __cdecl oapiTriggerRedrawArea(int,int,int) 
+void __cdecl oapiVCRegisterArea(int,int,int) 
+void __cdecl oapiVCRegisterArea(int,struct tagRECT const & __ptr64,int,int,int,void * __ptr64) 
+void __cdecl oapiVCRegisterHUD(struct VCHUDSPEC const * __ptr64) 
+void __cdecl oapiVCRegisterMFD(int,struct VCMFDSPEC const * __ptr64) 
+void __cdecl oapiVCSetAreaClickmode_Quadrilateral(int,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64,union VECTOR3 const & __ptr64) 
+void __cdecl oapiVCSetAreaClickmode_Spherical(int,union VECTOR3 const & __ptr64,double) 
+void __cdecl oapiVCSetNeighbours(int,int,int,int) 
+void __cdecl oapiVCTriggerRedrawArea(int,int) 
+void __cdecl oapiWriteItem_bool(void * __ptr64,char * __ptr64,bool) 
+void __cdecl oapiWriteItem_float(void * __ptr64,char * __ptr64,double) 
+void __cdecl oapiWriteItem_int(void * __ptr64,char * __ptr64,int) 
+void __cdecl oapiWriteItem_string(void * __ptr64,char * __ptr64,char * __ptr64) 
+void __cdecl oapiWriteItem_vec(void * __ptr64,char * __ptr64,union VECTOR3 const & __ptr64) 
+void __cdecl oapiWriteLine(void * __ptr64,char * __ptr64) 
+void __cdecl oapiWriteLog(char * __ptr64) 
+void __cdecl oapiWriteLogV(char const * __ptr64,...) 
+void __cdecl oapiWriteScenario_float(void * __ptr64,char * __ptr64,double) 
+void __cdecl oapiWriteScenario_int(void * __ptr64,char * __ptr64,int) 
+void __cdecl oapiWriteScenario_string(void * __ptr64,char * __ptr64,char * __ptr64) 
+void __cdecl oapiWriteScenario_vec(void * __ptr64,char * __ptr64,union VECTOR3 const & __ptr64) 
+void __cdecl ReleaseTileCache(class std::vector<struct ElevationTile,class std::allocator<struct ElevationTile> > * __ptr64) 
+void __cdecl sscan_state(char * __ptr64,class AnimState & __ptr64) 
+void __cdecl WriteScenario_state(void * __ptr64,char * __ptr64,class AnimState const & __ptr64) 
+void const * __ptr64 __cdecl oapiGetObjectParam(void * __ptr64,unsigned long) 
