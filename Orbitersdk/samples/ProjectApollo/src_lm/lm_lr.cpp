@@ -147,10 +147,9 @@ void LEM_LR::Timestep(double simdt) {
 	//LR Mesh Animation
 	if (lem->stage < 2) {
 		lr_proc = abs(antennaAngle - 24) / 24;
-		//if (lr_proc - lr_proc_last != 0.0) lem->SetAnimation(anim_LR, lr_proc); //enable this later so it doesnt animate every frame :)
-		lem->SetAnimation(anim_LR, lr_proc);
+		if (lr_proc - lr_proc_last != 0.0) lem->SetAnimation(anim_LR, lr_proc);
 		lr_proc_last = lr_proc;
-		sprintf(oapiDebugString(), "Angle: %.1f   Proc: %lf   Last: %lf", antennaAngle, lr_proc, lr_proc_last);
+		//sprintf(oapiDebugString(), "Angle: %.1f   Proc: %lf   Last: %lf", antennaAngle, lr_proc, lr_proc_last);
 	};
 	// char debugmsg[256];
 	ChannelValue val12;
@@ -408,8 +407,8 @@ void LEM_LR::DefineAnimations(UINT idx) {
 	//LR Mode Animation
 	ANIMATIONCOMPONENT_HANDLE LR_Rotate;
 	const VECTOR3 LM_LR_PIVOT = { -1.4501, -1.0404, -1.372 }; //Pivot Point
-	static UINT meshgroup_LR = DS_GRP_LRAntenna;
-	static MGROUP_ROTATE LRAnt(idx, &meshgroup_LR, 1, LM_LR_PIVOT, _V(-1, 0, 0), (float)(RAD * 24));
+	static UINT meshgroup_LR[3] = { DS_GRP_LRAntenna, DS_GRP_LRAntennaBlack, DS_GRP_LRAntennaMount };
+	static MGROUP_ROTATE LRAnt(idx, meshgroup_LR, 3, LM_LR_PIVOT, _V(-1, 0, 0), (float)(RAD * 24));
 	anim_LR = lem->CreateAnimation(0.0);
 	LR_Rotate = lem->AddAnimationComponent(anim_LR, 0, 1, &LRAnt);
 	lr_proc = abs(antennaAngle - 24) / 24;

@@ -58,7 +58,7 @@ public:
 	double antennaAngle;		// Antenna angle
 	int rangeGood;				// RDG flag
 	int velocityGood;			// VDG flag
-	UINT anim_LR;				//LR Animation
-	double lr_proc;
-	double lr_proc_last;
+	UINT anim_LR;				// LR Animation
+	double lr_proc;				// LR Animation State
+	double lr_proc_last;		// Previous LR Animation State
 };

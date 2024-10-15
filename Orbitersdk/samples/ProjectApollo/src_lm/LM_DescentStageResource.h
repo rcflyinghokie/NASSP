@@ -4,10 +4,10 @@
 // ========================================================
 
 // Number of mesh groups:
-#define DS_NGRP 50
+#define DS_NGRP 53
 
 // Number of materials:
-#define DS_NMAT 11
+#define DS_NMAT 13
 
 // Number of textures:
 #define DS_NTEX 6
@@ -65,3 +65,5 @@
 #define DS_GRP_SupportStruts2Right 49
 #define DS_GRP_Plaque 50
 #define DS_GRP_LRAntenna 51
+#define DS_GRP_LRAntennaBlack 52
+#define DS_GRP_LRAntennaMount 53
