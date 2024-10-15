@@ -2,7 +2,7 @@
 
 BEGIN_HEADER
 InitialState on
-ColourIdx 4
+ColourIdx 1
 ShapeIdx 1
 Size 0.5
 END_HEADER
@@ -12,7 +12,7 @@ BEGIN_DATA
 +30.2456 +0.5856    : "Boot Hill"
 +29.5956 +0.0469    : "Duke Island"
 +40.0065 +1.2255    : "Mount Marilyn"        ; Secchi Theta
--31.45 -16.45           	: "The Helmet"
+-31.45 -16.45       : "The Helmet"
 +29.2203 +0.9671    : "Wash Basin"           ; Maskelyne W
 +27.2714 +1.4581    : "Diamondback Rille"
 +28.0769 +0.0503    : "Sidewinder Rille"
@@ -23,20 +23,25 @@ BEGIN_DATA
 +23.678 +01.266      : LDMK 130 (Apollo 10 &11)
 +170.146 +0.875      : CP-1 (Apollo 10)
 +127.400 +1.600      : CP-2 (Apollo 10)
-+86.88 +1.6 	: LDMK F-1 (Apollo 8 & 10)
++86.88 +1.6			: LDMK F-1 (Apollo 8 & 10)
 +35.036 +2.522        : LDMK B-1 (Apollo 10)
 -1.428 +0.283           : LDMK 150 (Apollo 10)
 +57.702 +0.866        : LDMK 420 (Apollo 10)   ; Taruntius P
 +45.482 -0.050         : LDMK 423 (Apollo 10)   ; Secchi K
 +47.936 -0.950         : LDMK 422 (Apollo 10)   ; Messier B
 +49.898 +0.350        : LDMK 421 (Apollo 10)   ; Taruntius H
++34.025278 +2.631667	: LLS1 (Apollo 10)
++23.6475 +0.732222		: LLS2 (Apollo 10)
+-1.345 +0.374167		: LLS3 (Apollo 10)
+-36.698056 -3.642778	: LLS4 (Apollo 10)
+-41.938889 +1.771944	: LLS5 (Apollo 10)
 +65.500 +2.000	: A1 (Pseudo Ldg Site) (Apollo 11)
 +28.726 +1.885	: IP (130) (Apollo 11)
 +24.889 +0.505	: LDMK 123 (Apollo 11)
 +23.744 +1.285	: LDMK 129 (Apollo 11)
 +23.515 +0.787	: LDMK 133 (Apollo 11)
 -15.250 -1.517	: LDMK H1 (Apollo 12)
--23.39194 -2.9822 	: LDMK Site 7 (Apollo12)
+-23.39194 -2.9822 	: LDMK Site 7 (Apollo 12)
 -23.024 -2.957	: LDMK 190 (Apollo 12)
 -23.202 -3.437	: LDMK 191 (Apollo 12)
 -23.229 -3.437	: LDMK 193 (Apollo 12)
