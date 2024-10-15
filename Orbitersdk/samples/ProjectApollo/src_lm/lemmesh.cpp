@@ -253,6 +253,7 @@ void LEM::SetLmAscentHoverStage()
 	ClearAttExhaustRefs();
 	eds.DeleteAnimations();
 	DPS.DeleteAnimations();
+	LR.DeleteAnimations();
 
 	DefineTouchdownPoints(2);
 

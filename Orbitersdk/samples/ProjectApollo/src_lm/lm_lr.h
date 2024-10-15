@@ -44,6 +44,7 @@ public:
 	void GetVelocityZLGC();
 	double GetAltTransmitterPower();
 	double GetVelTransmitterPower();
+	void DeleteAnimations();
 
 	bool IsPowered();
 

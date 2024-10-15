@@ -142,14 +142,15 @@ double LEM_LR::GetVelTransmitterPower()
 }
 
 void LEM_LR::Timestep(double simdt) {
-
-	//LR Mesh Animation
-	lr_proc = abs(antennaAngle - 24) / 24;
-	//if (lr_proc - lr_proc_last != 0.0) lem->SetAnimation(anim_LR, lr_proc); enable this later so it doesnt animate every frame :)
-	lem->SetAnimation(anim_LR, lr_proc);
-	sprintf(oapiDebugString(), "Angle: %.1f   Proc: %lf   Last: %lf", antennaAngle, lr_proc, lr_proc_last);
-
+	
 	if (lem == NULL) { return; }
+	//LR Mesh Animation
+	if (lem->stage < 2) {
+		lr_proc = abs(antennaAngle - 24) / 24;
+		//if (lr_proc - lr_proc_last != 0.0) lem->SetAnimation(anim_LR, lr_proc); enable this later so it doesnt animate every frame :)
+		lem->SetAnimation(anim_LR, lr_proc);
+		sprintf(oapiDebugString(), "Angle: %.1f   Proc: %lf   Last: %lf", antennaAngle, lr_proc, lr_proc_last);
+	};
 	// char debugmsg[256];
 	ChannelValue val12;
 	ChannelValue val33;
@@ -413,6 +414,11 @@ void LEM_LR::DefineAnimations(UINT idx) {
 	lr_proc = abs(antennaAngle - 24) / 24;
 	lem->SetAnimation(anim_LR, lr_proc);
 
+}
+
+void LEM_LR::DeleteAnimations() {
+	if (anim_LR != -1) lem->DelAnimation(anim_LR);
+	anim_LR = -1;
 }
 
 void LEM_LR::SaveState(FILEHANDLE scn, char *start_str, char *end_str) {
