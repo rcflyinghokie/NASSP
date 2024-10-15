@@ -2075,13 +2075,13 @@ void LEM::DefineAnimations()
 {
 	// Call Animation Definitions where required
 	RR.DefineAnimations(ascidx);
-	LR.DefineAnimations(ascidx);
 	SBandSteerable.DefineAnimations(ascidx);
 	OverheadHatch.DefineAnimations(ascidx);
 	ForwardHatch.DefineAnimations(ascidx);
 	OverheadHatch.DefineAnimationsVC(vcidx);
 	ForwardHatch.DefineAnimationsVC(vcidx);
 	if (stage < 2) DPS.DefineAnimations(dscidx);
+	if (stage < 2) LR.DefineAnimations(dscidx);
 	if (stage < 1 && pMission->LMHasLegs()) eds.DefineAnimations(dscidx);
 	DefineVCAnimations();
 }
