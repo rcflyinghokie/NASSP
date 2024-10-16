@@ -4911,7 +4911,7 @@ void ConicRTEEarthNew::StoreSolution(VECTOR3 dv, double lat, double t0, double t
 void ConicRTEEarthNew::INITAL()
 {
 	VECTOR3 R4, R5, R_p, U0_apo;
-	double SAZ, CAZ, T1, T2, A_m, beta_r, p, R_a, A, DV, e, V_a, beta_a, T_1i, T_s, delta_0, Am1, Am2, beta_r_apo, A_Z;
+	double SAZ, CAZ, T1, T2, A_m, beta_r, p, R_a, AINV, DV, e, V_a, beta_a, T_1i, T_s, delta_0, Am1, Am2, beta_r_apo, A_Z;
 	double theta_mu, theta_md, K1, K2, U_rmin, T_apo, DNDT, I_0, T, delta, U_r, VR_a, VT_a, eta_ar;
 	int FLAG;
 	bool QA;
@@ -4961,12 +4961,12 @@ void ConicRTEEarthNew::INITAL()
 		return;
 	}
 	//Generate return flight time for max reentry speed and apogee passage (also prograde)
-	if (RUBR(1, 0, length(X0), length(U0), U_rmax, beta_r, A, DV, e, T_1i, V_a, beta_a))
+	if (RUBR(1, 0, length(X0), length(U0), U_rmax, beta_r, AINV, DV, e, T_1i, V_a, beta_a))
 	{
 		T_1i = 10000000.0;
 	}
 	//Generate return flight time for max reentry speed and no apogee passage (also prograde)
-	RUBR(0, 0, length(X0), length(U0), U_rmax, beta_r, A, DV, e, T_s, V_a, beta_a);
+	RUBR(0, 0, length(X0), length(U0), U_rmax, beta_r, AINV, DV, e, T_s, V_a, beta_a);
 	
 	if (T_1i < T1)
 	{
@@ -5023,7 +5023,7 @@ RTEEarth_INITAL_B:
 		goto RTEEarth_INITAL_B;
 	}
 	//Return time with minimum reentry speed
-	RUBR(0, 0, length(X0), length(U0), U_rmin, beta_r, A, DV, e, T_apo, V_a, beta_a);
+	RUBR(0, 0, length(X0), length(U0), U_rmin, beta_r, AINV, DV, e, T_apo, V_a, beta_a);
 	//Azimuth change nearest to inclination constraint
 	if (Am1 <= A_Z && A_Z <= Am2)
 	{
@@ -5129,40 +5129,26 @@ RTEEarth_INITAL_End:
 	//PARP = 0;
 }
 
-bool ConicRTEEarthNew::RUBR(int QA, int QE, double R_a, double U_0, double U_r, double beta_r, double &A, double &DV, double &e, double &T, double &V_a, double &beta_a)
+bool ConicRTEEarthNew::RUBR(int QA, int QE, double R_a, double U_0, double U_r, double beta_r, double &AINV, double &DV, double &e, double &T, double &V_a, double &beta_a)
 {
 	//INPUTS:
 	//QA: Apogee passage flag. 0 = no apogee passage, 1 = apogee passage
 	//QE: Postabort motion flag. 0 = direct, 1 = retrograde
 
-	double E, T_ap, T_rp, Period, sin_beta_a;
+	double p, T_ap, T_rp, Period, sin_beta_a;
 
-	//Specific orbital energy
-	E = U_r * U_r / mu - 2.0 / RR;
+	//Inverse of semi major axis
+	AINV = 2.0 / RR - U_r * U_r / mu;
 
-	//E>0 means hyperbolic orbit. If apogee passage is desired and orbit is hyperbolic, then you aren't coming home
-	if (E > 0 && QA == 1)
+	//AINV<0 means hyperbolic orbit. If apogee passage is desired and orbit is hyperbolic, then you aren't coming home
+	if (AINV <= 0 && QA == 1)
 	{
 		//No solution
 		return true;
 	}
-	//Check for elliptic vs. hyperbolic. If nearly hyperbolic use hyperbolic
-	if (abs(E) - 0.0001 > 0)
-	{
-		//Elliptical or hyperbolic orbit
-		//Semi-major axis
-		A = -1.0 / E;
-		//Orbit parameter (semi-latus rectum)
-		double P = pow(RR*U_r*sin(beta_r), 2) / mu;
-		//Eccentricity
-		e = sqrt(1.0 - P / A);
-	}
-	else
-	{
-		//Parabolic orbit
-		A = pow(RR*U_r*sin(beta_r), 2) / mu;
-		e = 1.0;
-	}
+
+	//Semi-latus rectum
+	p = U_r * U_r / mu * pow(RR*sin(beta_r), 2);
 	//Postabort speed
 	V_a = sqrt(mu*(U_r*U_r / mu + 2.0 / R_a - 2.0 / RR));
 	//Sine of postabort flight-path angle
@@ -5182,9 +5168,9 @@ bool ConicRTEEarthNew::RUBR(int QA, int QE, double R_a, double U_0, double U_r, 
 	//Change in velocity
 	DV = sqrt(U_0*U_0 + V_a * V_a - 2.0*U_0*V_a*cos(beta_a - beta_0));
 	//Time from abort to perigee
-	pRTCC->PITFPC(mu, QA, A, e, R_a, T_ap, Period);
+	pRTCC->PITFPC(mu, QA, AINV, p, R_a, T_ap, Period, e);
 	//Time from reentry to perigee
-	pRTCC->PITFPC(mu, QA, A, e, RR, T_rp, Period);
+	pRTCC->PITFPC(mu, QA, AINV, p, RR, T_rp, Period, e);
 	//Time from abort to reentry
 	T = T_ap - T_rp;
 	if (T < 0)
@@ -5320,7 +5306,7 @@ void ConicRTEEarthNew::VELCOM(double T, double R_a, double &beta_r, double &dt, 
 
 void ConicRTEEarthNew::FCUA(int FLAG, VECTOR3 R_a, double &beta_r, double &DV, double &U_r, double &V_a, double &beta_a)
 {
-	double r_a, beta_r_apo, dbeta, ER, ERR, BS, U_rmax_apo, A, e, T;
+	double r_a, beta_r_apo, dbeta, ER, ERR, BS, U_rmax_apo, AINV, e, T;
 	int QA;
 
 	r_a = length(R_a);
@@ -5398,7 +5384,7 @@ ConicRTE_FCUA_B:
 				U_rmax_apo = min(U_rmax, 36323.0*0.3048);
 			}
 			beta_r = EntryCalculations::ReentryTargetLine(U_rmax_apo*KMPER*1000.0 / SCPHR, false);
-			RUBR(QA, 0, r_a, u0, U_r, beta_r, A, DV, e, T, V_a, beta_a);
+			RUBR(QA, 0, r_a, u0, U_r, beta_r, AINV, DV, e, T, V_a, beta_a);
 			if (DV > DVM)
 			{
 				NOSOLN = 1;
@@ -5939,7 +5925,7 @@ ConicRTEEarth_TCOMP_C2:
 void ConicRTEEarthNew::TMIN(double &dv, int &FLAG, double &T, double &U_r, double &VT_a, double &VR_a, double &beta_r)
 {
 	VECTOR3 V_a;
-	double A, e, v_a, beta_a, T1, p, eta_ar, eps1, eps2, T2;
+	double AINV, e, v_a, beta_a, T1, p, eta_ar, eps1, eps2, T2;
 	int SW;
 	bool QA;
 
@@ -5954,7 +5940,7 @@ void ConicRTEEarthNew::TMIN(double &dv, int &FLAG, double &T, double &U_r, doubl
 	//Reentry flight-path angle with maximum reentry speed
 	beta_r = EntryCalculations::ReentryTargetLine(U_r*KMPER*1000.0 / SCPHR, false);
 	//Calculate trajectory from abort to reentry with maximum speed
-	RUBR(QA, 0, r0, u0, U_r, beta_r, A, dv, e, T, v_a, beta_a);
+	RUBR(QA, 0, r0, u0, U_r, beta_r, AINV, dv, e, T, v_a, beta_a);
 	//Trip time shorter than allowed?
 	if (T < T_min)
 	{
@@ -6086,7 +6072,7 @@ ConicRTEEarth_TMIN_C:
 void ConicRTEEarthNew::VACOMP(double VR_a, double VT_a, double beta_r, double theta, VECTOR3 &DV, double &T_z, VECTOR3 &V_a, double &alpha, double &delta, double &lambda)
 {
 	VECTOR3 R_z, N, R_e;
-	double T_rz, eta_rz, theta_cr, eta, A, e, E, P, beta_a, Period, T_ap, T_rp, T, eta_ar, U_r, C0, C1, C2, S1;
+	double T_rz, eta_rz, theta_cr, eta, AINV, e, P, beta_a, Period, T_ap, T_rp, T, eta_ar, U_r, C0, C1, C2, S1;
 	int k;
 
 	if (Mode == 2 || Mode == 3)
@@ -6126,19 +6112,12 @@ void ConicRTEEarthNew::VACOMP(double VR_a, double VT_a, double beta_r, double th
 	theta = theta_0;
 	V_a = R0 * VR_a + R2 * VT_a*cos(theta) + R1 * VT_a*sin(theta);
 
-	E = pow(length(V_a), 2) / mu - 2.0 / r0;
+	//Flight path angle
 	beta_a = atan2(VT_a, VR_a);
-	if (abs(E) - 0.0001 > 0)
-	{
-		A = -1.0 / E;
-		P = pow(r0*length(V_a)*sin(beta_a), 2) / mu;
-		e = sqrt(1.0 - P / A);
-	}
-	else
-	{
-		A = pow(r0*length(V_a)*sin(beta_a), 2) / mu;
-		e = 1.0;
-	}
+	//Semi-latus rectum
+	P = pow(r0*length(V_a)*sin(beta_a), 2) / mu;
+	//Inverse of semi-major axis
+	AINV = 2.0 / r0 - pow(length(V_a), 2) / mu;
 
 	if (beta_a > PI05)
 	{
@@ -6149,8 +6128,8 @@ void ConicRTEEarthNew::VACOMP(double VR_a, double VT_a, double beta_r, double th
 		k = 1;
 	}
 
-	pRTCC->PITFPC(mu, k, A, e, r0, T_ap, Period);
-	pRTCC->PITFPC(mu, k, A, e, RR, T_rp, Period);
+	pRTCC->PITFPC(mu, k, AINV, P, r0, T_ap, Period, e);
+	pRTCC->PITFPC(mu, k, AINV, P, RR, T_rp, Period, e);
 	T = T_ap - T_rp;
 	if (T < 0)
 	{
@@ -6335,25 +6314,17 @@ void ConicRTEEarthNew::VUP2(VECTOR3 R_a, VECTOR3 V_a, double T_ar, double beta_r
 double ConicRTEEarthNew::TripTime(double v_a, double beta_a)
 {
 	VECTOR3 V_a;
-	double VT_a, VR_a, E, A, P, e, T_ap, T_rp, Period, T;
+	double VT_a, VR_a, AINV, P, e, T_ap, T_rp, Period, T;
 	int k;
 
 	VT_a = v_a * sin(beta_a);
 	VR_a = v_a * cos(beta_a);
 	V_a = R0 * VR_a + R2 * VT_a*cos(theta_0) + R1 * VT_a*sin(theta_0);
 
-	E = pow(v_a, 2) / mu - 2.0 / r0;
-	if (abs(E) - 0.0001 > 0)
-	{
-		A = -1.0 / E;
-		P = pow(r0*v_a*sin(beta_a), 2) / mu;
-		e = sqrt(1.0 - P / A);
-	}
-	else
-	{
-		A = pow(r0*v_a*sin(beta_a), 2) / mu;
-		e = 1.0;
-	}
+	//Semi-latus rectum
+	P = pow(r0*v_a*sin(beta_a), 2) / mu;
+	//Inverse of semi-major axis
+	AINV = 2.0 / r0 - pow(v_a, 2) / mu;
 
 	if (beta_a > PI05)
 	{
@@ -6364,8 +6335,8 @@ double ConicRTEEarthNew::TripTime(double v_a, double beta_a)
 		k = 1;
 	}
 
-	pRTCC->PITFPC(mu, k, A, e, r0, T_ap, Period);
-	pRTCC->PITFPC(mu, k, A, e, RR, T_rp, Period);
+	pRTCC->PITFPC(mu, k, AINV, P, r0, T_ap, Period, e);
+	pRTCC->PITFPC(mu, k, AINV, P, RR, T_rp, Period, e);
 	T = T_ap - T_rp;
 	if (T < 0)
 	{
@@ -7302,7 +7273,7 @@ VECTOR3 RTEMoon::ThreeBodyAbort(VECTOR3 R_I, VECTOR3 V_I, double t_I, double t_E
 	EphemerisData sv1, sv2;
 	VECTOR3 R_I_star, delta_I_star, delta_I_star_dot, R_I_sstar, V_I_sstar, V_I_star, R_S, R_I_star_apo, R_E_apo, V_E_apo, V_I_apo;
 	VECTOR3 R_m, V_m;
-	double t_S, tol, dt_S, Incl_apo, r_s, a, e, u_r, beta_r, beta_r_apo, t_z, a_H, e_H, p_H, theta, beta_a, beta_x;
+	double t_S, tol, dt_S, Incl_apo, r_s, a, e, u_r, beta_r, beta_r_apo, t_z, ainv_H, e_H, p_H, theta, beta_a, beta_x;
 	int ITS, INFO;
 	bool q_m_out, q_d, q_a, NIR;
 
@@ -7348,7 +7319,7 @@ VECTOR3 RTEMoon::ThreeBodyAbort(VECTOR3 R_I, VECTOR3 V_I, double t_I, double t_E
 
 			V_I_star = V_I_sstar - V_m - delta_I_star_dot;
 
-			INRFV(R_I, V_I_star, r_s, mu_M, q_m, a_H, e_H, p_H, theta, V_I_apo, R_S, dt_S, q_m_out, q_d, beta_a, beta_x);
+			INRFV(R_I, V_I_star, r_s, mu_M, q_m, ainv_H, e_H, p_H, theta, V_I_apo, R_S, dt_S, q_m_out, q_d, beta_a, beta_x);
 			t_S = t_I + dt_S;
 			R_I_star_apo = R_I_star;
 			R_I_star = R_S + V_I_star * (t_I - t_S);
@@ -7408,7 +7379,7 @@ int RTEMoon::MCDRIV(VECTOR3 Y_0, VECTOR3 V_0, double t_0, double var, bool q_m, 
 	//Fictitious abort position vector
 	VECTOR3 Y_a_apo;
 	//Selenocentric orbital parameters
-	double a_h, e_h, p_h;
+	double ainv_h, e_h, p_h;
 
 	double tol, beta_r, u_r, a, e, beta_r_apo, dy_x, dy_x_apo, v_m, T_EI_apo, T_a, P, T_x, t_x, theta, dt_S, beta_a, beta_x, delta_t, Dy_0, t_x_apo;
 	int INFO, KOUNT, k_x;
@@ -7461,15 +7432,10 @@ RTEMoon_MCDRIV_5_S:
 	V_x = U_x - U_mx;
 RTEMoon_MCDRIV_7_R:
 	//Given initial position Y_a_apo and velocity at PTS V_x, calculate initial velocity V_a and position at PTS Y_x_apo
-	INRFV(Y_a_apo, V_x, r_s, mu_M, q_m, a_h, e_h, p_h, theta, V_a, Y_x_apo, dt_S, q_m_out, q_d, beta_a, beta_x);
+	INRFV(Y_a_apo, V_x, r_s, mu_M, q_m, ainv_h, e_h, p_h, theta, V_a, Y_x_apo, dt_S, q_m_out, q_d, beta_a, beta_x);
 
-	//Near parabolic orbit?
-	if (abs(e_h - 1.0) < 1e-5)
-	{
-		a_h = p_h;
-	}
 	//Calculate time from pericynthion to PTS
-	pRTCC->PITFPC(mu_M, 0, a_h, e_h, r_s, T_x, P, false);
+	pRTCC->PITFPC(mu_M, 0, ainv_h, p_h, r_s, T_x, P, e_h);
 	//Calculate pericynthion radius
 	y_p = p_h / (1.0 + e_h);
 	//Near pericynthion
@@ -7481,11 +7447,11 @@ RTEMoon_MCDRIV_7_R:
 	else
 	{
 		//Calculate time from pericynthion to abort
-		pRTCC->PITFPC(mu_M, q_d, a_h, e_h, length(Y_a_apo), T_a, P, false);
+		pRTCC->PITFPC(mu_M, q_d, ainv_h, p_h, length(Y_a_apo), T_a, P, e_h);
 	}
 
 	//Update pseudstate
-	PSTATE(a_h, e_h, p_h, t_0, T_x, Y_0, Y_a_apo, V_x, theta, beta_a, beta_x, T_a, V_a, t_x_apo, Y_x_apo, Dy_0, delta_t, X_mx, U_mx);
+	PSTATE(ainv_h, e_h, p_h, t_0, T_x, Y_0, Y_a_apo, V_x, theta, beta_a, beta_x, T_a, V_a, t_x_apo, Y_x_apo, Dy_0, delta_t, X_mx, U_mx);
 	//
 	dy_x = length(Y_x - Y_x_apo);
 
@@ -7826,7 +7792,7 @@ bool RTEMoon::FINDUX(VECTOR3 X_x, double t_x, double r_r, double u_r, double bet
 	//t_z: Time of landing from base time
 
 	VECTOR3 X_x_u, R_1, U_x_u;
-	double x_x, E, e, a, eta_r, eta_x, eta_xr, T_r, T_x, P, beta_x, alpha_x, delta_x, sin_delta_r, cos_delta_r, theta, alpha_r, eta_x1, t_z, T_xr, T_rz;
+	double x_x, p, ainv, e, eta_r, eta_x, eta_xr, T_r, T_x, P, beta_x, alpha_x, delta_x, sin_delta_r, cos_delta_r, theta, alpha_r, eta_x1, t_z, T_xr, T_rz;
 	bool NIR;
 
 	Incl_apo = i_r;
@@ -7837,40 +7803,37 @@ bool RTEMoon::FINDUX(VECTOR3 X_x, double t_x, double r_r, double u_r, double bet
 	X_x_u = unit(X_x);
 	OrbMech::ra_and_dec_from_r(X_x_u, alpha_x, delta_x);
 
-	E = u_r * u_r / mu - 2.0 / r_r;
-	if (abs(E) < 1e-3 / 6378165.0)
-	{
-		e = 1.0;
-	}
-	else
-	{
-		a = -1.0 / E;
-		e = sqrt(1.0 - r_r * r_r*u_r*u_r*sin(beta_r)*sin(beta_r) / (mu*a));
-	}
-	if (abs(e - 1.0) < 1e-5)
-	{
-		a = pow(r_r, 2) * pow(u_r, 2)*pow(sin(beta_r), 2) / mu;
-		eta_r = PI2 - acos(a / r_r - 1.0);
-		eta_x = acos(a / x_x - 1.0);
-	}
-	else
-	{
-		eta_r = PI2 - acos((a*(1.0 - e * e) / r_r - 1.0) / e);
-		eta_x = acos((a*(1.0 - e * e) / x_x - 1.0) / e);
-	}
+	//Semi-latus retum
+	p = pow(u_r, 2) / mu * pow(r_r*sin(beta_r), 2);
+	//Inverse of semi-major axis
+	ainv = 2.0 / r_r - pow(u_r, 2) / mu;
+
+	//Time from perigee to reentry
+	pRTCC->PITFPC(mu, 0, ainv, p, r_r, T_r, P, e);
+	//Time from perigee to abort
+	pRTCC->PITFPC(mu, 0, ainv, p, x_x, T_x, P, e);
+	//True anomaly at reentry
+	eta_r = PI2 - acos((p / r_r - 1.0) / e);
+	//True anomaly at abort (0 to PI)
+	eta_x = acos((p / x_x - 1.0) / e);
+	//Apogee passage?
 	if (q_a == 0)
 	{
+		//No, true anomaly has to be between PI and PI2
 		eta_x = PI2 - eta_x;
 	}
+	//Angle between abort and reentry
 	eta_xr = eta_r - eta_x;
-	pRTCC->PITFPC(mu, 0, a, e, r_r, T_r, P, false);
-	pRTCC->PITFPC(mu, 0, a, e, x_x, T_x, P, false);
-	if (q_a == 0 || (q_a == 1 && E >= 0))
+
+	//Time of reentry
+	if (q_a == 0 || (q_a == 1 && P == 0.0))
 	{
+		//No apogee passage or apogee passage not possible because orbit is hyperbolic
 		t_z = t_x + T_x - T_r + T_rz;
 	}
 	else
 	{
+		//Apogee passage
 		t_z = t_x + P - T_x - T_r + T_rz;
 	}
 	T_xr = t_z - t_x - T_rz;
@@ -7906,7 +7869,7 @@ bool RTEMoon::FINDUX(VECTOR3 X_x, double t_x, double r_r, double u_r, double bet
 	return NIR;
 }
 
-void RTEMoon::INRFV(VECTOR3 R_1, VECTOR3 V_2, double r_2, double mu, bool k3, double &a, double &e, double &p, double &theta, VECTOR3 &V_1, VECTOR3 &R_2, double &dt_2, bool &q_m, bool &k_1, double &beta_1, double &beta_2) const
+void RTEMoon::INRFV(VECTOR3 R_1, VECTOR3 V_2, double r_2, double mu, bool k3, double &ainv, double &e, double &p, double &theta, VECTOR3 &V_1, VECTOR3 &R_2, double &dt_2, bool &q_m, bool &k_1, double &beta_1, double &beta_2) const
 {
 	//INPUTS:
 	//R_1: Initial positon vector
@@ -7999,8 +7962,8 @@ void RTEMoon::INRFV(VECTOR3 R_1, VECTOR3 V_2, double r_2, double mu, bool k3, do
 	f = 1.0 - r_2 * (1.0 - cos(theta)) / p;
 	g = r_2 * r_1*sin(theta) / sqrt(mu*p);
 	V_1 = (R_2 - R_1 * f) / g;
-	a = 1.0 / (2.0 / r_2 - v_2 * v_2 / mu);
-	e = sqrt(1.0 - p / a);
+	ainv = 2.0 / r_2 - v_2 * v_2 / mu;
+	e = sqrt(1.0 - p * ainv);
 
 	OrbMech::time_theta(R_1, V_1, theta, mu, dt_2);
 	//VECTOR3 R2_apo, V2_apo;
@@ -8051,7 +8014,7 @@ void RTEMoon::STORE(int opt, double &dv, double &i_r, double &INTER, double &t_z
 	}
 }
 
-void RTEMoon::PSTATE(double a_H, double e_H, double p_H, double t_0, double T_x, VECTOR3 Y_0, VECTOR3 &Y_a_apo, VECTOR3 V_x, double theta, double beta_a, double beta_x, double T_a, VECTOR3 &V_a, double &t_x_aaapo, VECTOR3 &Y_x_apo, double &Dy_0, double &deltat, VECTOR3 &X_mx, VECTOR3 &U_mx) const
+void RTEMoon::PSTATE(double ainv_H, double e_H, double p_H, double t_0, double T_x, VECTOR3 Y_0, VECTOR3 &Y_a_apo, VECTOR3 V_x, double theta, double beta_a, double beta_x, double T_a, VECTOR3 &V_a, double &t_x_aaapo, VECTOR3 &Y_x_apo, double &Dy_0, double &deltat, VECTOR3 &X_mx, VECTOR3 &U_mx) const
 {
 	//INPUTS:
 	//a_h: semimajor axis of selenocentric conic

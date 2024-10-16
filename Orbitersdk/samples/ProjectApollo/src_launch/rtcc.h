@@ -3050,8 +3050,8 @@ public:
 	double PIGMHA(double hour);
 	//Universal Cartesian to Kepler Coordinates
 	void PIMCKC(VECTOR3 R, VECTOR3 V, int body, double &a, double &e, double &i, double &l, double &g, double &h);
-	//Time from perifocal pass to radius (TRW routine TFPCR)
-	void PITFPC(double MUE, int K, double AORP, double ECC, double rad, double &TIME, double &P, bool erunits = true);
+	//Time from perifocal pass to radius
+	void PITFPC(double MUE, int K, double AINV, double p, double rad, double &TIME, double &PER, double &e) const;
 	//Determine time of arrival at specific height in orbit
 	int PITCIR(AEGHeader header, AEGDataBlock in, double R_CIR, AEGDataBlock &out);
 	//Generate orbit normal and ascending node vectors from elements, and vice versa
