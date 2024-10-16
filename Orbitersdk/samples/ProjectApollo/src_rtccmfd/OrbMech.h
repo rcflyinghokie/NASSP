@@ -395,6 +395,7 @@ namespace OrbMech {
 	void EMXINGElev(VECTOR3 R, VECTOR3 R_S, VECTOR3 &N, VECTOR3 &rho, double &sinang);
 	//RTCC EMXING support routine, calculates elevation slope function
 	double EMXINGElevSlope(VECTOR3 R, VECTOR3 V, VECTOR3 R_S, int body);
+	double LongitudeConversion(double lng, double T, double w_E, double lng_0, bool inertial_to_geographic);
 
 	//AEG
 	CELEMENTS LyddaneMeanToOsculating(CELEMENTS arr, int body);

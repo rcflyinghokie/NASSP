@@ -5408,6 +5408,32 @@ double EMXINGElevSlope(VECTOR3 R, VECTOR3 V, VECTOR3 R_S, int body)
 	return (dotp(rho_dot, N) + dotp(rho_apo, N_dot))*length(rho);
 }
 
+double LongitudeConversion(double lng, double T, double w_E, double lng_0, bool inertial_to_geographic)
+{
+	//For ECI to ECEF conversion
+
+	//lng: inertial or ECEF longitude
+	//T: Current time
+	//w_E: Body rotation rate
+	//lng_0: hour angle at T = 0
+	//inertial_to_geographic: conversion direction
+
+	double K;
+	if (inertial_to_geographic)
+	{
+		K = -1.0;
+	}
+	else
+	{
+		K = 1.0;
+	}
+
+	lng = lng + K*(lng_0 + w_E * T);
+
+	normalizeAngle(lng, false);
+	return lng;
+}
+
 CELEMENTS KeplerToEquinoctial(CELEMENTS kep)
 {
 	CELEMENTS aeq;
