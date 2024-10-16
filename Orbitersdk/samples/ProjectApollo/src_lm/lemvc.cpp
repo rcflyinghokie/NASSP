@@ -3213,9 +3213,13 @@ void LEM::DefineVCAnimations()
 	RRGyroSelSwitch.SetReference(Sw_RRGyroLocation, _V(-0.048633374944462, -0.519162328382934, 0.853290848204481));
 	RRGyroSelSwitch.DefineMeshGroup(VC_GRP_Sw_RRGyro);
 
+	// Crosspointers
 	MainPanelVC.DefineVCAnimations(vcidx);
 	crossPointerLeft.DefineVCAnimations(vcidx, true);
 	crossPointerRight.DefineVCAnimations(vcidx, false);
+
+	//EVA Antenna
+	MainPanelVC.AddSwitch(&EvaAntennaHandle, AID_VC_EVAANTENNAHANDLE);
 
 	InitFDAI(vcidx);
 }
