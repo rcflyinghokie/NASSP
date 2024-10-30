@@ -29,6 +29,7 @@
 #include "toggleswitch.h"
 #include "LEM.h"
 #include "lm_ecs.h"
+#include "Mission.h"
 
 LEMCrewStatus::LEMCrewStatus(Sound &crewdeadsound) : crewDeadSound(crewdeadsound) {
 
@@ -808,11 +809,15 @@ void LEMCabinRepressValve::SystemTimestep(double simdt)
 
 		bool repressinhibit = false;
 
-		//Both in EGRESS
-		if (pressRegulatorASwitch->GetState() == 0 && pressRegulatorBSwitch->GetState() == 0) repressinhibit = true;
-		//One in EGRESS, other in CLOSE
-		else if (pressRegulatorASwitch->GetState() == 0 && pressRegulatorBSwitch->GetState() == 3) repressinhibit = true;
-		else if (pressRegulatorASwitch->GetState() == 3 && pressRegulatorBSwitch->GetState() == 0) repressinhibit = true;
+		//LFM-516: LM-7 and later don't have the inhibit
+		if (lem->pMission->GetLMNumber() <= 6)
+		{
+			//Both in EGRESS
+			if (pressRegulatorASwitch->GetState() == 0 && pressRegulatorBSwitch->GetState() == 0) repressinhibit = true;
+			//One in EGRESS, other in CLOSE
+			else if (pressRegulatorASwitch->GetState() == 0 && pressRegulatorBSwitch->GetState() == 3) repressinhibit = true;
+			else if (pressRegulatorASwitch->GetState() == 3 && pressRegulatorBSwitch->GetState() == 0) repressinhibit = true;
+		}
 
 		if (cabinRepressCB->IsPowered() && repressinhibit == false)
 		{
@@ -1155,7 +1160,7 @@ void LEMCabinFan::SystemTimestep(double simdt)
 
 void LEMCabinFan::CabinFanSound()
 {
-	cabinfansound.play(200);
+	cabinfansound.play(200.0 / 255.0);
 }
 
 void LEMCabinFan::StopCabinFanSound()
@@ -1537,6 +1542,8 @@ double LEM_ECS::AscentOxyTank2PressurePSI() {
 }
 
 double LEM_ECS::DescentOxyTankQuantityLBS() {
+	if (!lem->INST_SIG_SENSOR_CB.IsPowered()) return 0.0; //Temporary check on Sig Sensor cb until pressure used for quantity
+
 	if (!Des_Oxygen) {
 		Des_Oxygen = (double*)sdk.GetPointerByString("HYDRAULIC:DESO2TANK:MASS");
 	}
@@ -1544,6 +1551,8 @@ double LEM_ECS::DescentOxyTankQuantityLBS() {
 }
 
 double LEM_ECS::AscentOxyTank1QuantityLBS() {
+	if (!lem->INST_SIG_SENSOR_CB.IsPowered()) return 0.0; //Temporary check on Sig Sensor cb until pressure used for quantity
+
 	if (!Asc_Oxygen1) {
 		Asc_Oxygen1 = (double*)sdk.GetPointerByString("HYDRAULIC:ASCO2TANK1:MASS");
 	}
@@ -1551,6 +1560,8 @@ double LEM_ECS::AscentOxyTank1QuantityLBS() {
 }
 
 double LEM_ECS::AscentOxyTank2QuantityLBS() {
+	if (!lem->INST_SIG_SENSOR_CB.IsPowered()) return 0.0; //Temporary check on Sig Sensor cb until pressure used for quantity
+
 	if (!Asc_Oxygen2) {
 		Asc_Oxygen2 = (double*)sdk.GetPointerByString("HYDRAULIC:ASCO2TANK2:MASS");
 	}
