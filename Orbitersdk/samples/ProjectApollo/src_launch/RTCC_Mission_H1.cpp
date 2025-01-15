@@ -193,17 +193,15 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		char Buff[128];
 
 		//P80 MED: mission initialization
-		sprintf_s(Buff, "P80,1,CSM,%d,%d,%d;", GZGENCSN.MonthofLiftoff, GZGENCSN.DayofLiftoff, GZGENCSN.Year);
-		GMGMED(Buff);
+		mcc->mcc_calcs.PrelaunchMissionInitialization();
 
 		//P10 MED: Enter actual liftoff time
-		double TEPHEM0, tephem_scal;
+		double  tephem_scal;
 		Saturn *cm = (Saturn *)calcParams.src;
 
 		//Get TEPHEM
-		TEPHEM0 = 40403.;
 		tephem_scal = GetTEPHEMFromAGC(&cm->agc.vagc, true);
-		double LaunchMJD = (tephem_scal / 8640000.) + TEPHEM0;
+		double LaunchMJD = (tephem_scal / 8640000.) + SystemParameters.TEPHEM0;
 		LaunchMJD = (LaunchMJD - SystemParameters.GMTBASE)*24.0;
 
 		int hh, mm;
@@ -272,7 +270,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		PMSVCT(4, RTCC_MPT_CSM, sv0);
 
 		//Add TLI to MPT
-		if (GETEval2(3.0*3600.0))
+		if (mcc->mcc_calcs.GETEval(3.0*3600.0))
 		{
 			//Second opportunity
 			GMGMED("M68,CSM,2;");
@@ -640,7 +638,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 
 		if (!scrubbed)
 		{
-			engine = SPSRCSDecision(SPS_THRUST / WeightsTable.ConfigWeight, PZMCCDIS.data[0].DV_MCC);
+			engine = mcc->mcc_calcs.SPSRCSDecision(SPS_THRUST / WeightsTable.ConfigWeight, PZMCCDIS.data[0].DV_MCC);
 			PoweredFlightProcessor(sv, WeightsTable.CSMWeight, PZMCCPLN.MidcourseGET, engine, WeightsTable.LMAscWeight + WeightsTable.LMDscWeight, PZMCCXFR.V_man_after[0] - PZMCCXFR.sv_man_bef[0].V, false, P30TIG, dV_LVLH);
 
 			//Save burn data for block data calculation
@@ -679,7 +677,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 
 				manopt.TIG = P30TIG;
 				manopt.dV_LVLH = dV_LVLH;
-				manopt.enginetype = SPSRCSDecision(SPS_THRUST / WeightsTable.ConfigWeight, dV_LVLH);
+				manopt.enginetype = mcc->mcc_calcs.SPSRCSDecision(SPS_THRUST / WeightsTable.ConfigWeight, dV_LVLH);
 				manopt.HeadsUp = true;
 				manopt.REFSMMAT = GetREFSMMATfromAGC(&mcc->cm->agc.vagc, true);
 				manopt.RV_MCC = sv;
@@ -728,7 +726,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 
 		opt.TIG = res.P30TIG;
 		opt.dV_LVLH = res.dV_LVLH;
-		opt.enginetype = SPSRCSDecision(SPS_THRUST / WeightsTable.ConfigWeight, res.dV_LVLH);
+		opt.enginetype = mcc->mcc_calcs.SPSRCSDecision(SPS_THRUST / WeightsTable.ConfigWeight, res.dV_LVLH);
 		opt.HeadsUp = true;
 		opt.REFSMMAT = GetREFSMMATfromAGC(&mcc->cm->agc.vagc, true);
 		opt.RV_MCC = ConvertSVtoEphemData(sv);
@@ -808,7 +806,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 
 			calcParams.LOI = PZMCCDIS.data[0].GET_LOI;
 
-			engine = SPSRCSDecision(SPS_THRUST / WeightsTable.ConfigWeight, dv);
+			engine = mcc->mcc_calcs.SPSRCSDecision(SPS_THRUST / WeightsTable.ConfigWeight, dv);
 			PoweredFlightProcessor(sv, WeightsTable.CSMWeight, tig, engine, WeightsTable.LMAscWeight + WeightsTable.LMDscWeight, dv, false, P30TIG, dV_LVLH);
 
 			manopt.TIG = P30TIG;
@@ -936,7 +934,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 			tig = GETfromGMT(PZMCCXFR.sv_man_bef[0].GMT);
 			dv = PZMCCXFR.V_man_after[0] - PZMCCXFR.sv_man_bef[0].V;
 
-			engine = SPSRCSDecision(SPS_THRUST / WeightsTable.ConfigWeight, dv);
+			engine = mcc->mcc_calcs.SPSRCSDecision(SPS_THRUST / WeightsTable.ConfigWeight, dv);
 			PoweredFlightProcessor(sv, WeightsTable.CSMWeight, tig, engine, WeightsTable.LMAscWeight + WeightsTable.LMDscWeight, dv, false, P30TIG, dV_LVLH);
 
 			manopt.TIG = P30TIG;
@@ -1021,7 +1019,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		AP11ManeuverPAD(opt, *form);
 		sprintf(form->remarks, "Assumes LS REFSMMAT and docked");
 
-		if (!REFSMMATDecision(form->Att*RAD))
+		if (!mcc->mcc_calcs.REFSMMATDecision(form->Att*RAD))
 		{
 			REFSMMATOpt refsopt;
 			MATRIX3 REFSMMAT;
@@ -1303,7 +1301,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		sv_INP = ExecuteManeuver(sv1, TimeofIgnition, DeltaV_LVLH, 0.0, RTCC_ENGINETYPE_LMDPS);
 
 		t_sunrise = calcParams.PDI + 3.0*3600.0;
-		t_TPI = FindOrbitalSunrise(sv2, t_sunrise) - 23.0*60.0;
+		t_TPI = mcc->mcc_calcs.FindOrbitalSunrise(sv2, t_sunrise) - 23.0*60.0;
 
 		bool res_k = CalculateAGSKFactor(&l->agc.vagc, &l->aea.vags, KFactor);
 		if (res_k)
@@ -2115,7 +2113,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 
 		//Update abort constants
 		t_sunrise = calcParams.PDI + 3.0*3600.0;
-		t_TPI = FindOrbitalSunrise(sv2, t_sunrise) - 23.0*60.0;
+		t_TPI = mcc->mcc_calcs.FindOrbitalSunrise(sv2, t_sunrise) - 23.0*60.0;
 
 		opt.dt_stage = 999999.9;
 		opt.W_TAPS = 4711.0;
@@ -2208,15 +2206,15 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		if (mcc->MoonRev >= 14)
 		{
 			//Find one TPI opportunity (PDI-2)
-			t_TPI = FindOrbitalSunrise(sv, t_sunrise1) - 23.0*60.0;
+			t_TPI = mcc->mcc_calcs.FindOrbitalSunrise(sv, t_sunrise1) - 23.0*60.0;
 			form->T_TPI_Pre10Min = form->T_TPI_Post10Min = round(t_TPI);
 		}
 		else
 		{
 			//Find two TPI opportunities (PDI-1)
-			t_TPI = FindOrbitalSunrise(sv, t_sunrise1) - 23.0*60.0;
+			t_TPI = mcc->mcc_calcs.FindOrbitalSunrise(sv, t_sunrise1) - 23.0*60.0;
 			form->T_TPI_Pre10Min = round(t_TPI);
-			t_TPI = FindOrbitalSunrise(sv, t_sunrise2) - 23.0*60.0;
+			t_TPI = mcc->mcc_calcs.FindOrbitalSunrise(sv, t_sunrise2) - 23.0*60.0;
 			form->T_TPI_Post10Min = round(t_TPI);
 		}
 	}
@@ -2242,7 +2240,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		sv_CSM2 = ConvertEphemDatatoSV(sv_CSM, WeightsTable_CSM.ConfigWeight);
 
 		t_sunrise = calcParams.PDI + 3.0*3600.0;
-		t_TPI = FindOrbitalSunrise(sv_CSM2, t_sunrise) - 23.0*60.0;
+		t_TPI = mcc->mcc_calcs.FindOrbitalSunrise(sv_CSM2, t_sunrise) - 23.0*60.0;
 
 		GZGENCSN.TIElevationAngle = 26.6*RAD;
 
@@ -2346,7 +2344,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		OrbMech::REVUP(R_C1, V_C1F, 1.5, OrbMech::mu_Moon, R_CSI1, V_CSI1, dt2);
 		t_CSI1 = t_C1 + dt2;
 
-		t_TPI = FindOrbitalSunrise(sv_CSM, t_sunrise) - 23.0*60.0;
+		t_TPI = mcc->mcc_calcs.FindOrbitalSunrise(sv_CSM, t_sunrise) - 23.0*60.0;
 		//Round to next 30 seconds
 		t_TPI = round(t_TPI / 30.0)*30.0;
 
@@ -2360,7 +2358,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 
 		//Calculate TPI time for T3
 		t_sunrise = calcParams.PDI + 5.0*3600.0;
-		t_TPI = FindOrbitalSunrise(sv_CSM, t_sunrise) - 23.0*60.0;
+		t_TPI = mcc->mcc_calcs.FindOrbitalSunrise(sv_CSM, t_sunrise) - 23.0*60.0;
 		//Round to next 30 seconds
 		t_TPI = round(t_TPI / 30.0)*30.0;
 
@@ -2623,7 +2621,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		}
 
 		double t_TPI;
-		t_TPI = FindOrbitalSunrise(sv_CSM, t_TPI_guess) - 23.0*60.0;
+		t_TPI = mcc->mcc_calcs.FindOrbitalSunrise(sv_CSM, t_TPI_guess) - 23.0*60.0;
 		//Round to next 30 seconds
 		t_TPI = round(t_TPI / 30.0)*30.0;
 		opt.t_hole = GMTfromGET(t_TPI);
@@ -2650,7 +2648,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 			form->TIG[i] = PZLRPT.data[1].GETLO;
 
 			t_TPI_guess += 2.0*3600.0;
-			t_TPI = FindOrbitalSunrise(sv_CSM, t_TPI_guess) - 23.0*60.0;
+			t_TPI = mcc->mcc_calcs.FindOrbitalSunrise(sv_CSM, t_TPI_guess) - 23.0*60.0;
 			//Round to next 30 seconds
 			t_TPI = round(t_TPI / 30.0)*30.0;
 			opt.t_hole = GMTfromGET(t_TPI);
@@ -2827,7 +2825,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 
 		//Rev 29 is the nominal for this update. Nominal TPI time is about 34.25 hours after PDI
 		t_TPI_guess = calcParams.PDI + 34.25*3600.0 + 23.0*60.0 + 2.0*3600.0*(double)(mcc->MoonRev - 29);
-		t_TPI = FindOrbitalSunrise(sv_CSM, t_TPI_guess) - 23.0*60.0;
+		t_TPI = mcc->mcc_calcs.FindOrbitalSunrise(sv_CSM, t_TPI_guess) - 23.0*60.0;
 		//Round to next 30 seconds
 		t_TPI = round(t_TPI / 30.0)*30.0;
 
@@ -3461,7 +3459,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 					opt.WeightsTable = GetWeightsTable(calcParams.src, true, true);
 					opt.TIG = res.P30TIG;
 					opt.dV_LVLH = res.dV_LVLH;
-					opt.enginetype = SPSRCSDecision(SPS_THRUST / opt.WeightsTable.ConfigWeight, res.dV_LVLH);
+					opt.enginetype = mcc->mcc_calcs.SPSRCSDecision(SPS_THRUST / opt.WeightsTable.ConfigWeight, res.dV_LVLH);
 					opt.HeadsUp = false;
 					opt.REFSMMAT = REFSMMAT;
 					opt.RV_MCC = ConvertSVtoEphemData(sv);

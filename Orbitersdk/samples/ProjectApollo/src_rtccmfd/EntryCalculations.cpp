@@ -1006,9 +1006,6 @@ bool RetrofirePlanning::RMSDBMP(EphemerisData sv, double GETI, double lat_T, dou
 	//Set error indicator to zero
 	ERR = 0;
 
-	//Get REFSMMAT
-	refsdata = pRTCC->EZJGMTX1.data[refsid - 1];
-
 	//Get thruster thrust and mass flow
 	double ullage_overlap = pRTCC->SystemParameters.MCTSD9;
 	switch (Thruster)
@@ -1123,8 +1120,8 @@ bool RetrofirePlanning::RMSDBMP(EphemerisData sv, double GETI, double lat_T, dou
 		sv_BI_SEP = coastin.sv_cutoff;
 
 		//Calculate attitude
-		VECTOR3 U_T_SEP, IMUAtt_SEP;
-		RMMATT(1, 1, false, pRTCC->RZJCTTC.R30_Att, refsdata.REFSMMAT, pRTCC->RZJCTTC.R30_Thruster, sv_BI_SEP.R, sv_BI_SEP.V, pRTCC->RZJCTTC.R30_GimbalIndicator, CSMmass, U_T_SEP, IMUAtt_SEP);
+		VECTOR3 U_T_SEP;
+		RMMATT_LVLH(pRTCC->RZJCTTC.R30_Att, sv_BI_SEP.R, sv_BI_SEP.V, pRTCC->RZJCTTC.R30_Thruster, pRTCC->RZJCTTC.R30_GimbalIndicator, CSMmass, U_T_SEP, X_B, Y_B, Z_B);
 
 		//Maneuver simulation
 		integin.sv0 = sv_BI_SEP;
@@ -1282,8 +1279,8 @@ bool RetrofirePlanning::RMSDBMP(EphemerisData sv, double GETI, double lat_T, dou
 		sv_BI_SEP = pRTCC->RotateSVToSOI(out.SV);
 
 		//Calculate attitude
-		VECTOR3 U_T_SEP, IMUAtt_SEP;
-		RMMATT(1, 1, false, pRTCC->RZJCTTC.R30_Att, refsdata.REFSMMAT, pRTCC->RZJCTTC.R30_Thruster, sv_BI_SEP.R, sv_BI_SEP.V, pRTCC->RZJCTTC.R30_GimbalIndicator, CSMmass, U_T_SEP, IMUAtt_SEP);
+		VECTOR3 U_T_SEP;
+		RMMATT_LVLH(pRTCC->RZJCTTC.R30_Att, sv_BI_SEP.R, sv_BI_SEP.V, pRTCC->RZJCTTC.R30_Thruster, pRTCC->RZJCTTC.R30_GimbalIndicator, CSMmass, U_T_SEP, X_B, Y_B, Z_B);
 
 		//Maneuver simulation
 		integin.sv0 = sv_BI_SEP;
@@ -1348,7 +1345,7 @@ bool RetrofirePlanning::RMSDBMP(EphemerisData sv, double GETI, double lat_T, dou
 	{
 		LVLHAtt = _V(0.0, -(31.7*RAD + 2.15*RAD + acos(OrbMech::R_Earth / length(sv_BI.R))), PI);
 	}
-	RMMATT(1, 1, false, LVLHAtt, refsdata.REFSMMAT, Thruster, sv_BI.R, sv_BI.V, GimbalIndicator, CSMmass_Sep, U_T, IMUAtt);
+	RMMATT_LVLH(LVLHAtt, sv_BI.R, sv_BI.V, Thruster, GimbalIndicator, CSMmass_Sep, U_T, X_B, Y_B, Z_B);
 
 	//Maneuver simulation
 	integin.sv0 = sv_BI;
@@ -1572,8 +1569,8 @@ bool RetrofirePlanning::RMSDBMP(EphemerisData sv, double GETI, double lat_T, dou
 			sv_BI_SEP = pRTCC->RotateSVToSOI(out.SV);
 
 			//Calculate attitude
-			VECTOR3 U_T_SEP, IMUAtt_SEP;
-			RMMATT(1, 1, false, pRTCC->RZJCTTC.R30_Att, refsdata.REFSMMAT, pRTCC->RZJCTTC.R30_Thruster, sv_BI_SEP.R, sv_BI_SEP.V, pRTCC->RZJCTTC.R30_GimbalIndicator, CSMmass, U_T_SEP, IMUAtt_SEP);
+			VECTOR3 U_T_SEP;
+			RMMATT_LVLH(pRTCC->RZJCTTC.R30_Att, sv_BI_SEP.R, sv_BI_SEP.V, pRTCC->RZJCTTC.R30_Thruster, pRTCC->RZJCTTC.R30_GimbalIndicator, CSMmass, U_T_SEP, X_B, Y_B, Z_B);
 
 			//Maneuver simulation
 			integin.sv0 = sv_BI_SEP;
@@ -1633,7 +1630,7 @@ bool RetrofirePlanning::RMSDBMP(EphemerisData sv, double GETI, double lat_T, dou
 		{
 			LVLHAtt = _V(0.0, -(31.7*RAD + 2.15*RAD + acos(OrbMech::R_Earth / length(sv_BI.R))), PI);
 		}
-		RMMATT(1, 1, false, LVLHAtt, refsdata.REFSMMAT, Thruster, sv_BI.R, sv_BI.V, GimbalIndicator, CSMmass_Sep, U_T, IMUAtt);
+		RMMATT_LVLH(LVLHAtt, sv_BI.R, sv_BI.V, Thruster, GimbalIndicator, CSMmass_Sep, U_T, X_B, Y_B, Z_B);
 
 		integin.sv0 = sv_BI;
 		integin.A = Area;
@@ -1828,6 +1825,9 @@ void RetrofirePlanning::RMMDBF()
 	else if (ManeuverType == 1)
 	{
 		GMT_TI = GMTI - pRTCC->RZJCTTC.R30_DeltaT_Sep;
+		//Change search limits for separation maneuver
+		TL = TL - (pRTCC->RZJCTTC.R30_DeltaT_Sep - 20.0*60.0);
+		TR = TR - (pRTCC->RZJCTTC.R30_DeltaT_Sep - 20.0*60.0);
 	}
 	else
 	{
@@ -1892,13 +1892,13 @@ void RetrofirePlanning::RMMDBM()
 		else
 		{
 			EphemerisData sv_TIG_SEP, sv_apo_SEP;
-			VECTOR3 U_T_SEP, IMUAtt_SEP;
+			VECTOR3 U_T_SEP;
 			double DVBURN_SEP;
 
 			sv_TIG_SEP = sv_apo_SEP = pRTCC->RotateSVToSOI(out.SV);
 
 			//Calculate thrust direction
-			RMMATT(1, 1, false, pRTCC->RZJCTTC.R30_Att, refsdata.REFSMMAT, pRTCC->RZJCTTC.R30_Thruster, sv_TIG_SEP.R, sv_TIG_SEP.V, pRTCC->RZJCTTC.R30_GimbalIndicator, CSMmass, U_T_SEP, IMUAtt_SEP);
+			RMMATT_LVLH(pRTCC->RZJCTTC.R30_Att, sv_TIG_SEP.R, sv_TIG_SEP.V, pRTCC->RZJCTTC.R30_Thruster, pRTCC->RZJCTTC.R30_GimbalIndicator, CSMmass, U_T_SEP, X_B, Y_B, Z_B);
 
 			if (pRTCC->RZJCTTC.R30_DeltaV > 0)
 			{
@@ -1927,7 +1927,7 @@ void RetrofirePlanning::RMMDBM()
 		}
 
 		//Calculate thrust direction
-		RMMATT(1, 1, false, Att, refsdata.REFSMMAT, Thruster, sv_TIG.R, sv_TIG.V, GimbalIndicator, CSMmass, U_T, IMUAtt);
+		RMMATT_LVLH(Att, sv_TIG.R, sv_TIG.V, Thruster, GimbalIndicator, CSMmass, U_T, X_B, Y_B, Z_B);
 
 		//Adjust thrust direction for impulsive maneuver
 		Y = unit(crossp(sv_TIG.V, sv_TIG.R));
@@ -2241,22 +2241,20 @@ void RetrofirePlanning::RMMDBN(int entry)
 	}
 }
 
-void RetrofirePlanning::RMMATT(int entry, int opt, bool calcDesired, VECTOR3 Att, MATRIX3 REFSMMAT, int thruster, VECTOR3 R, VECTOR3 V, int TrimIndicator, double mass, VECTOR3 &U_T, VECTOR3 &OtherAtt)
+void RetrofirePlanning::RMMATT_LVLH(VECTOR3 LVLH_Att, VECTOR3 R, VECTOR3 V, int thruster, int TrimIndicator, double mass, VECTOR3 &U_T, VECTOR3 &X_B, VECTOR3 &Y_B, VECTOR3 &Z_B) const
 {
-	//entry: 1 = calculate unit vector. 2 = calculate attitude in the other coordinate system and the deorbit REFSMMAT
-	//opt: 1 = Att is LVLH, 2 = Att is IMU
+	//Inputs: LVLH attitude, state vector, thruster, mass
+	//Outputs: thrust direction and body attitude
 
-	VECTOR3 X_P, Y_P, Z_P;
-	double SINP, SINY, SINR, COSP, COSY, COSR;
-	double AL, BE, a1, a2, a3, b1, b2, b3, c1, c2, c3;
-	double P_G = 0.0, Y_G = 0.0;
+	VECTOR3 X_P, Y_P, Z_P, Y_T, Z_T;
+	double SINP, SINY, SINR, COSP, COSY, COSR, P_G, Y_G, AL, BE, a1, a2, a3, b1, b2, b3, c1, c2, c3;
 
-	SINP = sin(Att.y);
-	SINY = sin(Att.z);
-	SINR = sin(Att.x);
-	COSP = cos(Att.y);
-	COSY = cos(Att.z);
-	COSR = cos(Att.x);
+	SINP = sin(LVLH_Att.y);
+	SINY = sin(LVLH_Att.z);
+	SINR = sin(LVLH_Att.x);
+	COSP = cos(LVLH_Att.y);
+	COSY = cos(LVLH_Att.z);
+	COSR = cos(LVLH_Att.x);
 
 	if (thruster == RTCC_ENGINETYPE_CSMSPS)
 	{
@@ -2271,147 +2269,103 @@ void RetrofirePlanning::RMMATT(int entry, int opt, bool calcDesired, VECTOR3 Att
 			pRTCC->GetSystemGimbalAngles(RTCC_ENGINETYPE_CSMSPS, P_G, Y_G);
 		}
 	}
-
-	if (opt == 1)
+	else
 	{
-		VECTOR3 Y_T, Z_T;
+		P_G = Y_G = 0.0;
+	}
 
-		Z_P = -unit(R);
-		Y_P = -unit(crossp(R, V));
-		X_P = crossp(Y_P, Z_P);
+	Z_P = -unit(R);
+	Y_P = -unit(crossp(R, V));
+	X_P = crossp(Y_P, Z_P);
 
-		AL = SINP * SINR;
-		BE = SINP * COSR;
-		a1 = COSY * COSP;
-		a2 = SINY * COSP;
-		a3 = -SINP;
-		b1 = AL * COSY - SINY * COSR;
-		b2 = AL * SINY + COSY * COSR;
-		b3 = COSP * SINR;
-		c1 = BE * COSY + SINY * SINR;
-		c2 = BE * SINY - COSY * SINR;
-		c3 = COSP * COSR;
+	AL = SINP * SINR;
+	BE = SINP * COSR;
+	a1 = COSY * COSP;
+	a2 = SINY * COSP;
+	a3 = -SINP;
+	b1 = AL * COSY - SINY * COSR;
+	b2 = AL * SINY + COSY * COSR;
+	b3 = COSP * SINR;
+	c1 = BE * COSY + SINY * SINR;
+	c2 = BE * SINY - COSY * SINR;
+	c3 = COSP * COSR;
 
-		U_T = X_P * a1 + Y_P * a2 + Z_P * a3;
-		Y_T = X_P * b1 + Y_P * b2 + Z_P * b3;
-		Z_T = X_P * c1 + Y_P * c2 + Z_P * c3;
+	U_T = X_P * a1 + Y_P * a2 + Z_P * a3;
+	Y_T = X_P * b1 + Y_P * b2 + Z_P * b3;
+	Z_T = X_P * c1 + Y_P * c2 + Z_P * c3;
 
-		X_B = U_T * cos(P_G)*cos(Y_G) - Y_T * cos(P_G)*sin(Y_G) + Z_T * sin(P_G);
-		Y_B = U_T * sin(Y_G) + Y_T * cos(Y_G);
-		Z_B = crossp(X_B, Y_B);
+	X_B = U_T * cos(P_G)*cos(Y_G) - Y_T * cos(P_G)*sin(Y_G) + Z_T * sin(P_G);
+	Y_B = U_T * sin(Y_G) + Y_T * cos(Y_G);
+	Z_B = crossp(X_B, Y_B);
+}
+
+VECTOR3 RetrofirePlanning::RMMATT_IMU(VECTOR3 X_B, VECTOR3 Y_B, VECTOR3 Z_B, MATRIX3 REFSMMAT) const
+{
+	//Calculate IMU angles from body attitude
+
+	VECTOR3 X_P, Y_P, Z_P, IMUAngles;
+
+	X_P = _V(REFSMMAT.m11, REFSMMAT.m12, REFSMMAT.m13);
+	Y_P = _V(REFSMMAT.m21, REFSMMAT.m22, REFSMMAT.m23);
+	Z_P = _V(REFSMMAT.m31, REFSMMAT.m32, REFSMMAT.m33);
+
+	IMUAngles.z = asin(dotp(Y_P, X_B));
+	if (abs(abs(IMUAngles.z) - PI05) < 1e-8)
+	{
+		IMUAngles.x = 0.0;
+		IMUAngles.y = atan2(dotp(X_P, Z_B), dotp(Z_P, Z_B));
 	}
 	else
 	{
-		X_P = _V(REFSMMAT.m11, REFSMMAT.m12, REFSMMAT.m13);
-		Y_P = _V(REFSMMAT.m21, REFSMMAT.m22, REFSMMAT.m23);
-		Z_P = _V(REFSMMAT.m31, REFSMMAT.m32, REFSMMAT.m33);
-
-		AL = COSP * SINY;
-		BE = SINP * SINY;
-		a1 = COSP * COSY;
-		a2 = SINY;
-		a3 = -SINP * COSY;
-		b1 = SINP * SINR - AL * COSR;
-		b2 = COSY * COSR;
-		b3 = COSP * SINR + BE * COSR;
-		c1 = SINP * COSR + AL * SINR;
-		c2 = -COSY * SINR;
-		c3 = COSP * COSR - BE * SINR;
-
-		X_B = X_P * a1 + Y_P * a2 + Z_P * a3;
-		Y_B = X_P * b1 + Y_P * b2 + Z_P * b3;
-		Z_B = X_P * c1 + Y_P * c2 + Z_P * c3;
-
-		if (thruster == RTCC_ENGINETYPE_CSMSPS)
-		{
-			MATRIX3 MTEMP = _M(X_B.x, X_B.y, X_B.z, Y_B.x, Y_B.y, Y_B.z, Z_B.x, Z_B.y, Z_B.z);
-			MATRIX3 MTEMP2 = pRTCC->GLMRTM(MTEMP, P_G, 2, Y_G, 3);
-			U_T = _V(MTEMP2.m11, MTEMP2.m12, MTEMP2.m13);
-		}
-		else if (thruster == RTCC_ENGINETYPE_CSMRCSPLUS2 || thruster == RTCC_ENGINETYPE_CSMRCSPLUS4)
-		{
-			U_T = X_B;
-		}
-		else
-		{
-			U_T = -X_B;
-		}
+		IMUAngles.x = atan2(-dotp(Y_P, Z_B), dotp(Y_P, Y_B));
+		IMUAngles.y = atan2(-dotp(Z_P, X_B), dotp(X_P, X_B));
 	}
 
-	if (entry == 1)
+	if (IMUAngles.x < 0)
 	{
-		return;
+		IMUAngles.x += PI2;
 	}
-
-	//Attitude in other coordinates
-	if (opt == 1)
+	if (IMUAngles.y < 0)
 	{
-		//Calculate IMU angles
-		X_P = _V(REFSMMAT.m11, REFSMMAT.m12, REFSMMAT.m13);
-		Y_P = _V(REFSMMAT.m21, REFSMMAT.m22, REFSMMAT.m23);
-		Z_P = _V(REFSMMAT.m31, REFSMMAT.m32, REFSMMAT.m33);
+		IMUAngles.y += PI2;
+	}
+	if (IMUAngles.z < 0)
+	{
+		IMUAngles.z += PI2;
+	}
+	return IMUAngles;
+}
 
-		OtherAtt.z = asin(dotp(Y_P, X_B));
-		if (abs(abs(OtherAtt.z) - PI05) < 1e-8)
-		{
-			OtherAtt.x = 0.0;
-			OtherAtt.y = atan2(dotp(X_P, Z_B), dotp(Z_P, Z_B));
-		}
-		else
-		{
-			OtherAtt.x = atan2(-dotp(Y_P, Z_B), dotp(Y_P, Y_B));
-			OtherAtt.y = atan2(-dotp(Z_P, X_B), dotp(X_P, X_B));
-		}
+VECTOR3 RetrofirePlanning::RMMATT_LVLH_Body(VECTOR3 X_B, VECTOR3 Y_B, VECTOR3 Z_B, VECTOR3 R, VECTOR3 V) const
+{
+	VECTOR3 X_P, Y_P, Z_P, LVLHAngles;
 
-		if (OtherAtt.x < 0)
-		{
-			OtherAtt.x += PI2;
-		}
-		if (OtherAtt.y < 0)
-		{
-			OtherAtt.y += PI2;
-		}
-		if (OtherAtt.z < 0)
-		{
-			OtherAtt.z += PI2;
-		}
+	Z_P = unit(-R);
+	Y_P = unit(crossp(V, R));
+	X_P = unit(crossp(Y_P, Z_P));
+	LVLHAngles.y = asin(-dotp(Z_P, X_B));
+	if (abs(abs(LVLHAngles.y) - PI05) < 0.0017)
+	{
+		LVLHAngles.x = 0.0;
+		LVLHAngles.z = atan2(-dotp(X_P, Y_B), dotp(Y_P, Y_B));
 	}
 	else
 	{
-		//Calculate LVLH angles
-		Z_P = unit(-R);
-		Y_P = unit(crossp(V, R));
-		X_P = unit(crossp(Y_P, Z_P));
-		OtherAtt.y = asin(-dotp(Z_P, X_B));
-		if (abs(abs(OtherAtt.y) - PI05) < 0.0017)
-		{
-			OtherAtt.x = 0.0;
-			OtherAtt.z = atan2(-dotp(X_P, Y_B), dotp(Y_P, Y_B));
-		}
-		else
-		{
-			OtherAtt.z = atan2(dotp(Y_P, X_B), dotp(X_P, X_B));
-			OtherAtt.x = atan2(dotp(Z_P, Y_B), dotp(Z_P, Z_B));
-		}
+		LVLHAngles.z = atan2(dotp(Y_P, X_B), dotp(X_P, X_B));
+		LVLHAngles.x = atan2(dotp(Z_P, Y_B), dotp(Z_P, Z_B));
 	}
+	return LVLHAngles;
+}
 
-	if (calcDesired)
-	{
-		//Retrofire preferred alignment
-		VECTOR3 X_SM, Y_SM, Z_SM;
-		X_SM = -X_B;
-		if (thruster == RTCC_ENGINETYPE_CSMSPS)
-		{
-			Y_SM = -Y_B;
-			Z_SM = Z_B;
-		}
-		else
-		{
-			Y_SM = Y_B;
-			Z_SM = -Z_B;
-		}
-		DesREFSMMAT = _M(X_SM.x, X_SM.y, X_SM.z, Y_SM.x, Y_SM.y, Y_SM.z, Z_SM.x, Z_SM.y, Z_SM.z);
-	}
+MATRIX3 RetrofirePlanning::RMMATT_REFSMMAT(VECTOR3 X_B, VECTOR3 Y_B, VECTOR3 Z_B, VECTOR3 R) const
+{
+	//Desired REFSMMAT from body axes and position vector
+	VECTOR3 X_SM, Y_SM, Z_SM;
+	X_SM = -X_B;
+	Y_SM = unit(crossp(X_SM, R));
+	Z_SM = unit(crossp(X_SM, Y_SM));
+
+	return _M(X_SM.x, X_SM.y, X_SM.z, Y_SM.x, Y_SM.y, Y_SM.z, Z_SM.x, Z_SM.y, Z_SM.z);
 }
 
 void RetrofirePlanning::RMSTTF()
@@ -2422,74 +2376,8 @@ void RetrofirePlanning::RMSTTF()
 	TimeConstraintsTable elem;
 	double r_apo, r_peri;
 
+	//Calculate output data for the retrofire maneuver
 	tab->Indicator = 0;
-
-	if (pRTCC->RZJCTTC.R32_Code == 2)
-	{
-		tab->Indicator_Sep = 0;
-
-		EphemerisData sv_BO_SEP_ECT;
-		pRTCC->ELVCNV(sv_BO_SEP, 1, sv_BO_SEP_ECT);
-		sv_BO_SEP_ECT.RBI = BODY_EARTH;
-		pRTCC->EMMDYNEL(sv_BO_SEP_ECT, elem);
-		
-		pRTCC->PIFAAP(elem.a, elem.e, elem.i, elem.TA, elem.TA + elem.AoP, length(sv_BO_SEP_ECT.R), r_apo, r_peri);
-
-		tab->CSMWeightSep = burnaux_sep.WTENGON *LBS*1000.0;
-		tab->H_apo = (r_apo - OrbMech::R_Earth) / 1852.0;
-		tab->H_peri = (r_peri - OrbMech::R_Earth) / 1852.0;
-		tab->TrueAnomalySep = elem.TA*DEG;
-		tab->H_Sep = elem.h / 1852.0;
-
-		if (pRTCC->RZJCTTC.R30_Thruster == RTCC_ENGINETYPE_CSMSPS)
-		{
-			if (pRTCC->RZJCTTC.R30_Use4UllageThrusters)
-			{
-				tab->UllageQuads_Sep = 4;
-			}
-			else
-			{
-				tab->UllageQuads_Sep = 2;
-			}
-		}
-		else
-		{
-			tab->UllageQuads_Sep = 0;
-		}
-
-		RMMATT(2, 1, true, pRTCC->RZJCTTC.R30_Att, refsdata.REFSMMAT, pRTCC->RZJCTTC.R30_Thruster, sv_TIG_SEP.R, sv_TIG_SEP.V, pRTCC->RZJCTTC.R30_GimbalIndicator, CSMmass, U_T, IMUAtt);
-		tab->Att_IMU_Sep = IMUAtt * DEG;
-		RMMATT(2, 2, false, IMUAtt, refsdata.REFSMMAT, pRTCC->RZJCTTC.R30_Thruster, sv_TIG_SEP.R, sv_TIG_SEP.V, pRTCC->RZJCTTC.R30_GimbalIndicator, CSMmass, U_T, BodyAtt);
-		tab->Att_LVLH_Sep = BodyAtt * DEG;
-		for (int i = 0;i < 3;i++)
-		{
-			if (tab->Att_IMU_Sep.data[i] < 0)
-			{
-				tab->Att_IMU_Sep.data[i] += 360.0;
-			}
-		}
-		tab->DVC_Sep = burnaux_sep.DV_C / 0.3048;
-		tab->BurnTime_Sep = burnaux_sep.DT_B;
-		tab->DVT_Sep = burnaux_sep.DV / 0.3048;
-		tab->UllageDT_Sep = dt_ullage_sep;
-		tab->GMTI_Sep = burnaux_sep.GMT_BI;
-		tab->GETI_Sep = pRTCC->GETfromGMT(tab->GMTI_Sep);
-
-		if (pRTCC->RZJCTTC.R30_Thruster == RTCC_ENGINETYPE_CSMSPS)
-		{
-			tab->P_G_Sep = (burnaux_sep.P_G - pRTCC->SystemParameters.MCTSPP)*DEG;
-			tab->Y_G_Sep = (burnaux_sep.Y_G - pRTCC->SystemParameters.MCTSYP)*DEG;
-		}
-		else
-		{
-			tab->P_G_Sep = 0.0;
-			tab->Y_G_Sep = 0.0;
-		}
-	}
-	else
-	{
-		tab->Indicator_Sep = 1;
-	}
 
 	if (pRTCC->RZJCTTC.R31_Use4UllageThrusters)
 	{
@@ -2501,25 +2389,44 @@ void RetrofirePlanning::RMSTTF()
 	}
 	//TBD: Burn code
 	//TBD: Area
-	char Buffer[16];
-	pRTCC->EMGSTGENName(pRTCC->RZJCTTC.R31_REFSMMAT, Buffer);
-	tab->RefsID.assign(Buffer);
+
 	tab->CSMWeightRetro = burnaux.WTENGON *LBS*1000.0;
 
 	pRTCC->EMMDYNEL(sv_TIG, elem);
 
 	tab->TrueAnomalyRetro = elem.TA*DEG;
-	RMMATT(2, 1, true, LVLHAtt, refsdata.REFSMMAT, Thruster, sv_TIG.R, sv_TIG.V, GimbalIndicator, CSMmass_Sep, U_T, IMUAtt);
-	tab->Att_IMU = IMUAtt * DEG;
-	RMMATT(2, 2, false, IMUAtt, refsdata.REFSMMAT, Thruster, sv_TIG.R, sv_TIG.V, GimbalIndicator, CSMmass_Sep, U_T, BodyAtt);
-	tab->Att_LVLH = BodyAtt * DEG;
-	for (int i = 0;i < 3;i++)
+
+	//Calculate retrofire body axes
+	RMMATT_LVLH(LVLHAtt, sv_BI.R, sv_BI.V, Thruster, GimbalIndicator, CSMmass_Sep, U_T, X_B, Y_B, Z_B);
+
+	//Get REFSMMAT for maneuvers
+	if (refsid < 9)
+	{
+		char Buffer[16];
+		pRTCC->EMGSTGENName(refsid, Buffer);
+		tab->RefsID.assign(Buffer);
+		refsdata = pRTCC->EZJGMTX1.data[refsid - 1];
+	}
+	else
+	{
+		tab->RefsID = "DES";
+		refsdata.REFSMMAT = RMMATT_REFSMMAT(X_B, Y_B, Z_B, sv_TIG.R);
+	}
+
+	//Calculate retrofire IMU attitude
+	tab->Att_IMU = RMMATT_IMU(X_B, Y_B, Z_B, refsdata.REFSMMAT);
+	tab->Att_IMU = tab->Att_IMU * DEG;
+	for (int i = 0; i < 3; i++)
 	{
 		if (tab->Att_IMU.data[i] < 0)
 		{
 			tab->Att_IMU.data[i] += 360.0;
 		}
 	}
+	//Calculate retofire LVLH body attitude
+	tab->Att_LVLH = RMMATT_LVLH_Body(X_B, Y_B, Z_B, sv_TIG.R, sv_TIG.V);
+	tab->Att_LVLH = tab->Att_LVLH * DEG;
+
 	tab->DVC = burnaux.DV_C / 0.3048;
 	tab->BurnTime = burnaux.DT_B;
 	tab->DVT = burnaux.DV / 0.3048;
@@ -2542,13 +2449,13 @@ void RetrofirePlanning::RMSTTF()
 	{
 		tab->RETRB = 0.0;
 	}
-	
+
 	tab->lat_ML = lat_ML * DEG;
 	tab->lng_ML = lng_ML * DEG;
 	if (pRTCC->RZJCTTC.Type == 2)
 	{
 		//Save predicted impact as target
-		tab->lat_T = lat_IP*DEG;
+		tab->lat_T = lat_IP * DEG;
 		tab->lng_T = lng_IP * DEG;
 	}
 	else
@@ -2574,10 +2481,10 @@ void RetrofirePlanning::RMSTTF()
 		tab->P_G = 0.0;
 		tab->Y_G = 0.0;
 	}
-	tab->REFSMMAT = DesREFSMMAT;
+	tab->REFSMMAT = refsdata.REFSMMAT;
 	tab->DV_TO = burnaux.DV_TO / 0.3048;
 	tab->DT_TO = burnaux.DT_TO;
-	
+
 	VECTOR3 DV_EXDV = pRTCC->PIEXDV(sv_TIG.R, sv_TIG.V, CSMmass_Sep, TCMC, U_T*DVBURN, 0);
 
 	tab->VG_XDX = DV_EXDV / 0.3048;
@@ -2590,6 +2497,81 @@ void RetrofirePlanning::RMSTTF()
 	pRTCC->PIFAAP(elem.a, elem.e, elem.i, elem.TA, elem.TA + elem.AoP, length(sv_BO_ECT.R), r_apo, r_peri);
 	tab->H_apo = (r_apo - OrbMech::R_Earth) / 1852.0;
 	tab->H_peri = (r_peri - OrbMech::R_Earth) / 1852.0;
+
+	if (pRTCC->RZJCTTC.R32_Code == 2)
+	{
+		//Calculate output data for the shaping/separation maneuver
+		tab->Indicator_Sep = 0;
+
+		EphemerisData sv_BO_SEP_ECT;
+		pRTCC->ELVCNV(sv_BO_SEP, 1, sv_BO_SEP_ECT);
+		sv_BO_SEP_ECT.RBI = BODY_EARTH;
+		pRTCC->EMMDYNEL(sv_BO_SEP_ECT, elem);
+		
+		pRTCC->PIFAAP(elem.a, elem.e, elem.i, elem.TA, elem.TA + elem.AoP, length(sv_BO_SEP_ECT.R), r_apo, r_peri);
+
+		tab->CSMWeightSep = burnaux_sep.WTENGON *LBS*1000.0;
+		tab->H_apo_sep = (r_apo - OrbMech::R_Earth) / 1852.0;
+		tab->H_peri_sep = (r_peri - OrbMech::R_Earth) / 1852.0;
+		tab->TrueAnomalySep = elem.TA*DEG;
+		tab->H_Sep = elem.h / 1852.0;
+
+		if (pRTCC->RZJCTTC.R30_Thruster == RTCC_ENGINETYPE_CSMSPS)
+		{
+			if (pRTCC->RZJCTTC.R30_Use4UllageThrusters)
+			{
+				tab->UllageQuads_Sep = 4;
+			}
+			else
+			{
+				tab->UllageQuads_Sep = 2;
+			}
+		}
+		else
+		{
+			tab->UllageQuads_Sep = 0;
+		}
+
+		//Calculate shaping/sep maneuver body axes
+		RMMATT_LVLH(pRTCC->RZJCTTC.R30_Att, sv_TIG_SEP.R, sv_TIG_SEP.V, pRTCC->RZJCTTC.R30_Thruster, pRTCC->RZJCTTC.R30_GimbalIndicator, CSMmass, U_T, X_B, Y_B, Z_B);
+		//Calculate shaping/sep maneuver IMU attitude
+		tab->Att_IMU_Sep = RMMATT_IMU(X_B, Y_B, Z_B, refsdata.REFSMMAT);
+		tab->Att_IMU_Sep = tab->Att_IMU_Sep * DEG;
+		for (int i = 0; i < 3; i++)
+		{
+			if (tab->Att_IMU_Sep.data[i] < 0)
+			{
+				tab->Att_IMU_Sep.data[i] += 360.0;
+			}
+		}
+		//Calculate shaping/sep maneuver LVLH body attitude
+		tab->Att_LVLH_Sep = RMMATT_LVLH_Body(X_B, Y_B, Z_B, sv_TIG_SEP.R, sv_TIG_SEP.V);
+		tab->Att_LVLH_Sep = tab->Att_LVLH_Sep * DEG;
+
+		tab->DVC_Sep = burnaux_sep.DV_C / 0.3048;
+		tab->BurnTime_Sep = burnaux_sep.DT_B;
+		tab->DVT_Sep = burnaux_sep.DV / 0.3048;
+		tab->UllageDT_Sep = dt_ullage_sep;
+		tab->GMTI_Sep = burnaux_sep.GMT_BI;
+		tab->GETI_Sep = pRTCC->GETfromGMT(tab->GMTI_Sep);
+
+		if (pRTCC->RZJCTTC.R30_Thruster == RTCC_ENGINETYPE_CSMSPS)
+		{
+			tab->P_G_Sep = (burnaux_sep.P_G - pRTCC->SystemParameters.MCTSPP)*DEG;
+			tab->Y_G_Sep = (burnaux_sep.Y_G - pRTCC->SystemParameters.MCTSYP)*DEG;
+		}
+		else
+		{
+			tab->P_G_Sep = 0.0;
+			tab->Y_G_Sep = 0.0;
+		}
+
+		tab->VG_XDV_Sep = pRTCC->PIEXDV(sv_TIG_SEP.R, sv_TIG_SEP.V, CSMmass, TCMC, U_T*burnaux_sep.DV, 0) / 0.3048;
+	}
+	else
+	{
+		tab->Indicator_Sep = 1;
+	}
 
 	//Transfer table
 	RetrofireTransferTableEntry *tab2 = &pRTCC->RZRFTT.Manual;
@@ -2991,17 +2973,24 @@ void RetrofirePlanning::RMGTTF(std::string source, int i)
 		}
 		message.push_back(Buffer2);
 		//Line 5
-		sprintf_s(Buffer, "LVLH BODY-ROLL=%+07.2lf PITCH=%+07.2lf YAW=%+07.2lf TRIM ANGLES--PITCH=%+07.2lf YAW=%+07.2lf", BodyAtt.x*DEG, BodyAtt.y*DEG, BodyAtt.z*DEG, tab->P_G, tab->Y_G);
+		sprintf_s(Buffer, "LVLH BODY-ROLL=%+07.2lf PITCH=%+07.2lf YAW=%+07.2lf TRIM ANGLES--PITCH=%+07.2lf YAW=%+07.2lf", tab->Att_LVLH.x, tab->Att_LVLH.y, tab->Att_LVLH.z, tab->P_G, tab->Y_G);
 		Buffer2.assign(Buffer);
 		message.push_back(Buffer2);
 		//Line 6
-		sprintf_s(Buffer, "IMU-------ROLL=%+07.2lf PITCH=%+07.2lf YAW=%+07.2lf HT AT RETRO=%+07.2lf TRUE ANOMALY AT GETI(RET)=%+07.2lf", IMUAtt.x*DEG, IMUAtt.y*DEG, IMUAtt.z*DEG, tab->H_Retro, tab->TrueAnomalyRetro);
+		sprintf_s(Buffer, "IMU-------ROLL=%+07.2lf PITCH=%+07.2lf YAW=%+07.2lf HT AT RETRO=%+07.2lf TRUE ANOMALY AT GETI(RET)=%+07.2lf", tab->Att_IMU.x, tab->Att_IMU.y, tab->Att_IMU.z, tab->H_Retro, tab->TrueAnomalyRetro);
 		Buffer2.assign(Buffer);
 		message.push_back(Buffer2);
 		//Line 7
 		Buffer2.assign("REFSMMAT ID=");
-		pRTCC->FormatREFSMMATCode(refsid, refsdata.ID, Buffer);
-		Buffer2.append(Buffer);
+		if (refsid < 9)
+		{
+			pRTCC->FormatREFSMMATCode(refsid, refsdata.ID, Buffer);
+			Buffer2.append(Buffer);
+		}
+		else
+		{
+			Buffer2.append("DES000");
+		}
 		sprintf_s(Buffer, " XX=%+.8lf XY=%+.8lf XZ=%+.8lf", refsdata.REFSMMAT.m11, refsdata.REFSMMAT.m12, refsdata.REFSMMAT.m13);
 		Buffer2.append(Buffer);
 		message.push_back(Buffer2);

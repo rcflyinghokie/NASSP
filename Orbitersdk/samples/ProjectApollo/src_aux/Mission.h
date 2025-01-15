@@ -100,6 +100,8 @@ namespace mission
 		virtual bool LMHasLegs() const;
 		//false = LM has no deflectors, true = LM has deflectors
 		virtual bool LMHasDeflectors() const;
+		//false = LM has no RTG Cask, true = LM has RTG Cask
+		virtual bool LMHasCask() const;
 		//false = CSM has no HGA, true = CSM has a HGA
 		virtual bool CSMHasHGA() const;
 		//false = CSM has no VHF Ranging System, true = CSM has VHF Ranging System
@@ -205,6 +207,7 @@ namespace mission
 		bool bLMHasAscEngArmAssy;
 		bool bLMHasLegs;
 		bool bLMHasDeflectors;
+		bool bLMHasCask;
 		bool bCSMHasHGA;
 		bool bCSMHasVHFRanging;
 		bool bInvertLMStageBit;

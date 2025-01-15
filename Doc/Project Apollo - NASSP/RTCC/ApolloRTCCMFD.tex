@@ -1533,7 +1533,42 @@ Now go to the Retrofire Maneuver page. The estimated TIG, latitude and longitude
 
 \subsection{Example 2: Apollo 9 nominal deorbit}
 
-The procedure to calculate a nominal deorbit maneuver is very similar to the one described in the previous example. Instead of the fixed Delta V of 325 ft/s the V, gamma target line is used. The calculation is of type 1 (no sep/shaping maneuver), so none of the inputs on the MFD page for the sep/shaping maneuver apply. The splashdown longitude is 59.9 deg west.
+The procedure to calculate a nominal deorbit maneuver is very similar to the one described in the previous example. Instead of the fixed Delta V of 325 ft/s the V, gamma target line is used. The calculation is of type 1 (no sep/shaping maneuver), so none of the inputs on the MFD page for the sep/shaping maneuver apply. The splashdown longitude is 59.9 deg west.\\
+
+\subsection{Example 3: Skylab deorbit}
+
+The Skylab missions performed the deorbit in two steps. First a SPS burn called the shaping maneuver, which lowers the perigee to 90 NM. Then, about two orbits later, the actual deorbit maneuver, again with the SPS, was done.\\
+
+The easiest method to target this maneuver sequence is, contrary to the naming, use of the separation burn logic, so that the two maneuvers are separated by a specific time difference. Here the common inputs for the shaping and deorbit maneuver:\\
+
+\textbf{Definition of Separation/Shaping Maneuver (R30)}\\
+\textbf{SHA}: No Shaping Maneuver\\
+\textbf{SEP}: 180 min (initial guess for two full orbits between the two maneuvers)\\
+\textbf{THR}: SPS\\
+\textbf{DV}: 250 ft/s (initial guess from Skylab orbital altitude)\\
+\textbf{DT}: 0.0 s\\
+\textbf{ATT}: 180.0 -15.0 180.0 (pitched down 15 degrees from local horizontal, heads down)\\
+\textbf{UDT}: 20.0\\
+\textbf{UTH}: 2 jet ullage\\
+\textbf{GBL}: Compute Gimbal Trims\\
+
+\textbf{Retrofire Constraints (R31)}\\
+\textbf{ENG}: SPS\\
+\textbf{MOD}: V, Gamma\\
+\textbf{VAL}: N/A\\
+\textbf{ATT}: LVLH\\
+\textbf{LVH}: 180.0 -15.0 180.0 (pitched down 15 degrees from local horizontal, heads down)\\
+\textbf{ULL}: 2 quads, 20 seconds\\
+\textbf{MAT}: DES (desired orientation, gives the IMU attitude 0, 180, 0 in burn attitude)\\
+\textbf{GIM}: Compute Gimbal Trims\\
+\textbf{K1}: 0.0 deg\\
+\textbf{GC}: 0.2 gs\\
+\textbf{K2}: 55.0 deg\\
+
+\textbf{Retrofire Planning (R32)}\\
+\textbf{TYP}: Type 2 (With Sep/Shaping)\\
+
+Select the target point like in example 1. Two input values have to be tweaked manually with trial and error to get a satisfying solution. First, the Delta V of the shaping maneuver is a manual input, so it has to be changed until the perigee altitude after the maneuver is 90 NM. This value, as well as the other burn parameters of the shaping burn, can be found on the Retrofire Separation (MSK 355) display. In a second step, to optimize the Delta V of the deorbit burn, the time difference from shaping to deorbit has to be adjusted. This is the SEP button on the "Definition of Separation/Shaping Maneuver" page. The deorbit burn should occur near apogee, so tweak this input value until a minimum Delta V of the deorbit burn is reached.\\
 
 \newpage
 %\renewcommand{\arraystretch}{2}

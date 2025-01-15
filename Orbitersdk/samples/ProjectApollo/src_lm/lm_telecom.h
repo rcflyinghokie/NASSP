@@ -194,7 +194,8 @@ public:
 	LM_VHF();
 	void Init(LEM *vessel, h_HeatLoad *vhfh);	       // Initialization
 	void Timestep(double simt);        // TimeStep
-	
+	void DefineAnimations(UINT idx);
+	void SetAnimation(double position);
 	void SystemTimestep(double simdt); // System Timestep
 	void LoadState(char *line);
 	void SaveState(FILEHANDLE scn);
@@ -235,6 +236,10 @@ public:
 
 	double RCVDinputPowRCVR_A; //Power received by transcever A in dBm
 	double RCVDinputPowRCVR_B;//Power received by transcever B in dBm
+
+	//Animations
+	UINT anim_VHF;
+
 };
 
 class LM_PCM

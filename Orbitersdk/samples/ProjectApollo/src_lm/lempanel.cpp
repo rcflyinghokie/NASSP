@@ -930,6 +930,9 @@ void LEM::InitSwitches() {
 	ForwardHatchReliefValve.Register(PSH, "ForwardReliefValve", THREEPOSSWITCH_CENTER);
 	ForwardHatchReliefValve.SetSideways(1);
 
+	//EVA Antenna
+	EvaAntennaHandle.Register(PSH, "EvaAntennaHandle", 0);
+
 	//
 	// Old stuff.
 	//

@@ -3531,7 +3531,7 @@ ApolloRTCCMFDButtons::ApolloRTCCMFDButtons()
 	RegisterFunction("LVH", OAPI_KEY_L, &ApolloRTCCMFD::menuChooseRetrofireAttitude);
 	RegisterFunction("ULL", OAPI_KEY_U, &ApolloRTCCMFD::menuChooseRetrofireUllage);
 
-	RegisterFunction("MAT", OAPI_KEY_R, &ApolloRTCCMFD::menuVoid);
+	RegisterFunction("MAT", OAPI_KEY_R, &ApolloRTCCMFD::menuChooseRetrofireREFSMMAT);
 	RegisterFunction("GIM", OAPI_KEY_G, &ApolloRTCCMFD::menuSwitchRetrofireGimbalIndicator);
 	RegisterFunction("K1", OAPI_KEY_I, &ApolloRTCCMFD::menuChooseRetrofireK1);
 	RegisterFunction("GC", OAPI_KEY_H, &ApolloRTCCMFD::menuChooseRetrofireGs);

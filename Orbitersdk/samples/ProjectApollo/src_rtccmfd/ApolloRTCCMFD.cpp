@@ -5570,6 +5570,18 @@ void ApolloRTCCMFD::menuSwitchRetrofireAttitudeMode()
 	}
 }
 
+void ApolloRTCCMFD::menuChooseRetrofireREFSMMAT()
+{
+	if (GC->rtcc->RZJCTTC.R31_REFSMMAT < 9)
+	{
+		GC->rtcc->RZJCTTC.R31_REFSMMAT++;
+	}
+	else
+	{
+		GC->rtcc->RZJCTTC.R31_REFSMMAT = 1;
+	}
+}
+
 void ApolloRTCCMFD::menuSwitchRetrofireGimbalIndicator()
 {
 	GC->rtcc->RZJCTTC.R31_GimbalIndicator = -GC->rtcc->RZJCTTC.R31_GimbalIndicator;
