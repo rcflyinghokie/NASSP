@@ -138,10 +138,14 @@ void Flag::clbkLoadStateEx(FILEHANDLE scn, void* vs)
 	char* line;
 	while (oapiReadScenario_nextline(scn, line)) {
 		if (!strnicmp(line, "LM_LIFTED_OFF", 13)) {
-			sscanf(line + 13, "%d", &(bool)liftedOff);
+			int value = 0;
+			sscanf(line + 13, "%d", &value);
+			if (value != 0) { liftedOff = true; }
 		}
 		else if (!strnicmp(line, "FLAG_FELL", 9)) {
-			sscanf(line + 9, "%d", &(bool)doFlagFall);
+			int value = 0;
+			sscanf(line + 9, "%d", &value);
+			if (value != 0) { doFlagFall = true; }
 		}
 		else {
 			ParseScenarioLineEx(line, vs);

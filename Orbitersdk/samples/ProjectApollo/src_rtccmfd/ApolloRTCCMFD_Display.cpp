@@ -6817,54 +6817,54 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		ThrusterName(Buffer, GC->rtcc->med_m78.Thruster);
 		skp->Text(1 * W / 16, 8 * H / 14, Buffer, strlen(Buffer));
 
+		if (GC->rtcc->med_m78.UllageDT < 0)
+		{
+			sprintf_s(Buffer, "Nominal ullage");
+		}
+		else
+		{
+			if (GC->rtcc->med_m78.UllageQuads)
+			{
+				sprintf_s(Buffer, "4 quads, %.1f s", GC->rtcc->med_m78.UllageDT);
+			}
+			else
+			{
+				sprintf_s(Buffer, "2 quads, %.1f s", GC->rtcc->med_m78.UllageDT);
+			}
+		}
+		skp->Text(1 * W / 16, 12 * H / 14, Buffer, strlen(Buffer));
+
+		if (GC->rtcc->med_m78.Iteration)
+		{
+			skp->Text(10 * W / 16, 2 * H / 14, "Iterate", 7);
+		}
+		else
+		{
+			skp->Text(10 * W / 16, 2 * H / 14, "Don't iterate", 13);
+		}
+
+		if (GC->rtcc->med_m78.Thruster == RTCC_ENGINETYPE_LMDPS)
+		{
+			sprintf_s(Buffer, "%lf s", GC->rtcc->med_m78.TenPercentDT);
+			skp->Text(10 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
+
+			sprintf_s(Buffer, "%lf", GC->rtcc->med_m78.DPSThrustFactor);
+			skp->Text(10 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
+		}
+
+		if (GC->rtcc->med_m78.TimeFlag)
+		{
+			skp->Text(10 * W / 16, 8 * H / 14, "Impulsive TIG", 13);
+		}
+		else
+		{
+			skp->Text(10 * W / 16, 8 * H / 14, "Optimum TIG", 11);
+		}
+
 		if (GC->MissionPlanningActive)
 		{
 			MPTAttitudeName(Buffer, GC->rtcc->med_m78.Attitude);
 			skp->Text(1 * W / 16, 10 * H / 14, Buffer, strlen(Buffer));
-
-			if (GC->rtcc->med_m78.UllageDT < 0)
-			{
-				sprintf_s(Buffer, "Nominal ullage");
-			}
-			else
-			{
-				if (GC->rtcc->med_m78.UllageQuads)
-				{
-					sprintf_s(Buffer, "4 quads, %.1f s", GC->rtcc->med_m78.UllageDT);
-				}
-				else
-				{
-					sprintf_s(Buffer, "2 quads, %.1f s", GC->rtcc->med_m78.UllageDT);
-				}
-			}
-			skp->Text(1 * W / 16, 12 * H / 14, Buffer, strlen(Buffer));
-
-			if (GC->rtcc->med_m78.Iteration)
-			{
-				skp->Text(10 * W / 16, 2 * H / 14, "Iterate", 7);
-			}
-			else
-			{
-				skp->Text(10 * W / 16, 2 * H / 14, "Don't iterate", 13);
-			}
-
-			if (GC->rtcc->med_m78.Thruster == RTCC_ENGINETYPE_LMDPS)
-			{
-				sprintf_s(Buffer, "%lf s", GC->rtcc->med_m78.TenPercentDT);
-				skp->Text(10 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
-
-				sprintf_s(Buffer, "%lf", GC->rtcc->med_m78.DPSThrustFactor);
-				skp->Text(10 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
-			}
-
-			if (GC->rtcc->med_m78.TimeFlag)
-			{
-				skp->Text(10 * W / 16, 8 * H / 14, "Impulsive TIG", 13);
-			}
-			else
-			{
-				skp->Text(10 * W / 16, 8 * H / 14, "Optimum TIG", 11);
-			}
 		}
 
 		if (GC->MissionPlanningActive == false)

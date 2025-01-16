@@ -2599,6 +2599,8 @@ bool RTCC::LoadMissionConstantsFile(std::string file)
 			papiReadScenario_int(Buff, "MHVLCG_N", SystemParameters.MHVLCG.N);
 			papiReadConfigFile_CGTable(Buff, "MHVACG", SystemParameters.MHVACG.Weight, SystemParameters.MHVACG.CG);
 			papiReadScenario_int(Buff, "MHVACG_N", SystemParameters.MHVACG.N);
+			papiReadScenario_int(Buff, "MGTESE", SystemParameters.MGTESE);
+			papiReadScenario_int(Buff, "MMTESE", SystemParameters.MMTESE);
 		}
 
 		//Anything that is mission, but not launch day specific
@@ -15234,9 +15236,9 @@ void RTCC::EMMDYNMC(int L, int queid, int ind, double param)
 		AEGDataBlock sv_a, sv_p;
 		double INFO[10];
 
-		PIMCKC(sv_pred.R, sv_pred.V, sv_pred.RBI, aeg.Data.coe_osc.a, aeg.Data.coe_osc.e, aeg.Data.coe_osc.i, aeg.Data.coe_osc.g, aeg.Data.coe_osc.h, aeg.Data.coe_osc.l);
-		aeg.Header.AEGInd = sv_pred.RBI;
-
+		//Convert state vector to AEG format
+		aeg = SVToAEG(sv_pred, 0.0, 1.0, mpt->KFactor); //TBD: Mass and area from PLAWDT
+		//Calculate apsides data
 		PMMAPD(aeg.Header, aeg.Data, 0, 0, INFO, &sv_a, &sv_p);
 
 		tab->HAR = INFO[4] / 1852.0;
