@@ -760,6 +760,7 @@ public:
 	void menuSwitchRetrofireEngine();
 	void menuSwitchRetrofireBurnMode();
 	void menuSwitchRetrofireAttitudeMode();
+	void menuChooseRetrofireREFSMMAT();
 	void menuSwitchRetrofireGimbalIndicator();
 	void menuChooseRetrofireValue();
 	void set_RetrofireValue(double val);

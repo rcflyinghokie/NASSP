@@ -6817,54 +6817,54 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		ThrusterName(Buffer, GC->rtcc->med_m78.Thruster);
 		skp->Text(1 * W / 16, 8 * H / 14, Buffer, strlen(Buffer));
 
+		if (GC->rtcc->med_m78.UllageDT < 0)
+		{
+			sprintf_s(Buffer, "Nominal ullage");
+		}
+		else
+		{
+			if (GC->rtcc->med_m78.UllageQuads)
+			{
+				sprintf_s(Buffer, "4 quads, %.1f s", GC->rtcc->med_m78.UllageDT);
+			}
+			else
+			{
+				sprintf_s(Buffer, "2 quads, %.1f s", GC->rtcc->med_m78.UllageDT);
+			}
+		}
+		skp->Text(1 * W / 16, 12 * H / 14, Buffer, strlen(Buffer));
+
+		if (GC->rtcc->med_m78.Iteration)
+		{
+			skp->Text(10 * W / 16, 2 * H / 14, "Iterate", 7);
+		}
+		else
+		{
+			skp->Text(10 * W / 16, 2 * H / 14, "Don't iterate", 13);
+		}
+
+		if (GC->rtcc->med_m78.Thruster == RTCC_ENGINETYPE_LMDPS)
+		{
+			sprintf_s(Buffer, "%lf s", GC->rtcc->med_m78.TenPercentDT);
+			skp->Text(10 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
+
+			sprintf_s(Buffer, "%lf", GC->rtcc->med_m78.DPSThrustFactor);
+			skp->Text(10 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
+		}
+
+		if (GC->rtcc->med_m78.TimeFlag)
+		{
+			skp->Text(10 * W / 16, 8 * H / 14, "Impulsive TIG", 13);
+		}
+		else
+		{
+			skp->Text(10 * W / 16, 8 * H / 14, "Optimum TIG", 11);
+		}
+
 		if (GC->MissionPlanningActive)
 		{
 			MPTAttitudeName(Buffer, GC->rtcc->med_m78.Attitude);
 			skp->Text(1 * W / 16, 10 * H / 14, Buffer, strlen(Buffer));
-
-			if (GC->rtcc->med_m78.UllageDT < 0)
-			{
-				sprintf_s(Buffer, "Nominal ullage");
-			}
-			else
-			{
-				if (GC->rtcc->med_m78.UllageQuads)
-				{
-					sprintf_s(Buffer, "4 quads, %.1f s", GC->rtcc->med_m78.UllageDT);
-				}
-				else
-				{
-					sprintf_s(Buffer, "2 quads, %.1f s", GC->rtcc->med_m78.UllageDT);
-				}
-			}
-			skp->Text(1 * W / 16, 12 * H / 14, Buffer, strlen(Buffer));
-
-			if (GC->rtcc->med_m78.Iteration)
-			{
-				skp->Text(10 * W / 16, 2 * H / 14, "Iterate", 7);
-			}
-			else
-			{
-				skp->Text(10 * W / 16, 2 * H / 14, "Don't iterate", 13);
-			}
-
-			if (GC->rtcc->med_m78.Thruster == RTCC_ENGINETYPE_LMDPS)
-			{
-				sprintf_s(Buffer, "%lf s", GC->rtcc->med_m78.TenPercentDT);
-				skp->Text(10 * W / 16, 4 * H / 14, Buffer, strlen(Buffer));
-
-				sprintf_s(Buffer, "%lf", GC->rtcc->med_m78.DPSThrustFactor);
-				skp->Text(10 * W / 16, 6 * H / 14, Buffer, strlen(Buffer));
-			}
-
-			if (GC->rtcc->med_m78.TimeFlag)
-			{
-				skp->Text(10 * W / 16, 8 * H / 14, "Impulsive TIG", 13);
-			}
-			else
-			{
-				skp->Text(10 * W / 16, 8 * H / 14, "Optimum TIG", 11);
-			}
 		}
 
 		if (GC->MissionPlanningActive == false)
@@ -9051,7 +9051,7 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 	}
 	else if (screen == 103)
 	{
-		skp->Text(5 * W / 8, 1 * H / 32, "Retrofire Constraints", 21);
+		skp->Text(3 * W / 8, 1 * H / 32, "Retrofire Constraints", 21);
 
 		ThrusterName(Buffer, GC->rtcc->RZJCTTC.R31_Thruster);
 		skp->Text(1 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
@@ -9101,7 +9101,14 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			skp->Text(1 * W / 16, 12 * H / 14, Buffer, strlen(Buffer));
 		}
 
-		GC->rtcc->EMGSTGENName(GC->rtcc->RZJCTTC.R31_REFSMMAT, Buffer);
+		if (GC->rtcc->RZJCTTC.R31_REFSMMAT < 9)
+		{
+			GC->rtcc->EMGSTGENName(GC->rtcc->RZJCTTC.R31_REFSMMAT, Buffer);
+		}
+		else
+		{
+			sprintf(Buffer, "DES");
+		}
 		skp->Text(9 * W / 16, 2 * H / 14, Buffer, strlen(Buffer));
 
 		if (GC->rtcc->RZJCTTC.R31_GimbalIndicator == 1)
@@ -9841,6 +9848,8 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 		skp->Text(2 * W / 44, 12 * H / 26, "H", 1);
 		skp->Text(2 * W / 44, 13 * H / 26, "GETI", 4);
 		skp->Text(2 * W / 44, 14 * H / 26, "GMTI", 4);
+		skp->Text(2 * W / 44, 15 * H / 26, "HP", 2);
+		skp->Text(2 * W / 44, 16 * H / 26, "EXT DV", 6);
 
 		skp->Line(14 * W / 44, 6 * H / 26, 14 * W / 44, 24 * H / 26);
 
@@ -9875,6 +9884,10 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 			skp->Text(16 * W / 44, 13 * H / 26, Buffer, strlen(Buffer));
 			GET_Display(Buffer, tab->GMTI_Sep, false);
 			skp->Text(16 * W / 44, 14 * H / 26, Buffer, strlen(Buffer));
+			sprintf_s(Buffer, "%.1lf", tab->H_peri_sep);
+			skp->Text(16 * W / 44, 15 * H / 26, Buffer, strlen(Buffer));
+			sprintf_s(Buffer, "%+07.1f %+07.1f %+07.1f", tab->VG_XDV_Sep.x, tab->VG_XDV_Sep.y, tab->VG_XDV_Sep.z);
+			skp->Text(16 * W / 44, 16 * H / 26, Buffer, strlen(Buffer));
 		}
 		else if (tab->Indicator_Sep == 1)
 		{

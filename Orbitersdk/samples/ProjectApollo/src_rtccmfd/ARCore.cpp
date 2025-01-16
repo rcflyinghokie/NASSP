@@ -5030,8 +5030,8 @@ int ARCore::subThread()
 		{
 			//Without the MPT, get the TIG and DV from the MCC or LOI table
 
-			VECTOR3 dv;
-			double gmt_tig;
+			EphemerisData sv_man_bef;
+			VECTOR3 V_man_after;
 
 			int num = GC->rtcc->med_m78.ManeuverNumber;
 
@@ -5043,8 +5043,9 @@ int ARCore::subThread()
 					Result = DONE;
 					break;
 				}
-				gmt_tig = GC->rtcc->PZLRBELM.sv_man_bef[num - 1].GMT;
-				dv = GC->rtcc->PZLRBELM.V_man_after[num - 1] - GC->rtcc->PZLRBELM.sv_man_bef[num - 1].V;
+
+				sv_man_bef = GC->rtcc->PZLRBELM.sv_man_bef[num - 1];
+				V_man_after = GC->rtcc->PZLRBELM.V_man_after[num - 1];
 			}
 			else
 			{
@@ -5054,46 +5055,52 @@ int ARCore::subThread()
 					Result = DONE;
 					break;
 				}
-				gmt_tig = GC->rtcc->PZMCCXFR.sv_man_bef[num - 1].GMT;
-				dv = GC->rtcc->PZMCCXFR.V_man_after[num - 1] - GC->rtcc->PZMCCXFR.sv_man_bef[num - 1].V;
+
+				sv_man_bef = GC->rtcc->PZMCCXFR.sv_man_bef[num - 1];
+				V_man_after = GC->rtcc->PZMCCXFR.V_man_after[num - 1];
 			}
 
-			VESSEL *v;
-			EphemerisData sv_now, sv_tig;
-			double mass, dt, attachedMass;
-			int ITS;
+			PMMMPTInput in;
 
-			if (GC->rtcc->med_m78.Table == RTCC_MPT_CSM)
+			//Get all required data for PMMMPT and error checking
+			if (GetVesselParameters(GC->rtcc->med_m78.Table == RTCC_MPT_CSM, vesselisdocked, GC->rtcc->med_m78.Thruster, in.CONFIG, in.VC, in.CSMWeight, in.LMWeight))
 			{
-				v = GC->rtcc->pCSM;
-			}
-			else
-			{
-				v = GC->rtcc->pLM;
-			}
-
-			if (v == NULL)
-			{
+				//Error
 				Result = DONE;
 				break;
 			}
 
-			sv_now = GC->rtcc->StateVectorCalcEphem(v);
-			mass = v->GetMass();
+			in.VehicleArea = 129.4*pow(0.3048, 2); //TBD
+			in.IterationFlag = GC->rtcc->med_m78.Iteration;
+			in.IgnitionTimeOption = GC->rtcc->med_m78.TimeFlag;
+			in.Thruster = GC->rtcc->med_m78.Thruster;
 
-			//Propagate to TIG
-			dt = gmt_tig - sv_now.GMT;
-			GC->rtcc->PMMCEN(sv_now, 0.0, 0.0, 1, abs(dt), dt >= 0.0 ? 1.0 : -1.0, sv_tig, ITS);
-
-			if (vesselisdocked)
+			in.sv_before = sv_man_bef;
+			in.V_aft = V_man_after;
+			if (GC->rtcc->med_m78.UllageDT < 0)
 			{
-				attachedMass = GC->rtcc->GetDockedVesselMass(v);
+				in.DETU = GC->rtcc->SystemParameters.MCTNDU;
 			}
 			else
 			{
-				attachedMass = 0.0;
+				in.DETU = GC->rtcc->med_m78.UllageDT;
 			}
-			GC->rtcc->PoweredFlightProcessor(sv_tig, mass, GC->rtcc->GETfromGMT(gmt_tig), GC->rtcc->med_m78.Thruster, attachedMass, dv, false, P30TIG, dV_LVLH);
+			in.UT = GC->rtcc->med_m78.UllageQuads;
+			in.DT_10PCT = GC->rtcc->med_m78.TenPercentDT;
+			in.DPSScaleFactor = GC->rtcc->med_m78.DPSThrustFactor;
+
+			double GMT_TIG;
+			VECTOR3 DV;
+			if (GC->rtcc->PoweredFlightProcessor(in, GMT_TIG, DV) == 0)
+			{
+				//Save for Maneuver PAD and uplink
+				P30TIG = GC->rtcc->GETfromGMT(GMT_TIG);
+				dV_LVLH = DV;
+				manpadenginetype = GC->rtcc->med_m78.Thruster;
+				HeadsUp = true;
+				manpad_ullage_dt = in.DETU;
+				manpad_ullage_opt = GC->rtcc->med_m78.UllageQuads;
+			}
 		}
 
 		Result = DONE;

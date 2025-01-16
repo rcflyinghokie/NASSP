@@ -704,7 +704,7 @@ void LEM::InitSwitches() {
 
 	LEMCoas1Enabled = false;
 	LEMCoas2Enabled = true;
-	LEMWindowShades = false;
+	LEMWindowShades = true;
 	ordealEnabled = false;
 
 	RRGyroSelSwitch.Register(PSH,"RRGyroSelSwitch",THREEPOSSWITCH_UP);
@@ -929,6 +929,9 @@ void LEM::InitSwitches() {
 	ForwardHatchHandle.Register(PSH, "ForwardHandle", TOGGLESWITCH_DOWN);
 	ForwardHatchReliefValve.Register(PSH, "ForwardReliefValve", THREEPOSSWITCH_CENTER);
 	ForwardHatchReliefValve.SetSideways(1);
+
+	//EVA Antenna
+	EvaAntennaHandle.Register(PSH, "EvaAntennaHandle", 0);
 
 	//
 	// Old stuff.

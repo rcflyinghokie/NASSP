@@ -1108,12 +1108,14 @@ void ApolloRTCCMFD::menuSetOnlineMonitorPage()
 void ApolloRTCCMFD::menuLOITransferPage()
 {
 	GC->rtcc->med_m78.Type = true;
+	GC->rtcc->med_m78.Iteration = true; //Make the iterate option the default
 	SelectPage(76);
 }
 
 void ApolloRTCCMFD::menuMCCTransferPage()
 {
 	GC->rtcc->med_m78.Type = false;
+	GC->rtcc->med_m78.Iteration = false; //Make the do not iterate option the default
 	SelectPage(76);
 }
 
@@ -5567,6 +5569,18 @@ void ApolloRTCCMFD::menuSwitchRetrofireAttitudeMode()
 	else
 	{
 		GC->rtcc->RZJCTTC.R31_AttitudeMode = 1;
+	}
+}
+
+void ApolloRTCCMFD::menuChooseRetrofireREFSMMAT()
+{
+	if (GC->rtcc->RZJCTTC.R31_REFSMMAT < 9)
+	{
+		GC->rtcc->RZJCTTC.R31_REFSMMAT++;
+	}
+	else
+	{
+		GC->rtcc->RZJCTTC.R31_REFSMMAT = 1;
 	}
 }
 

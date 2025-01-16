@@ -1397,6 +1397,90 @@ RTCC::RTEConstraintsTable::RTEConstraintsTable()
 	sprintf_s(RTEManeuverCode, "CSU");
 }
 
+RTCC::RetrofireMEDSaveTable::RetrofireMEDSaveTable()
+{
+	R30_ColumnIndicator = 7;
+	R30_GETI_SH = 0.0;
+	R30_DeltaT_Sep = 20.0*60.0;
+	R30_Thruster = RTCC_ENGINETYPE_CSMRCSPLUS4;
+	R30_DeltaV = 5.0*0.3048;
+	R30_DeltaT = 0.0;
+	R30_Att = _V(0.0, -45.4*RAD, 180.0*RAD);
+	R30_Ullage_DT = 15.0;
+	R30_Use4UllageThrusters = true;
+	R30_GimbalIndicator = -1;
+
+	R31_Thruster = RTCC_ENGINETYPE_CSMSPS;
+	R31_GuidanceMode = 4;
+	R31_BurnMode = 3;
+	R31_dt = 0.0;
+	R31_dv = 0.0;
+	R31_AttitudeMode = 2;
+	R31_LVLHAttitude = _V(0.0, -48.5*RAD, PI);
+	R31_UllageTime = 15.0;
+	R31_Use4UllageThrusters = true;
+	R31_REFSMMAT = 1;
+	R31_GimbalIndicator = -1;
+	R31_InitialBankAngle = 0.0;
+	R31_GLevel = 0.2;
+	R31_FinalBankAngle = 55.0*RAD;
+
+	R32_Code = 1;
+	R32_GETI = 0.0;
+	R32_lat_T = 0.0;
+	R32_lng_T = 0.0;
+	R32_MD = 1.0;
+}
+
+void RTCC::RetrofireMEDSaveTable::SaveState(FILEHANDLE scn, char *start_str, char *end_str)
+{
+	char buffer[256];
+
+	oapiWriteLine(scn, start_str);
+
+	sprintf(buffer, "%d %lf %lf %d %lf %lf %lf %lf %lf %lf %d %d", R30_ColumnIndicator, R30_GETI_SH, R30_DeltaT_Sep, R30_Thruster, R30_DeltaV, R30_DeltaT,
+		R30_Att.x, R30_Att.y, R30_Att.z, R30_Ullage_DT, R30_Use4UllageThrusters, R30_GimbalIndicator);
+	oapiWriteScenario_string(scn, "R30", buffer);
+
+	sprintf(buffer, "%d %d %d %.2lf %.2lf %d %lf %lf %lf %lf %d %d %lf %.2lf %lf", R31_Thruster, R31_GuidanceMode, R31_BurnMode, R31_dt, R31_dv, R31_AttitudeMode,
+		R31_LVLHAttitude.x, R31_LVLHAttitude.y, R31_LVLHAttitude.z, R31_UllageTime, R31_Use4UllageThrusters, R31_REFSMMAT, R31_InitialBankAngle, R31_GLevel, R31_FinalBankAngle);
+	oapiWriteScenario_string(scn, "R31", buffer);
+
+	sprintf(buffer, "%d %lf %lf %lf %lf", R32_Code, R32_GETI, R32_lat_T, R32_lng_T, R32_MD);
+	oapiWriteScenario_string(scn, "R32", buffer);
+
+	oapiWriteLine(scn, end_str);
+}
+
+void RTCC::RetrofireMEDSaveTable::LoadState(FILEHANDLE scn, char *end_str)
+{
+	char *line;
+	int i1 = 0;
+
+	while (oapiReadScenario_nextline(scn, line)) {
+		if (!strnicmp(line, end_str, sizeof(end_str))) {
+			break;
+		}
+
+		if (strnicmp(line, "R30", 3) == 0)
+		{
+			sscanf(line + 3, "%d %lf %lf %d %lf %lf %lf %lf %lf %lf %d %d", &R30_ColumnIndicator, &R30_GETI_SH, &R30_DeltaT_Sep, &R30_Thruster, &R30_DeltaV, &R30_DeltaT,
+				&R30_Att.x, &R30_Att.y, &R30_Att.z, &R30_Ullage_DT, &i1, &R30_GimbalIndicator);
+			R30_Use4UllageThrusters = (i1 != 0);
+		}
+		else if (strnicmp(line, "R31", 3) == 0)
+		{
+			sscanf(line + 3, "%d %d %d %lf %lf %d %lf %lf %lf %lf %d %d %lf %lf %lf", &R31_Thruster, &R31_GuidanceMode, &R31_BurnMode, &R31_dt, &R31_dv, &R31_AttitudeMode,
+				&R31_LVLHAttitude.x, &R31_LVLHAttitude.y, &R31_LVLHAttitude.z, &R31_UllageTime, &i1, &R31_REFSMMAT, &R31_InitialBankAngle, &R31_GLevel, &R31_FinalBankAngle);
+			R31_Use4UllageThrusters = (i1 != 0);
+		}
+		else if (strnicmp(line, "R32", 3) == 0)
+		{
+			sscanf(line + 3, "%d %lf %lf %lf %lf", &R32_Code, &R32_GETI, &R32_lat_T, &R32_lng_T, &R32_MD);
+		}
+	}
+}
+
 RTCC::RendezvousEvaluationDisplay::RendezvousEvaluationDisplay()
 {
 	ID = 0;
@@ -2515,6 +2599,8 @@ bool RTCC::LoadMissionConstantsFile(std::string file)
 			papiReadScenario_int(Buff, "MHVLCG_N", SystemParameters.MHVLCG.N);
 			papiReadConfigFile_CGTable(Buff, "MHVACG", SystemParameters.MHVACG.Weight, SystemParameters.MHVACG.CG);
 			papiReadScenario_int(Buff, "MHVACG_N", SystemParameters.MHVACG.N);
+			papiReadScenario_int(Buff, "MGTESE", SystemParameters.MGTESE);
+			papiReadScenario_int(Buff, "MMTESE", SystemParameters.MMTESE);
 		}
 
 		//Anything that is mission, but not launch day specific
@@ -5328,6 +5414,7 @@ double RTCC::GetClockTimeFromAGC(agc_t *agc)
 
 double RTCC::GetTEPHEMFromAGC(agc_t *agc, bool IsCMC)
 {
+	//Returns TEPHEM in centiseconds
 	int tephem_int[3], address;
 
 	//Either CMC or LGC TEPHEM address
@@ -7673,6 +7760,7 @@ void RTCC::SaveState(FILEHANDLE scn) {
 	PZMPTLEM.SaveState(scn, "MPTLEM_BEGIN", "MPTLEM_END");
 	RZDBSC1.SaveState(scn, "RZDBSC1_BEGIN", "RZDBSC1_END");
 	PZMARM.SaveState(scn, "PZMARM_BEGIN", "PZMARM_END");
+	RZJCTTC.SaveState(scn, "RZJCTTC_BEGIN", "RZJCTTC_END");
 
 	if (pCSM)
 	{
@@ -7937,6 +8025,9 @@ void RTCC::LoadState(FILEHANDLE scn) {
 		else if (!strnicmp(line, "PZMARM_BEGIN", sizeof("PZMARM_BEGIN"))) {
 			PZMARM.LoadState(scn, "PZMARM_END");
 		}
+		else if (!strnicmp(line, "RZJCTTC_BEGIN", sizeof("RZJCTTC_BEGIN"))) {
+			RZJCTTC.LoadState(scn, "RZJCTTC_END");
+		}
 		papiReadScenario_string(line, "RTCCMFD_CSM", CSMName);
 		papiReadScenario_string(line, "RTCCMFD_LM", LEMName);
 	}
@@ -7982,22 +8073,6 @@ void RTCC::SetManeuverData(double TIG, VECTOR3 DV)
 {
 	TimeofIgnition = (TIG - CalcGETBase())*24.0*3600.0;
 	DeltaV_LVLH = DV;
-}
-
-int RTCC::SPSRCSDecision(double a, VECTOR3 dV_LVLH)
-{
-	double t;
-
-	t = length(dV_LVLH) / a;
-
-	if (t > 0.5)
-	{
-		return RTCC_ENGINETYPE_CSMSPS;
-	}
-	else
-	{
-		return RTCC_ENGINETYPE_CSMRCSPLUS4;
-	}
 }
 
 void RTCC::ExecuteManeuver(EphemerisData sv, PLAWDTOutput WeightsTable_before, double P30TIG, VECTOR3 dV_LVLH, int Thruster, EphemerisData &sv_after, PLAWDTOutput &WeightsTable_after)
@@ -8462,16 +8537,6 @@ void RTCC::GetTLIParameters(VECTOR3 &RIgn_global, VECTOR3 &VIgn_global, VECTOR3 
 	RIgn_global = _V(RIgn.x, RIgn.z, RIgn.y);
 	VIgn_global = _V(VIgn.x, VIgn.z, VIgn.y);
 	dV_LVLH = DeltaV_LVLH;
-}
-
-bool RTCC::REFSMMATDecision(VECTOR3 Att)
-{
-	if (cos(Att.z) > 0.5) //Yaw between 300° and 60°
-	{
-		return true;
-	}
-
-	return false;
 }
 
 int RTCC::PMMSPT(PMMSPTInput &in)
@@ -9292,64 +9357,6 @@ double RTCC::GetDockedVesselMass(VESSEL *vessel) const
 	}
 
 	return LMmass;
-}
-
-double RTCC::FindOrbitalMidnight(SV sv, double t_TPI_guess)
-{
-	SV sv1;
-	double GET_SV, dt, ttoMidnight;
-
-	OBJHANDLE hSun = oapiGetObjectByName("Sun");
-
-	GET_SV = OrbMech::GETfromMJD(sv.MJD, CalcGETBase());
-	dt = t_TPI_guess - GET_SV;
-
-	sv1 = coast(sv, dt);
-
-	ttoMidnight = OrbMech::sunrise(SystemParameters.MAT_J2000_BRCS, sv1.R, sv1.V, sv1.MJD, sv1.gravref, hSun, 1, 1, false);
-	return t_TPI_guess + ttoMidnight;
-}
-
-void RTCC::FindRadarAOSLOS(SV sv, double lat, double lng, double &GET_AOS, double &GET_LOS)
-{
-	VECTOR3 R_P;
-	double LmkRange, dt1, dt2;
-
-	R_P = unit(_V(cos(lng)*cos(lat), sin(lng)*cos(lat), sin(lat)))*oapiGetSize(sv.gravref);
-
-	dt1 = OrbMech::findelev_gs(SystemParameters.AGCEpoch, SystemParameters.MAT_J2000_BRCS, sv.R, sv.V, R_P, sv.MJD, 175.0*RAD, sv.gravref, LmkRange);
-	dt2 = OrbMech::findelev_gs(SystemParameters.AGCEpoch, SystemParameters.MAT_J2000_BRCS, sv.R, sv.V, R_P, sv.MJD, 5.0*RAD, sv.gravref, LmkRange);
-
-	GET_AOS = OrbMech::GETfromMJD(sv.MJD, CalcGETBase()) + dt1;
-	GET_LOS = OrbMech::GETfromMJD(sv.MJD, CalcGETBase()) + dt2;
-}
-
-void RTCC::FindRadarMidPass(SV sv, double lat, double lng, double &GET_Mid)
-{
-	VECTOR3 R_P;
-	double LmkRange, dt;
-
-	R_P = unit(_V(cos(lng)*cos(lat), sin(lng)*cos(lat), sin(lat)))*oapiGetSize(sv.gravref);
-
-	dt = OrbMech::findelev_gs(SystemParameters.AGCEpoch, SystemParameters.MAT_J2000_BRCS, sv.R, sv.V, R_P, sv.MJD, 90.0*RAD, sv.gravref, LmkRange);
-
-	GET_Mid = OrbMech::GETfromMJD(sv.MJD, CalcGETBase()) + dt;
-}
-
-double RTCC::FindOrbitalSunrise(SV sv, double t_sunrise_guess)
-{
-	SV sv1;
-	double GET_SV, dt, ttoSunrise;
-
-	OBJHANDLE hSun = oapiGetObjectByName("Sun");
-
-	GET_SV = OrbMech::GETfromMJD(sv.MJD, CalcGETBase());
-	dt = t_sunrise_guess - GET_SV;
-
-	sv1 = coast(sv, dt);
-
-	ttoSunrise = OrbMech::sunrise(SystemParameters.MAT_J2000_BRCS, sv1.R, sv1.V, sv1.MJD, sv1.gravref, hSun, true, false, false);
-	return t_sunrise_guess + ttoSunrise;
 }
 
 VECTOR3 RTCC::PointAOTWithCSM(MATRIX3 REFSMMAT, EphemerisData sv, int AOTdetent, int star, double dockingangle)
@@ -12888,16 +12895,6 @@ RTCC_PMMAPD_1_2:
 	return 0;
 }
 
-bool RTCC::GETEval2(double get)
-{
-	if (OrbMech::GETfromMJD(oapiGetSimMJD(), CalcGETBase()) > get)
-	{
-		return true;
-	}
-
-	return false;
-}
-
 void RTCC::MPTMassUpdate(VESSEL *vessel, MED_M50 &med1, MED_M55 &med2, MED_M49 &med3, bool docked)
 {
 	int vesseltype = 0;
@@ -15239,9 +15236,9 @@ void RTCC::EMMDYNMC(int L, int queid, int ind, double param)
 		AEGDataBlock sv_a, sv_p;
 		double INFO[10];
 
-		PIMCKC(sv_pred.R, sv_pred.V, sv_pred.RBI, aeg.Data.coe_osc.a, aeg.Data.coe_osc.e, aeg.Data.coe_osc.i, aeg.Data.coe_osc.g, aeg.Data.coe_osc.h, aeg.Data.coe_osc.l);
-		aeg.Header.AEGInd = sv_pred.RBI;
-
+		//Convert state vector to AEG format
+		aeg = SVToAEG(sv_pred, 0.0, 1.0, mpt->KFactor); //TBD: Mass and area from PLAWDT
+		//Calculate apsides data
 		PMMAPD(aeg.Header, aeg.Data, 0, 0, INFO, &sv_a, &sv_p);
 
 		tab->HAR = INFO[4] / 1852.0;

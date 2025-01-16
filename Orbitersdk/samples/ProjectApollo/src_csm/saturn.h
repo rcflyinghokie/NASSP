@@ -1285,6 +1285,21 @@ public:
 
 	void ClearMeshes();
 
+	//
+	// Flashlight for VC
+	//
+	void MoveFlashlight();
+	void SetFlashlightOn(bool state);
+	void ToggleFlashlight();
+	SpotLight* flashlight;
+	COLOUR4 flashlightColor;
+	COLOUR4 flashlightColor2;
+	VECTOR3 flashlightPos;
+	VECTOR3 vesselPosGlobal;
+	VECTOR3 flashlightDirGlobal;
+	VECTOR3 flashlightDirLocal;
+	bool flashlightOn;
+
 protected:
 
 	///
@@ -3609,6 +3624,8 @@ public:
 	TemperatureTransducer WasteH2ODumpTempSensor;
 	TemperatureTransducer UrineDumpTempSensor;
 
+	TemperatureTransducer DockProbeTempSensor;
+
 protected:
 
 	// CM Optics
@@ -3735,6 +3752,8 @@ protected:
 	// GSE
 	Pump* GSEGlycolPump;
 	h_Radiator* GSERadiator;
+	h_Tank *GSECryoO2Dewar;
+	h_Tank *GSECryoH2Dewar;
 
 	// EPS
 	CryoPressureSwitch H2CryoPressureSwitch;
@@ -4356,6 +4375,7 @@ protected:
 	THRUSTER_HANDLE th_att_cm[12], th_att_cm_sys1[6], th_att_cm_sys2[6];    // CM RCS  
 	THRUSTER_HANDLE th_o2_vent;
 	bool th_att_cm_commanded[12];
+	double rhc_keyboard_deflection[6];	// Holds deflection values (0.0 to 1.0) for each Orbiter attitude direction
 
 	PSTREAM_HANDLE dyemarker;
 	PSTREAM_HANDLE wastewaterdump;
