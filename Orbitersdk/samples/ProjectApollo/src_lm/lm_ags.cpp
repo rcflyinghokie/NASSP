@@ -1196,7 +1196,7 @@ int LEM_DEDA::ThreeDigitDisplaySegmentsLit(char *Str)
 	}
 
 	if (Str[2] >= '0' && Str[2] <= '9') {
-		Curdigit = Str[1] - '0';
+		Curdigit = Str[2] - '0';
 		s += SegmentCount[Curdigit];
 	}
 	return s;

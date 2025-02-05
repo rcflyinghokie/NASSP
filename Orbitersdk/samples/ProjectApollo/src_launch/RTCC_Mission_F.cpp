@@ -2514,7 +2514,7 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 	case 202: //LLS3 Photo PAD
 	{
 		GENERICPAD * form = (GENERICPAD *)pad;
-		char buffer1[1000], buffer2[1000], buffer3[1000];
+		char buffer1[1000], buffer2[1000], buffer3[1000], LS_ID[32];
 
 		//Calculate T2 as time of closest approach
 		//T1 is 2 minutes earlier
@@ -2529,12 +2529,14 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 			//LLS2
 			get_guess = OrbMech::HHMMSSToSS(118, 0, 0);
 			lng = 23.65*RAD;
+			sprintf(LS_ID, "LLS 2");
 		}
 		else
 		{
 			//LLS3
 			get_guess = OrbMech::HHMMSSToSS(132, 0, 0);
 			lng = -1.35*RAD;
+			sprintf(LS_ID, "LLS 3");
 		}
 		gmt_guess = GMTfromGET(get_guess);
 		
@@ -2551,7 +2553,7 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		OrbMech::format_time_HHMMSS(buffer2, T1);
 		OrbMech::format_time_HHMMSS(buffer3, T2);
 
-		sprintf(form->paddata, "OBLIQUE STRIP LLS 2  T0 %s  T1 %s  T2 %s", buffer1, buffer2, buffer3);
+		sprintf(form->paddata, "OBLIQUE STRIP %s  T0 %s  T1 %s  T2 %s", LS_ID, buffer1, buffer2, buffer3);
 	}
 	break;
 	case 201: //Strip Photo Update (rev 22)

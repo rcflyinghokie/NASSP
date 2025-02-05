@@ -1064,14 +1064,9 @@ void ARCore::TransferTIToMPT()
 	startSubthread(38);
 }
 
-void ARCore::TransferSPQToMPT()
+void ARCore::Transfer_SPQ_Or_DKI_To_MPT()
 {
 	startSubthread(39);
-}
-
-void ARCore::TransferDKIToMPT()
-{
-	startSubthread(40);
 }
 
 void ARCore::MPTDirectInputCalc()
@@ -3934,6 +3929,8 @@ int ARCore::subThread()
 		opt.NSR = GC->rtcc->med_k00.NSR;
 		opt.NPC = GC->rtcc->med_k00.NPC;
 		opt.MI = GC->rtcc->med_k00.MI;
+		opt.IDM = GC->rtcc->med_k00.IDM;
+		opt.MNH = GC->rtcc->med_k00.MNH;
 		if (GC->rtcc->med_k00.ChaserVehicle == RTCC_MPT_CSM)
 		{
 			opt.MV = 1;
@@ -4687,7 +4684,7 @@ int ARCore::subThread()
 		Result = DONE;
 	}
 	break;
-	case 39: //Transfer SPQ to MPT
+	case 39: //Transfer SPQ or DKI to MPT
 	{
 		if (GC->MissionPlanningActive)
 		{
@@ -4696,56 +4693,34 @@ int ARCore::subThread()
 		}
 		else
 		{
-			SV sv_pre, sv_post, sv_tig;
-			double attachedMass = 0.0;
+			int plan;
 
-			//Was CSM or LM the chaser vehicle?
-			VESSEL *v;
-			if (GC->rtcc->PZDKIT.Block[0].Display[0].VEH == RTCC_MPT_CSM)
-			{
-				v = GC->rtcc->pCSM;
-			}
-			else
-			{
-				v = GC->rtcc->pLM;
-			}
+			plan = GC->rtcc->med_m70.Plan;
 
-			if (v == NULL)
+			if (plan > 0) plan--; //For DKI
+
+			if (plan < 0 || plan > 6)
 			{
+				//Error
 				Result = DONE;
 				break;
 			}
 
-			SV sv_now = GC->rtcc->StateVectorCalc(v);
-			sv_tig = GC->rtcc->coast(sv_now, SPQTIG - OrbMech::GETfromMJD(sv_now.MJD, GC->rtcc->CalcGETBase()));
+			RTCC::DKIDataBlock *block = &GC->rtcc->PZDKIT.Block[plan];
 
-			if (vesselisdocked)
+			if (block->PlanStatus == 0)
 			{
-				attachedMass = GC->rtcc->GetDockedVesselMass(v);
+				//Error
+				Result = DONE;
+				break;
 			}
-			else
-			{
-				attachedMass = 0.0;
-			}
-			GC->rtcc->PoweredFlightProcessor(sv_tig, SPQTIG, GC->rtcc->med_m70.Thruster, 0.0, SPQDeltaV, true, P30TIG, dV_LVLH, sv_pre, sv_post);
-		}
 
-		Result = DONE;
-	}
-	break;
-	case 40: //Transfer DKI to MPT
-	{
-		if (GC->MissionPlanningActive)
-		{
-			std::vector<std::string> str;
-			GC->rtcc->PMMMED("70", str);
-		}
-		else
-		{
+			RTCC::DKIElementsBlock *elem = &GC->rtcc->PZDKIELM.Block[plan];
+
 			PMMMPTInput in;
 
 			//Get all required data for PMMMPT and error checking
-			if (GetVesselParameters(GC->rtcc->PZDKIT.Block[0].Display[0].VEH == RTCC_MPT_CSM, vesselisdocked, GC->rtcc->med_m70.Thruster, in.CONFIG, in.VC, in.CSMWeight, in.LMWeight))
+			if (GetVesselParameters(block->Display[0].VEH == RTCC_MPT_CSM, vesselisdocked, GC->rtcc->med_m70.Thruster, in.CONFIG, in.VC, in.CSMWeight, in.LMWeight))
 			{
 				//Error
 				Result = DONE;
@@ -4757,8 +4732,8 @@ int ARCore::subThread()
 			in.IgnitionTimeOption = GC->rtcc->med_m70.TimeFlag;
 			in.Thruster = GC->rtcc->med_m70.Thruster;
 
-			in.sv_before = GC->rtcc->PZDKIELM.Block[0].SV_before[0];
-			in.V_aft = GC->rtcc->PZDKIELM.Block[0].V_after[0];
+			in.sv_before = elem->SV_before[0];
+			in.V_aft = elem->V_after[0];
 			if (GC->rtcc->med_m70.UllageDT < 0)
 			{
 				in.DETU = GC->rtcc->SystemParameters.MCTNDU;
@@ -4786,6 +4761,11 @@ int ARCore::subThread()
 		}
 
 		Result = DONE;
+	}
+	break;
+	case 40: //Spare
+	{
+
 	}
 	break;
 	case 41: //Direct Input to the MPT

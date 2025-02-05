@@ -210,7 +210,19 @@ On this page the time of ignition and time of the TPI maneuver are defined.
 \textbf{DH1:} The Delta Height at the NCC maneuver point. Only required for Skylab rendezvous profile. Usually 20 NM\\
 \textbf{DH2:} The Delta Height at the NSR maneuver point. A positive value indicates the chaser vehicle being below the target. Usually 10 to 20 NM.\\
 \textbf{E:} Elevation angle at TPI. Typical value is 26.6 DEG for a rendezvous from below. For rendezvous from above, for example if the CSM needs to rescue the LM in lunar orbit, the value 208.3 DEG is usually used.\\
+\textbf{WT:} Transfer angle from TPI to TPF, typically between 130 and 140 degrees.\\
+\textbf{MIN:} Minimum allowable periapsis altitude in the rendezvous plan.\\
 
+\paragraph{DKI Inputs}\mbox{} \\
+
+\textbf{NC1:} Choose the maneuver line number of the NC1 maneuver. Set to a negative value if no phasing maneuver is in the maneuver plan.\\
+\textbf{NH1:} Choose the maneuver line number of the NH maneuver. Set to a negative value if no height maneuver is in the maneuver plan.\\
+\textbf{NSR:} Choose the maneuver line number of the NSR maneuver. If the rendezvous profile is the Skylab profile then the NCC maneuver line number is selected here and NSR happens at a specific time after NCC.\\
+\textbf{MI:} The maneuver line number for the rendezvous point (TPF). This is an integer number and only has to be a rough estimate, typically this will be set so that rendezvous occurs one orbit after NSR.\\
+\textbf{IDM:} Number of additional rendezvous plans that are being generated. For this the NSR and subsequent maneuvers are set to occur one orbit later and the DKI calculation is run again for the updated plan.\\
+\textbf{MNH:} Location of the NH maneuver in the additional plans select with the IDM button. The NH maneuver either stays at its original maneuver line, as specified on this MFD page, or it is being moved one orbit for every additional plan, in effect keeping its place in the plan relative to NSR.\\
+\textbf{NPC:} Location of the plane change maneuver in the rendezvous plan. Not available yet.\\
+ 
 \paragraph{Example: Apollo 10 PDI Abort}\mbox{} \\
 
 A simple example for a DKI targeted maneuver is the Apollo 10 PDI Abort. Similar in concept to the PDI+12 maneuvers of the lunar landing missions, Apollo 10 would have done an abort maneuver at perilune after DOI to return to the CSM one orbit earlier than in the normal rendezvous plan. The sequence of maneuvers would be the abort initiation 0.5 revolutions after DOI, targeted as a phasing (NC1) maneuver. CSI or NH would follow another half revolution later, and again the CDH or NSR maneuver would be half an orbit after that. If we assign 1.0 as the maneuver line to the DOI maneuver then we would have NC1 = 1.5, NH = 2.0, NSR = 2.5, M = 3. The maneuver line definition is using the time option with the DOI TIG as input.

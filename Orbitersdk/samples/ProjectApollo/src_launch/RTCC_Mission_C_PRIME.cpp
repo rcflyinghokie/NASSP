@@ -387,7 +387,7 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 			sprintf(manname, "MCC1");
 			REFSMMAT = EZJGMTX1.data[0].REFSMMAT;
 			PZMCCPLN.SFPBlockNum = 1;
-			dv_thres = 5.0*0.3048;
+			dv_thres = 5.0*0.3048; //Source: Apollo Mission Techniques for Apollo 8
 		}
 		else if (fcn == 21)
 		{
@@ -395,7 +395,7 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 			sprintf(manname, "MCC2");
 			REFSMMAT = EZJGMTX1.data[0].REFSMMAT;
 			PZMCCPLN.SFPBlockNum = 2;
-			dv_thres = 5.0*0.3048;
+			dv_thres = 1.0*0.3048; //Source: Apollo Mission Techniques for Apollo 8
 		}
 		else if (fcn == 22)
 		{
@@ -403,7 +403,7 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 			sprintf(manname, "MCC3");
 			REFSMMAT = EZJGMTX1.data[0].REFSMMAT;
 			PZMCCPLN.SFPBlockNum = 2;
-			dv_thres = 1.0*0.3048;
+			dv_thres = 1.0*0.3048; //Source: Apollo Mission Techniques for Apollo 8
 		}
 		else
 		{

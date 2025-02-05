@@ -1618,9 +1618,9 @@ void SIVBSystems::GetJ2ISP(double ratio, double &isp, double &ThrustAdjust)
 	}
 }
 
-void SIVBSystems::SetEngineFailed()
+void SIVBSystems::SetEngineFailed(bool fail)
 {
-	EngineFailed = true;
+	EngineFailed = fail;
 }
 
 void SIVBSystems::SetO2H2BurnerFailed(bool fail)
