@@ -4992,6 +4992,21 @@ int ARCore::subThread()
 			}
 			EphemerisData sv = GC->rtcc->StateVectorCalcEphem(v);
 			GC->rtcc->PZREAP.RTEVectorTime = sv.GMT / 3600.0;
+			if (GC->rtcc->PZREAP.TGTLN == 1)
+			{
+				GC->rtcc->PZREAP.EntryProfile = 2;
+			}
+			else
+			{
+				if (GC->rtcc->med_f75_f77.EntryProfile == "HB1")
+				{
+					GC->rtcc->PZREAP.EntryProfile = 1;
+				}
+				else
+				{
+					GC->rtcc->PZREAP.EntryProfile = 0;
+				}
+			}
 			GC->rtcc->PMMREAST(RTEASTType, &sv);
 		}
 

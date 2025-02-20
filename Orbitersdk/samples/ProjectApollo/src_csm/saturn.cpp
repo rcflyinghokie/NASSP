@@ -530,7 +530,7 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	O2SupplyManifPressSensor("O2-Supply-Manif-Press-Sensor", 0.0, 150.0),
 	ECSSecTransducersFeeder("ECS-Sec-Transducers-Feeder", Panelsdk),
 	SecGlyPumpOutPressSensor("Sec-Gly-Pump-Out-Press-Sensor", 0.0, 60.0),
-	SecEvapOutLiqTempSensor("Sec-Eva-pOut-Liq-Temp-Sensor", 25.0, 75.0),
+	SecEvapOutLiqTempSensor("Sec-Evap-Out-Liq-Temp-Sensor", 25.0, 75.0),
 	SecGlycolAccumQtySensor("Sec-Glycol-Accum-Qty-Sensor", 0.0, 1.0, 10000.0),
 	SecEvapOutSteamPressSensor("Sec-Evap-Out-Steam-Press-Sensor", 0.05, 0.25),
 	//PriGlycolFlowRateSensor("Pri-Glycol-Flow-Rate-Sensor", 150.0, 300.0)
@@ -719,6 +719,8 @@ void Saturn::initSaturn()
 
 	UseWideSLA = false;
 
+	SLAHasBeacons = false;
+
 	hStage1Mesh = 0;
 	hStage2Mesh = 0;
 	hStage3Mesh = 0;
@@ -777,6 +779,7 @@ void Saturn::initSaturn()
 	// Default mission time to an hour prior to launch.
 	//
 
+	SimulatedTime = 0.0;
 	MissionTime = (-3600);
 	NextMissionEventTime = 0;
 
@@ -812,8 +815,8 @@ void Saturn::initSaturn()
 	//
 	// Wire up timers.
 	//
-	MissionTimerDisplay.Init(&TimersMnACircuitBraker, &TimersMnBCircuitBraker, &NumericRotarySwitch, &LightingNumIntLMDCCB, NULL);
-	MissionTimer306Display.Init(&TimersMnACircuitBraker, &TimersMnBCircuitBraker, &Panel100NumericRotarySwitch, &LightingNumIntLEBCB, NULL);
+	MissionTimerDisplay.Init(&TimersMnACircuitBraker, &TimersMnBCircuitBraker, &NumericRotarySwitch, &LightingNumIntLMDCCB, NULL, &cte);
+	MissionTimer306Display.Init(&TimersMnACircuitBraker, &TimersMnBCircuitBraker, &Panel100NumericRotarySwitch, &LightingNumIntLEBCB, NULL, &cte);
 	EventTimerDisplay.Init(&TimersMnACircuitBraker, &TimersMnBCircuitBraker, &NumericRotarySwitch, &LightingNumIntLEBCB, NULL);
 	EventTimer306Display.Init(&TimersMnACircuitBraker, &TimersMnBCircuitBraker, &Panel100NumericRotarySwitch, &LightingNumIntLEBCB, NULL);
 
@@ -1007,10 +1010,15 @@ void Saturn::initSaturn()
 	flashlightColor = { 1,1,1,0 };
 	flashlightColor2 = { 0,0,0,0 };
 	flashlightPos = { 0,0,0 };
-	vesselPosGlobal = { 0,0,0 };
-	flashlightDirGlobal = { 0,0,1 };
 	flashlightDirLocal = { 0,0,1 };
 	flashlightOn = 0;
+
+	//
+	// FloodLight
+	//
+	floodLight_P5 = 0;
+	floodLight_P8 = 0;
+	floodLight_P100 = 0;
 
 	//
 	// Save the last view offset set.
@@ -1216,6 +1224,18 @@ void Saturn::initSaturn()
 	for (auto i = 0; i < 6; ++i) {
 		rhc_keyboard_deflection[i] = 0.0;
 	}
+
+	//Crew equipment animations (set moving to trigger animation update)
+	wasteDisposalState.Set(AnimState::CLOSING, 0.0);
+	panel382CoverState.Set(AnimState::CLOSING, 0.0);
+	altimeterCoverState.Set(AnimState::OPENING, 1.0);
+	ordealState.Set(AnimState::CLOSING, 0.0);	//In reality the ORDEAL should be stowed for launch
+	DSKY_GlareshadeState.Set(AnimState::OPENING, 1.0);
+	EMSDV_GlareshadeState.Set(AnimState::OPENING, 1.0);
+	AccelerometerCoverState.Set(AnimState::OPENING, 1.0);
+	MissionTimer_GlareshadeState.Set(AnimState::OPENING, 1.0);
+	Sextant_EyepieceState.Set(AnimState::OPENING, 1.0);
+	Telescope_EyepieceState.Set(AnimState::OPENING, 1.0);
 
 	// call only once 
 	if (!InitSaturnCalled) {
@@ -1426,15 +1446,17 @@ void Saturn::GetApolloName(char *s)
 	sprintf(s, "AS-%d", VehicleNo);
 }
 
-void Saturn::UpdateLaunchTime(double t)
-
+void Saturn::UpdateLaunchTime(double dt)
 {
-	if (t < 0)
+	//Don't allow earlier launch
+	if (dt < 0.0)
+		return;
+	//Don't allow during terminal countdown
+	if (MissionTime >= -186.0)
 		return;
 
-	if (MissionTime < 0) {
-		MissionTime = (-t);
-	}
+	//Update time
+	MissionTime -= dt;
 }
 
 //
@@ -1520,6 +1542,32 @@ void Saturn::Undocking(int port)
 	UndockConnectors(port);
 }
 
+void Saturn::DoMeshAnimation(AnimState &state, UINT &anim, double speed, double simdt)
+{
+	if (state.Moving()) {
+		state.Move(simdt / speed);
+		SetAnimation(anim, state.pos);
+	}
+}
+
+void Saturn::SetAnimations(double simdt)
+{
+	// By Jordan
+	// ANIMATED MESHES
+
+	DoMeshAnimation(panel382CoverState, panel382CoverAnim, 0.5, simdt);
+	DoMeshAnimation(altimeterCoverState, altimeterCoverAnim, 2.0, simdt);
+	DoMeshAnimation(wasteDisposalState, wasteDisposalAnim, 1.0, simdt);
+	DoMeshAnimation(ordealState, ordealAnim, 3.0, simdt);
+	DoMeshAnimation(DSKY_GlareshadeState, DSKY_GlareshadeAnim, 2.0, simdt);
+	DoMeshAnimation(EMSDV_GlareshadeState, EMSDV_GlareshadeAnim, 2.0, simdt);
+	DoMeshAnimation(AccelerometerCoverState, AccelerometerCoverAnim, 2.0, simdt);
+	DoMeshAnimation(MissionTimer_GlareshadeState, MissionTimer_GlareshadeAnim, 2.5, simdt);
+	DoMeshAnimation(Sextant_EyepieceState, Sextant_EyepieceAnim, 2.0, simdt);
+	DoMeshAnimation(Telescope_EyepieceState, Telescope_EyepieceAnim, 2.0, simdt);
+	// By Jordan End
+}
+
 void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 
 {
@@ -1527,6 +1575,8 @@ void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 	TRACESETUP("Saturn::clbkPreStep");
 	sprintf(buffer, "MissionTime %f, simt %f, simdt %f, time(0) %lld", MissionTime, simt, simdt, time(0)); 
 	TRACE(buffer);
+
+	SetAnimations(simdt);
 
 	//
 	// We die horribly if you set 100x or higher acceleration during launch.
@@ -1588,6 +1638,7 @@ void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 	if ((oapiGetFocusObject() == GetHandle()) && (oapiCockpitMode() == COCKPIT_VIRTUAL) && (oapiCameraMode() == CAM_COCKPIT)) {
 		//We have focus on this vessel, and are in the VC
 		MoveFlashlight();
+		UpdateFloodLights();
 	}
 
 	sprintf(buffer, "End time(0) %lld", time(0)); 
@@ -1617,7 +1668,7 @@ void Saturn::clbkPostStep(double simt, double simdt, double mjd)
 		// to inhibit Orbiter's thrust control
 		//
 
-		SPSEngine.Timestep(MissionTime, simdt);
+		SPSEngine.Timestep(SimulatedTime, simdt);
 
 		// Better acceleration measurement stability
 		imu.Timestep(simdt);
@@ -1689,6 +1740,7 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	oapiWriteScenario_int (scn, "PANEL_ID", PanelId);
 	oapiWriteScenario_int(scn, "VIEWPOS", viewpos);
 	papiWriteScenario_double (scn, "TCP", TCPO);
+	papiWriteScenario_double(scn, "SIMULATEDTIME", SimulatedTime);
 	papiWriteScenario_double (scn, "MISSNTIME", MissionTime);
 	papiWriteScenario_double (scn, "NMISSNTIME", NextMissionEventTime);
 
@@ -1709,6 +1761,7 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	oapiWriteScenario_int (scn, "MAINSTATE",  GetMainState());
 	oapiWriteScenario_int (scn, "ATTACHSTATE",  GetAttachState());
 	oapiWriteScenario_int (scn, "LIGHTSTATE",  GetLightState());
+	oapiWriteScenario_int(scn, "CREWEQUIPMENTSTATE", GetCrewEquipmentState());
 
 	//
 	// Save vessel-specific stats.
@@ -1784,6 +1837,7 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 		oapiWriteScenario_int (scn, "S4PL", SIVBPayload);
 	}
 	oapiWriteScenario_int(scn, "WIDESLA", UseWideSLA);
+	oapiWriteScenario_int(scn, "SLABEACONS", SLAHasBeacons);
 	oapiWriteScenario_float(scn, "CUSTOMPAYLOADMASS", customPayloadMass);
 	if (customPayloadClass[0])
 		oapiWriteScenario_string(scn, "CUSTOMPAYLOADCLASS", customPayloadClass);
@@ -2027,6 +2081,56 @@ void Saturn::SetSLAState(int s)
 	SLAWillSeparate = state.SLAWillSeparate;
 }
 
+int Saturn::GetCrewEquipmentState()
+{
+	//Save as open in the scenario if the animation is more than halfway to open
+	CrewEquipmentState state;
+
+	state.wasteDisposalStatus = wasteDisposalState.pos > 0.5;
+	state.panel382CoverStatus = panel382CoverState.pos > 0.5;
+	state.altimeterCoverStowed = altimeterCoverState.pos > 0.5;
+	state.ordealStowed = ordealState.pos > 0.5;
+	state.DSKY_GlareshadeStowed = DSKY_GlareshadeState.pos > 0.5;
+	state.EMSDV_GlareshadeStowed = EMSDV_GlareshadeState.pos > 0.5;
+	state.AccelerometerCoverStowed = AccelerometerCoverState.pos > 0.5;
+	state.MissionTimer_GlareshadeStowed = MissionTimer_GlareshadeState.pos > 0.5;
+	state.Sextant_EyepieceStowed = Sextant_EyepieceState.pos > 0.5;
+	state.Telescope_EyepieceStowed = Telescope_EyepieceState.pos > 0.5;
+
+	return state.word;
+}
+
+void LoadAnimation(int state, AnimState &Anim)
+{
+	//Utility function to load an animation that is only saved as opened/closed in the scenario
+	if (state == 0)
+	{
+		Anim.Set(AnimState::CLOSING, 0.0);
+	}
+	else
+	{
+		Anim.Set(AnimState::OPENING, 1.0);
+	}
+}
+
+void Saturn::SetCrewEquipmentState(int s)
+{
+	CrewEquipmentState state;
+	
+	state.word = s;
+
+	LoadAnimation(state.wasteDisposalStatus, wasteDisposalState);
+	LoadAnimation(state.panel382CoverStatus, panel382CoverState);
+	LoadAnimation(state.altimeterCoverStowed, altimeterCoverState);
+	LoadAnimation(state.ordealStowed, ordealState);
+	LoadAnimation(state.DSKY_GlareshadeStowed, DSKY_GlareshadeState);
+	LoadAnimation(state.EMSDV_GlareshadeStowed, EMSDV_GlareshadeState);
+	LoadAnimation(state.AccelerometerCoverStowed, AccelerometerCoverState);
+	LoadAnimation(state.MissionTimer_GlareshadeStowed, MissionTimer_GlareshadeState);
+	LoadAnimation(state.Sextant_EyepieceStowed, Sextant_EyepieceState);
+	LoadAnimation(state.Telescope_EyepieceStowed, Telescope_EyepieceState);
+}
+
 int Saturn::GetAttachState()
 
 {
@@ -2212,6 +2316,11 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 		sscanf (line+10, "%d", &SwitchState);
 		SetLightState(SwitchState);
 	}
+	else if (!strnicmp(line, "CREWEQUIPMENTSTATE", 18)) {
+		SwitchState = 0;
+		sscanf(line + 18, "%d", &SwitchState);
+		SetCrewEquipmentState(SwitchState);
+	}
 	else if (!strnicmp (line, "LMPADCNT", 8)) {
 		if (!LMPad) {
 			sscanf (line+8, "%d", &LMPadCount);
@@ -2282,6 +2391,10 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	}
 	else if (!strnicmp (line, "SATTYPE", 7)) {
 		sscanf (line+7, "%d", &SaturnType);
+	}
+	else if (!strnicmp(line, "SIMULATEDTIME", 13)) {
+		sscanf(line + 13, "%f", &ftcp);
+		SimulatedTime = ftcp;
 	}
 	else if (!strnicmp(line, "MISSNTIME", 9)) {
         sscanf (line+9, "%f", &ftcp);
@@ -2388,6 +2501,11 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 		int i;
 		sscanf(line + 7, "%d", &i);
 		UseWideSLA = (i != 0);
+	}
+	else if (!strnicmp(line, "SLABEACONS", 10)) {
+		int i;
+		sscanf(line + 10, "%d", &i);
+		SLAHasBeacons = (i != 0);
 	}
 	else if (!strnicmp(line, "CUSTOMPAYLOADMASS", 17)) {
 		sscanf(line + 17, "%f", &ftcp);
@@ -2834,6 +2952,12 @@ void Saturn::GetScenarioState (FILEHANDLE scn, void *vstatus)
         }
     }
 
+	//Backwards compatibility for simulated time
+	if (SimulatedTime == 0.0)
+	{
+		SimulatedTime = MissionTime;
+	}
+
 	//
 	// Recalculate stage masses.
 	//
@@ -3124,15 +3248,16 @@ void Saturn::GenericTimestep(double simt, double simdt, double mjd)
 	// Update mission time.
 	//
 
+	SimulatedTime += simdt;
 	MissionTime += simdt;
 
 	//
 	// Panel flash counter.
 	//
 
-	if (MissionTime >= NextFlashUpdate) {
+	if (SimulatedTime >= NextFlashUpdate) {
 		PanelFlashOn = !PanelFlashOn;
-		NextFlashUpdate = MissionTime + 0.25;
+		NextFlashUpdate = SimulatedTime + 0.25;
 	}
 
 	//
@@ -3304,9 +3429,9 @@ void Saturn::GenericTimestep(double simt, double simdt, double mjd)
 
 	if (noiselat > 0.0 || (vAccel.x*vAccel.x + vAccel.y*vAccel.y + vAccel.z*vAccel.z) > 0.01) {
 		JostleViewpoint(noiselat, noiselong, noisefreq, simdt, -seatacc.x / 200.0, -seatacc.y / 200.0, -seatacc.z / 300.0);
-		LastVPAccelTime = MissionTime;
+		LastVPAccelTime = SimulatedTime;
 	}
-	else if (MissionTime<LastVPAccelTime + 5.0){	
+	else if (SimulatedTime <LastVPAccelTime + 5.0){
 		ViewOffsetx *= 0.95;
 		ViewOffsety *= 0.95;
 		ViewOffsetz *= 0.95;
@@ -3354,9 +3479,9 @@ void Saturn::GenericTimestep(double simt, double simdt, double mjd)
 	// Destroy obsolete stages
 	//
 
-	if (MissionTime >= NextDestroyCheckTime) {
+	if (SimulatedTime >= NextDestroyCheckTime) {
 		DestroyStages(simt);
-		NextDestroyCheckTime = MissionTime + 1.0;
+		NextDestroyCheckTime = SimulatedTime + 1.0;
 	}
 
 	//

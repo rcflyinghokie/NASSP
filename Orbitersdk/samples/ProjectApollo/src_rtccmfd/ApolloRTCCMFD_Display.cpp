@@ -4961,17 +4961,17 @@ bool ApolloRTCCMFD::Update(oapi::Sketchpad *skp)
 
 		skp->SetTextAlign(oapi::Sketchpad::LEFT);
 
+		if (GC->rtcc->med_m65.Table == 1)
+		{
+			skp->Text(1 * W / 16, 2 * H / 14, "CSM", 3);
+		}
+		else
+		{
+			skp->Text(1 * W / 16, 2 * H / 14, "LEM", 3);
+		}
+
 		if (GC->MissionPlanningActive)
 		{
-			if (GC->rtcc->med_m65.Table == 1)
-			{
-				skp->Text(1 * W / 16, 2 * H / 14, "CSM", 3);
-			}
-			else
-			{
-				skp->Text(1 * W / 16, 2 * H / 14, "LEM", 3);
-			}
-
 			if (GC->rtcc->med_m65.ReplaceCode == 0)
 			{
 				skp->Text(1 * W / 16, 4 * H / 14, "Don't replace", 13);
@@ -11380,7 +11380,7 @@ void ApolloRTCCMFD::PrintUllage(char *Buffer, int Thruster, bool Use4Jets, doubl
 		}
 		else if (Duration > 1.0)
 		{
-			sprintf_s(Buffer, 127, "%s, %.0lfs ullage", Buff2, Duration);
+			sprintf_s(Buffer, 127, "%s, %.1lfs", Buff2, Duration);
 		}
 		else if (Duration > 0.0)
 		{

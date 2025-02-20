@@ -646,6 +646,8 @@ ProjectApolloMFD::ProjectApolloMFD (DWORD w, DWORD h, VESSEL *vessel) : MFD2 (w,
 	crawler = NULL;
 	lem = NULL;
 	mcc = NULL;
+	sivb = NULL;
+	our_vessel = NULL;
 	width = w;
 	height = h;
 	HBITMAP hBmpLogo = LoadBitmap(g_hDLL, MAKEINTRESOURCE (IDB_LOGO));
@@ -656,10 +658,12 @@ ProjectApolloMFD::ProjectApolloMFD (DWORD w, DWORD h, VESSEL *vessel) : MFD2 (w,
 
 	//We need to find out what type of vessel it is, so we check for the class name.
 	//Saturns have different functions than Crawlers.  But we have methods for both.
+	Supported = false;
 	if (utils::IsVessel(vessel, utils::Saturn)) {
 		saturn = (Saturn *)vessel;
 		g_Data.progVessel = saturn;
-		g_Data.vessel = vessel;
+		g_Data.vessel = our_vessel = vessel;
+		Supported = true;
 		oapiGetObjectName(saturn->GetGravityRef(), buffer, 8);
 		if (strcmp(buffer, "Earth") == 0 || strcmp(buffer, "Moon") == 0)
 			g_Data.planet = saturn->GetGravityRef();
@@ -681,13 +685,19 @@ ProjectApolloMFD::ProjectApolloMFD (DWORD w, DWORD h, VESSEL *vessel) : MFD2 (w,
 	}
 	else if (utils::IsVessel(vessel, utils::LEM)) {
 			lem = (LEM *)vessel;
-			g_Data.vessel = vessel;
+			g_Data.vessel = our_vessel = vessel;
 			g_Data.gorpVessel = lem;
+			Supported = true;
 			oapiGetObjectName(lem->GetGravityRef(), buffer, 8);
 			if(strcmp(buffer,"Earth") == 0 || strcmp(buffer,"Moon") == 0 )
 				g_Data.planet = lem->GetGravityRef();
 			else
 				g_Data.planet = oapiGetGbodyByName("Earth");
+	}
+	else if (utils::IsVessel(vessel, utils::SIVB)) {
+		sivb = (SIVB*)vessel;
+		g_Data.vessel = our_vessel = vessel;
+		Supported = true;
 	}
 
 	mcc = NULL;
@@ -719,7 +729,7 @@ char *ProjectApolloMFD::ButtonLabel (int bt)
 {
 	// The labels for the buttons used by our MFD mode
 	//If we are working with an unsupported vehicle, we don't want to return any button labels.
-	if (!saturn && !lem) {
+	if (!Supported) {
 		return 0;
 	}
 
@@ -731,7 +741,7 @@ int ProjectApolloMFD::ButtonMenu (const MFDBUTTONMENU **menu) const
 {
 	// The menu descriptions for the buttons used by our MFD mode
 	// We don't want to display a menu if we are in an unsupported vessel.
-	if (!saturn && !lem) {
+	if (!Supported) {
 		menu = 0;
 		return 0;
 	}
@@ -742,7 +752,7 @@ int ProjectApolloMFD::ButtonMenu (const MFDBUTTONMENU **menu) const
 bool ProjectApolloMFD::ConsumeKeyBuffered (DWORD key) 
 {
 	//We don't want to accept keyboard commands from the wrong vessels.
-	if (!saturn && !lem)
+	if (!Supported)
 		return false;
 
 	return m_buttonPages.ConsumeKeyBuffered(this, key);
@@ -770,7 +780,7 @@ bool ProjectApolloMFD::Update (oapi::Sketchpad* skp)
 	skp->SetBackgroundMode(oapi::Sketchpad::BK_TRANSPARENT);
 	skp->SetTextAlign(oapi::Sketchpad::CENTER);
 
-	if (!saturn && !lem) {
+	if (!Supported) {
 		skp->SetTextColor(RGB(255, 0, 0));
 		skp->Text(width / 2, (int)(height * 0.5), "Unsupported vessel", 18);
 		if (!crawler)
@@ -782,16 +792,22 @@ bool ProjectApolloMFD::Update (oapi::Sketchpad* skp)
 	skp->Text(width / 2, (int) (height * 0.1), "Ground Elapsed Time", 19);
 
 	double mt = 0;
-	if (mcc)
-	{
-		mt = mcc->GetMissionTime();
-	}
 	
-	if (mt <= 0.0) //Mission time from MCC might be nonsense before liftoff
+	//S-IVB is not a crewed vessel, so we don't need the MCC ground elapsed time for checklists etc. So if we are in the S-IVB, get its mission time
+	if (sivb)
 	{
-		if (saturn) { mt = saturn->GetMissionTime(); }
-		if (crawler) { mt = crawler->GetMissionTime(); }
-		if (lem) { mt = lem->GetMissionTime(); }
+		mt = sivb->GetMissionTime();
+	}
+	else
+	{
+		if (mcc) mt = mcc->GetMissionTime();
+
+		if (mt <= 0.0) //Mission time from MCC might be nonsense before liftoff
+		{
+			if (saturn) { mt = saturn->GetMissionTime(); }
+			if (crawler) { mt = crawler->GetMissionTime(); }
+			if (lem) { mt = lem->GetMissionTime(); }
+		}
 	}
 
 	int secs = abs((int) mt);
@@ -805,7 +821,7 @@ bool ProjectApolloMFD::Update (oapi::Sketchpad* skp)
 		sprintf(buffer, "%d:%02d:%02d", hours, minutes, secs);
 	skp->Text(width / 2, (int)(height * 0.15), buffer, strlen(buffer));
 	//If this is the crawler and not the actual Saturn, do NOTHING else!
-	if (!saturn && !lem)
+	if (!Supported)
 		return true;
 
 	skp->SetPen(GetDefaultPen(0));
@@ -829,30 +845,18 @@ bool ProjectApolloMFD::Update (oapi::Sketchpad* skp)
 		ELEMENTS elem;
 		char planetName[255];
 		VECTOR3 vel, hvel;
-		double vvel = 0, apDist, peDist, lat, lon, radius;
+		double vvel = 0, apDist, peDist, lat, lon, radius, alt;
 
-		if (saturn) {
-			planet = saturn->GetGravityRef();
-			saturn->GetRelativeVel(planet, vel);
-			if (saturn->GetAirspeedVector(FRAME_HORIZON, hvel)) {
-				vvel = hvel.y * 3.2808399;
-			}
-			saturn->GetApDist(apDist);
-			saturn->GetPeDist(peDist);
-			saturn->GetEquPos(lon, lat, radius);
-			saturn->GetElements(planet, elem, 0, 0, FRAME_EQU);
+		planet = our_vessel->GetGravityRef();
+		our_vessel->GetRelativeVel(planet, vel);
+		if (our_vessel->GetAirspeedVector(FRAME_HORIZON, hvel)) {
+			vvel = hvel.y * 3.2808399;
 		}
-		else if (lem) {
-			planet = lem->GetGravityRef();
-			lem->GetRelativeVel(planet, vel);
-			if (lem->GetAirspeedVector(FRAME_HORIZON, hvel)) {
-				vvel = hvel.y * 3.2808399;
-			}
-			lem->GetApDist(apDist);
-			lem->GetPeDist(peDist);
-			lem->GetEquPos(lon, lat, radius);
-			lem->GetElements(planet, elem, 0, 0, FRAME_EQU);
-		}
+		our_vessel->GetApDist(apDist);
+		our_vessel->GetPeDist(peDist);
+		our_vessel->GetEquPos(lon, lat, radius);
+		our_vessel->GetElements(planet, elem, 0, 0, FRAME_EQU);
+		alt = our_vessel->GetAltitude();
 
 		oapiGetObjectName(planet, planetName, 16);
 		if (strcmp(planetName, "Earth") == 0) {
@@ -869,8 +873,7 @@ bool ProjectApolloMFD::Update (oapi::Sketchpad* skp)
 		skp->Text((int)(width * 0.9), (int)(height * 0.4), buffer, strlen(buffer));
 		sprintf(buffer, "%.0lf ft/s", vvel);
 		skp->Text((int)(width * 0.9), (int)(height * 0.45), buffer, strlen(buffer));
-		if (saturn) { sprintf(buffer, "%.1lf nm  ", saturn->GetAltitude() * 0.000539957); }
-		if (lem) { sprintf(buffer, "%.1lf nm  ", lem->GetAltitude() * 0.000539957); }
+		sprintf(buffer, "%.1lf nm  ", alt * 0.000539957);
 		skp->Text((int)(width * 0.9), (int)(height * 0.5), buffer, strlen(buffer));
 		sprintf(buffer, "%.1lf nm  ", apDist * 0.000539957);
 		skp->Text((int)(width * 0.9), (int)(height * 0.6), buffer, strlen(buffer));
@@ -896,7 +899,6 @@ bool ProjectApolloMFD::Update (oapi::Sketchpad* skp)
 
 		if (saturn)
 		{
-
 			skp->SetTextAlign(oapi::Sketchpad::LEFT);
 			skp->Text((int)(width * 0.1), (int)(height * 0.4), "Crew status:", 12);
 			skp->Text((int)(width * 0.1), (int)(height * 0.45), "Crew number:", 12);
@@ -1660,6 +1662,26 @@ bool ProjectApolloMFD::SetReferencePlanet (char *rstr)
 	return false;
 }
 
+bool ProjectApolloMFD::SetLaunchTime(char *rstr)
+{
+	double DT;
+
+	if (sscanf(rstr, "%lf", &DT) == 1)
+	{
+		if (saturn)
+		{
+			saturn->UpdateLaunchTime(DT);
+			return true;
+		}
+		else if (sivb)
+		{
+			sivb->UpdateLaunchTime(DT);
+			return true;
+		}
+	}
+	return false;
+}
+
 bool ProjectApolloMFD::SetCrewNumber (char *rstr)
 {
 	int n;
@@ -1936,6 +1958,12 @@ void ProjectApolloMFD::menuVAGCCoreDump()
 		saturn->VirtualAGCCoreDump();
 	else if (lem)
 		lem->VirtualAGCCoreDump();
+}
+
+void ProjectApolloMFD::menuChangeLaunchTime()
+{
+	bool LaunchTimeInput(void *id, char *str, void *data);
+	oapiOpenInputBox("Choose delay in launch time (positive value):", LaunchTimeInput, 0, 20, (void*)this);
 }
 
 void ProjectApolloMFD::menuSetCrewNumber()
@@ -2491,6 +2519,11 @@ bool SourceInput (void *id, char *str, void *data)
 bool ReferencePlanetInput (void *id, char *str, void *data)
 {
 	return ((ProjectApolloMFD*)data)->SetReferencePlanet(str);
+}
+
+bool LaunchTimeInput(void *id, char *str, void *data)
+{
+	return ((ProjectApolloMFD*)data)->SetLaunchTime(str);
 }
 
 bool CrewNumberInput (void *id, char *str, void *data)
