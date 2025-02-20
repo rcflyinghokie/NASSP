@@ -30,6 +30,7 @@ struct RTCCMFDInputBoxData
 {
 	double *dVal, *dVal2;
 	int *iVal, *iVal2;
+	bool *bVal;
 	int min1, max1, min2, max2;
 	VECTOR3 *vVal;
 	double factor, factor2;
@@ -228,7 +229,6 @@ public:
 	void menuSetEntryPADPage();
 	void menuSwitchEntryPADOpt();
 	void menuManPADUllage();
-	bool set_ManPADUllageOption(int num, double dt);
 	void menuManPADTIG();
 	void menusextantstartime();
 	void set_sextantstartime(double time);
@@ -427,6 +427,8 @@ public:
 	void menuDKICalc();
 	void menuDKINSRLine();
 	void menuDKIMILine();
+	void menuDKIAdditionalMLines();
+	void menuDKINHPlacement();
 	void menuDKINPCLine();
 	void menuSetSPQElevation();
 	void set_SPQElevation(double elev);
@@ -523,7 +525,6 @@ public:
 	void menuCycleTIAttitude();
 	void menuTIUllageOption();
 	void menuM70UllageOption();
-	bool set_UllageOption(int med, int num, double dt);
 	void menuCycleTIIterationFlag();
 	void menuCycleTITimeFlag();
 	void menuTIDPSTenPercentTime();
@@ -536,6 +537,7 @@ public:
 	void menuBackToSPQorDKIPage();
 	void menuChooseSPQDKIThruster();
 	bool set_ChooseSPQDKIThruster(std::string th);
+	void menuM70SelectPlan();
 	void menuM70DeleteGET();
 	void set_MPTM70DeleteGET(double get);
 	void menuM70CycleAttitude();
@@ -553,9 +555,7 @@ public:
 	void menuChooseGPMThruster();
 	bool set_ChooseGPMThruster(std::string th);
 	void menuCycleGPMAttitude();
-	void menuGPMUllageDT();
-	void set_GPMUllageDT(double dt);
-	void menuGPMUllageThrusters();
+	void menuGPMUllageOptions();
 	void menuCycleGPMIterationFlag();
 	void menuGPMDPSTenPercentDeltaT();
 	void set_GPMDPSTenPercentDeltaT(double dt);
@@ -572,7 +572,6 @@ public:
 	bool set_ChooseLOIMCCThruster(std::string th);
 	void menuCycleLOIMCCAttitude();
 	void menuLOIMCCUllageThrustersDT();
-	bool set_LOIMCCUllageThrustersDT(int num, double dt);
 	void menuLOIMCCManeuverNumber();
 	void set_LOIMCCManeuverNumber(int num);
 	void menuCycleLOIMCCIterationFlag();
@@ -773,7 +772,6 @@ public:
 	void menuChooseRetrofireGs();
 	bool set_RetrofireGs(double val);
 	void menuChooseRetrofireUllage();
-	bool set_RetrofireUllage(int num, double dt);
 	void menuSetRetrofireTargetSelectionPage();
 	void menuCycleRecoveryTargetSelectionPages();
 	void menuRecoveryTargetSelectionCalc();
@@ -829,8 +827,7 @@ public:
 	bool set_RetroSepThruster(std::string th);
 	void menuRetroSepDeltaV();
 	void menuRetroSepDeltaT();
-	void menuRetroSepUllageDT();
-	void menuRetroSepUllageThrusters();
+	void menuRetroSepUllageOptions();
 	void menuRetroSepGimbalIndicator();
 	void menuRetroSepAtt();
 	void menuSetRetrofireSeparationInputsPage();
@@ -880,6 +877,7 @@ public:
 	void GenericInt2Input(int *val1, int *val2, char* message, int min1, int max1, int min2, int max2, void (ApolloRTCCMFD::*func)(void) = NULL);
 	void GenericVectorInput(VECTOR3 *val, char* message, double factor = 1.0, void (ApolloRTCCMFD::*func)(void) = NULL);
 	void GenericStringInput(std::string *val, char* message, void (ApolloRTCCMFD::*func)(void) = NULL);
+	void GenericUllageInput(bool *Use4Jets, double *UllageDuration, bool AllowDefault = true);
 protected:
 	oapi::Font *font;
 	oapi::Font *font2;
@@ -931,6 +929,7 @@ private:
 	void PrintLMVessel(char *Buffer, bool ShowLM = true);
 	void PrintIUVessel(char *Buffer);
 	void PrintTargetVessel(char *Buffer);
+	void PrintUllage(char *Buffer, int Thruster, bool Use4Jets, double Duration);
 };
 
 #endif // !__ApolloRTCCMFD_H

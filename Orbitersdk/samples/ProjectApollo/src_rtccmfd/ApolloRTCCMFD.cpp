@@ -1780,14 +1780,9 @@ void ApolloRTCCMFD::menuRetroSepDeltaV()
 	GenericDoubleInput(&GC->rtcc->RZJCTTC.R30_DeltaV, "Enter Delta V of separation maneuver in ft/s (only choose DT or DV, not both):", 0.3048);
 }
 
-void ApolloRTCCMFD::menuRetroSepUllageDT()
+void ApolloRTCCMFD::menuRetroSepUllageOptions()
 {
-	GenericDoubleInput(&GC->rtcc->RZJCTTC.R30_Ullage_DT, "Enter ullage time in seconds:", 1.0);
-}
-
-void ApolloRTCCMFD::menuRetroSepUllageThrusters()
-{
-	GC->rtcc->RZJCTTC.R30_Use4UllageThrusters = !GC->rtcc->RZJCTTC.R30_Use4UllageThrusters;
+	GenericUllageInput(&GC->rtcc->RZJCTTC.R30_Use4UllageThrusters, &GC->rtcc->RZJCTTC.R30_Ullage_DT, false);
 }
 
 void ApolloRTCCMFD::menuRetroSepGimbalIndicator()
@@ -2037,6 +2032,58 @@ bool GenericStringInputBox(void *id, char *str, void *data)
 	}
 
 	return true;
+}
+
+void ApolloRTCCMFD::GenericUllageInput(bool *Use4Jets, double *UllageDuration, bool AllowDefault)
+{
+	void *data2;
+
+	tempData.bVal = Use4Jets;
+	tempData.dVal = UllageDuration;
+	tempData.min1 = AllowDefault ? 1 : 0;
+	tempData.ptr = this;
+
+	data2 = &tempData;
+
+	bool GenericUllageInputBox(void *id, char *str, void *data);
+	oapiOpenInputBox("Enter number of ullage jets (2 or 4) and duration (0 or more than 1 sec):", GenericUllageInputBox, 0, 25, data2);
+}
+
+bool GenericUllageInputBox(void *id, char *str, void *data)
+{
+	RTCCMFDInputBoxData *arr = static_cast<RTCCMFDInputBoxData*>(data);
+	double dVal;
+	int iVal;
+	bool bTemp;
+
+	if (sscanf(str, "%d %lf", &iVal, &dVal) == 2)
+	{
+		if (iVal == 4)
+		{
+			bTemp = true;
+		}
+		else if (iVal == 2)
+		{
+			bTemp = false;
+		}
+		else return false;
+
+		if (dVal > 1.0 || dVal <= 0.0)
+		{
+			//Acceptable input values:
+			// <0: Default ullage duration (system parameter MCTNDU = 15 seconds)
+			// =0: No ullage
+			// >1: Ullage of 1 second (or more)
+
+			if (arr->min1 == 0 && dVal < 0.0) return false; //Don't accept default duration
+
+			*arr->bVal = bTemp;
+			*arr->dVal = dVal;
+			return true;
+		}
+		return false;
+	}
+	return false;
 }
 
 void ApolloRTCCMFD::menuCycleRecoveryTargetSelectionPages()
@@ -2622,13 +2669,9 @@ void ApolloRTCCMFD::set_RTEDManualDV(VECTOR3 DV)
 
 void ApolloRTCCMFD::menuTransferSPQorDKIToMPT()
 {
-	if (GC->rtcc->med_m70.Plan == 0)
+	if (GC->rtcc->med_m70.Plan >= 0)
 	{
-		G->TransferSPQToMPT();
-	}
-	else if (GC->rtcc->med_m70.Plan == 1)
-	{
-		G->TransferDKIToMPT();
+		G->Transfer_SPQ_Or_DKI_To_MPT();
 	}
 	else
 	{
@@ -3086,39 +3129,7 @@ void ApolloRTCCMFD::GPMPCalc()
 
 void ApolloRTCCMFD::menuManPADUllage()
 {
-	bool ManPADUllageOptionInput(void *id, char *str, void *data);
-	oapiOpenInputBox("Choose the number and duration of ullage (Format: number time)", ManPADUllageOptionInput, 0, 20, (void*)this);
-}
-
-bool ManPADUllageOptionInput(void *id, char *str, void *data)
-{
-	double ss;
-	int num;
-	if (sscanf(str, "%d %lf", &num, &ss) == 2)
-	{
-		((ApolloRTCCMFD*)data)->set_ManPADUllageOption(num, ss);
-		return true;
-	}
-	return false;
-}
-
-bool ApolloRTCCMFD::set_ManPADUllageOption(int num, double dt)
-{
-	if (num == 2)
-	{
-		G->manpad_ullage_opt = false;
-	}
-	else if (num == 4)
-	{
-		G->manpad_ullage_opt = true;
-	}
-	else
-	{
-		return false;
-	}
-
-	G->manpad_ullage_dt = dt;
-	return true;
+	GenericUllageInput(&G->manpad_ullage_opt, &G->manpad_ullage_dt, false);
 }
 
 void ApolloRTCCMFD::menuManPADTIG()
@@ -3787,72 +3798,12 @@ void ApolloRTCCMFD::menuCycleTIAttitude()
 
 void ApolloRTCCMFD::menuTIUllageOption()
 {
-	bool TIUllageOptionInput(void *id, char *str, void *data);
-	oapiOpenInputBox("Choose the number and duration of ullage (Format: number time)", TIUllageOptionInput, 0, 20, (void*)this);
-}
-
-bool TIUllageOptionInput(void *id, char *str, void *data)
-{
-	double ss;
-	int num;
-	if (sscanf(str, "%d %lf", &num, &ss) == 2)
-	{
-		((ApolloRTCCMFD*)data)->set_UllageOption(72, num, ss);
-		return true;
-	}
-	return false;
+	GenericUllageInput(&GC->rtcc->med_m72.UllageQuads, &GC->rtcc->med_m72.UllageDT);
 }
 
 void ApolloRTCCMFD::menuM70UllageOption()
 {
-	bool M70UllageOptionInput(void *id, char *str, void *data);
-	oapiOpenInputBox("Choose the number and duration of ullage (Format: number time)", M70UllageOptionInput, 0, 20, (void*)this);
-}
-
-bool M70UllageOptionInput(void *id, char *str, void *data)
-{
-	double ss;
-	int num;
-	if (sscanf(str, "%d %lf", &num, &ss) == 2)
-	{
-		((ApolloRTCCMFD*)data)->set_UllageOption(70, num, ss);
-		return true;
-	}
-	return false;
-}
-
-bool ApolloRTCCMFD::set_UllageOption(int med, int num, double dt)
-{
-	bool UllageQuads;
-	double UllageDT;
-
-	if (num == 2)
-	{
-		UllageQuads = false;
-	}
-	else if (num == 4)
-	{
-		UllageQuads = true;
-	}
-	else
-	{
-		return false;
-	}
-
-	UllageDT = dt;
-
-	switch (med)
-	{
-	case 70:
-		GC->rtcc->med_m70.UllageQuads = UllageQuads;
-		GC->rtcc->med_m70.UllageDT = UllageDT;
-		break;
-	case 72:
-		GC->rtcc->med_m72.UllageQuads = UllageQuads;
-		GC->rtcc->med_m72.UllageDT = UllageDT;
-		break;
-	}
-	return true;
+	GenericUllageInput(&GC->rtcc->med_m70.UllageQuads, &GC->rtcc->med_m70.UllageDT);
 }
 
 void ApolloRTCCMFD::menuCycleTIIterationFlag()
@@ -3926,6 +3877,11 @@ bool ChooseSPQDKIThrusterInput(void *id, char *str, void *data)
 bool ApolloRTCCMFD::set_ChooseSPQDKIThruster(std::string th)
 {
 	return ThrusterType(th, GC->rtcc->med_m70.Thruster);
+}
+
+void ApolloRTCCMFD::menuM70SelectPlan()
+{
+	GenericIntInput(&GC->rtcc->med_m70.Plan, "-1 for descent plan, 0 for SPQ, 1-7 for DKI:", NULL, -1, 7);
 }
 
 void ApolloRTCCMFD::menuM70DeleteGET()
@@ -4102,31 +4058,9 @@ void ApolloRTCCMFD::menuCycleGPMAttitude()
 	}
 }
 
-void ApolloRTCCMFD::menuGPMUllageDT()
+void ApolloRTCCMFD::menuGPMUllageOptions()
 {
-	bool GPMUllageDTInput(void *id, char *str, void *data);
-	oapiOpenInputBox("Choose the ullage duration in seconds (negative value for nominal):", GPMUllageDTInput, 0, 20, (void*)this);
-}
-
-bool GPMUllageDTInput(void *id, char *str, void *data)
-{
-	double ss;
-	if (sscanf(str, "%lf", &ss) == 1)
-	{
-		((ApolloRTCCMFD*)data)->set_GPMUllageDT(ss);
-		return true;
-	}
-	return false;
-}
-
-void ApolloRTCCMFD::set_GPMUllageDT(double dt)
-{
-	GC->rtcc->med_m65.UllageDT = dt;
-}
-
-void ApolloRTCCMFD::menuGPMUllageThrusters()
-{
-	GC->rtcc->med_m65.UllageQuads = !GC->rtcc->med_m65.UllageQuads;
+	GenericUllageInput(&GC->rtcc->med_m65.UllageQuads, &GC->rtcc->med_m65.UllageDT);
 }
 
 void ApolloRTCCMFD::menuCycleGPMIterationFlag()
@@ -4250,39 +4184,7 @@ void ApolloRTCCMFD::menuCycleLOIMCCAttitude()
 
 void ApolloRTCCMFD::menuLOIMCCUllageThrustersDT()
 {
-	bool LOIMCCUllageThrustersDTInput(void *id, char *str, void *data);
-	oapiOpenInputBox("Choose the number and duration of ullage (Format: number time)", LOIMCCUllageThrustersDTInput, 0, 20, (void*)this);
-}
-
-bool LOIMCCUllageThrustersDTInput(void *id, char *str, void *data)
-{
-	double ss;
-	int num;
-	if (sscanf(str, "%d %lf", &num, &ss) == 2)
-	{
-		((ApolloRTCCMFD*)data)->set_LOIMCCUllageThrustersDT(num, ss);
-		return true;
-	}
-	return false;
-}
-
-bool ApolloRTCCMFD::set_LOIMCCUllageThrustersDT(int num, double dt)
-{
-	if (num == 2)
-	{
-		GC->rtcc->med_m78.UllageQuads = false;
-	}
-	else if (num == 4)
-	{
-		GC->rtcc->med_m78.UllageQuads = true;
-	}
-	else
-	{
-		return false;
-	}
-
-	GC->rtcc->med_m78.UllageDT = dt;
-	return true;
+	GenericUllageInput(&GC->rtcc->med_m78.UllageQuads, &GC->rtcc->med_m78.UllageDT);
 }
 
 void ApolloRTCCMFD::menuLOIMCCManeuverNumber()
@@ -5683,38 +5585,7 @@ void ApolloRTCCMFD::set_RetrofireK2(double val)
 
 void ApolloRTCCMFD::menuChooseRetrofireUllage()
 {
-	bool ChooseRetrofireUllageInput(void *id, char *str, void *data);
-	oapiOpenInputBox("Number of ullage thrusters (2 or 4) and duration (e.g. '4 15'):", ChooseRetrofireUllageInput, 0, 20, (void*)this);
-}
-
-bool ChooseRetrofireUllageInput(void *id, char *str, void *data)
-{
-	int num;
-	double dt;
-	if (sscanf(str, "%d %lf", &num, &dt) == 2)
-	{
-		return ((ApolloRTCCMFD*)data)->set_RetrofireUllage(num, dt);
-	}
-	return false;
-}
-
-bool ApolloRTCCMFD::set_RetrofireUllage(int num, double dt)
-{
-	if ((num == 2 || num == 4) && (dt == 0.0 || dt >= 1.0))
-	{
-		if (num == 4)
-		{
-			GC->rtcc->RZJCTTC.R31_Use4UllageThrusters = true;
-		}
-		else
-		{
-			GC->rtcc->RZJCTTC.R31_Use4UllageThrusters = false;
-		}
-		GC->rtcc->RZJCTTC.R31_UllageTime = dt;
-
-		return true;
-	}
-	return false;
+	GenericUllageInput(&GC->rtcc->RZJCTTC.R31_Use4UllageThrusters, &GC->rtcc->RZJCTTC.R31_UllageTime, false);
 }
 
 void ApolloRTCCMFD::menuEntryUpdateCalc()
@@ -7594,6 +7465,16 @@ void ApolloRTCCMFD::menuDKINSRLine()
 void ApolloRTCCMFD::menuDKIMILine()
 {
 	GenericDoubleInput(&GC->rtcc->med_k00.MI, "Enter approximate TPI maneuver line point:");
+}
+
+void ApolloRTCCMFD::menuDKIAdditionalMLines()
+{
+	GenericIntInput(&GC->rtcc->med_k00.IDM, "Enter number of additional M-lines desired (0-6):", NULL, 0, 6);
+}
+
+void ApolloRTCCMFD::menuDKINHPlacement()
+{
+	GC->rtcc->med_k00.MNH = !GC->rtcc->med_k00.MNH;
 }
 
 void ApolloRTCCMFD::menuDKINPCLine()

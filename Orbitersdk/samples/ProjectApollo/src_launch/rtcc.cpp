@@ -1395,6 +1395,7 @@ RTCC::RTEConstraintsTable::RTEConstraintsTable()
 	ATPCoordinates[4][7] = 170.0*RAD;
 
 	sprintf_s(RTEManeuverCode, "CSU");
+	EntryProfile = 2; //manual reentry to the steep target line
 }
 
 RTCC::RetrofireMEDSaveTable::RetrofireMEDSaveTable()
@@ -1508,6 +1509,8 @@ RTCC::RendezvousEvaluationDisplay::RendezvousEvaluationDisplay()
 
 RTCC::RendezvousPlanningDisplayData::RendezvousPlanningDisplayData()
 {
+	DV_CSM = 0.0;
+	DV_LM = 0.0;
 	NC1 = 0.0;
 	NH = 0.0;
 	NSR = 0.0;
@@ -2813,7 +2816,8 @@ void RTCC::EntryTargeting(EntryOpt *opt, EntryResults *res)
 	{
 		return;
 	}
-	entry->READ(opt->r_rbias, opt->dv_max, 2, 37500.0*0.3048);
+
+	entry->READ(PZREAP.RRBIAS, opt->dv_max, PZREAP.TGTLN + 1, 37500.0*0.3048);
 	entry->ATP(LINE);
 	while (!stop)
 	{
@@ -7641,6 +7645,7 @@ void RTCC::SaveState(FILEHANDLE scn) {
 	SAVE_DOUBLE2("RTCC_SFP_T_TE", PZSFPTAB.blocks[0].T_te, PZSFPTAB.blocks[1].T_te);
 
 	SAVE_DOUBLE("RTCC_PZREAP_RRBIAS", PZREAP.RRBIAS);
+	if (PZREAP.TGTLN != 1) SAVE_INT("RTCC_PZREAP_TGTLN", PZREAP.TGTLN);
 
 	for (i = 0; i < 5; i++)
 	{
@@ -7943,6 +7948,7 @@ void RTCC::LoadState(FILEHANDLE scn) {
 		LOAD_DOUBLE2("RTCC_SFP_T_TE", PZSFPTAB.blocks[0].T_te, PZSFPTAB.blocks[1].T_te);
 
 		LOAD_DOUBLE("RTCC_PZREAP_RRBIAS", PZREAP.RRBIAS);
+		LOAD_INT("RTCC_PZREAP_TGTLN", PZREAP.TGTLN);
 		if (papiReadConfigFile_PTPSite(line, "RTCC_PZREAP_PTPSite", strtemp, darrtemp, inttemp))
 		{
 			PZREAP.PTPSite[inttemp] = strtemp;
@@ -8315,7 +8321,7 @@ void RTCC::RTEMoonTargeting(RTEMoonOpt *opt, EntryResults *res)
 	arr.RRBI = PZREAP.RRBIAS;
 	arr.CIRI = PZREAP.MOTION;
 	arr.HMINI = PZREAP.HMINMC;
-	arr.EPI = 2;
+	arr.EPI = PZREAP.TGTLN + 1;
 	arr.L2DI = 0.3;
 	arr.DVMAXI = PZREAP.DVMAX;
 	arr.MDMAXI = 1.0;
@@ -11113,11 +11119,15 @@ bool RTCC::DockingInitiationProcessor(DKIOpt opt)
 	//Threshold time of TPI
 	double TXX;
 	double TSR1, TSI, P, ECF2, ESF2, TR, DNSR, mu, Elev, theta_TPI, theta_S, SONEL, RTPM, TTPF, R_E, r_per, PMIN, NHS;
-	int ILOOP, i, block;
+	int ILOOP, i, block, J;
 	bool failed, INH, store, recycle, end;
 
 	PZDKIT.UpdatingIndicator = true;
 	PZDKIT.NumSolutions = 0;
+	for (i = 0; i < 7; i++)
+	{
+		PZDKIT.Block[i].PlanStatus = 0; //Invalidate all solutions
+	}
 
 	//Convert to aeg format
 	aeg_init = SVToAEG(opt.sv_CSM, 0.0, 1.0, 1.0); //TBD
@@ -11147,6 +11157,7 @@ bool RTCC::DockingInitiationProcessor(DKIOpt opt)
 	DKI.NCC = opt.NCC;
 	DKI.NPC = opt.NPC;
 	DKI.MI = opt.MI;
+	DKI.MF = opt.MI + (double)opt.IDM;
 
 	if (opt.sv_CSM.RBI == BODY_EARTH)
 	{
@@ -11274,7 +11285,6 @@ bool RTCC::DockingInitiationProcessor(DKIOpt opt)
 	sv_init[I] = sv[I];
 
 PMMDKI_2_1:
-
 	//Take maneuvering vehicle to arrival at NSR
 	sv[M].TIMA = 3;
 	sv[M].Item8 = UOCI;
@@ -11354,7 +11364,6 @@ PMMDKI_2_1:
 	//J = 4: NH, NSR
 	//J = 5: NSR
 	//J = 10: NC1, NH, NCC, NSR (Skylab)
-	int J;
 
 	if (opt.I4)
 	{
@@ -11471,6 +11480,8 @@ PMMDKI_2_1:
 		MATRIX3 Q_Xx;
 		double DH, Phase, HA, HP;
 
+		PZDKIT.Block[block].DV_CSM = PZDKIT.Block[block].DV_LM = 0.0;
+
 		for (i = 0;i < PZDKIT.Block[block].NumMan;i++)
 		{
 			PCPICK(aegh, DKI.sv_after[i], sv[I], DH, Phase, HA, HP);
@@ -11485,6 +11496,15 @@ PMMDKI_2_1:
 			PZDKIT.Block[block].Display[i].dv = length(PZDKIT.Block[block].Display[i].DV_LVLH);
 			PZDKIT.Block[block].Display[i].Yaw = atan2(PZDKIT.Block[block].Display[i].DV_LVLH.y, PZDKIT.Block[block].Display[i].DV_LVLH.x);
 			PZDKIT.Block[block].Display[i].Pitch = atan2(-PZDKIT.Block[block].Display[i].DV_LVLH.z, sqrt(pow(PZDKIT.Block[block].Display[i].DV_LVLH.x, 2) + pow(PZDKIT.Block[block].Display[i].DV_LVLH.y, 2)));
+		
+			if (PZDKIT.Block[block].Display[i].VEH == RTCC_MPT_CSM)
+			{
+				PZDKIT.Block[block].DV_CSM += PZDKIT.Block[block].Display[i].dv;
+			}
+			else
+			{
+				PZDKIT.Block[block].DV_LM += PZDKIT.Block[block].Display[i].dv;
+			}
 		}
 		block++;
 	}
@@ -11496,7 +11516,7 @@ PMMDKI_2_1:
 		{
 			DKI.NH = NHS;
 		}
-		if (opt.IDM > DKI.MI)
+		if (DKI.MF > DKI.MI)
 		{
 			DKI.MI += 1.0;
 			DKI.NCC += 1.0;
@@ -13906,8 +13926,7 @@ void RTCC::PMXSPT(std::string source, int n)
 		message.push_back("MANEUVER TO BE REPLACED NOT IN THE MPT.");
 		break;
 	case 3:
-		message.push_back("MANEUVER TO BE REPLACED OVERLAPS");
-		message.push_back("ANOTHER MANEUVER.");
+		message.push_back("MANEUVER TO BE REPLACED OVERLAPS ANOTHER MANEUVER.");
 		break;
 	case 4:
 		message.push_back("MANEUVER PRIOR TO FROZEN MANEUVER.");
@@ -13940,8 +13959,7 @@ void RTCC::PMXSPT(std::string source, int n)
 		message.push_back("ILLEGAL REQUEST. MANEUVER CANNOT BE PERFORMED IN THIS ORBIT - PROCESSING HALTED.");
 		break;
 	case 13:
-		message.push_back("ILLEGAL REQUEST. MANEUVER CANNOT BE PERFORMED AT THIS POINT");
-		message.push_back("IN ORBIT - PROCESSING HALTED.");
+		message.push_back("ILLEGAL REQUEST. MANEUVER CANNOT BE PERFORMED AT THIS POINT IN ORBIT - PROCESSING HALTED.");
 		break;
 	case 14:
 		message.push_back("AEG FAILED TO CONVERGE - PROCESSING CONTINUED.");
@@ -13962,32 +13980,26 @@ void RTCC::PMXSPT(std::string source, int n)
 		message.push_back("FAILED TO CONVERGE ON REQUESTED HEIGHT");
 		break;
 	case 23:
-		message.push_back("TIME ON M50 MED PRIOR TO END OF LAST EXECUTED");
-		message.push_back("MANEUVER - MPT UNCHANGED");
+		message.push_back("TIME ON M50 MED PRIOR TO END OF LAST EXECUTED MANEUVER - MPT UNCHANGED");
 		break;
 	case 29:
-		message.push_back("REQUESTED TWO-IMPULSE SOLUTION");
-		message.push_back("NUMBER NOT AVAILABLE");
+		message.push_back("REQUESTED TWO-IMPULSE SOLUTION NUMBER NOT AVAILABLE");
 		break;
 	case 30:
-		message.push_back("FAILED TO CONVERGE ON ELEVATION ANGLE -");
-		message.push_back("NO PLAN COMPUTED.");
+		message.push_back("FAILED TO CONVERGE ON ELEVATION ANGLE - NO PLAN COMPUTED.");
 		break;
 	case 32:
 		message.push_back("ILLEGAL ENTRY. CODE = 32");
 		break;
 	case 33:
-		message.push_back("MPT REFLECTS REQUESTED CHANGES -");
-		message.push_back("NO VECTOR AVAILABLE FOR " + RTCCONLINEMON.TextBuffer[0] + " TRAJECTORY UPDATE.");
+		message.push_back("MPT REFLECTS REQUESTED CHANGES... NO VECTOR AVAILABLE FOR " + RTCCONLINEMON.TextBuffer[0] + " TRAJECTORY UPDATE.");
 		break;
 	case 35:
-		message.push_back("UNABLE TO MOVE VECTOR TO " + RTCCONLINEMON.TextBuffer[0] + " -");
-		message.push_back("NO TRAJECTORY UPDATE.");
+		message.push_back("UNABLE TO MOVE VECTOR TO " + RTCCONLINEMON.TextBuffer[0] + " - NO TRAJECTORY UPDATE.");
 		break;
 	case 36:
-		message.push_back("EXECUTION VECTOR FOR MANEUVER");
 		OnlinePrintTimeDDHHMMSS(RTCCONLINEMON.DoubleBuffer[0], temp1);
-		message.push_back(RTCCONLINEMON.TextBuffer[0] + ", BEGIN TIME = " + temp1);
+		message.push_back("EXECUTION VECTOR FOR MANEUVER " + RTCCONLINEMON.TextBuffer[0] + ", BEGIN TIME = " + temp1);
 		OnlinePrintTimeDDHHMMSS(RTCCONLINEMON.DoubleBuffer[1], temp1);
 		sprintf_s(Buffer, "%.1lf", RTCCONLINEMON.DoubleBuffer[2]);
 		temp2.assign(Buffer);
@@ -14008,8 +14020,7 @@ void RTCC::PMXSPT(std::string source, int n)
 		message.push_back("UNUSABLE MANEUVER FOR TRANSFER");
 		break;
 	case 39:
-		message.push_back("UNABLE TO FETCH VECTOR FOR " + RTCCONLINEMON.TextBuffer[0]);
-		message.push_back("MPT UNCHANGED");
+		message.push_back("UNABLE TO FETCH VECTOR FOR " + RTCCONLINEMON.TextBuffer[0] + " - MPT UNCHANGED");
 		break;
 	case 40:
 		message.push_back("MANEUVER DOES NOT EXIST");
@@ -14042,16 +14053,14 @@ void RTCC::PMXSPT(std::string source, int n)
 		message.push_back("UNABLE TO FETCH VECTOR FOR RENDEZVOUS PLANNING REQUEST");
 		break;
 	case 50:
-		sprintf_s(Buffer, "ERROR CODE %d FROM POWERED FLIGHT ITERATOR", RTCCONLINEMON.IntBuffer[0]);
+		sprintf_s(Buffer, "ERROR CODE %d FROM POWERED FLIGHT ITERATOR. MNVR TRANSFERRED USING BEST PARAMETERS AVAILABLE", RTCCONLINEMON.IntBuffer[0]);
 		message.push_back(Buffer);
-		message.push_back("MNVR TRANSFERRED USING BEST PARAMETERS AVAILABLE");
 		break;
 	case 51:
 		message.push_back("UNRECOVERABLE ERROR FROM EMMENI - MPT UNCHANGED");
 		break;
 	case 52:
-		message.push_back("FINITE BURN OF MNVR IS PRIOR TO PRESENT TIME OR");
-		message.push_back("OVERLAPS ANOTHER MNVR - MPT UNCHANGED");
+		message.push_back("FINITE BURN OF MNVR IS PRIOR TO PRESENT TIME OR OVERLAPS ANOTHER MNVR - MPT UNCHANGED");
 		break;
 	case 53:
 		message.push_back("REQUESTED MANEUVER IS NOT IN MPT - M58 MED IGNORE");
@@ -14075,18 +14084,15 @@ void RTCC::PMXSPT(std::string source, int n)
 		message.push_back("FAILURE TO CONVERGE. PLANS DELETED.");
 		break;
 	case 60:
-		sprintf_s(Buffer, "ALL SUBSEQUENCE MANEUVERS TO %d MUST BE REPLACED/DELETED/CONFIRMED", RTCCONLINEMON.IntBuffer[0]);
+		sprintf_s(Buffer, "ALL SUBSEQUENCE MANEUVERS TO %d MUST BE REPLACED/DELETED/CONFIRMED IN CHRONOLOGICAL ORDER DUE TO THIS CONFIGURATION CHANGE.", RTCCONLINEMON.IntBuffer[0]);
 		message.push_back(Buffer);
-		message.push_back("IN CHRONOLOGICAL ORDER DUE TO THIS CONFIGURATION CHANGE.");
 		break;
 	case 61:
-		sprintf_s(Buffer, "VECTOR FOR FREEZE REQUEST IS WITHIN RANGE OF MANEUVER %d", RTCCONLINEMON.IntBuffer[0]);
+		sprintf_s(Buffer, "VECTOR FOR FREEZE REQUEST IS WITHIN RANGE OF MANEUVER %d - CANNOT FREEZE ON THIS VECTOR.", RTCCONLINEMON.IntBuffer[0]);
 		message.push_back(Buffer);
-		message.push_back("- CANNOT FREZE ON THIS VECTOR.");
 		break;
 	case 62:
-		message.push_back("VECTOR FOR FREEZE REQUEST IS PRIOR TO FROZEN TLI -");
-		message.push_back("CANNOT FREEZE POST_TLI MANEUVER ON THIS VECTOR.");
+		message.push_back("VECTOR FOR FREEZE REQUEST IS PRIOR TO FROZEN TLI - CANNOT FREEZE POST_TLI MANEUVER ON THIS VECTOR.");
 		break;
 	case 63:
 		sprintf_s(Buffer, "INVALID CONFIGURATION CODE (%d)", RTCCONLINEMON.IntBuffer[0]);
@@ -14096,58 +14102,49 @@ void RTCC::PMXSPT(std::string source, int n)
 		message.push_back("THE AMOUNT OF TIME TO UPDATE THE ELEMENTS EXCEEDS FOUR DAYS.");
 		break;
 	case 65:
-		message.push_back("AEG/PIATSU ERROR - LONGITUDE OF ASCENDING NODE HAS BEEN");
-		message.push_back("ZEROED FOR MANEUVER " + RTCCONLINEMON.TextBuffer[0]);
+		message.push_back("AEG/PIATSU ERROR - LONGITUDE OF ASCENDING NODE HAS BEEN ZEROED FOR MANEUVER " + RTCCONLINEMON.TextBuffer[0]);
 		break;
 	case 66:
-		message.push_back("MANEUVER " + RTCCONLINEMON.TextBuffer[0] + " OVERLAPS PREVIOUS MPT MANEUVER - WILL");
-		message.push_back("BE SKIPPED BY INTEGRATOR.");
+		message.push_back("MANEUVER " + RTCCONLINEMON.TextBuffer[0] + " OVERLAPS PREVIOUS MPT MANEUVER - WILL BE SKIPPED BY INTEGRATOR.");
 		break;
 	case 67:
 		message.push_back("ERROR FROM PMMDAN - DMT DAY/NIGHT INFORMATION ZEROED FOR MANEUVER " + RTCCONLINEMON.TextBuffer[0]);
 		break;
 	case 68:
-		message.push_back("UNABLE TO ADVANCE TO SELENOGRAPHIC");
-		message.push_back("ARGUMENT OF LATITUDE. PROCESSING HALTED.");
+		message.push_back("UNABLE TO ADVANCE TO SELENOGRAPHIC ARGUMENT OF LATITUDE. PROCESSING HALTED.");
 		break;
 	case 69:
 		message.push_back("UNABLE TO CONVERT VECTORS FROM MEAN TO TRUE.");
 		break;
 	case 70:
-		message.push_back("NO FREEFLIGHT VECTOR AT IGNITION FOR MANEUVER " + RTCCONLINEMON.TextBuffer[0]);
-		message.push_back("- EPHEMERIS VECTOR WILL BE USED.");
+		message.push_back("NO FREEFLIGHT VECTOR AT IGNITION FOR MANEUVER " + RTCCONLINEMON.TextBuffer[0] + "- EPHEMERIS VECTOR WILL BE USED.");
 		break;
 	case 71:
 		message.push_back("DELETE MPT MANEUVERS PRIOR TO ENTERING M55 MED");
 		break;
 	case 72:
-		message.push_back("ERROR FROM ENCKE N.I. UNABLE TO MOVE VECTOR TO THRESHOLD TIME");
-		message.push_back("OR TO GENERATE SEARCH EPHEMERIS - PROCESSING TERMINATED.");
+		message.push_back("ERROR FROM ENCKE N.I. UNABLE TO MOVE VECTOR TO THRESHOLD TIME OR TO GENERATE SEARCH EPHEMERIS - PROCESSING TERMINATED.");
 		break;
 	case 73:
 		message.push_back("MISSION PLAN TABLE IS BEING UPDATED.");
 		break;
 	case 74:
-		message.push_back("CORRECTIVE COMBINATION SOLUTION REENTERED");
-		message.push_back("FOR TRANSFER OR SINGLE SOLUTION REQUEST.");
+		message.push_back("CORRECTIVE COMBINATION SOLUTION REENTERED FOR TRANSFER OR SINGLE SOLUTION REQUEST.");
 		break;
 	case 75:
-		message.push_back("VECTOR FETCH TIME IS PRIOR TO TIME");
-		message.push_back("OF LAST FROZEN MANEUVER.");
+		message.push_back("VECTOR FETCH TIME IS PRIOR TO TIME OF LAST FROZEN MANEUVER.");
 		break;
 	case 76:
 		message.push_back("UNRECOVERABLE AEG ERROR.");
 		break;
 	case 77:
-		message.push_back("CALCULATED TIME OUTSIDE LIMITS OF IGNITION");
-		message.push_back("SEARCH EPHEMERIS - PROCESSING TERMINATED.");
+		message.push_back("CALCULATED TIME OUTSIDE LIMITS OF IGNITION SEARCH EPHEMERIS - PROCESSING TERMINATED.");
 		break;
 	case 78:
 		message.push_back("MLD DATA TABLE HAS NOT BEEN INITIALIZED");
 		break;
 	case 79:
-		message.push_back("INVALID IGNITION TIME FOR S-IVB TLI MANEUVER");
-		message.push_back("- MPT UNCHANGED");
+		message.push_back("INVALID IGNITION TIME FOR S-IVB TLI MANEUVER - MPT UNCHANGED");
 		break;
 	case 81:
 		message.push_back("FAILED TO CONVERGE.");
@@ -14159,32 +14156,25 @@ void RTCC::PMXSPT(std::string source, int n)
 		message.push_back("FAILED TO CONVERGE.");
 		break;
 	case 84:
-		message.push_back("PRECESSION NUTATION MATRIX UNAVAILABLE -");
-		message.push_back("PROCESSING TERMINATED");
+		message.push_back("PRECESSION NUTATION MATRIX UNAVAILABLE - PROCESSING TERMINATED");
 		break;
 	case 85:
-		message.push_back("TARGET PARAMETERS UNAVAILABLE FOR");
-		message.push_back("SPECIFIED LAUNCH DAY - PROCESSING TERMINATED");
+		message.push_back("TARGET PARAMETERS UNAVAILABLE FOR SPECIFIED LAUNCH DAY - PROCESSING TERMINATED");
 		break;
 	case 86:
-		message.push_back("TARGET PARAMETERS UNAVAILABLE FOR");
-		message.push_back("SPECIFIED INJECTION OPPORTUNITY - PROCESSING TERMINATED");
+		message.push_back("TARGET PARAMETERS UNAVAILABLE FOR SPECIFIED INJECTION OPPORTUNITY - PROCESSING TERMINATED");
 		break;
 	case 92:
-		message.push_back("CONSTRAINT " + RTCCONLINEMON.TextBuffer[0] + " VIOLATED IN");
-		message.push_back("COELLIPTIC SEQUENCE.");
+		message.push_back("CONSTRAINT " + RTCCONLINEMON.TextBuffer[0] + " VIOLATED IN COELLIPTIC SEQUENCE.");
 		break;
 	case 98:
-		message.push_back("DIFFERENCE BETWEEN ACTUAL AND NOMINAL");
-		message.push_back("LIFTOFF TIME OUTSIDE LIMITS OF LAUNCH AZIMUTH POLYNOMIAL");
+		message.push_back("DIFFERENCE BETWEEN ACTUAL AND NOMINAL LIFTOFF TIME OUTSIDE LIMITS OF LAUNCH AZIMUTH POLYNOMIAL");
 		break;
 	case 101:
-		message.push_back("SPQ PLAN FAILED TO CONVERGE ON OPTIMUM");
-		message.push_back("CSI - PLAN RETAINED");
+		message.push_back("SPQ PLAN FAILED TO CONVERGE ON OPTIMUM CSI - PLAN RETAINED");
 		break;
 	case 102:
-		message.push_back("NOMINAL TIME OF LIFTOFF FOR SPECIFIED LAUNCH DAY");
-		message.push_back("UNAVAILABLE - PROCESSING TERMINATED.");
+		message.push_back("NOMINAL TIME OF LIFTOFF FOR SPECIFIED LAUNCH DAY UNAVAILABLE - PROCESSING TERMINATED.");
 		break;
 	case 108:
 		message.push_back("ERROR RETURNED FROM PMMAPD - INVALID APOFOCUS / PERIFOCUS");
@@ -14193,8 +14183,7 @@ void RTCC::PMXSPT(std::string source, int n)
 		message.push_back("UNABLE TO CONVERT SPHERICAL ELEMENTS TO R AND V VECTORS.");
 		break;
 	case 121:
-		message.push_back("DIFFERENCE BETWEEN ACTUAL AND NOMINAL");
-		message.push_back("LIFTOFF TIME OUTSIDE LIMITS OF LAUNCH AZIMUTH POLYNOMIAL");
+		message.push_back("DIFFERENCE BETWEEN ACTUAL AND NOMINAL LIFTOFF TIME OUTSIDE LIMITS OF LAUNCH AZIMUTH POLYNOMIAL");
 		break;
 	case 122:
 		{
@@ -14215,31 +14204,25 @@ void RTCC::PMXSPT(std::string source, int n)
 		}
 		break;
 	case 124:
-		message.push_back("COAST INTEGRATOR UNABLE TO OBTAIN PERICYNTHION POINT");
-		message.push_back("FOR LOI REQUEST - LOI SOLUTIONS ARE UNOBTAINABLE");
+		message.push_back("COAST INTEGRATOR UNABLE TO OBTAIN PERICYNTHION POINT FOR LOI REQUEST - LOI SOLUTIONS ARE UNOBTAINABLE");
 		break;
 	case 125:
-		message.push_back("LUNAR APPROACH HYPERBOLA HAS");
-		message.push_back("IMPACTING TRAJECTORY - LOI SOLUTIONS ARE UNOBTAINABLE");
+		message.push_back("LUNAR APPROACH HYPERBOLA HAS IMPACTING TRAJECTORY - LOI SOLUTIONS ARE UNOBTAINABLE");
 		break;
 	case 126:
-		message.push_back("LUNAR APPROACH HYPERBOLIC PERICYNTHION GREATER THAN");
-		message.push_back("REQUESTED LPO APOLUNE - LOI SOLUTIONS ARE UNOBTAINABLE");
+		message.push_back("LUNAR APPROACH HYPERBOLIC PERICYNTHION GREATER THAN REQUESTED LPO APOLUNE - LOI SOLUTIONS ARE UNOBTAINABLE");
 		break;
 	case 135:
-		message.push_back("PMMAPD ERROR RETURN IN OBTAINING CURRENT");
-		message.push_back("APOFOCUS/PERIFOCUS. PROCESSING HALTED.");
+		message.push_back("PMMAPD ERROR RETURN IN OBTAINING CURRENT APOFOCUS/PERIFOCUS. PROCESSING HALTED.");
 		break;
 	case 136:
-		message.push_back("PMMAPD ERROR RETURN IN OBTAINING RESULTANT");
-		message.push_back("APOFOCUS/PERIFOCUS. PROCESSING HALTED.");
+		message.push_back("PMMAPD ERROR RETURN IN OBTAINING RESULTANT APOFOCUS/PERIFOCUS. PROCESSING HALTED.");
 		break;
 	case 137:
 		message.push_back("RESULTANT ORBIT NON/ELLIPTICAL. PROCESSING HALTED.");
 		break;
 	case 200:
-		message.push_back("ITERATION FAILURE, MVR TRANSFERRED");
-		message.push_back("USING BEST PARAMETERS AVAILABLE");
+		message.push_back("ITERATION FAILURE, MVR TRANSFERRED USING BEST PARAMETERS AVAILABLE");
 		break;
 	case 201:
 		message.push_back(RTCCONLINEMON.TextBuffer[0]);
@@ -14300,14 +14283,38 @@ void RTCC::OnlinePrint(const std::string &source, const std::vector<std::string>
 	{
 		rtccdebug.open("RTCCDebug.log", std::ofstream::app);
 	}
-
-	RTCCONLINEMON.data.push_front(data);
 	
 	for (unsigned i = 0;i < data.message.size();i++)
 	{
 		rtccdebug << data.message[i] << endl;
 	}
 	rtccdebug.close();
+
+	//Limit to 60 characters per line
+	OnlineMonitorMessage data2;
+	unsigned j, maxwidth;
+
+	maxwidth = 60U;
+
+	for (unsigned i = 0; i < data.message.size(); i++)
+	{
+		if (maxwidth >= data.message[i].size())
+		{
+			//Small enough, not much to do
+			data2.message.push_back(data.message[i]);
+		}
+		else
+		{
+			j = 0;
+			while (data.message[i].size() > maxwidth*j)
+			{
+				data2.message.push_back(data.message[i].substr(maxwidth*j, maxwidth));
+				j++;
+			}
+		}
+	}
+
+	RTCCONLINEMON.data.push_front(data2);
 
 	if (RTCCONLINEMON.data.size() >= 9)
 	{
@@ -14358,8 +14365,7 @@ void RTCC::GMSPRINT(std::string source, int n)
 		message.push_back("GMGPMED: P80 HAS INVALID DATE");
 		break;
 	case 46:
-		message.push_back("P10, ..., TRAJ $ ALLOWED ONLY IN");
-		message.push_back("NO PHASE, PRELCH, PRELCH2 (L.S.)");
+		message.push_back("P10, ..., TRAJ $ ALLOWED ONLY IN NO PHASE, PRELCH, PRELCH2 (L.S.)");
 		break;
 	case 51:
 		message.push_back("MED " + RTCCONLINEMON.TextBuffer[0]);
@@ -22863,12 +22869,19 @@ int RTCC::PMMXFR(int id, void *data)
 			{
 				num_man = 1;//PZLDPELM.num_man;
 			}
-			else if (inp->Plan == 0)
-			{
-				num_man = 1;//PZDKIT.Block[0].NumMan;
-			}
 			else
 			{
+				if (inp->Plan == 0)
+				{
+					//SPQ plan is in first slot of DKI table
+					inp->Plan = 1;
+				}
+				//Does this plan exist?
+				if (PZDKIT.Block[inp->Plan - 1].PlanStatus == 0)
+				{
+					PMXSPT("PMMXFR", 38);
+					return 38;
+				}
 				num_man = 1;//PZDKIT.Block[inp->Plan - 1].NumMan;
 			}
 		}
@@ -22919,9 +22932,9 @@ int RTCC::PMMXFR(int id, void *data)
 			}
 			else
 			{
-				GMTI = PZDKIELM.Block[0].SV_before[0].GMT;
-				purpose = PZDKIT.Block[0].Display[0].Man_ID;
-				plan = PZDKIT.Block[0].Display[0].VEH;
+				GMTI = PZDKIELM.Block[inp->Plan - 1].SV_before[0].GMT;
+				purpose = PZDKIT.Block[inp->Plan - 1].Display[0].Man_ID;
+				plan = PZDKIT.Block[inp->Plan - 1].Display[0].VEH;
 			}
 		}
 		else if (id == 42)
@@ -23037,8 +23050,8 @@ int RTCC::PMMXFR(int id, void *data)
 			}
 			else
 			{
-				in.sv_before = PZDKIELM.Block[0].SV_before[0];
-				in.V_aft = PZDKIELM.Block[0].V_after[0];
+				in.sv_before = PZDKIELM.Block[inp->Plan - 1].SV_before[0];
+				in.V_aft = PZDKIELM.Block[inp->Plan - 1].V_after[0];
 			}
 		}
 		else
@@ -24985,26 +24998,25 @@ void RTCC::EMDSSMMD(bool sun, int ind, double param)
 			break;
 		}
 
-		//For first sunrise, check if it is an actual one
-		if (i == 0 && out.IsActualChange == false)
+		//Non-fatal error, mark as best estimate
+		if (out.err == 1 || out.IsActualChange == false)
 		{
-			//Search for sunset from the same GMT
+			tab->data[i].BestAvailableGETSR = true;
 		}
 		else
 		{
-			//Non-fatal error, mark as best estimate
-			if (out.err == 1 || out.IsActualChange == false)
-			{
-				tab->data[i].BestAvailableGETSR = true;
-			}
-			else
-			{
-				tab->data[i].BestAvailableGETSR = false;
-			}
-			tab->data[i].GETSR = out.T_Change;
-			tab->num = i + 1; //This tells the later code that something was found for this line of the display
+			tab->data[i].BestAvailableGETSR = false;
+		}
+		tab->data[i].GETSR = out.T_Change;
+		tab->num = i + 1; //This tells the later code that something was found for this line of the display
 
+		if (out.IsActualChange)
+		{
 			in.GMT = tab->data[i].GETSR + eps; //Search for sunset from sunrise time plus tolerance
+		}
+		else
+		{
+			//Search for sunset from current time
 		}
 
 		//Search for sunset
@@ -25038,14 +25050,28 @@ void RTCC::EMDSSMMD(bool sun, int ind, double param)
 	} while (i < 8);
 
 	//Terminator rise and set search
-	for (i = 0; i < tab->num;i++)
+	for (i = 0; i < tab->num; i++)
 	{
-		if (tab->data[i].GETSR != 0.0)
+		//Search for terminator rise
+		in.terminator = true;
+		in.present = true;
+
+		if (tab->data[i].BestAvailableGETSR)
 		{
-			//Search for terminator rise
-			in.terminator = true;
-			in.present = true;
-			in.GMT = tab->data[i].GETSR - eps; //Search for terminator rise from sunrise time minus tolerance
+			//If the actual sunrise was not found, don't try to find the terminator rise
+			tab->data[i].BestAvailableGETTR = true;
+			in.GMT = tab->data[i].GETTR = tab->data[i].GETSR;
+		}
+		else
+		{
+			if (i == 0 && tab->data[i].BestAvailableGETSR)
+			{
+				in.GMT = tab->data[i].GETSR; //Search for terminator rise from initial time
+			}
+			else
+			{
+				in.GMT = tab->data[i].GETSR - eps; //Search for terminator rise from sunrise time minus tolerance
+			}
 
 			EMMENV(EPHEM2, MANTIMES, &LUNSTAY, in, out);
 
@@ -25070,7 +25096,16 @@ void RTCC::EMDSSMMD(bool sun, int ind, double param)
 				//Error
 				in.GMT = tab->data[i].GETSR - eps; //Search for terminator set from sunrise time minus tolerance
 			}
+		}
 
+		if (tab->data[i].BestAvailableGETSS)
+		{
+			//If the actual sunset was not found, don't try to find the terminator set
+			tab->data[i].BestAvailableGETTS = true;
+			tab->data[i].GETTS = tab->data[i].GETSS;
+		}
+		else
+		{
 			//Search for terminator set
 			in.terminator = true;
 			in.present = false;
@@ -25702,28 +25737,6 @@ void RTCC::PMMREAST(int med, EphemerisData *sv)
 	ASTData AST;
 	char typname[8];
 
-	//Entry profile handling
-	std::string EntryProfile;
-	int EPI;
-
-	EntryProfile = PZREAP.EntryProfile;
-
-	if (PZREAP.TGTLN == 1)
-	{
-		EPI = 2;
-	}
-	else
-	{
-		if (EntryProfile == "HB1")
-		{
-			EPI = 1;
-		}
-		else
-		{
-			EPI = 0;
-		}
-	}
-
 	//Here the logic diverts between Earth vs. Moon centered state vectors
 	if (sv_abort.RBI == BODY_EARTH)
 	{
@@ -25767,7 +25780,7 @@ void RTCC::PMMREAST(int med, EphemerisData *sv)
 		}
 
 		RTEEarth rte(this, sv_abort, GetGMTBase(), SystemParameters.MCLAMD, PZREAP.RTET0Min*3600.0, TZMINI, critical);
-		rte.READ(PZREAP.RRBIAS, dvmax, EPI, PZREAP.VRMAX*0.3048);
+		rte.READ(PZREAP.RRBIAS, dvmax, PZREAP.EntryProfile, PZREAP.VRMAX*0.3048);
 
 		if (critical == 1)
 		{
@@ -25928,7 +25941,7 @@ void RTCC::PMMREAST(int med, EphemerisData *sv)
 		arr.RRBI = PZREAP.RRBIAS;
 		arr.CIRI = PZREAP.MOTION;
 		arr.HMINI = PZREAP.HMINMC;
-		arr.EPI = 2;
+		arr.EPI = PZREAP.EntryProfile;
 		arr.L2DI = 0.3;
 		arr.DVMAXI = PZREAP.DVMAX;
 		arr.MDMAXI = 1.0;
@@ -26035,7 +26048,7 @@ void RTCC::PMMREAST(int med, EphemerisData *sv)
 	}
 	sprintf(ModeName, "%c%s%s", ref, discr, typname);
 	AST.AbortMode.assign(ModeName);
-	AST.ReentryMode = EPI;
+	AST.ReentryMode = PZREAP.EntryProfile;
 	AST.MissDistance = 0.0;
 	if (med == 76 || (med == 77 && med_f77.Site != "FCUA"))
 	{
@@ -29993,7 +30006,7 @@ int RTCC::PMQAFMED(std::string med, std::vector<std::string> data)
 			{
 				PZREAP.TGTLN = 0;
 			}
-			else if (med_f87.Value == "SHALLOW")
+			else if (med_f87.Value == "STEEP")
 			{
 				PZREAP.TGTLN = 1;
 			}
@@ -30899,6 +30912,7 @@ int RTCC::PMMMED(std::string med, std::vector<std::string> data)
 		}
 
 		inp.IterationFlag[0] = med_m70.Iteration;
+		if (med_m70.Plan > 7) return 2;
 		inp.Plan = med_m70.Plan;
 		inp.ReplaceCode = 0;
 		inp.Thruster[0] = med_m70.Thruster;
@@ -33630,14 +33644,10 @@ void RTCC::EMGPRINT(std::string source, int i)
 		message.push_back(Buffer);
 		break;
 	case 15:
-		message.push_back(RTCCONLINEMON.TextBuffer[0] + " EPHEMERIS LIMITS");
-		message.push_back(RTCCONLINEMON.TextBuffer[1] + " TO " + RTCCONLINEMON.TextBuffer[2] + " GMT");
+		message.push_back(RTCCONLINEMON.TextBuffer[0] + " EPHEMERIS LIMITS " + RTCCONLINEMON.TextBuffer[1] + " TO " + RTCCONLINEMON.TextBuffer[2] + " GMT");
 		break;
 	case 17:
-		message.push_back("ERROR RETURN FROM MANEUVER");
-		sprintf_s(Buffer, "INTEGRATOR, ERROR CODE = %d", RTCCONLINEMON.IntBuffer[0]);
-		message.push_back(Buffer);
-		sprintf_s(Buffer, "MANEUVER NO. = %d MPT = %s", RTCCONLINEMON.IntBuffer[1], RTCCONLINEMON.TextBuffer[0].c_str());
+		sprintf_s(Buffer, "ERROR RETURN FROM MANEUVER INTEGRATOR, ERROR CODE = %d MANEUVER NO. = %d MPT = %s", RTCCONLINEMON.IntBuffer[0], RTCCONLINEMON.IntBuffer[1], RTCCONLINEMON.TextBuffer[0].c_str());
 		message.push_back(Buffer);
 		break;
 	case 19:
@@ -33715,8 +33725,7 @@ void RTCC::EMGPRINT(std::string source, int i)
 		message.push_back("GRR MATRIX NOT AVAILABLE");
 		break;
 	case 53:
-		message.push_back("ANCHOR VECTOR IS LUNAR SURFACE");
-		message.push_back("NO ELEMENTS CALCULATED");
+		message.push_back("ANCHOR VECTOR IS LUNAR SURFACE - NO ELEMENTS CALCULATED");
 		break;
 	case 55:
 		sprintf_s(Buffer, "ERROR %d FROM EMXING", RTCCONLINEMON.IntBuffer[0]);
@@ -35232,6 +35241,7 @@ void RTCC::PMDRPT()
 	}
 
 	PZRPDT.plans = PZDKIT.NumSolutions;
+
 	for (int i = 0;i < PZDKIT.NumSolutions;i++)
 	{
 		PZRPDT.data[i].ID = i + 1;
@@ -35242,6 +35252,8 @@ void RTCC::PMDRPT()
 		PZRPDT.data[i].NPC = PZDKIT.Block[i].NPC;
 		PZRPDT.data[i].NCC = PZDKIT.Block[i].NCC;
 		PZRPDT.data[i].GETTPI = GETfromGMT(PZDKIT.Block[i].TTPI);
+		PZRPDT.data[i].DV_CSM = PZDKIT.Block[i].DV_CSM / 0.3048;
+		PZRPDT.data[i].DV_LM = PZDKIT.Block[i].DV_LM / 0.3048;
 	}
 }
 
