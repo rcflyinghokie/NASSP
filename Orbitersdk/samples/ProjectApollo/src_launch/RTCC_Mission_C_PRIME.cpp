@@ -193,7 +193,6 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 		entopt.type = 1;
 		entopt.vessel = calcParams.src;
 		entopt.RV_MCC = sv2;
-		entopt.r_rbias = PZREAP.RRBIAS;
 		entopt.dv_max = 7000.0*0.3048;
 
 		EntryTargeting(&entopt, &res); //Target Load for uplink
@@ -337,7 +336,6 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 		entopt.TIGguess = TLIplus;
 		entopt.type = 1;
 		entopt.vessel = calcParams.src;
-		entopt.r_rbias = PZREAP.RRBIAS;
 		entopt.dv_max = 7000.0*0.3048;
 
 		EntryTargeting(&entopt, &res);//dV_LVLH, P30TIG, latitude, longitude, RET, RTGO, VIO, ReA, prec); //Target Load for uplink
@@ -387,7 +385,7 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 			sprintf(manname, "MCC1");
 			REFSMMAT = EZJGMTX1.data[0].REFSMMAT;
 			PZMCCPLN.SFPBlockNum = 1;
-			dv_thres = 5.0*0.3048;
+			dv_thres = 5.0*0.3048; //Source: Apollo Mission Techniques for Apollo 8
 		}
 		else if (fcn == 21)
 		{
@@ -395,7 +393,7 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 			sprintf(manname, "MCC2");
 			REFSMMAT = EZJGMTX1.data[0].REFSMMAT;
 			PZMCCPLN.SFPBlockNum = 2;
-			dv_thres = 5.0*0.3048;
+			dv_thres = 1.0*0.3048; //Source: Apollo Mission Techniques for Apollo 8
 		}
 		else if (fcn == 22)
 		{
@@ -403,7 +401,9 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 			sprintf(manname, "MCC3");
 			REFSMMAT = EZJGMTX1.data[0].REFSMMAT;
 			PZMCCPLN.SFPBlockNum = 2;
-			dv_thres = 1.0*0.3048;
+			//Mission Techniques had 1 ft/s, but on the actual missions MCC-3 was an undesirable course correction point.
+			//The 5 ft/s threshold still ensures that MCC-4 won't be more than 10 ft/s, which would necessitate a MCC at the earliest possible time, according to the techniques.
+			dv_thres = 5.0*0.3048;
 		}
 		else
 		{
@@ -1344,7 +1344,6 @@ bool RTCC::CalculationMTP_C_PRIME(int fcn, LPVOID &pad, char * upString, char * 
 		entopt.RV_MCC = sv;
 		entopt.TIGguess = MCCtime;
 		entopt.vessel = calcParams.src;
-		entopt.r_rbias = PZREAP.RRBIAS;
 		entopt.type = 3;
 
 		//Calculate corridor control burn

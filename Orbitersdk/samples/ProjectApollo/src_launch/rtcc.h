@@ -52,12 +52,6 @@ class Saturn;
 #define RTCC_START_STRING	"RTCC_BEGIN"
 #define RTCC_END_STRING	    "RTCC_END"
 
-#define RTCC_LAMBERT_MULTIAXIS 0
-#define RTCC_LAMBERT_XAXIS 1
-
-#define RTCC_LAMBERT_SPHERICAL 0
-#define RTCC_LAMBERT_PERTURBED 1
-
 #define RTCC_MPT_CSM 1
 #define RTCC_MPT_SIVB 2
 #define RTCC_MPT_LM 3
@@ -272,27 +266,6 @@ struct TwoImpulseOpt
 	double Elev = 0.0;
 };
 
-struct LambertMan //Data for Lambert targeting
-{
-	int mode;		//0 = General, 1 = Corrective Combination (NCC), 2 = Two-Impulse Computation (TPI)
-	double T1;	//GET of the maneuver
-	double T2;	// GET of the arrival
-	int N;		//number of revolutions
-	int axis;	//Multi-axis or horizontal burn
-	int Perturbation; //Spherical or non-spherical gravity
-	VECTOR3 Offset = _V(0, 0, 0); //Offset vector
-	SV sv_A;		//Chaser state vector
-	SV sv_P;		//Target state vector
-	int ChaserVehicle = 1;	//1 = CSM, 3 = LEM
-	bool storesolns = false;
-
-	//For mode 1 and 2
-	double PhaseAngle = 0.0;
-	double DH = 0.0;
-	double ElevationAngle = 26.6*RAD;
-	double TravelAngle = 130.0*RAD;
-};
-
 struct AP7ManPADOpt
 {
 	AP7ManPADOpt();
@@ -405,8 +378,6 @@ struct EntryOpt
 	bool entrylongmanual; //Targeting a landing zone or a manual landing longitude
 	SV RV_MCC;		//State vector as input
 	bool csmlmdocked = false; //0 = CSM/LM alone, 1 = CSM/LM docked
-	// relative range override
-	double r_rbias = 1285.0;
 	//Maximum DV
 	double dv_max = 2804.0;
 	double t_Z = 0.0;	//Estimate time of landing
@@ -427,14 +398,16 @@ struct EntryResults
 
 struct TwoImpulseResuls
 {
-	EphemerisData sv_tig;
+	EphemerisData sv_tig;		//State vector before NCC/TPI
+	EphemerisData sv_tig_apo;	//State vector after NCC/TPI
+	EphemerisData sv_tig2;		//State vector before NSR/TPF
+	EphemerisData sv_tig2_apo;	//State vector after NSR/TPF
 	VECTOR3 dV;
 	VECTOR3 dV2;
 	VECTOR3 dV_LVLH;
 	VECTOR3 dV_LVLH2;
-	double t_TPI;
-	double T1;
-	double T2;
+	double T1;					//GET of NCC/TPI
+	double T2;					//GET of NSR/TPF
 	bool SolutionFound;
 };
 
@@ -2486,8 +2459,6 @@ public:
 	void PMSTICN(const TwoImpulseOpt &opt, TwoImpulseResuls &res);
 	//Two-Impulse Single Solution
 	void PMMTISS();
-	void LambertTargeting(LambertMan *lambert, TwoImpulseResuls &res);
-	double TPISearch(SV sv_A, SV sv_P, double elev);
 	double FindDH(SV sv_A, SV sv_P, double TIGguess, double DH);
 	MATRIX3 REFSMMATCalc(REFSMMATOpt *opt);
 	void EntryTargeting(EntryOpt *opt, EntryResults *res);//VECTOR3 &dV_LVLH, double &P30TIG, double &latitude, double &longitude, double &GET05G, double &RTGO, double &VIO, double &ReA, int &precision);
@@ -4193,7 +4164,7 @@ public:
 		double RTEUADVMax;
 		double RTEPTPMissDistance;
 		double RTEInclination;
-		int EntryProfile;
+		int EntryProfile;  //0 = guided reentry to the shallow target line, 1 = manual reentry to the shallow target line, 2 = manual reentry to the steep target line
 		int RTETradeoffRemotePage;
 		int RTESiteNum;
 		bool RTEIsPTPSite;

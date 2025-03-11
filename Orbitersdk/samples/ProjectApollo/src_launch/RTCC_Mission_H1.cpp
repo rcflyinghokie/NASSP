@@ -320,7 +320,6 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		TLIBase = calcParams.TLI;
 		TIG = TLIBase + 90.0*60.0;
 		entopt.ATPLine = 2; //AOL
-		entopt.r_rbias = PZREAP.RRBIAS;
 
 		sv1.mass = PZMPTCSM.mantable[1].CommonBlock.CSMMass;
 		sv1.gravref = hEarth;
@@ -391,7 +390,6 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		entopt.enginetype = RTCC_ENGINETYPE_CSMSPS;
 		entopt.type = 1;
 		entopt.vessel = calcParams.src;
-		entopt.r_rbias = PZREAP.RRBIAS;
 
 		entopt.TIGguess = form->GETI[0] = OrbMech::HHMMSSToSS(8, 0, 0);
 		entopt.t_Z = OrbMech::HHMMSSToSS(25.0, 43.0, 0.0);
@@ -466,7 +464,6 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		entopt.enginetype = RTCC_ENGINETYPE_CSMSPS;
 		entopt.type = 1;
 		entopt.vessel = calcParams.src;
-		entopt.r_rbias = PZREAP.RRBIAS;
 
 		if (fcn == 16)
 		{
@@ -1169,7 +1166,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 
 		AP11ManeuverPAD(manopt, *form);
 		sprintf(form->purpose, "LOI-2");
-		sprintf(form->remarks, "Two-jet ullage for 19 seconds");
+		sprintf(form->remarks, "Ullage: 2 jet, 19 seconds");
 
 		TimeofIgnition = P30TIG;
 		DeltaV_LVLH = dV_LVLH;
@@ -1329,11 +1326,13 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		form->DEDA226 = (int)(res.DEDA226 / 0.3048 / 100.0);
 		form->DEDA227 = OrbMech::DoubleToDEDA(res.DEDA227 / 0.3048*pow(2, -20), 14);
 
-		/* Pad-load:
+		/*
+		Pad-load:
 		form->DEDA224 = 60326;
 		form->DEDA225 = 58158;
 		form->DEDA226 = 70312;
-		form->DEDA227 = -50181;*/
+		form->DEDA227 = -50181;
+		*/
 
 		emem[0] = 16;
 		emem[1] = 2550;
@@ -1635,7 +1634,7 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		form->GET05G = GETfromGMT(entout.t_05g);
 		form->type = 2;
 
-		sprintf(form->remarks, "Four-jet ullage for 11 seconds");
+		sprintf(form->remarks, "Ullage: 4 jet, 11 seconds");
 
 		if (fcn == 40 || fcn == 43)
 		{
@@ -2223,14 +2222,14 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 	{
 		AP11LMMNV * form = (AP11LMMNV*)pad;
 
-		LambertMan opt;
+		TwoImpulseOpt opt;
 		AP11LMManPADOpt manopt;
 		TwoImpulseResuls res;
 		EphemerisData sv_LM, sv_INP, sv_CSM;
 		SV sv_CSM2, sv_LM2;
 		PLAWDTOutput WeightsTable_CSM, WeightsTable_LM, WeightsTable_LM2;
 		VECTOR3 dV_LVLH;
-		double t_sunrise, t_CSI, t_TPI, dt, P30TIG, t_P;
+		double t_sunrise, t_CSI, t_TPI, dt, P30TIG, t_P, t_TPI_actual;
 
 		sv_CSM = StateVectorCalcEphem(calcParams.src);
 		WeightsTable_CSM = GetWeightsTable(calcParams.src, true, false);
@@ -2255,32 +2254,32 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		}
 		sv_LM2 = ConvertEphemDatatoSV(sv_INP, WeightsTable_LM2.ConfigWeight);
 
-		opt.mode = 1;
-		opt.axis = RTCC_LAMBERT_MULTIAXIS;
+		opt.mode = 5; //External request
 		opt.DH = 15.0*1852.0;
-		opt.ElevationAngle = 26.6*RAD;
-		opt.N = 0;
-		opt.Perturbation = RTCC_LAMBERT_PERTURBED;
 		//Angle confirmed by Apollo 11 FIDO loop (finally!)
 		opt.PhaseAngle = 4.475*RAD;
-		opt.sv_A = sv_LM2;
-		opt.sv_P = sv_CSM2;
+		opt.sv_A = ConvertSVtoEphemData(sv_LM2);
+		opt.sv_P = ConvertSVtoEphemData(sv_CSM2);
 		//PDI+12
-		opt.T1 = calcParams.PDI + 12.0*60.0;
+		opt.T1 = GMTfromGET(calcParams.PDI + 12.0*60.0);
 		//Estimate for T2
-		opt.T2 = opt.T1 + 3600.0 + 46.0*60.0;
+		opt.T2 = GMTfromGET(opt.T1 + 3600.0 + 46.0*60.0);
 
-		for (int i = 0;i < 2;i++)
+		for (int i = 0; i < 2; i++)
 		{
-			LambertTargeting(&opt, res);
-			dt = t_TPI - res.t_TPI;
+			PMSTICN(opt, res);
+
+			//Find TPI time
+			PMSTICN_ELEV(res.sv_tig2_apo, opt.sv_P, GZGENCSN.TIElevationAngle, OrbMech::mu_Moon, t_TPI_actual);
+
+			dt = GMTfromGET(t_TPI) - t_TPI_actual;
 			opt.T2 += dt;
 		}
 
 		t_P = OrbMech::period(sv_INP.R, sv_INP.V + res.dV, OrbMech::mu_Moon);
-		t_CSI = opt.T2 - t_P / 2.0;
+		t_CSI = GETfromGMT(opt.T2) - t_P / 2.0;
 
-		PoweredFlightProcessor(sv_LM2, opt.T1, RTCC_ENGINETYPE_LMDPS, 0.0, res.dV, false, P30TIG, dV_LVLH);
+		PoweredFlightProcessor(sv_LM2, GETfromGMT(opt.T1), RTCC_ENGINETYPE_LMDPS, 0.0, res.dV, false, P30TIG, dV_LVLH);
 		//Store for P76 PAD (obsolete)
 		calcParams.TIGSTORE1 = P30TIG;
 		calcParams.DVSTORE1 = dV_LVLH;
@@ -2760,14 +2759,14 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		if (fcn == 94)
 		{
 			sprintf(form->purpose, "PLANE CHANGE 1");
-			sprintf(form->remarks, "Ullage: 2 jets, 15 seconds");
+			sprintf(form->remarks, "Ullage: 2 jet, 15 seconds");
 			sprintf(updesc, "CSM state vector, target load, PC REFSMMAT");
 			AGCStateVectorUpdate(buffer1, sv, true);
 		}
 		else
 		{
 			sprintf(form->purpose, "PLANE CHANGE 2");
-			sprintf(form->remarks, "Ullage: 4 jets, 11 seconds");
+			sprintf(form->remarks, "Ullage: 4 jet, 11 seconds");
 			sprintf(updesc, "CSM state vector and V66, target load, PC REFSMMAT");
 			AGCStateVectorUpdate(buffer1, sv, true, true);
 		}
@@ -3384,7 +3383,6 @@ bool RTCC::CalculationMTP_H1(int fcn, LPVOID &pad, char * upString, char * upDes
 		entopt.RV_MCC = sv;
 		entopt.TIGguess = MCCtime;
 		entopt.vessel = calcParams.src;
-		entopt.r_rbias = PZREAP.RRBIAS;
 
 		if (calcParams.src->DockingStatus(0) == 1)
 		{
