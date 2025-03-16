@@ -52,12 +52,6 @@ class Saturn;
 #define RTCC_START_STRING	"RTCC_BEGIN"
 #define RTCC_END_STRING	    "RTCC_END"
 
-#define RTCC_LAMBERT_MULTIAXIS 0
-#define RTCC_LAMBERT_XAXIS 1
-
-#define RTCC_LAMBERT_SPHERICAL 0
-#define RTCC_LAMBERT_PERTURBED 1
-
 #define RTCC_MPT_CSM 1
 #define RTCC_MPT_SIVB 2
 #define RTCC_MPT_LM 3
@@ -196,11 +190,11 @@ struct MED_M68
 //Transfer a DKI, SPQ, or a Descent Plan to the MPT
 struct MED_M70
 {
-	int Plan = 0; //-1 = Descent Plan, 0 = SPQ, 1 = DKI
+	int Plan = 0; //-1 = Descent Plan, 0 = SPQ, 1-7 = DKI plans 1-7
 	double DeleteGET = 0.0;
 	int Thruster = RTCC_ENGINETYPE_CSMRCSPLUS2; //Thruster for the maneuver
 	int Attitude = 4;		//Attitude option (1 = Inertial, 2 = Manual, 3 = Lambert, 4 = PGNS External DV, 5 = AGS External DV)
-	double UllageDT = -1;	//Delta T of Ullage
+	double UllageDT = 0.0;	//Delta T of Ullage
 	bool UllageQuads = true;//false = 2 thrusters, true = 4 thrusters
 	bool Iteration = false; //false = do not iterate, true = iterate
 	double TenPercentDT = 26.0;	//Delta T of 10% thrust for the DPS
@@ -270,27 +264,6 @@ struct TwoImpulseOpt
 	double PhaseAngle = 0.0;
 	double WT = 0.0;
 	double Elev = 0.0;
-};
-
-struct LambertMan //Data for Lambert targeting
-{
-	int mode;		//0 = General, 1 = Corrective Combination (NCC), 2 = Two-Impulse Computation (TPI)
-	double T1;	//GET of the maneuver
-	double T2;	// GET of the arrival
-	int N;		//number of revolutions
-	int axis;	//Multi-axis or horizontal burn
-	int Perturbation; //Spherical or non-spherical gravity
-	VECTOR3 Offset = _V(0, 0, 0); //Offset vector
-	SV sv_A;		//Chaser state vector
-	SV sv_P;		//Target state vector
-	int ChaserVehicle = 1;	//1 = CSM, 3 = LEM
-	bool storesolns = false;
-
-	//For mode 1 and 2
-	double PhaseAngle = 0.0;
-	double DH = 0.0;
-	double ElevationAngle = 26.6*RAD;
-	double TravelAngle = 130.0*RAD;
 };
 
 struct AP7ManPADOpt
@@ -405,8 +378,6 @@ struct EntryOpt
 	bool entrylongmanual; //Targeting a landing zone or a manual landing longitude
 	SV RV_MCC;		//State vector as input
 	bool csmlmdocked = false; //0 = CSM/LM alone, 1 = CSM/LM docked
-	// relative range override
-	double r_rbias = 1285.0;
 	//Maximum DV
 	double dv_max = 2804.0;
 	double t_Z = 0.0;	//Estimate time of landing
@@ -427,14 +398,16 @@ struct EntryResults
 
 struct TwoImpulseResuls
 {
-	EphemerisData sv_tig;
+	EphemerisData sv_tig;		//State vector before NCC/TPI
+	EphemerisData sv_tig_apo;	//State vector after NCC/TPI
+	EphemerisData sv_tig2;		//State vector before NSR/TPF
+	EphemerisData sv_tig2_apo;	//State vector after NSR/TPF
 	VECTOR3 dV;
 	VECTOR3 dV2;
 	VECTOR3 dV_LVLH;
 	VECTOR3 dV_LVLH2;
-	double t_TPI;
-	double T1;
-	double T2;
+	double T1;					//GET of NCC/TPI
+	double T2;					//GET of NSR/TPF
 	bool SolutionFound;
 };
 
@@ -792,7 +765,7 @@ struct DKIOpt
 	bool LNH = false;
 	//Number of additional M-lines desired
 	int IDM = 0;
-	//Flag to determine where to place in multiple plans. false = same point, 1 = relative to NSR
+	//Flag to determine where to place NH in multiple plans. false = same point, true = relative to NSR
 	bool MNH = false;
 
 	//Skylab only
@@ -826,6 +799,8 @@ struct DKICommon
 	double NPC;
 	//M-line of maneuver line number at which rendezvous is to take place
 	double MI;
+	//Final M-line or rendezvous number
+	double MF;
 	//Delta time of lighting condition for TPI, in minutes!
 	double TLIT;
 	//Control flag for TPI time computation. 1 = Input TPI time, 2 = input TPF time, 3 = TPI at "TLIT" minutes into night, 
@@ -2484,8 +2459,6 @@ public:
 	void PMSTICN(const TwoImpulseOpt &opt, TwoImpulseResuls &res);
 	//Two-Impulse Single Solution
 	void PMMTISS();
-	void LambertTargeting(LambertMan *lambert, TwoImpulseResuls &res);
-	double TPISearch(SV sv_A, SV sv_P, double elev);
 	double FindDH(SV sv_A, SV sv_P, double TIGguess, double DH);
 	MATRIX3 REFSMMATCalc(REFSMMATOpt *opt);
 	void EntryTargeting(EntryOpt *opt, EntryResults *res);//VECTOR3 &dV_LVLH, double &P30TIG, double &latitude, double &longitude, double &GET05G, double &RTGO, double &VIO, double &ReA, int &precision);
@@ -3217,6 +3190,10 @@ public:
 		double NPC = -1.0;
 		//M-line or maneuver line number at which rendezvous is to take place
 		double MI = 3.0;
+		//Number of additional M-lines desired
+		int IDM = 0;
+		//Flag to determine where to place NH in multiple plans. false = same point, true = relative to NSR
+		bool MNH = false;
 		//DT between NCC and NSR maneuver (Skylab)
 		double dt_NCC_NSR = 37.0*60.0;
 
@@ -3330,7 +3307,7 @@ public:
 		int ReplaceCode = 0; //1-15
 		int Thruster = RTCC_ENGINETYPE_CSMSPS; //Thruster for the maneuver
 		int Attitude = RTCC_ATTITUDE_PGNS_EXDV;		//Attitude option
-		double UllageDT = -1;	//Delta T of Ullage
+		double UllageDT = 0.0;	//Delta T of Ullage
 		bool UllageQuads = true;//false = 2 thrusters, true = 4 thrusters
 		bool Iteration = false; //false = do not iterate, true = iterate
 		double TenPercentDT = 26.0;	//Delta T of 10% thrust for the DPS
@@ -4187,7 +4164,7 @@ public:
 		double RTEUADVMax;
 		double RTEPTPMissDistance;
 		double RTEInclination;
-		int EntryProfile;
+		int EntryProfile;  //0 = guided reentry to the shallow target line, 1 = manual reentry to the shallow target line, 2 = manual reentry to the steep target line
 		int RTETradeoffRemotePage;
 		int RTESiteNum;
 		bool RTEIsPTPSite;
@@ -4445,6 +4422,9 @@ public:
 		double NSR = 0.0;
 		double NPC = 0.0;
 		double TTPI = 0.0;
+		//DVs
+		double DV_CSM = 0.0;
+		double DV_LM = 0.0;
 	};
 
 	struct DKIDataTable
@@ -4484,6 +4464,8 @@ public:
 		RendezvousPlanningDisplayData();
 		int ID;
 		int M;
+		double DV_CSM;
+		double DV_LM;
 		double NC1;
 		double NH;
 		double NSR;
