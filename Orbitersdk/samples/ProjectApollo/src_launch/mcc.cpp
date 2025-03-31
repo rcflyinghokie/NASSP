@@ -575,11 +575,11 @@ void MCC::Init(){
 	// CAPCOM INTERFACE INITIALIZATION
 	// Get handles to annotations.
 	// The menu lives in the top left, the message box to the right of that
-	NHmenu = oapiCreateAnnotation(false,0.65,_V(1,1,0));
+	NHmenu = oapiCreateAnnotation(false,0.60,_V(1,1,0));
 	oapiAnnotationSetPos(NHmenu,0,0,0.15,0.2);
-	NHmessages = oapiCreateAnnotation(false,0.65,_V(1,1,0));
+	NHmessages = oapiCreateAnnotation(false,0.60,_V(1,1,0));
 	oapiAnnotationSetPos(NHmessages,0.18,0,0.87,0.2);
-	NHpad = oapiCreateAnnotation(false,0.65,_V(1,1,0));
+	NHpad = oapiCreateAnnotation(false,0.60,_V(1,1,0));
 	oapiAnnotationSetPos(NHpad,0,0.2,0.33,1);
 	// Clobber message output buffer
 	msgOutputBuf[0] = 0;
@@ -4002,7 +4002,6 @@ void MCC::UpdateMacro(int type, int padtype, bool condition, int updatenumber, i
 						addMessage(upMessage);
 					}
 					freePad();
-					scrubbed = false;
 					setSubState(2);
 				}
 				else
@@ -4053,7 +4052,6 @@ void MCC::UpdateMacro(int type, int padtype, bool condition, int updatenumber, i
 						addMessage(upMessage);
 					}
 					freePad();
-					scrubbed = false;
 				}
 				else
 				{
@@ -4223,7 +4221,6 @@ void MCC::UpdateMacro(int type, int padtype, bool condition, int updatenumber, i
 						addMessage(upMessage);
 					}
 					freePad();
-					scrubbed = false;
 				}
 				else
 				{
