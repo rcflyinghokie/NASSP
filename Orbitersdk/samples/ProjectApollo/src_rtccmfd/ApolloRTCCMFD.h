@@ -59,6 +59,7 @@ struct RTCCMFDData
 {
 	int screen = 0;
 	int subscreen = 0;
+	int subscreenmax = 0;
 	int marker = 0;
 	int markermax = 0;
 	UINT ID = 0;
@@ -90,11 +91,12 @@ public:
 	void Text(oapi::Sketchpad *skp, int x, int y, char *format, int val);
 	void Text_GET_MMSS(oapi::Sketchpad *skp, int x, int y, double val);
 	void Text_GET_MMSSC(oapi::Sketchpad *skp, int x, int y, double val);
-	void Text_GET_HHMM(oapi::Sketchpad *skp, int x, int y, double val);
+	void Text_GET_HHHMM(oapi::Sketchpad *skp, int x, int y, double val);
 	void Text_GET_HHMMSS(oapi::Sketchpad *skp, int x, int y, double val);
 	void Text_GET_HHHMMSS(oapi::Sketchpad *skp, int x, int y, double val);
 	void Text_GET_HHHMMSSC(oapi::Sketchpad *skp, int x, int y, double val);
 	void Text_GET_HHHMMSSCS(oapi::Sketchpad *skp, int x, int y, double val);
+	void Text_GMT_HHHMMSSCS(oapi::Sketchpad *skp, int x, int y, double val);
 	void Text_Latitude(oapi::Sketchpad *skp, int x, int y, double val);
 	void Text_Longitude(oapi::Sketchpad *skp, int x, int y, double val);
 	void Text_Latitude(oapi::Sketchpad *skp, int x, int y, double val, int decimals);
@@ -110,13 +112,12 @@ public:
 	void DFLDynamicData(oapi::Sketchpad *skp, unsigned display, int fontsize);
 
 	//Inputs
-	void menuTIChaserVectorTime();
-	void menuTITargetVectorTime();
-	void menuTITimeIncrement();
-	void menuTITimeRange();
-	void t1dialogue();
-	void t2dialogue();
-	void menuCycleK30Vehicle();
+	void menuSetTIMultipleSolutionInput();
+	void menuSetCorrectiveCombinationInput();
+	void CorrectiveCombinationOffset();
+	void menuCorrectiveCombinationCalc();
+	void menuSetTwoImpulseSingleSolutionInput();
+	void menuTwoImpulseSingleSolutionCalc();
 	void SPQtimedialogue();
 	void set_SPQtime(double tig);
 	void menuSetSPQChaserThresholdTime();
@@ -136,9 +137,10 @@ public:
 	void menuSLVInsertionSVtoMPT();
 	void menuSLVLaunchUplink();
 	void menuVoid();
-	void menuSetLambertPage();
-	void menuSetSPQPage();
 	void menuSetTIMultipleSolutionPage();
+	void menuSetTICorrectiveCombinationPage();
+	void menuSetTISingleSolutionPage();
+	void menuSetSPQPage();
 	void menuSetREFSMMATPage();
 	void menuSetReturnToEarthPage();
 	void menuSetAGSSVPage();
@@ -177,8 +179,7 @@ public:
 	void GMT_Display2(char * Buff, double time) const;
 	void GET_Display2(char * Buff, double time) const;
 	void GET_Display3(char* Buff, double time);
-	void GET_Display4(char* Buff, double time);
-	void GET_Display_HHMM(char *Buff, double time);
+	void GET_Display_HHHMM(char *Buff, double time);
 	void AGC_Display(char * Buff, double time);
 	void FormatLatitude(char * Buff, double lat);
 	void FormatLongitude(char * Buff, double lng, int precision = 2);
@@ -240,7 +241,6 @@ public:
 	void menuRevertRLSToPrelaunch();
 	void menuAGSSVCalc();
 	void menuEntryUpdateUpload();
-	void menuCycleTwoImpulseOption();
 	void menuSwitchHeadsUp();
 	void menuCalcManPAD();
 	void set_ManPADMPTInput(int mpt, int num);
@@ -666,7 +666,7 @@ public:
 	void menuSetFIDOLaunchAnalogNo1Page();
 	void menuSetFIDOLaunchAnalogNo2Page();
 	void menuSetRTETradeoffDisplayPage();
-	void menuCycleRTETradeoffPage();
+	void menuCycleSubscreen();
 	void menuCalcRTETradeoff();
 	void menuSetRTETradeoffSite();
 	void menuSetRTETradeoffRemoteEarthPage();
@@ -916,6 +916,7 @@ protected:
 	int x, y, dx, dy; //Display spacing helper variables
 	int screen;
 	int subscreen;
+	int subscreenmax;
 	int marker;
 	int markermax;
 	int status; //Page dependent status, reset to 0 when new page is entered
