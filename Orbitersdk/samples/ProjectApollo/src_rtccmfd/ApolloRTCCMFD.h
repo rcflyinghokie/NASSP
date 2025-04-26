@@ -240,6 +240,8 @@ public:
 	void menuSVUpload();
 	void menuLSCalc();
 	void menuRevertRLSToPrelaunch();
+	void menuCycleAGSNavUpdREFSMMAT();
+	void menuSaveAGSREFSMMAT();
 	void menuAGSSVCalc();
 	void menuEntryUpdateUpload();
 	void menuSwitchHeadsUp();
@@ -252,7 +254,7 @@ public:
 	void menuManPADUllage();
 	void menuManPADTIG();
 	void menusextantstartime();
-	void set_sextantstartime(double time);
+	void menuCyclePreferredGDCStarSet();
 	void menuManPADDV();
 	void set_P30DV(VECTOR3 dv);
 	void menuREFSMMATAtt();
@@ -867,6 +869,7 @@ public:
 	void menuSetRTACFPage();
 	void CycleCSMOrLMSelection();
 	void CycleEnableCalculation();
+	void CycleREFSMMATType(int &type, bool csm);
 
 	void SetMEDInputPageM75();
 	void SetMEDInputPageP13();

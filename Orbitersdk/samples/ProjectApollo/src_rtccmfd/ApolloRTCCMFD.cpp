@@ -3890,23 +3890,19 @@ void ApolloRTCCMFD::menuCycleRTEDColumn()
 
 void ApolloRTCCMFD::menusextantstartime()
 {
-	bool SextantStarTimeInput(void *id, char *str, void *data);
-	oapiOpenInputBox("Minutes before Maneuver", SextantStarTimeInput, 0, 20, (void*)this);
+	GenericDoubleInput(&G->sxtstardtime, "Minutes before Maneuver for sextant/boresight star check:", -60.0);
 }
 
-bool SextantStarTimeInput(void *id, char *str, void *data)
+void ApolloRTCCMFD::menuCyclePreferredGDCStarSet()
 {
-	if (strlen(str)<20 && atof(str) >= 0.0 && atof(str) <=60.0)
+	if (G->manpad_pref_GDC_stars < 3)
 	{
-		((ApolloRTCCMFD*)data)->set_sextantstartime(atof(str));
-		return true;
+		G->manpad_pref_GDC_stars++;
 	}
-	return false;
-}
-
-void ApolloRTCCMFD::set_sextantstartime(double time)
-{
-	G->sxtstardtime = -time * 60.0;
+	else
+	{
+		G->manpad_pref_GDC_stars = 0;
+	}
 }
 
 void ApolloRTCCMFD::REFSMMATTimeDialogue()
@@ -4709,7 +4705,7 @@ void ApolloRTCCMFD::menuMPTUpdate()
 void ApolloRTCCMFD::menuMPTTrajectoryUpdateCSM()
 {
 	bool DifferentialCorrectionSolutionCSMInput(void* id, char *str, void *data);
-	oapiOpenInputBox("Choose vessel for the CSM ground tracking solution:", DifferentialCorrectionSolutionCSMInput, 0, 50, (void*)this);
+	oapiOpenInputBox("Choose vessel for the CSM ground tracking solution (leave blank for CSM selected on config page):", DifferentialCorrectionSolutionCSMInput, 0, 50, (void*)this);
 }
 
 bool DifferentialCorrectionSolutionCSMInput(void* id, char *str, void *data)
@@ -4724,7 +4720,7 @@ bool DifferentialCorrectionSolutionCSMInput(void* id, char *str, void *data)
 void ApolloRTCCMFD::menuMPTTrajectoryUpdateLEM()
 {
 	bool DifferentialCorrectionSolutionLEMInput(void* id, char *str, void *data);
-	oapiOpenInputBox("Choose vessel for the LEM ground tracking solution:", DifferentialCorrectionSolutionLEMInput, 0, 50, (void*)this);
+	oapiOpenInputBox("Choose vessel for the LM ground tracking solution (leave blank for LM selected on config page):", DifferentialCorrectionSolutionLEMInput, 0, 50, (void*)this);
 }
 
 bool DifferentialCorrectionSolutionLEMInput(void* id, char *str, void *data)
@@ -4741,18 +4737,37 @@ bool ApolloRTCCMFD::set_DifferentialCorrectionSolution(char *str, bool csm)
 	//To update display immediately
 	GC->rtcc->VectorPanelSummaryBuffer.gmt = -10000000000000.0;
 
-	OBJHANDLE hVessel = oapiGetVesselByName(str);
-	if (hVessel)
+	OBJHANDLE hVessel;
+	VESSEL *v = NULL;
+
+	if (strcmp(str, "") == 0) //If str is empty, use CSM or LM from config page
 	{
-		VESSEL *v = oapiGetVesselInterface(hVessel);
-		if (v)
+		if (csm)
 		{
-			if (GC->MPTTrajectoryUpdate(v, csm))
-			{
-				return false;
-			}
-			return true;
+			v = GC->rtcc->pCSM;
 		}
+		else
+		{
+			v = GC->rtcc->pLM;
+		}
+	}
+	else //Otherwise use the input string to get the vessel name
+	{
+		hVessel = oapiGetVesselByName(str);
+		if (hVessel)
+		{
+			v = oapiGetVesselInterface(hVessel);
+		}
+		else return false;
+	}
+
+	if (v)
+	{
+		if (GC->MPTTrajectoryUpdate(v, csm))
+		{
+			return false;
+		}
+		return true;
 	}
 	return false;
 }
@@ -5009,10 +5024,8 @@ bool EphemerisUpdateLEMInput(void* id, char *str, void *data)
 
 void ApolloRTCCMFD::VectorControlPBI(int code)
 {
-	//To update display immediately
-	GC->rtcc->VectorPanelSummaryBuffer.gmt = -10000000000000.0;
-
-	GC->rtcc->BMSVPS(0, code);
+	GC->rtcc->RTCCONLINEMON.IntBuffer[0] = code; //Not the greatest place for this, but it will do
+	G->startSubthread(61); //Vector Control PBI thread
 }
 
 void ApolloRTCCMFD::menuMPTInitAutoUpdate()
@@ -6101,6 +6114,15 @@ void ApolloRTCCMFD::menuSVCalc()
 	}
 }
 
+void ApolloRTCCMFD::menuCycleAGSNavUpdREFSMMAT()
+{
+	CycleREFSMMATType(GC->rtcc->EZETVMED.AGSNavUpdREFSMMAT, false);
+}
+
+void ApolloRTCCMFD::menuSaveAGSREFSMMAT()
+{
+	GeneralMEDRequest("G00,LEM,CUR,LEM,AGS;");
+}
 
 void ApolloRTCCMFD::menuAGSSVCalc()
 {
@@ -9961,6 +9983,28 @@ void ApolloRTCCMFD::CycleCSMOrLMSelection()
 void ApolloRTCCMFD::CycleEnableCalculation()
 {
 	EnableCalculation = !EnableCalculation;
+}
+
+void ApolloRTCCMFD::CycleREFSMMATType(int &type, bool csm)
+{
+	//Cycle between the REFSMMAT types, different for CSM vs. LM
+	int max;
+	if (csm)
+	{
+		max = RTCC_REFSMMAT_TYPE_LCV;
+	}
+	else
+	{
+		max = RTCC_REFSMMAT_TYPE_LLD;
+	}
+	if (type < max)
+	{
+		type++;
+	}
+	else
+	{
+		type = 1;
+	}
 }
 
 void ApolloRTCCMFD::SetMEDInputPageM75()

@@ -13179,6 +13179,7 @@ void RTCC::EMGGPCHR(double lat, double lng, double alt, int body, double GHA, St
 
 void RTCC::EMMDYNEL(EphemerisData sv, TimeConstraintsTable &tab)
 {
+	//Input coordinate system should be ECT or MCT. sv_present is part of TimeConstraintsTable but is not stored.
 	VECTOR3 H, E, N, K;
 	double mu, eps, v, r, lng, lat, fpa, azi, h, r_apo, r_peri, R_E;
 
@@ -13228,7 +13229,6 @@ void RTCC::EMMDYNEL(EphemerisData sv, TimeConstraintsTable &tab)
 	{
 		tab.RA = PI2 - tab.RA;
 	}
-	tab.sv_present = sv;
 	if (tab.e < 1.0)
 	{
 		tab.T0 = OrbMech::period(sv.R, sv.V, mu);
@@ -13631,6 +13631,7 @@ void RTCC::EMSTIME(int L, int ID)
 		in.GMT = RTCCPresentTimeGMT();
 		in.L = L;
 
+		//Interpolate the main ephemeris for a present position vector
 		ELVCTR(in, out);
 
 		//Error code 2 is acceptable ("Order of interpolation performed less than order requested")
@@ -13640,12 +13641,15 @@ void RTCC::EMSTIME(int L, int ID)
 			return;
 		}
 
+		//Rotate vector to MCI
 		EphemerisData2 sv_MCI, sv_I;
 		ELVCNV(out.SV, 0, 2, sv_MCI);
 
+		//Is the vector in the lunar SOI?
 		int coor1, coor2, RBI;
 		if (length(sv_MCI.R) > 9.0*OrbMech::R_Earth)
 		{
+			//No
 			sv_I = out.SV;
 			RBI = BODY_EARTH;
 			coor1 = 0;
@@ -13653,6 +13657,7 @@ void RTCC::EMSTIME(int L, int ID)
 		}
 		else
 		{
+			//Yes
 			sv_I = sv_MCI;
 			RBI = BODY_MOON;
 			coor1 = 2;
@@ -13668,6 +13673,7 @@ void RTCC::EMSTIME(int L, int ID)
 		}
 
 		EMMDYNEL(Eph2ToEph1(sv_true, RBI), *tab);
+		tab->sv_present = Eph2ToEph1(sv_I, RBI);
 
 		tab->RevNum = CapeCrossingRev(L, sv_true.GMT);
 		tab->TUP = out.TUP;
@@ -13745,6 +13751,17 @@ void RTCC::EMMDYNMC(int L, int queid, int ind, double param)
 	CurGET = GETfromGMT(CurGMT);
 	tab->Error = 0;
 
+	if (ephtab->EPHEM.Header.TUP == 0)
+	{
+		tab->Error = 1; //Error 1: The trajectory for subject vehicle is not generated
+		return;
+	}
+	if (mpt->CommonBlock.TUP < 0 || mpt->CommonBlock.TUP != ephtab->EPHEM.Header.TUP)
+	{
+		tab->Error = 2; //Error 2: The Mission Plan table is either in an update state or inconsistent with trajectory update number
+		return;
+	}
+
 	if (queid == 1 || queid == 2)
 	{
 		//TBD: move this
@@ -13754,6 +13771,7 @@ void RTCC::EMMDYNMC(int L, int queid, int ind, double param)
 	//For now don't even allow processing if time constraints table is invalid
 	if (tcontab->TUP <= 0)
 	{
+		tab->Error = 19; //Error 19: Present position data not initialized in Time Constraints Page
 		return;
 	}
 
@@ -13880,11 +13898,7 @@ void RTCC::EMMDYNMC(int L, int queid, int ind, double param)
 				AEGDataBlock sv_a;
 				double INFO[10];
 
-				PIMCKC(tcontab->sv_present.R, tcontab->sv_present.V, tcontab->sv_present.RBI, aeg.Data.coe_osc.a, aeg.Data.coe_osc.e, aeg.Data.coe_osc.i, aeg.Data.coe_osc.g, aeg.Data.coe_osc.h, aeg.Data.coe_osc.l);
-
-				aeg.Header.AEGInd = tcontab->sv_present.RBI;
-				aeg.Data.TS = aeg.Data.TE = tcontab->sv_present.GMT;
-
+				aeg = SVToAEG(tcontab->sv_present, 0.0, 1.0, mpt->KFactor); //TBD, weight and area
 				PMMAPD(aeg.Header, aeg.Data, 1, 0, INFO, &sv_a, NULL);
 
 				tab->HA = INFO[4] / 1852.0;
@@ -13909,11 +13923,7 @@ void RTCC::EMMDYNMC(int L, int queid, int ind, double param)
 				AEGDataBlock sv_p;
 				double INFO[10];
 
-				PIMCKC(tcontab->sv_present.R, tcontab->sv_present.V, tcontab->sv_present.RBI, aeg.Data.coe_osc.a, aeg.Data.coe_osc.e, aeg.Data.coe_osc.i, aeg.Data.coe_osc.g, aeg.Data.coe_osc.h, aeg.Data.coe_osc.l);
-
-				aeg.Header.AEGInd = tcontab->sv_present.RBI;
-				aeg.Data.TS = aeg.Data.TE = tcontab->sv_present.GMT;
-
+				aeg = SVToAEG(tcontab->sv_present, 0.0, 1.0, mpt->KFactor); //TBD, weight and area
 				PMMAPD(aeg.Header, aeg.Data, -1, 0, INFO, NULL, &sv_p);
 
 				tab->HP = INFO[9] / 1852.0;
@@ -13977,6 +13987,7 @@ void RTCC::EMMDYNMC(int L, int queid, int ind, double param)
 			unsigned man = (unsigned)param;
 			if (man > mpt->mantable.size())
 			{
+				tab->Error = 14; //Error 14: The maneuver number requested is greater than the number of maneuvers in the Mission Plan Table
 				return;
 			}
 			sv_pred.R = mpt->mantable[man - 1].R_BO;
@@ -14097,25 +14108,27 @@ void RTCC::EMMDYNMC(int L, int queid, int ind, double param)
 		intab.L = L;
 
 		ELVCTR(intab, outtab);
+
 		if (outtab.ErrorCode)
 		{
+			tab->Error = 8; //Error 8: The time on the U14 MED preceeds/exceeds the end of the ephemeris
 			return;
 		}
-		int out;
-		if (DetermineSVBody(outtab.SV) == BODY_EARTH)
+
+		EphemerisData sv_L = RotateSVToSOI(outtab.SV);
+
+		if (sv_L.RBI == BODY_EARTH)
 		{
-			out = 1;
 			sprintf_s(tab->REF3, "ECT");
 		}
 		else
 		{
-			out = 3;
 			sprintf_s(tab->REF3, "MCT");
 		}
-		EphemerisData2 sv_true;
-		ELVCNV(outtab.SV, 0, out, sv_true);
-		double lat, lng;
-		OrbMech::latlong_from_r(sv_true.R, lat, lng);
+
+		double lat, lng, alt;
+		GLSSAT(sv_L.R, sv_L.GMT, sv_L.RBI, lat, lng, alt);
+
 		tab->GETL = param;
 		tab->L = lng * DEG;
 		tab->REVL = CapeCrossingRev(L, gmt);
@@ -27065,7 +27078,7 @@ void RTCC::EMGABMED(int type, std::string med, std::vector<std::string> data, in
 			//REM: REFSMMAT in RTE manual column
 			rtcc::AddTextMEDItem(opt, 1, {"LLD", "OST-M", "DMT"});
 
-			err = rtcc::GenericMEDProcessing(opt, data, out, 2, 3);
+			err = rtcc::GenericMEDProcessing(opt, data, out);
 			if (err)
 			{
 				param = out.errorItem;
@@ -35025,6 +35038,11 @@ void RTCC::BMSVPS(int queid, int PBIID)
 		goto RTCC_BMSVPS_1;
 	}
 
+	//Error 1: An unrecognizable queue ID was detected
+	RTCCONLINEMON.IntBuffer[0] = 1;
+	BMGPRIME("BMSVPS", 24);
+	return;
+
 	//PBI Queue
 RTCC_BMSVPS_1:
 	//To evaluation slot?
@@ -35088,6 +35106,62 @@ RTCC_BMSVPS_1:
 			break;
 		}
 
+		//Vector available?
+		if (sv.RBI == -1)
+		{
+			//Error 15: Request is for a telemetry vector that is not available in the collection slot for this type vector
+			RTCCONLINEMON.IntBuffer[0] = 15;
+			BMGPRIME("BMSVPS", 24);
+			return;
+		}
+
+		//Vector conversions
+		if (tabid == 2 || tabid == 6)
+		{
+			//AGS
+			//Get matrix
+			REFSMMATData data;
+			data = EZJGMTX3.data[RTCC_REFSMMAT_TYPE_AGS - 1];
+			//Available?
+			if (data.ID <= 0 || data.GMT > sv.GMT)
+			{
+				//Error 14: The matrix to rotate the telemetry vector requested is not available
+				RTCCONLINEMON.IntBuffer[0] = 14;
+				BMGPRIME("BMSVPS", 24);
+				return;
+			}
+			//Convert
+			sv.R = tmul(data.REFSMMAT, sv.R);
+			sv.V = tmul(data.REFSMMAT, sv.V);
+		}
+		else if (tabid == 3 || tabid == 7)
+		{
+			//IU
+			//TBD: Make sure the IU REFSMMAT is valid. Also, IU1 vs IU2
+			sv.R = tmul(GZLTRA.IU1_REFSMMAT, sv.R);
+			sv.V = tmul(GZLTRA.IU1_REFSMMAT, sv.V);
+		}
+
+		//"Upon rotation of telemetry vectors through the appropriate conversion matrix,
+		// a test will be made of the position components. If the position is less than one
+		// radius for the reference body, the vector will not be further processed."
+		double R_E;
+		if (sv.RBI == BODY_EARTH)
+		{
+			R_E = OrbMech::R_Earth;
+		}
+		else
+		{
+			R_E = BZLAND.rad[0];
+		}
+		if (length(sv.R) < R_E)
+		{
+			//Error 11: Telemetry vector requested by PBI cannot be furnished this mission
+			RTCCONLINEMON.IntBuffer[0] = 14;
+			BMGPRIME("BMSVPS", 24);
+			return;
+		}
+
 		char Buff2[16];
 
 		//Save in correct slot of evaluation table
@@ -35120,9 +35194,12 @@ RTCC_BMSVPS_1:
 		}
 
 		//Get Evaluation vector
+		//Vector available?
 		if (BZEVLVEC.data[etabid].ID < 0)
 		{
-			//Error
+			//Error 5: Request to move vector to Usable Slot cannot be honored because there is no vector in the corresponding Evaluation Slot
+			RTCCONLINEMON.IntBuffer[0] = 5;
+			BMGPRIME("BMSVPS", 24);
 			return;
 		}
 
@@ -35187,9 +35264,12 @@ RTCC_BMSVPS_1:
 		int id = PBIID - 324;
 
 		//Get vector to cause ephemeris update
+		//Vector available?
 		if (BZUSEVEC.data[id].ID < 0)
 		{
-			//Error
+			//Error 6: Request to move vector to ephemeris update cannot be honored because there is no vector in the corresponding Usable Slot
+			RTCCONLINEMON.IntBuffer[0] = 6;
+			BMGPRIME("BMSVPS", 24);
 			return;
 		}
 
@@ -35220,10 +35300,20 @@ RTCC_BMSVPS_1:
 		//Never use a landing site vector for the CSM ephemeris
 		if (L == RTCC_MPT_CSM && BZUSEVEC.data[id].LandingSiteIndicator)
 		{
+			//Error 18: Vector with lunar landing site indicator set cannot be routed to CSM ephemeris update
+			RTCCONLINEMON.IntBuffer[0] = 18;
+			BMGPRIME("BMSVPS", 24);
 			return;
 		}
 
 		PMSVCT(queid, L, BZUSEVEC.data[id]);
+	}
+	else
+	{
+		//Error 8: Test of PBI message header failed; improper message was routed to module
+		RTCCONLINEMON.IntBuffer[0] = 8;
+		BMGPRIME("BMSVPS", 24);
+		return;
 	}
 }
 
@@ -35688,6 +35778,7 @@ void RTCC::BMDVPS()
 void RTCC::BMGPRIME(std::string source, int n)
 {
 	std::vector<std::string> message;
+	char Buffer[128];
 
 	switch (n)
 	{
@@ -35696,6 +35787,10 @@ void RTCC::BMGPRIME(std::string source, int n)
 		break;
 	case 10:
 		message.push_back("INTERPOLATION ERROR");
+		break;
+	case 24:
+		sprintf(Buffer, "ERROR NUMBER %d", RTCCONLINEMON.IntBuffer[0]);
+		message.push_back(Buffer);
 		break;
 	case 42:
 		message.push_back(RTCCONLINEMON.TextBuffer[0] + " NOW A POSSIBLE " + RTCCONLINEMON.TextBuffer[1] + " ANCHOR VECTOR");

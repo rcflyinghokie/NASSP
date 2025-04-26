@@ -1385,8 +1385,85 @@ The launch window processor (LWP) can be used to calculate the optimal liftoff t
 \textbf{TIME:} Greenwich mean time of lift-off\\
 
 \newpage
-\subsection{REFSMMAT}
+\section{Pre-Advisory Data}
+\subsection{Maneuver PAD}
 
+\subsubsection{Explanation}
+
+The Maneuver Pre-Advisory Data (PAD) contains all necessary numbers to safely conduct a burn with the SPS or RCS. A complete explanation of each item on the PAD can be found in all Apollo flight plans, e.g. \href{http://history.nasa.gov/alsj/a11/a11fltpln_final_reformat.pdf}{here}. Additionally to the Maneuver PAD the very similar Apollo 7 TPI PAD was added as a second mode.\\ 
+
+\subsubsection{Buttons}
+
+\textbf{VEH:} Cycle between using the docked (CSM/LM) or undocked vehicle configuration for the maneuver.\\
+\textbf{ENG:} Cycle between the available thrusters for the maneuver.\\
+\textbf{HEA:} Choose between conducting the maneuver in a heads-up or a heads-down orientation.\\
+\textbf{ULL:} Choose the ullage thrusters (2 or 4) and ullage duration for the maneuver.\\
+\textbf{TIG:} If you want to display a Maneuver PAD for a maneuver not calculated with the Apollo RTCC MFD you can manually enter the desired Time of Ignition and Delta V.\\
+\textbf{DV:} See above.\\
+\textbf{CLC:} Calculate the Maneuver PAD.\\
+\textbf{OPT:} Switch between the CSM and LM Maneuver PADs, the Apollo 7 TPI PAD, the TLI PAD and the PDI PAD.\\
+\textbf{STA:} Choose the time before the maneuver for which the sextant star check, boresight star check and backup GDC alignment are calculated.\\
+\textbf{GDC:} Choose the preferred star set for the backup GDC alignment. There are four sets of stars that can be used for the alignment. The Maneuver PAD logic will usually first try Deneb and Vega and perform an occultation check and a yaw angle check (75 deg max.). If this set is not available it will attempt to use the next one. With this button the preferred set, which will be checked first, can be selected. If it is not available the PAD would still show a different set that is available. The time for which the checks are performed is the same time as selected for the sextant and boresight star check.\\
+\textbf{BCK:} Go back to the main menu.\\
+\newpage
+\subsection{Entry PAD}
+
+\subsubsection{Explanation}
+
+The Entry PAD contains all numbers to conduct a safe reentry. There are two types of Entry PADs: Earth Orbit Reentry and Lunar Entry. A complete explanation of each item on the PAD can be found in most Apollo flight plans, e.g. \href{http://history.nasa.gov/alsj/a11/a11fltpln_final_reformat.pdf}{here}. \\
+
+\subsubsection{Buttons}
+
+\textbf{MAN:} For a lunar entry you can choose between calculating a direct Entry PAD without any additional maneuvers or a Entry PAD for a previously calculated Midcourse Correction. For an Earth orbit entry a deorbit maneuver has to be performed in any case.\\
+\textbf{DWN:} Downlink the splashdown coordinates from the AGC.\\
+\textbf{CLC:} Calculate the missing numbers on the Entry PAD.\\
+\textbf{OPT:} Switch between the Earth Entry PAD and the Lunar Entry PAD.\\
+\textbf{BCK:} Go back to the main menu.\\
+\newpage
+\subsection{Landmark Tracking}
+
+\subsubsection{Explanation}
+
+On the Landmark Tracking page coordinates on the spherical bodies (Earth and Moon) in Orbiter 2010 can be converted to AGC coordinates. Also the contents of a Landmark Tracking PAD can be calculated. These are used for the correct timing of a pitchdown maneuver for better tracking with Program 22.
+
+T1 is the time at which the CSM comes over the horizon and becomes visible from the landmark. At this time the astronaut can begin looking at the landmark to find the specific point he wants to track. \\
+T2 is the time at which the CSM is at an elevation angle of 35$^{\circ}$ from the landmark. If any marks on the landmark are to be done, then at this time the pitchdown maneuver should be started. In Earth orbit this is usually 0.5$^{\circ}$/s, in lunar orbit 0.3$^{\circ}$/s. \\
+The other displayed values are the distance of the landmark from the ground track of the CSM orbit and the AGC inputs. The AGC uses geodetic latitude, longitude divided by 2 and altitude in nautical miles as the inputs.\\
+
+\subsubsection{Buttons}
+
+\textbf{TIM:} Estimated time over the landmark.\\
+\textbf{LAT:} Geocentric latitude of the landmark.  If the landmark is listed in a marker file, then that latitude should be used as an input here.\\
+\textbf{LNG:} Longitude of the landmark.\\
+\textbf{CLC:} Calculate AGC coordinates and Landmark Tracking PAD.\\
+\newpage
+\subsection{Map Update}
+
+\subsubsection{Explanation}
+
+The Map Update is very different in Earth and Moon orbit. In Earth orbit the next ground station with the times of acqusition and loss of signal (AOS and LOS) are displayed.  In lunar orbit a few more times are displayed: loss of signal (LOS), sunrise (SR), crossing of the prime meridian (PM), acqusition of signal (AOS) and sunset (SS) are shown. These values are written down on the Apollo 8 Map Update forms.\\ 
+
+\subsubsection{Buttons}
+
+\textbf{CLC:} Calculate map update.\\
+\textbf{MOD:} Cycle between Earth and Moon orbit.\\
+\newpage
+\subsection{AGS State Vector Update}
+\subsubsection{Explanation}
+This page shows the AGS State Vector Update PAD. There would also be a MOCR display for the same function (MSK 277) but this page has been modelled after the PAD given to the crew for covenience. The AGS SV PAD can be used to manually input CSM and LM state vectors on the DEDA. This is a backup method, the main method of updating the state vectors would be via downlink from the PGNS (Verb 47).\\
+Because the AEA uses no REFSMMAT the coordinate system of the state vectors depends on the current alignment being used. For that the current REFSMMAT in use can be selected. The RTCC keeps several REFSMMAT stored, the main ones for this page would be the current (CUR) or AGS REFSMMATs. As the PGNS and AGS typically use the same alignment the CUR REFSMMAT would be saved as the AGS REFSMMAT and then the AGS REFSMMSAT is used for the state vector calculation. But any REFSMMAT in the LM REFSMMAT table can be used.\\
+This page can also be used to manually or automatically update the AGS K-Factor. For the automatic option the current PGNS and AGS clocks are compared and the difference is then saved as the K-Factor.\\
+\subsubsection{Buttons}
+\textbf{SLT:} Cycle between updating the CSM or the LM part of the PAD.\\
+\textbf{TGT:} Update the CSM or LM vessel.\\
+\textbf{REF:} Choose the REFSMMAT in the LM REFSMMAT table to use for the state vector calculation.\\
+\textbf{AGS:} Manually enter the AGS K-Factor.\\
+\textbf{KFA:} Run the automatic calculation to update the K-Factor.\\
+\textbf{CLC:} Calculate the AGS state vector PAD. CSM and LM state vectors are calculated separately.\\
+\textbf{SAV:} Save the present LM CUR REFSMMAT as the AGS REFSMMAT. All REFSMMATs in the LM REFSMMAT table can be used for the state vector calculation, but only the AGS REFSMMAT is used in converting telemetry vectors (see Vector Panel Summary) so this is a simple way to update the AGS REFSMMAT. The alternative would be using the G00 MED.\\
+\newpage
+\section{Utilities}
+\subsection{REFSMMAT}
 \subsubsection{Explanation}
 
 The REFSMMAT (REFerence to Stable Member MATrix) is a rotation matrix relating the Apollo Basic Reference Coordinate System (BRCS) and the currently used IMU Stable Member Coordinate System. Depending on the mission phase the REFSMMAT is chosen, so that the IMU angles provide meaningful attitude values. Some types of REFSMMATs can be calculated by the AGC itself, but most were uplinked to the spacecraft from the ground. The REFSMMATs that can be calculated with this MFD are:
@@ -1413,85 +1490,7 @@ The REFSMMAT (REFerence to Stable Member MATrix) is a rotation matrix relating t
 	\textbf{LAT:} Only for Landing Site: Choose the latitude of the landing site.\\
 	\textbf{LNG:} Only for Landing Site: Choose the longitude of the landing site.\\
 	\textbf{BCK:} Go back to the main menu.\\
-
-\subsection{State Vector}
-
-\subsubsection{Explanation}
-
-The state vector of the vessel can be calculated and uplinked here. Additionally to the functionality in the Project Apollo MFD, this MFD can calculate a state vector in the future, which sometimes was used during the Apollo program to prevent an internal state vector integration of the AGC.\\
-The AGC has two slots for state vectors: CSM and LM. For the CSM the MFD will prevent uplinking a state vector that is not the vessel itself. The vessel for the LM can be freely chosen.\\
-
-\subsection{Buttons}
-
-\textbf{MOD:} Choose  between calculating the state vector "now" and at a specified GET.\\
-\textbf{TIM:} Set the desired GET for the state vector in GET mode.\\
-\textbf{TGT:} Set the target vessel.\\
-\textbf{SLT:} Switch between the slots.\\
-\textbf{CLC:} Calculate a state vector.\\
-\textbf{UPL:} Uplinks the calculated data to the AGC.\\
-\textbf{BCK:} Go back to the main menu.\\
-
-\subsection{Landmark Tracking}
-
-\subsubsection{Explanation}
-
-On the Landmark Tracking page coordinates on the spherical bodies (Earth and Moon) in Orbiter 2010 can be converted to AGC coordinates. Also the contents of a Landmark Tracking PAD can be calculated. These are used for the correct timing of a pitchdown maneuver for better tracking with Program 22.
-
-T1 is the time at which the CSM comes over the horizon and becomes visible from the landmark. At this time the astronaut can begin looking at the landmark to find the specific point he wants to track. \\
-T2 is the time at which the CSM is at an elevation angle of 35$^{\circ}$ from the landmark. If any marks on the landmark are to be done, then at this time the pitchdown maneuver should be started. In Earth orbit this is usually 0.5$^{\circ}$/s, in lunar orbit 0.3$^{\circ}$/s. \\
-The other displayed values are the distance of the landmark from the ground track of the CSM orbit and the AGC inputs. The AGC uses geodetic latitude, longitude divided by 2 and altitude in nautical miles as the inputs.\\
-
-\subsubsection{Buttons}
-
-\textbf{TIM:} Estimated time over the landmark.\\
-\textbf{LAT:} Geocentric latitude of the landmark.  If the landmark is listed in a marker file, then that latitude should be used as an input here.\\
-\textbf{LNG:} Longitude of the landmark.\\
-\textbf{CLC:} Calculate AGC coordinates and Landmark Tracking PAD.\\
-
-\subsection{Map Update}
-
-\subsubsection{Explanation}
-
-The Map Update is very different in Earth and Moon orbit. In Earth orbit the next ground station with the times of acqusition and loss of signal (AOS and LOS) are displayed.  In lunar orbit a few more times are displayed: loss of signal (LOS), sunrise (SR), crossing of the prime meridian (PM), acqusition of signal (AOS) and sunset (SS) are shown. These values are written down on the Apollo 8 Map Update forms.\\ 
-
-\subsubsection{Buttons}
-
-\textbf{CLC:} Calculate map update.\\
-\textbf{MOD:} Cycle between Earth and Moon orbit.\\
-
-\subsection{Maneuver PAD}
-
-\subsubsection{Explanation}
-
-The Maneuver Pre-Advisory Data (PAD) contains all necessary numbers to safely conduct a burn with the SPS or RCS. A complete explanation of each item on the PAD can be found in all Apollo flight plans, e.g. \href{http://history.nasa.gov/alsj/a11/a11fltpln_final_reformat.pdf}{here}. Additionally to the Maneuver PAD the very similar Apollo 7 TPI PAD was added as a second mode.\\ 
-
-\subsubsection{Buttons}
-
-\textbf{VEH:}The vehicle configuration is only displayed here and chosen on the configuration page.\\
-\textbf{ENG:} Choose between the Service Propulsion System (SPS) and the Reaction Control System (RCS) for the maneuver.\\
-\textbf{HEA:} Choose between conducting the maneuver in a heads-up or a heads-down orientation.\\
-\textbf{TIG:} If you want to display a Maneuver PAD for a maneuver not calculated with the Apollo RTCC MFD you can manually enter the desired Time of Ignition and Delta V.\\
-\textbf{DV:} See above.\\
-\textbf{CLC:} Calculate the missing numbers on the Maneuver PAD.\\
-\textbf{OPT:} Switch between the Maneuver PAD, the Apollo 7 TPI PAD and the TLI PAD.\\
-\textbf{REQ:} Request a maneuver solution calculated with LTMFD or IMFD.\\
-\textbf{BCK:} Go back to the main menu.\\
-
-\subsection{Entry PAD}
-
-\subsubsection{Explanation}
-
-The Entry PAD contains all numbers to conduct a safe reentry. There are two types of Entry PADs: Earth Orbit Reentry and Lunar Entry. A complete explanation of each item on the PAD can be found in most Apollo flight plans, e.g. \href{http://history.nasa.gov/alsj/a11/a11fltpln_final_reformat.pdf}{here}. \\
-
-\subsubsection{Buttons}
-
-\textbf{MAN:} For a lunar entry you can choose between calculating a direct Entry PAD without any additional maneuvers or a Entry PAD for a previously calculated Midcourse Correction. For an Earth orbit entry a deorbit maneuver has to be performed in any case.\\
-\textbf{DWN:} Downlink the splashdown coordinates from the AGC.\\
-\textbf{CLC:} Calculate the missing numbers on the Entry PAD.\\
-\textbf{OPT:} Switch between the Earth Entry PAD and the Lunar Entry PAD.\\
-\textbf{BCK:} Go back to the main menu.\\
-\newpage
-\subsection{Apollo Generalized Optics Program}
+	\subsection{Apollo Generalized Optics Program}
 
 The Apollo Generalized Optics Program (AGOP) contains various optics and antenna pointing calculations.\\
 
@@ -1565,19 +1564,26 @@ The uplink to the IU for the impact targeting can currently not be done in the R
 \end{itemize}
 
 \newpage
-\subsection{Configuration}
+\section{Uplinks}
 
-\textbf{MIS:} Leads to a page where several files can be selected that load data into the RTCC. The system parameters file contains e.g. launchpad coordinate, AGC uplink addresses. These numbers will be constant for the mission, no matter on what launch day the mission is launching. The TLI file contains parameters for simulating the TLI maneuver in the RTCC. This is required for the TLI PAD and adding a TLI maneuver to the MPT. The file contains data for whole monthly launch window. The Skeleton Flight Plan (SFP) file contains targets and initial guess for the TLI and MCC processors. They are also for the whole monthly launch window.\\
-\textbf{TYP:} Choose the type of vehicle configuration (CSM or LM, docked or undocked).\\
-\textbf{STA:} Choose the type of LM configuration that is currently being used, ascent or descent configuration.\\
-\textbf{SXT:} Change the time of the sextant star check, which is part of the procedure for a normal maneuver. During Earth orbit missions the Earth often blocks the sextant from viewing many stars, so adjusting the time of the check before the maneuver allows the MFD to find a suitable star.\\
-\textbf{UPL:} Inhibit or enable uplinks during times of no available ground stations. Currently all ground stations being used for Apollo 7 are implemented.\\
-\textbf{DAT:} Choose the launch date for the mission.\\
-\textbf{TIM:} Choose the launch time for the mission. This will update the launch time of the CSM stored in the RTCC.\\
-\textbf{EPO:} Choose the AGC epoch. Usually this is a MJD at around January 1st of the yearly coordinate system defining period. This value should be automatically chose correctly for the AGC version in use.\\
-\textbf{UPD:} Update the liftoff time automatically by downlinking that time from the CMC or LGC. This will actually update three values in the RTCC: CSM liftoff time, time of clock zeroing in the CMC, time of clock zeroing in the LGC. These times are normally all set to the actual liftoff time of the CSM to get a consistent basis to calculate Ground Elapsed Time in the RTCC.\\
+
+\subsection{State Vector}
+
+\subsubsection{Explanation}
+
+The state vector of the vessel can be calculated and uplinked here. Additionally to the functionality in the Project Apollo MFD, this MFD can calculate a state vector in the future, which sometimes was used during the Apollo program to prevent an internal state vector integration of the AGC.\\
+The AGC has two slots for state vectors: CSM and LM. For the CSM the MFD will prevent uplinking a state vector that is not the vessel itself. The vessel for the LM can be freely chosen.\\
+
+\subsubsection{Buttons}
+
+\textbf{MOD:} Choose  between calculating the state vector "now" and at a specified GET.\\
+\textbf{TIM:} Set the desired GET for the state vector in GET mode.\\
+\textbf{TGT:} Set the target vessel.\\
+\textbf{SLT:} Switch between the slots.\\
+\textbf{CLC:} Calculate a state vector.\\
+\textbf{UPL:} Uplinks the calculated data to the AGC.\\
 \textbf{BCK:} Go back to the main menu.\\
-\newpage
+
 \section{Mission Planning}
 
 The mission plan table (MPT) is the central planning tool in the RTCC for future maneuvers. The RTCC has two MPTs, one for the CSM and one for the LM, which are related through undocking and docking maneuvers. Each MPT consists of a table header and data blocks for each individual maneuver. The table header has the initial vehicle configuration (combinations of CSM, Saturn and LM ascent and/or descent stages) and initial weights, area (for drag calculations) and propellant. Each maneuver block has data describing the maneuver and updates weights and propellant.\\
@@ -1599,6 +1605,17 @@ On the left side of this page appear the input parameters that are automatically
 \textbf{TGT:} Select a vessel in the simulation to automatically populate the input data.\\
 \textbf{AUT:} Automatically update the input data with the selected vessel.\\
 \textbf{VPS:} Go to the Vector Panel Summary page for MPT state vector management.\\
+\textbf{BCK:} Go back to the main menu.\\
+\newpage
+\section{Configuration}
+
+\textbf{MIS:} Leads to a page where several files can be selected that load data into the RTCC. The system parameters file contains e.g. launchpad coordinate, AGC uplink addresses. These numbers will be constant for the mission, no matter on what launch day the mission is launching. The TLI file contains parameters for simulating the TLI maneuver in the RTCC. This is required for the TLI PAD and adding a TLI maneuver to the MPT. The file contains data for whole monthly launch window. The Skeleton Flight Plan (SFP) file contains targets and initial guess for the TLI and MCC processors. They are also for the whole monthly launch window.\\
+\textbf{TYP:} Choose the type of vehicle configuration (CSM or LM, docked or undocked).\\
+\textbf{STA:} Choose the type of LM configuration that is currently being used, ascent or descent configuration.\\
+\textbf{DAT:} Choose the launch date for the mission.\\
+\textbf{TIM:} Choose the launch time for the mission. This will update the launch time of the CSM stored in the RTCC.\\
+\textbf{EPO:} Choose the AGC epoch. Usually this is a MJD at around January 1st of the yearly coordinate system defining period. This value should be automatically chose correctly for the AGC version in use.\\
+\textbf{UPD:} Update the liftoff time automatically by downlinking that time from the CMC or LGC. This will actually update three values in the RTCC: CSM liftoff time, time of clock zeroing in the CMC, time of clock zeroing in the LGC. These times are normally all set to the actual liftoff time of the CSM to get a consistent basis to calculate Ground Elapsed Time in the RTCC.\\
 \textbf{BCK:} Go back to the main menu.\\
 \newpage
 \section{Example: Apollo 7 Rendezvous}
@@ -3079,7 +3096,7 @@ EV = Evaluation Vector Table\\
 TH = Telemetry (High Speed)\\
 TL = Telemetry (Low Speed)\\
 
-The TL vector slot has not been implemented yet. Pressing the TLM button will get data from all computers in the vessel where the RTCC MFD is open (AGS not yet implemented) and save them in the high speed telemetry tables. In reality the telemetry vectors get continually updated if telemetry is received, so for a more permanent saving solution the vectors can be moved to the evaluation vector table with the EV buttons. The vector is then moved to that table, assigned a vector ID and is then available for comparison using the vector compare display (MSK 1590). The telemetry vectors are not guaranteed to be valid, so the evaluation vectors were checked before being "moved up" to the usable vector table, which can be done with the UV buttons. Once in the usable vector table the vectors are available for ephemeris updates.\\
+The TL vector slot has not been implemented yet. Pressing the TLM button will get data from all computers whose vehicles is set on the configuration page and save them in the high speed telemetry tables. In reality the telemetry vectors get continually updated if telemetry is received, so for a more permanent saving solution the vectors can be moved to the evaluation vector table with the EV buttons. The vector is then moved to that table, assigned a vector ID and is then available for comparison using the vector compare display (MSK 1590). AGS and IU vectors need to have their specific REFSMMATs established for the transfer to the evaluation table to work. The telemetry vectors are not guaranteed to be valid, so the evaluation vectors were checked before being "moved up" to the usable vector table, which can be done with the UV buttons. Once in the usable vector table the vectors are available for ephemeris updates.\\
 
 The High Speed Radar panel is not currently implemented. It was a vector that is generated automatically at the end of a powered maneuver using radar data and could, if no telemetry vector was available, be a first estimate of the actual cutoff state.\\
 
@@ -3088,7 +3105,30 @@ Differential Correction (DC) is the state vector derived from long period ground
 The last panel shows the last executed maneuver in the mission plan table of the vehicle. The displayed times are ullage on and end of the thrust tailoff period after cutoff.\\
 
 To cause an ephemeris update the TUP button on each side can be pressed and then a vector from the usable vector table is chosen to do the update.\\
+\subsubsection{Errors}
+If any function of the VPS does not work as expected, an error might have occurred. An associated error message will have been written to the on-line monitor display (MSK 1629). Here follows a list of possible error messages:\\
 
+\begin{tabular}{p{3cm} p{10cm}}
+\underline{Code}&\underline{Error Description}\\
+1&An unrecognizable queue ID was detected.\\
+2&Not used.\\
+3&Not used.\\
+4&The PBI request made was not a valid request (missing information, two sources indicated, etc.).\\
+5&Request to move vector to Usable Slot cannot be honored because there is no vector in the corresponding Evaluation Slot.\\
+6&Request to move vector to ephemeris update cannot be honored because there is no vector in the corresponding Usable Slot.\\
+7&Not used.\\
+8&Test of PBI message header failed; improper message was routed to module.\\
+9&Unidentifiable vector ID in the S84 MED.\\
+10&Vector to be moved to ephemeris update could not be transformed to ECI coordinates.\\
+11&Telemetry vector requested by PBI cannot be furnished this mission.\\
+12&Not used.\\
+13&Not used.\\
+14&The matrix to rotate the telemetry vector requested is not available.\\
+15&Request is for a telemetry vector that is not available in the collection slot for this type vector.\\
+16&Invalid vehicle code from high-speed processor.\\
+17&Invalid vector source code from high-speed processor.\\
+18&Vector with lunar landing site indicator set cannot be routed to CSM ephemeris update.\\
+\end{tabular}
 \newpage
 \section{Config Files}
 
