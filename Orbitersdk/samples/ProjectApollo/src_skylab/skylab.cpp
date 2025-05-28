@@ -47,6 +47,7 @@ void Skylab::InitSkylab() {
 	skylabanimations.DefineAnimations();
 
 	AddTrackLights();
+	Skylab::trackLightsActive = true;
 
 	visibilitySize = 31.1; //Tuned so Skylab disappears in the CSM optics at 400nm range
 
@@ -184,6 +185,8 @@ bool Skylab::clbkDrawHUD(int mode, const HUDPAINTSPEC *hps, oapi::Sketchpad *skp
 
 	int w0 = (int)(184 * d);
 	int w1 = (int)(200 * d);
+	int w2 = (int)(250 * d);
+	int w3 = (int)(266 * d);
 
 	skp->SetTextColor(0x0066FF66);
 
