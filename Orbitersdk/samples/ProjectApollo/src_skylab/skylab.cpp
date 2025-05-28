@@ -185,8 +185,6 @@ bool Skylab::clbkDrawHUD(int mode, const HUDPAINTSPEC *hps, oapi::Sketchpad *skp
 
 	int w0 = (int)(184 * d);
 	int w1 = (int)(200 * d);
-	int w2 = (int)(250 * d);
-	int w3 = (int)(266 * d);
 
 	skp->SetTextColor(0x0066FF66);
 
@@ -243,21 +241,6 @@ int Skylab::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate)
 	else { //unmodified keys
 		switch (key)
 		{
-		case OAPI_KEY_A: //Attitude control mode
-			{
-				int state = atmdc.GetAttitudeControlMode();
-	
-				if (state < 5)
-				{
-				state++;
-				}
-				else
-				{
-					state = 0;
-				}
-				atmdc.SetAttitudeControlMode(state);
-				return 1;
-			}
 		}
 	}
 	return 0;
