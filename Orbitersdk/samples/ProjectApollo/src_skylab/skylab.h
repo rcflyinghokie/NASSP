@@ -48,12 +48,13 @@ public:
 	int clbkConsumeBufferedKey(DWORD key, bool down, char *kstate);
 	void clbkFocusChanged(bool getfocus, OBJHANDLE hNewVessel, OBJHANDLE hOldVessel);
 	void clbkGetRadiationForce(const VECTOR3& mflux, VECTOR3& F, VECTOR3& pos);
+	bool trackLightsActive;
 	void SetTrackLights(bool isActive) {
 		for (int i = 0; i < 2; i++) {
 			tracklights[i].active = isActive;
 		}
+		trackLightsActive = isActive;
 	};
-	bool trackLightsActive;
 
 	ATMDC *GetATMDC() { return &atmdc; }
 private:
