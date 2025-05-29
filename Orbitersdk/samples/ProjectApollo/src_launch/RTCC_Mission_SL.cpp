@@ -282,13 +282,10 @@ bool RTCC::CalculationMTP_SL(int fcn, LPVOID& pad, char* upString, char* upDesc,
 
 		AP7ManeuverPAD(manopt, *form);
 		sprintf(form->purpose, "NC2");
-<<<<<<< Updated upstream
-=======
 		if (preliminary)
 		{
 			sprintf(form->remarks, "TPI: %s", Buff1);
 		}
->>>>>>> Stashed changes
 	}
 	break;
 	case 16: //NCC preliminary update
