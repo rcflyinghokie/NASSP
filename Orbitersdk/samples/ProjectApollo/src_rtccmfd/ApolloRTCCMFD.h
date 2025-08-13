@@ -39,22 +39,6 @@ struct RTCCMFDInputBoxData
 	void (ApolloRTCCMFD::*func)(void) = NULL;
 };
 
-struct MEDInput
-{
-	std::string Label;			//Short description on MFD page
-	std::string Description;	//Detailed description in MFD input box
-	std::string Unit;			//Unit displayed on MFD page
-	std::string Data;
-};
-
-struct MEDInputPage
-{
-	std::string Title;			//Title displayed on MFD page
-	std::string MEDCode;
-	std::vector<MEDInput> table;
-	int display = -1;
-};
-
 struct RTCCMFDData
 {
 	int screen = 0;
@@ -65,7 +49,7 @@ struct RTCCMFDData
 	int marker = 0;
 	int markermax = 0;
 	UINT ID = 0;
-	std::string MEDCode;
+	unsigned int ActiveMEDInputPage = 0;
 	bool IsCSM = false;
 	bool EnableCalculation;
 };
@@ -94,6 +78,7 @@ public:
 	void Text(oapi::Sketchpad *skp, int x, int y, char *format, int val);
 	void Text_GET_MMSS(oapi::Sketchpad *skp, int x, int y, double val);
 	void Text_GET_MMSSC(oapi::Sketchpad *skp, int x, int y, double val);
+	void Text_GET_HHMM(oapi::Sketchpad *skp, int x, int y, double val);
 	void Text_GET_HHHMM(oapi::Sketchpad *skp, int x, int y, double val);
 	void Text_GET_HHMMSS(oapi::Sketchpad *skp, int x, int y, double val);
 	void Text_GET_HHHMMSS(oapi::Sketchpad *skp, int x, int y, double val);
@@ -136,7 +121,6 @@ public:
 	void set_IUVessel();
 	void set_TargetVessel();
 	void CycleThroughVessels(VESSEL **v) const;
-	void menuSLVLaunchTargetingPad();
 	void menuSLVLaunchTargeting();
 	void menuSLVInsertionSVtoMPT();
 	void menuSLVLaunchUplink();
@@ -239,6 +223,8 @@ public:
 	void menuGeneralMEDRequest();
 	void menuGeneralMEDRequest(char *message);
 	void GeneralMEDRequest(char *str);
+	void menuMEDInputFromFile();
+	void ProcessMEDInputFromFile(char *str);
 	void EntryRangeDialogue();
 	void set_SVPageTarget();
 	void menuSVCalc();
@@ -401,7 +387,6 @@ public:
 	void menuSetLDPPSequence();
 	void menuTLANDUplinkCalc();
 	void menuTLANDUpload();
-	void set_t_TPI(double time);
 	void menuSetDescPlanInitPage();
 	void menuCycleLLWPChaserOption();
 	void menuSetLiftoffguess();
@@ -488,10 +473,10 @@ public:
 	void menuAscentPADCalc();
 	void menuCycleAscentPADVersion();
 	void menuSetPDAPPage();
+	void menuSetPDAPInputs();
+	bool set_PDAPInputs(int sel, char *str);
 	void menuPDAPCalc();
-	void menuCyclePDAPSegments();
-	void menuCyclePDAPEngine();
-	void menuAP11AbortCoefUplink();
+	void menuPDAPUplink();
 	void menuSetFIDOOrbitDigitalsCSMPage();
 	void menuSetFIDOOrbitDigitalsLMPage();
 	void menuSetFIDOOrbitDigitalsGETL();
@@ -778,6 +763,8 @@ public:
 	void menuSLVNavigationUpdateUplink();
 	void menuVectorPanelSummaryPage();
 	void menuGetOnboardStateVectors();
+	void menuSetGroundtrackDigitalsPage();
+	void menuSetRecoveryAscendingNodeDisplayPage();
 	void menuSetRetrofireConstraintsPage();
 	void menuSetRetrofireDigitalsPage();
 	void menuRetrofireGETIDialogue();
@@ -800,6 +787,11 @@ public:
 	void menuChooseRetrofireGs();
 	bool set_RetrofireGs(double val);
 	void menuChooseRetrofireUllage();
+	void menuCycleGroundTrackDigitalsPages();
+	void menuSetGroundtrackDigitalsInput();
+	void menuGroundtrackDigitalsCalc();
+	void menuSetRecoveryAscendingNodeDisplayInput();
+	void menuRecoveryAscendingNodeDisplayCalc();
 	void menuSetRetrofireTargetSelectionPage();
 	void menuCycleRecoveryTargetSelectionPages();
 	void menuRecoveryTargetSelectionCalc();
@@ -946,7 +938,7 @@ private:
 	bool IsCSM; //Chooses if the CSM or LM vessel in the RTCC is selected
 	bool EnableCalculation; //Generic variable for switch on/off a display related calculation
 	int ErrorMessage;
-	MEDInputPage MEDInputData;
+	unsigned int ActiveMEDInputPage;
 
 	//Additional display functions
 	void AGOPDisplay(oapi::Sketchpad*skp);
