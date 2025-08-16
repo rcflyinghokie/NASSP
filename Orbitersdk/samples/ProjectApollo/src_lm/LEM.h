@@ -104,6 +104,7 @@ typedef struct {
 	int crewStatus;
 	int cdrStatus;	//0 = cabin, 1 = suit, 2 = EVA, 3 = PLSS
 	int lmpStatus;
+	double UCTAStatus;
 } LEMECSStatus;
 
 // Systems things
@@ -160,11 +161,13 @@ public:
 	CrossPointer();
 	virtual ~CrossPointer();
 	void Init(LEM *s, e_object *dc_src, ToggleSwitch *scaleSw, ToggleSwitch *rateErrMon);
-	void SaveState(FILEHANDLE scn);
-	void LoadState(FILEHANDLE scn);
+	void SaveState(FILEHANDLE scn, char *start_str);
+	void LoadState(char *line);
 	void Timestep(double simdt);
 	void SystemTimestep(double simdt);
 	void GetVelocities(double &vx, double &vy);
+	void UpdateDisplayValues(double simdt);
+	void MeterMovement(double simdt, double &val, double &dis_val);
 
 	void DrawSwitchVC(int id, int event, SURFHANDLE surf);
 	void SetDirection(const VECTOR3 &xvec, const VECTOR3 &yvec);
@@ -179,6 +182,7 @@ protected:
 	ToggleSwitch *rateErrMonSw;
 
 	double vel_x, vel_y;
+	double display_vel_x, display_vel_y;
 	double lgc_forward, lgc_lateral;
 
 	UINT anim_xpointerx, anim_xpointery;
@@ -188,9 +192,8 @@ protected:
 	MGROUP_ROTATE *xtrans, *ytrans;
 };
 
-#define CROSSPOINTER_LEFT_START_STRING "CROSSPOINTER_LEFT_START"
-#define CROSSPOINTER_RIGHT_START_STRING "CROSSPOINTER_RIGHT_START"
-#define CROSSPOINTER_END_STRING "CROSSPOINTER_END"
+#define CROSSPOINTER_LEFT_STRING "CROSSPOINTER_LEFT"
+#define CROSSPOINTER_RIGHT_STRING "CROSSPOINTER_RIGHT"
 
 namespace mission
 {
@@ -684,11 +687,13 @@ public:
 	bool flashlightOn;
 
 	// Floodlight LM Pilot
-	void UpdateFloodLights();
 	PointLight* floodLight_Left;
 
 	// Floodlight LM Commander
 	PointLight* floodLight_Right;
+
+	// Custom quicksave behaviour
+	void QuicksaveScenario();
 
 protected:
 

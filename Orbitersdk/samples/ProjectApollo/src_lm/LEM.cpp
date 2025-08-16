@@ -1049,6 +1049,38 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 		return 0;
 	}
 
+	if (!KEYMOD_SHIFT(keystate) && KEYMOD_CONTROL(keystate) && KEYMOD_ALT(keystate))
+	{
+		if (down) {
+			switch (key) {
+			case OAPI_KEY_S:
+				QuicksaveScenario();
+				break;
+			}
+		}
+	}
+
+	if (!KEYMOD_SHIFT(keystate) && !KEYMOD_CONTROL(keystate) && KEYMOD_ALT(keystate))
+	{
+		if (down) {
+			switch (key) {
+			case OAPI_KEY_O:
+				ORDEALSlewSwitch.SwitchTo(THREEPOSSWITCH_UP, true);
+				break;
+			case OAPI_KEY_L:
+				ORDEALSlewSwitch.SwitchTo(THREEPOSSWITCH_DOWN, true);
+				break;
+			}
+		} else {
+			switch (key) {
+			case OAPI_KEY_O:
+			case OAPI_KEY_L:
+				ORDEALSlewSwitch.SwitchTo(THREEPOSSWITCH_CENTER, true);
+				break;
+			}
+		}
+	}
+
 	if (down){
 		switch(key){
 			// Valid shaft positions should be:
@@ -1421,7 +1453,6 @@ void LEM::clbkPreStep (double simt, double simdt, double mjd) {
 	if ((oapiGetFocusObject() == GetHandle()) && (oapiCockpitMode() == COCKPIT_VIRTUAL) && (oapiCameraMode() == CAM_COCKPIT)) {
 		//We have focus on this vessel, and are in the VC
 		MoveFlashlight();
-		UpdateFloodLights();
 	}
 }
 
@@ -1904,6 +1935,12 @@ void LEM::GetScenarioState(FILEHANDLE scn, void *vs)
 		}
 		else if (!strnicmp(line, "RADARTAPE_START", sizeof("RADARTAPE_START"))) {
 			RadarTape.LoadState(scn, "RADARTAPE_END");
+		}
+		else if (!strnicmp(line, CROSSPOINTER_LEFT_STRING, 17)) {
+			crossPointerLeft.LoadState(line);
+		}
+		else if (!strnicmp(line, CROSSPOINTER_RIGHT_STRING, 17)) {
+			crossPointerRight.LoadState(line);
 		}
 		else if (!strnicmp(line, LMOPTICS_START_STRING, sizeof(LMOPTICS_START_STRING))) {
 			optics.LoadState(scn);
@@ -2413,6 +2450,8 @@ void LEM::clbkSaveState (FILEHANDLE scn)
 	RR.SaveState(scn,"LEM_RR_START","LEM_RR_END");
 	LR.SaveState(scn, "LEM_LR_START", "LEM_LR_END");
 	RadarTape.SaveState(scn, "RADARTAPE_START", "RADARTAPE_END");
+	crossPointerLeft.SaveState(scn, CROSSPOINTER_LEFT_STRING);
+	crossPointerRight.SaveState(scn, CROSSPOINTER_RIGHT_STRING);
 
 	//Save Optics
 	optics.SaveState(scn);
@@ -2452,6 +2491,38 @@ void LEM::clbkSaveState (FILEHANDLE scn)
 	MissionTimerDisplay.SaveState(scn, "MISSIONTIMER_START", MISSIONTIMER_END_STRING, false);
 	EventTimerDisplay.SaveState(scn, "EVENTTIMER_START", EVENTTIMER_END_STRING, true);
 	checkControl.save(scn);
+}
+
+void LEM::QuicksaveScenario()
+{
+	double time = MissionTime;
+	VECTOR3 hhhmmss = _V(0, 0, 0);
+	char timeSign = '+';
+
+	if (time < 0) {
+		time = abs(time);
+		timeSign = '-';
+	}
+
+	time = round(time / 0.01) * 0.01;
+
+	hhhmmss.x = (int)trunc(time / 3600.0);
+	hhhmmss.y = (int)trunc((time - 3600.0 * hhhmmss.x) / 60.0);
+	hhhmmss.z = time - (double)(3600 * hhhmmss.x + 60 * hhhmmss.y);
+
+	char scnPath[64] = "";
+	char scnMission[128] = "";
+	char scnTime[64] = "";
+	strcpy(scnPath, "/Quicksave/");
+	strcpy(scnMission, pMission->GetMissionName().c_str());
+	sprintf(scnTime, " %c%03dh %02dm %05.2fs", timeSign, (int)hhhmmss.x, (int)hhhmmss.y, hhhmmss.z);
+
+	char scnName[256] = "";
+	strcat(scnName, scnPath);
+	strcat(scnName, scnMission);
+	strcat(scnName, scnTime);
+
+	oapiSaveScenario(scnName, "");
 }
 
 bool LEM::clbkLoadGenericCockpit ()
