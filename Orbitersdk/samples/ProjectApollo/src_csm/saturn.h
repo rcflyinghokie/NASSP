@@ -26,7 +26,6 @@
 #if !defined(_PA_SATURN_H)
 #define _PA_SATURN_H
 
-
 //
 // I hate nested includes, but this is much easier than adding them to all the files
 // which need them.
@@ -1239,6 +1238,8 @@ public:
 	///
 	void SetVCSeatsMesh();
 
+	void SetVCCueCardsArrows();
+
 	void SetCOASMesh();
 
 	void SetSIMBayPanelMesh();
@@ -1305,6 +1306,9 @@ public:
 	void ClearMeshes();
 	void SetAnimations(double);
 	void DoMeshAnimation(AnimState &, UINT &, double, double);
+
+	void UpdatePointingArrow();
+	PanelSwitchItem *nextActiveSwitch = nullptr;
 
 	//
 	// Flashlight for VC
@@ -1620,6 +1624,7 @@ protected:
 	/// VC animations
 
 	/// Waste Disposal
+	MGROUP_ROTATE *wasteDisposalKnob;
 	UINT wasteDisposalAnim;
 	AnimState wasteDisposalState;
 
@@ -1632,7 +1637,7 @@ protected:
 	AnimState altimeterCoverState;
 
 	/// Ordeal
-	UINT ordealAnim;
+	UINT ordealMeshAnim;
 	AnimState ordealState;
 
 	/// DSKY_Glareshade
@@ -4025,7 +4030,12 @@ protected:
 	int seatsunfoldedidx;
 	int coascdridx;
 	int coascdrreticleidx;
+	int cmvccuecardsarrowsidx;
+	int hcmPointingArrowidx;
+
 	DEVMESHHANDLE vcmesh;
+
+	bool ViewCueCardArrows;
 
 	double DockAngle;
 
@@ -4257,6 +4267,12 @@ protected:
 	void SetVCLighting(UINT meshidx, DWORD *matList, int EmissionMode, double state, int cnt);
 	void SetVCLighting(UINT meshidx, int material, int EmissionMode, double state, int cnt);
 #endif
+
+//	CAMERAHANDLE hFDAICam = NULL;
+	SURFHANDLE srfFDAICamTexture;
+//	SURFHANDLE hFDAISurf;
+
+//	void InitFDAICustomCamera(void);
 
 	//
 	// Systems functions.
@@ -4760,5 +4776,7 @@ extern MESHHANDLE hcmseatsfolded;
 extern MESHHANDLE hcmseatsunfolded;
 extern MESHHANDLE hcmCOAScdr;
 extern MESHHANDLE hcmCOAScdrreticle;
+extern MESHHANDLE hcmCueCardsArrows;
+extern MESHHANDLE hcmPointingArrow;
 
 #endif // _PA_SATURN_H

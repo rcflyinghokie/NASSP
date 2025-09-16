@@ -891,6 +891,9 @@ void SaturnV::SetThirdStageMesh (double offset)
 	meshidx = AddMesh (hCMInt, &mesh_dir);
 	SetMeshVisibilityMode (meshidx, MESHVIS_EXTERNAL);
 
+	// Pointing Arrow
+	hcmPointingArrowidx = AddMesh(hcmPointingArrow, &mesh_dir);
+
 	// VC
 	UpdateVC(mesh_dir);
 	seatsfoldedidx = AddMesh(hcmseatsfolded, &mesh_dir);
@@ -899,6 +902,10 @@ void SaturnV::SetThirdStageMesh (double offset)
 	coascdrreticleidx = AddMesh(hcmCOAScdrreticle, &mesh_dir);
 	coascdridx = AddMesh(hcmCOAScdr, &mesh_dir);
 	SetCOASMesh();
+
+	//Cue Cards Arrows
+	cmvccuecardsarrowsidx = AddMesh(hcmCueCardsArrows, &mesh_dir);
+	SetVCCueCardsArrows();
 
 	sidehatchidx = AddMesh (hFHC, &mesh_dir);
 	sidehatchopenidx = AddMesh (hFHO, &mesh_dir);

@@ -1112,7 +1112,7 @@ public:
 	bool IsLit() { return lit; };
 
 	void DefineVCAnimations(UINT vc_idx);
-	void SetReference(const VECTOR3& _dir, const VECTOR3& coverref, const VECTOR3& _coverdir);
+	void SetReference(const VECTOR3& _dir, const VECTOR3& coverref, const VECTOR3& ref, const VECTOR3& _coverdir);
 	void DefineMeshGroup(UINT _grpIndex, UINT _coverGrpIndex);
 
 protected:
@@ -1648,6 +1648,8 @@ public:
 	void OnPostCreation();
 	void AddSwitch(PanelSwitchItem *s, int area = -1);
 	void ClearSwitches();
+	PanelSwitchItem* PanelSwitchesVC::GetFlashingItem();
+
 protected:
 	std::vector<PanelSwitchItem*>SwitchList;
 	std::vector<int> SwitchArea;
