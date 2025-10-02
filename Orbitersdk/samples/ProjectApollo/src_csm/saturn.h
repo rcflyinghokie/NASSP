@@ -484,7 +484,6 @@ public:
 		SRF_ORDEAL_ROTARY,
 		SRF_LV_ENG_S1B,
 		SRF_SPSMININDICATOR,
-		SRF_SPS_INJ_VLV,
 		SRF_SM_RCS_MODE,
 		SRF_THUMBWHEEL_GPI_PITCH,
 		SRF_THUMBWHEEL_GPI_YAW,
@@ -605,7 +604,6 @@ public:
 		SRF_VC_LVENGLIGHTS_S1B,
 		SRF_VC_SPS_FONT_BLACK,
 		SRF_VC_SPS_FONT_WHITE,
-		SRF_VC_SPS_INJ_VLV,
 		SRF_VC_SPSMAXINDICATOR,
 		SRF_VC_SPSMININDICATOR,
 		SRF_VC_THUMBWHEEL_LARGEFONTSINV,
@@ -1309,6 +1307,7 @@ public:
 
 	void UpdatePointingArrow();
 	PanelSwitchItem *nextActiveSwitch = nullptr;
+	void CheckBPC_SideHatchCover();
 
 	//
 	// Flashlight for VC
@@ -1988,10 +1987,10 @@ protected:
 	//
 
 	SwitchRow SPSInjectorValveIndicatorsRow;
-	IndicatorSwitch SPSInjectorValve1Indicator;
-	IndicatorSwitch SPSInjectorValve2Indicator;
-	IndicatorSwitch SPSInjectorValve3Indicator;
-	IndicatorSwitch SPSInjectorValve4Indicator;
+	SaturnSPSInjectorValveIndicator SPSInjectorValve1Indicator;
+	SaturnSPSInjectorValveIndicator SPSInjectorValve2Indicator;
+	SaturnSPSInjectorValveIndicator SPSInjectorValve3Indicator;
+	SaturnSPSInjectorValveIndicator SPSInjectorValve4Indicator;
 
 	SwitchRow SPSTestSwitchRow;
 	ThreePosSwitch SPSTestSwitch;
@@ -4032,9 +4031,9 @@ protected:
 	int coascdrreticleidx;
 	int cmvccuecardsarrowsidx;
 	int hcmPointingArrowidx;
+	int LESMeshidx;
 
 	DEVMESHHANDLE vcmesh;
-
 	bool ViewCueCardArrows;
 
 	double DockAngle;
