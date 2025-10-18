@@ -555,7 +555,6 @@ public:
 	void SetAnimations(double);
 
 	void UpdatePointingArrow();
-	PanelSwitchItem *nextActiveSwitch = nullptr;
 
 	//
 	// VISHANDLE
