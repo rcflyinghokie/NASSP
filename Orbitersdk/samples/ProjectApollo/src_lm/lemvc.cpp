@@ -312,7 +312,7 @@ const VECTOR3 P12_ROT_POS[P12_ROTCOUNT] = {
 
 // Panel 12 needles
 const VECTOR3 P12_NEEDLE_POS[P12_NEEDLECOUNT] = {
-{1.09359, 0.072091, 1.05354}, {1.09359, 0.072091, 0.989483}, {1.0338, 0.054291, 1.01673}
+{1.09336, 0.07218, 1.05355}, {1.09335, 0.07218, 0.98951}, {1.03376, 0.05437, 1.01671}
 };
 
 // Panel 12 thumbwheels
@@ -335,7 +335,7 @@ const VECTOR3 P14_ROT_POS[P14_ROTCOUNT] = {
 
 // Panel 14 needles
 const VECTOR3 P14_NEEDLE_POS[P14_NEEDLECOUNT] = {
-{1.02176, 0.357098, 1.39294}, {0.972098, 0.31565, 1.39296}
+{1.02189, 0.35732, 1.39309}, {0.97181, 0.31552, 1.39299}
 };
 
 // Panel 16 circuit breakers
@@ -3197,10 +3197,13 @@ void LEM::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&ComPitchMeter);
 	ComPitchMeter.SetReference(P12_NEEDLE_POS[0], P12_ROT_AXIS);
 	ComPitchMeter.DefineMeshGroup(VC_GRP_Needle_P12_01);
+	ComPitchMeter.SetInitialAnimState(0.5); //TBD: Replace with 180.0/330.0 if 105 degrees is supposed to be at the top
+	ComPitchMeter.SetRotationRange(270.0*RAD); //TBD: Better value
 
 	MainPanelVC.AddSwitch(&ComYawMeter);
 	ComYawMeter.SetReference(P12_NEEDLE_POS[1], P12_ROT_AXIS);
 	ComYawMeter.DefineMeshGroup(VC_GRP_Needle_P12_02);
+	ComYawMeter.SetRotationRange(126.9*RAD); //TBD: Better value
 
 	MainPanelVC.AddSwitch(&Panel12SignalStrengthMeter);
 	Panel12SignalStrengthMeter.SetReference(P12_NEEDLE_POS[2], P12_ROT_AXIS);
