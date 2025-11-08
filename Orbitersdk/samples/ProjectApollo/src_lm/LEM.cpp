@@ -622,6 +622,7 @@ void LEM::Init()
 	vcidx = -1;
 	windowshadesidx = -1;
 	xpointershadesidx = -1;
+	hLMPointingArrowidx = -1;
 
 	drogue = NULL;
 	probes = NULL;

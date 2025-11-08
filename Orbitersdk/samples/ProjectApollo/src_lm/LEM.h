@@ -554,6 +554,8 @@ public:
 
 	void SetAnimations(double);
 
+	void UpdatePointingArrow();
+
 	//
 	// VISHANDLE
 	//
@@ -746,7 +748,6 @@ protected:
 	void SetCompLight(int m, bool state);
 	void SetContactLight(int m, bool state);
 	void SetPowerFailureLight(int m, bool state);
-	void SetStageSeqRelayLight(int m, bool state);
 
 #ifdef _OPENORBITER
 	void SetVCLighting(UINT meshidx, DWORD *matList, MatProp EmissionMode, double state, int cnt);
@@ -1716,6 +1717,7 @@ protected:
 	UINT vcidx;
 	UINT windowshadesidx;
 	UINT xpointershadesidx;
+	UINT hLMPointingArrowidx;
 
 	DEVMESHHANDLE probes;
 	DEVMESHHANDLE deflectors;
@@ -2146,6 +2148,7 @@ extern MESHHANDLE hLMDescent;
 extern MESHHANDLE hLMDescentNoLeg;
 extern MESHHANDLE hLMAscent;
 extern MESHHANDLE hLMVC;
+extern MESHHANDLE hLMPointingArrow;
 
 extern void LEMLoadMeshes();
 

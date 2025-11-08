@@ -635,6 +635,8 @@ Saturn::~Saturn()
 	}
 	delete[] ReticlePoint;
 
+	if (wasteDisposalKnob) delete wasteDisposalKnob;
+
 	//fclose(PanelsdkLogFile);
 }
 
@@ -1144,6 +1146,8 @@ void Saturn::initSaturn()
 	seatsunfoldedidx = -1;
 	coascdridx = -1;
 	coascdrreticleidx = -1;
+	cmvccuecardsarrowsidx = -1;
+	hcmPointingArrowidx = -1;
 
 	vcmesh = NULL;
 	vis = NULL;
@@ -1192,6 +1196,7 @@ void Saturn::initSaturn()
 	VCSeatsfolded = false;
 
 	COASreticlevisible = false;
+	ViewCueCardArrows = false;
 
 	CurrentFuelWeight = 0;
 	LastFuelWeight = numeric_limits<double>::infinity(); // Ensure update at first opportunity
@@ -1206,13 +1211,15 @@ void Saturn::initSaturn()
 	wasteDisposalState.Set(AnimState::CLOSING, 0.0);
 	panel382CoverState.Set(AnimState::CLOSING, 0.0);
 	altimeterCoverState.Set(AnimState::OPENING, 1.0);
-	ordealState.Set(AnimState::CLOSING, 0.0);	//In reality the ORDEAL should be stowed for launch
+	ordealState.Set(AnimState::OPENING, 1.0);
 	DSKY_GlareshadeState.Set(AnimState::OPENING, 1.0);
 	EMSDV_GlareshadeState.Set(AnimState::OPENING, 1.0);
 	AccelerometerCoverState.Set(AnimState::OPENING, 1.0);
 	MissionTimer_GlareshadeState.Set(AnimState::OPENING, 1.0);
 	Sextant_EyepieceState.Set(AnimState::OPENING, 1.0);
 	Telescope_EyepieceState.Set(AnimState::OPENING, 1.0);
+
+	wasteDisposalKnob = NULL;
 
 	// call only once 
 	if (!InitSaturnCalled) {
@@ -1535,7 +1542,7 @@ void Saturn::SetAnimations(double simdt)
 	DoMeshAnimation(panel382CoverState, panel382CoverAnim, 0.5, simdt);
 	DoMeshAnimation(altimeterCoverState, altimeterCoverAnim, 2.0, simdt);
 	DoMeshAnimation(wasteDisposalState, wasteDisposalAnim, 1.0, simdt);
-	DoMeshAnimation(ordealState, ordealAnim, 3.0, simdt);
+	DoMeshAnimation(ordealState, ordealMeshAnim, 3.0, simdt);
 	DoMeshAnimation(DSKY_GlareshadeState, DSKY_GlareshadeAnim, 2.0, simdt);
 	DoMeshAnimation(EMSDV_GlareshadeState, EMSDV_GlareshadeAnim, 2.0, simdt);
 	DoMeshAnimation(AccelerometerCoverState, AccelerometerCoverAnim, 2.0, simdt);
@@ -1554,6 +1561,8 @@ void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 	TRACE(buffer);
 
 	SetAnimations(simdt);
+//	UpdatePointingArrow();
+//	InitFDAICustomCamera();
 
 	//
 	// We die horribly if you set 100x or higher acceleration during launch.
@@ -3670,6 +3679,25 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 	if (FirstTimestep) return 0;
 
 	if (enableVESIM) vesim.clbkConsumeBufferedKey(key, down, kstate);
+
+	// Help key for CueCard Arrows
+	if (KEYMOD_LCONTROL(kstate)) {
+		if (down) {
+			switch (key) {
+			case OAPI_KEY_H:
+				if (InVC && oapiCameraInternal())
+				{
+					if (ViewCueCardArrows == true) {
+						ViewCueCardArrows = false;
+					}
+					else {
+						ViewCueCardArrows = true;
+					}
+					return 1;
+				}
+			}
+		}
+	}
 
 	if (KEYMOD_SHIFT(kstate) && !KEYMOD_CONTROL(kstate) && !KEYMOD_ALT(kstate)){
 		// Do DSKY stuff
