@@ -4,13 +4,13 @@ name: CMake on a single platform
 
 on:
   push:
-    branches: [ "CMake" ]
+    branches: [ "CMake-Alpha" ]
 
 env:
   GH_TOKEN: ${{github.token}}
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: RelWithDebInfo
-  BUILD_NAME: NASSP-V9.0-Orbiter2024-${{github.run_number}}
+  BUILD_NAME: NASSP-V9.0-Folgers-Alpha-${{github.run_number}}
 
 jobs:
   build:
