@@ -1641,7 +1641,7 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 				if (dsky.NoDAPLit())	{ DSKY_CW_Lights.push_back(VC_MAT_DSKY_LIGHTS_NO_DAP); }
 			}
 		}
-
+		
 //		sprintf(oapiDebugString(), "Integral Voltage = %lf", lca.GetNumericVoltage());
 
 		// First Darken All Lights
@@ -1799,9 +1799,8 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 	}
 
 	case AID_LMVC_POINTINGARROW:
-	{
 		UpdatePointingArrow();
-	}
+		return true;
 
 	case AID_VC_LM_CWS_LEFT:
 		CWEA.RedrawLeft(surf, srf[SFR_VC_CW_LIGHTS], TexMul);
@@ -2337,6 +2336,7 @@ void LEM::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&AbortSwitch, AID_VC_ABORT_BUTTON);
 	AbortSwitch.SetDirection(abortbuttonvector);
 	AbortSwitch.DefineMeshGroup(VC_GRP_AbortButton);
+	AbortSwitch.SetArrowOffset(_V(-0.10018, 0.436067, 1.68518));
 
 	MainPanelVC.AddSwitch(&AbortStageSwitch, AID_VC_ABORTSTAGE_BUTTON);
 	AbortStageSwitch.SetReference(abortbuttonvector, _V(-0.045187, 0.468451, 1.68831), _V(-0.047192, 0.437682, 1.68536), _V(1, 0, 0));
@@ -2686,8 +2686,9 @@ void LEM::DefineVCAnimations()
 	TempMonitorInd.DefineMeshGroup(VC_GRP_Needle_P3_01);
 
 	MainPanelVC.AddSwitch(&RadarSignalStrengthMeter);
-	RadarSignalStrengthMeter.SetReference(_V(-0.264141, 0.235696, 1.62835), P3_ROT_AXIS);
+	RadarSignalStrengthMeter.SetReference(_V(-0.263996, 0.235573, 1.62816), P3_ROT_AXIS);
 	RadarSignalStrengthMeter.DefineMeshGroup(VC_GRP_Needle_Radar);
+	RadarSignalStrengthMeter.SetRotationRange(250.0*RAD);
 
 	MainPanelVC.AddSwitch(&RadarSlewSwitch, AID_VC_RR_SLEW_SWITCH);
 	RadarSlewSwitch.SetReference(_V(-0.264179, 0.149389, 1.56749));
@@ -3197,17 +3198,18 @@ void LEM::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&ComPitchMeter);
 	ComPitchMeter.SetReference(P12_NEEDLE_POS[0], P12_ROT_AXIS);
 	ComPitchMeter.DefineMeshGroup(VC_GRP_Needle_P12_01);
-	ComPitchMeter.SetInitialAnimState(0.5); //TBD: Replace with 180.0/330.0 if 105 degrees is supposed to be at the top
-	ComPitchMeter.SetRotationRange(270.0*RAD); //TBD: Better value
+	ComPitchMeter.SetInitialAnimState(135.0 / 247.5); //TBD: Replace with 180.0/330.0 if 105 degrees is supposed to be at the top
+	ComPitchMeter.SetRotationRange(247.50*RAD); //TBD: Better value
 
 	MainPanelVC.AddSwitch(&ComYawMeter);
 	ComYawMeter.SetReference(P12_NEEDLE_POS[1], P12_ROT_AXIS);
 	ComYawMeter.DefineMeshGroup(VC_GRP_Needle_P12_02);
-	ComYawMeter.SetRotationRange(126.9*RAD); //TBD: Better value
+	ComYawMeter.SetRotationRange(112.5*RAD); //TBD: Better value
 
 	MainPanelVC.AddSwitch(&Panel12SignalStrengthMeter);
 	Panel12SignalStrengthMeter.SetReference(P12_NEEDLE_POS[2], P12_ROT_AXIS);
 	Panel12SignalStrengthMeter.DefineMeshGroup(VC_GRP_Needle_P12_03);
+	Panel12SignalStrengthMeter.SetRotationRange(250.0*RAD);
 
 	MainPanelVC.AddSwitch(&TapeRecorderTB, AID_VC_RECORDER_TALKBACK);
 
@@ -3231,10 +3233,12 @@ void LEM::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&EPSDCVoltMeter);
 	EPSDCVoltMeter.SetReference(P14_NEEDLE_POS[0], P14_ROT_AXIS);
 	EPSDCVoltMeter.DefineMeshGroup(VC_GRP_Needle_P14_01);
+	EPSDCVoltMeter.SetRotationRange(250.0*RAD);
 
 	MainPanelVC.AddSwitch(&EPSDCAmMeter);
 	EPSDCAmMeter.SetReference(P14_NEEDLE_POS[1], P14_ROT_AXIS);
 	EPSDCAmMeter.DefineMeshGroup(VC_GRP_Needle_P14_02);
+	EPSDCAmMeter.SetRotationRange(250.0*RAD);
 
 	MainPanelVC.AddSwitch(&DSCBattery1TB, AID_VC_DSC_BATTERY_TALKBACKS);
 	MainPanelVC.AddSwitch(&DSCBattery2TB, AID_VC_DSC_BATTERY_TALKBACKS);
@@ -3825,10 +3829,10 @@ void LEM::UpdatePointingArrow()
 	GetMeshOffset(vcidx, ofs);
 
 	DEVMESHHANDLE hArrowMesh = GetDevMesh (vis, hLMPointingArrowidx);
-	
 	static bool first = true;
 	static VECTOR3* arrowData;
 	static VECTOR3* circleData;
+	static VECTOR3* circleDataOrig;
 	static int arrowVertsCnt, circleVertsCnt;
 	if (first) {											// Run this once for retrieving the Arrow data
 		MESHGROUP* arrow_group = oapiMeshGroup(GetMeshTemplate(hLMPointingArrowidx), 0);
@@ -3842,12 +3846,36 @@ void LEM::UpdatePointingArrow()
 		MESHGROUP* circle_group = oapiMeshGroup(GetMeshTemplate(hLMPointingArrowidx), 1);
 		circleVertsCnt = circle_group->nVtx;
 		circleData = new VECTOR3[circleVertsCnt];
+		circleDataOrig = new VECTOR3[circleVertsCnt];
 		for (int i = 0; i < circleVertsCnt; i++) {			// Make a copy of the Circle data
-			circleData[i].x = (double)circle_group->Vtx[i].x;
-			circleData[i].y = (double)circle_group->Vtx[i].y;
-			circleData[i].z = (double)circle_group->Vtx[i].z;
+			circleDataOrig[i].x = (double)circle_group->Vtx[i].x;
+			circleDataOrig[i].y = (double)circle_group->Vtx[i].y;
+			circleDataOrig[i].z = (double)circle_group->Vtx[i].z;
 		}
 		first = false;
+	}
+
+	if (!oapiGetPause()){
+		static double rotationangle;
+		rotationangle += oapiGetSimStep() / oapiGetTimeAcceleration() * 90;  // Rotate 360° every 4 Second
+		if (rotationangle > 360) rotationangle = 0;
+		double rad = rotationangle * PI / 180.0;
+		double cos_a = std::cos(rad);
+		double sin_a = std::sin(rad);	
+
+		//Rotate Circle
+		for (int i = 0; i < circleVertsCnt; i++) {
+			circleData[i].x = circleDataOrig[i].x * cos_a - circleDataOrig[i].y * sin_a;
+			circleData[i].y = circleDataOrig[i].x * sin_a + circleDataOrig[i].y * cos_a;
+			circleData[i].z = circleDataOrig[i].z;
+		}
+
+/*		// Rotate Arrow
+		for (int i = 0; i < arrowVertsCnt; i++) {
+			arrowData[i].x = arrowData[i].x * cos_a - arrowData[i].y * sin_a;
+			arrowData[i].y = arrowData[i].x * sin_a + arrowData[i].y * cos_a;
+		}
+*/
 	}
 	GROUPREQUESTSPEC arrow_grp;
 	memset (&arrow_grp, 0, sizeof(GROUPREQUESTSPEC));
@@ -3964,3 +3992,20 @@ void LEM::UpdatePointingArrow()
 //########################################################################
 	SetMeshVisibilityMode(hLMPointingArrowidx, MESHVIS_VC);
 }
+
+void LEM::HideMeshGroup(int meshidx, int meshgrp, bool hide){
+	DEVMESHHANDLE hmesh = GetDevMesh (vis, meshidx);	
+	if (hmesh){
+		GROUPEDITSPEC grpSpec;
+		memset(&grpSpec, 0, sizeof(GROUPEDITSPEC));
+		grpSpec.UsrFlag = 3;  						// flag for hide the group and shadow
+
+		if (hide) {
+			grpSpec.flags = GRPEDIT_ADDUSERFLAG;
+		} else {
+			grpSpec.flags = GRPEDIT_DELUSERFLAG;
+		}
+		oapiEditMeshGroup(hmesh, meshgrp, &grpSpec);
+	}
+}
+

@@ -1211,6 +1211,11 @@ public:
 	void SetSideHatchMesh();
 
 	///
+	/// \brief Set boost protective cover mesh
+	///
+	void SetBPCMesh(UINT idx);
+
+	///
 	/// \brief Set fwd hatch mesh
 	///
 	void SetFwdHatchMesh();
@@ -1306,9 +1311,10 @@ public:
 	void DoMeshAnimation(AnimState &, UINT &, double, double);
 
 	void UpdatePointingArrow();
-	void CheckBPC_SideHatchCover();
 	void UpdateSideHatchClickspots(const VECTOR3 &ofs);
 	void UpdateForwardHatchClickspots(const VECTOR3 &ofs);
+
+	void HideMeshGroup(int, int, bool);
 
 	//
 	// Flashlight for VC
@@ -1639,6 +1645,8 @@ protected:
 	/// Ordeal
 	UINT ordealMeshAnim;
 	AnimState ordealState;
+	UINT ordealDummyMeshAnim[7];
+	MGROUP_ROTATE *ordealSw01_rot[7];
 
 	/// DSKY_Glareshade
 	UINT DSKY_GlareshadeAnim;
@@ -3884,6 +3892,7 @@ protected:
 	O2SMSupply O2SMSupply;
 	CrewStatus CrewStatus;
 	SaturnSideHatch SideHatch;
+	BoostProtectiveCover BPC;
 	SaturnWaterController WaterController;
 	SaturnGlycolCoolingController GlycolCoolingController;
 	SaturnLMTunnelVent LMTunnelVent;
@@ -4030,7 +4039,6 @@ protected:
 	int coascdrreticleidx;
 	int cmvccuecardsarrowsidx;
 	int hcmPointingArrowidx;
-	int LESMeshidx;
 
 	DEVMESHHANDLE vcmesh;
 	bool ViewCueCardArrows;
