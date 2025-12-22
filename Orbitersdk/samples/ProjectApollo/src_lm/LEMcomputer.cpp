@@ -422,8 +422,10 @@ void LEMcomputer::GetRadarData(int radarBits)
 LMOptics::LMOptics() {
 
 	lem = NULL;
+
 	OpticsShaft = 3;
 	OpticsReticle = 0.0;
+	ZeroDetent = true;
 	ReticleMoved = 0;
 	RetDimmer = 255;
 	KnobTurning = 0;
@@ -432,6 +434,31 @@ LMOptics::LMOptics() {
 void LMOptics::Init(LEM *vessel) {
 
 	lem = vessel;
+}
+
+bool LMOptics::ReticlePush() {
+	if (((360.0 - OpticsReticle / RAD) < 1.0) || ((360.0 - OpticsReticle / RAD > 359.0)))
+	{
+		return true;
+	}
+	else
+		return false;
+}
+
+void LMOptics::AOTDetentToggle() {
+
+	if (lem->AOTReticleDetent.GetState() == 0 && ReticlePush() == true) 
+	{
+		lem->AOTReticleDetent.SetState(1);
+		ZeroDetent = true;
+	}
+
+	else 
+	{
+		lem->AOTReticleDetent.SetState(0);
+		ZeroDetent = false;
+	}
+	return;
 }
 
 void LMOptics::SystemTimestep(double simdt) {
@@ -479,15 +506,26 @@ bool LMOptics::PaintReticleAngle(SURFHANDLE surf, SURFHANDLE digits) {
 }
 
 void LMOptics::Timestep(double simdt) {
-	OpticsReticle = OpticsReticle + simdt * ReticleMoved;
-
-	/*if (ReticleMoved)
+	if (ZeroDetent)
 	{
-		sprintf(oapiDebugString(), "Optics Shaft %d, Optics Reticle %.2f, Moved? %.4f, KnobTurning %d", OpticsShaft, 360.0 - OpticsReticle / RAD, ReticleMoved, KnobTurning);
-	}*/
+		OpticsReticle = 0.0;
+		ReticleMoved = 0.0;
+	}
 
-	if (OpticsReticle > 2*PI) OpticsReticle -= 2*PI;
-	if (OpticsReticle < 0) OpticsReticle += 2*PI;
+	else
+	{
+		OpticsReticle = OpticsReticle + simdt * ReticleMoved;
+
+		/*if (ReticleMoved)
+		{
+			sprintf(oapiDebugString(), "Optics Shaft %d, Optics Reticle %.2f, Moved? %.4f, KnobTurning %d", OpticsShaft, 360.0 - OpticsReticle / RAD, ReticleMoved, KnobTurning);
+		}*/
+
+		//sprintf(oapiDebugString(), "Optics Reticle %.2f", 360.0 - OpticsReticle / RAD);
+
+		if (OpticsReticle > 2 * PI) OpticsReticle -= 2 * PI;
+		if (OpticsReticle < 0) OpticsReticle += 2 * PI;
+	}
 }
 
 void LMOptics::SaveState(FILEHANDLE scn) {
@@ -496,6 +534,7 @@ void LMOptics::SaveState(FILEHANDLE scn) {
 	papiWriteScenario_double(scn, "OPTICSSHAFT", OpticsShaft);
 	papiWriteScenario_double(scn, "OPTICSRETICLE", OpticsReticle);
 	papiWriteScenario_double(scn, "RETDIMMER", RetDimmer);
+	papiWriteScenario_bool(scn, "AOTZERODETENT", ZeroDetent);
 	oapiWriteLine(scn, LMOPTICS_END_STRING);
 }
 
@@ -515,5 +554,6 @@ void LMOptics::LoadState(FILEHANDLE scn) {
 		else if (!strnicmp (line, "RETDIMMER", 11)) {
 			sscanf (line+11, "%d", &RetDimmer);
 		}
+		papiReadScenario_bool(line, "AOTZERODETENT", ZeroDetent);
 	}
 }
