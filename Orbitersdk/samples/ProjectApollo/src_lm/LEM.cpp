@@ -1058,6 +1058,7 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 				break;
 			}
 		}
+		return 0;
 	}
 
 	if (!KEYMOD_SHIFT(keystate) && !KEYMOD_CONTROL(keystate) && KEYMOD_ALT(keystate))
