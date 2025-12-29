@@ -51,6 +51,7 @@
 #include "LVDC.h"
 #include "iu.h"
 #include "Mission.h"
+#include "Autosave.h"
 
 #include <crtdbg.h>
 
@@ -1655,7 +1656,10 @@ void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 		MoveFlashlight();
 	}
 
-	sprintf(buffer, "End time(0) %lld", time(0)); 
+	// Autosave (checks focus internally, reads config from file)
+	NASSPAutosave::Update(GetHandle(), GetName(), pMission->GetMissionName().c_str(), MissionTime);
+
+	sprintf(buffer, "End time(0) %lld", time(0));
 	TRACE(buffer);
 }
 
@@ -3672,9 +3676,9 @@ int Saturn::clbkConsumeDirectKey(char *kstate)
 	// Only override these keys if the user is holding no modifier keys, Alt only, or Ctrl + Alt.
 	if (GetAttitudeMode() == ATTITUDEMODE::ATTMODE_ROT && !(KEYMOD_CONTROL(kstate) && !KEYMOD_ALT(kstate)) && !KEYMOD_SHIFT(kstate)) {
 		// Possible deflection amounts are:
-		// No key modifiers: 10.5° (max proportional rate, but not hardover)
-		// Alt: 11.5° (full deflection, triggering direct switches)
-		// Ctrl + Alt: 1.51° (triggering breakout switches)
+		// No key modifiers: 10.5ï¿½ (max proportional rate, but not hardover)
+		// Alt: 11.5ï¿½ (full deflection, triggering direct switches)
+		// Ctrl + Alt: 1.51ï¿½ (triggering breakout switches)
 		double deflectionDegrees = KEYMOD_ALT(kstate) ? KEYMOD_CONTROL(kstate) ? 1.51 : 11.5 : 10.5;
 		double deflectionPercent = deflectionDegrees / 11.5;
 
