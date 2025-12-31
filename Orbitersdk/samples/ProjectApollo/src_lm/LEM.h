@@ -796,11 +796,12 @@ protected:
 
 	LMAbortButton AbortSwitch;
 	LMAbortStageButton AbortStageSwitch;
-
 	
 	SwitchRow RRGyroSelSwitchRow;
 	ThreePosSwitch RRGyroSelSwitch;
-	CircuitBrakerSwitch AOTReticleDetent;
+
+	SwitchRow AOTReticleSwitchRow;
+	ToggledPushSwitch AOTReticleDetent;
 	
 	/////////////////
 	// LEM panel 1 //
