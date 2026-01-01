@@ -57,3 +57,4 @@ jobs:
 
     - name: Create assets
       run: gh release upload ${{env.BUILD_NAME}} '${{github.workspace}}/Doc/Project Apollo - NASSP/NASSP Quick Start Guide.pdf'
+      run: gh release upload ${{env.BUILD_NAME}} '${{github.workspace}}/Doc/Project Apollo - NASSP/Autosave.txt'
