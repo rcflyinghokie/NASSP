@@ -1908,9 +1908,9 @@ protected:
 	ThreePosSwitch TVCGimbalDriveYawSwitch;
 
 	SwitchRow CSMLightSwitchesRow;
-	ToggleSwitch RunEVALightSwitch;
+	TwoSourceSwitch RunEVALightSwitch;
 	ThreeSourceTwoDestSwitch RndzLightSwitch;
-	ToggleSwitch TunnelLightSwitch;
+	TwoSourceSwitch TunnelLightSwitch;
 
 	SwitchRow LMPowerSwitchRow;
 	CSMLMPowerSwitch LMPowerSwitch;
@@ -3840,6 +3840,9 @@ protected:
 
 	ThreePhasePowerMerge SuitCompressor1Feeder;
 	ThreePhasePowerMerge SuitCompressor2Feeder;
+
+	// Exterior Lighting
+	ExteriorLighting ExteriorLighting;
 
 	// GSE
 	Pump* GSEGlycolPump;
