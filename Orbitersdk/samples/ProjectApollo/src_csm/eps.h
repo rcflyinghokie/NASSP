@@ -60,9 +60,11 @@ public:
 	ExteriorLighting();
 	virtual ~ExteriorLighting();
 	void Init(Saturn *s, CircuitBrakerSwitch *MNB, ThreeSourceTwoDestSwitch *RDZSPOT);
+	bool IsPowered();
 	void SystemTimestep(double simdt);
 	void SaveState(FILEHANDLE scn, char *name_str);
 	void LoadState(char *line, int strlen);
+	void DefineAnimations(UINT idx);
 
 protected:
 	Saturn *saturn;
@@ -70,4 +72,5 @@ protected:
 	ThreeSourceTwoDestSwitch *RDZSPOTsw;
 	bool SpotDeployed;
 	bool EVALtDeployed;
+	UINT anim_EVALt;
 };
