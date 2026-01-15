@@ -1361,7 +1361,7 @@ void LEM::InitPanel (int panel)
 		oapiSetSurfaceColourKey(srf[SRF_LEM_F_HATCH_REL_VLV],   g_Param.col[4]);
 		oapiSetSurfaceColourKey(srf[SRF_LEM_INTLK_OVRD],        g_Param.col[4]);
 		oapiSetSurfaceColourKey(srf[SRF_LEM_MASTERALARM],		g_Param.col[4]);
-		oapiSetSurfaceColourKey(srf[SRF_AOTRETICLEKNOB],		g_Param.col[4]);
+		//oapiSetSurfaceColourKey(srf[SRF_AOTRETICLEKNOB],		g_Param.col[4]);
 
 		//
 		// Borders need to set the center color to transparent so only the outline
@@ -3047,10 +3047,14 @@ bool LEM::clbkPanelMouseEvent (int id, int event, int mx, int my)
 			return false;
 	}
 
+	if (id == AID_AOT_RETICLE_KNOB)
+	{
+		optics.AOTDetentToggle();
+		return true;
+	}
 
 	if (MainPanel.CheckMouseClick(id, event, mx, my))
 		return true;
-
 
 	switch (id) {
 	// panel 0 events:
@@ -3117,10 +3121,6 @@ bool LEM::clbkPanelMouseEvent (int id, int event, int mx, int my)
 			}
 
 		}
-		return true;
-
-	case AID_AOT_RETICLE_KNOB:
-		optics.AOTDetentToggle();
 		return true;
 
 	case AID_AOT_SHAFT_KNOB:
