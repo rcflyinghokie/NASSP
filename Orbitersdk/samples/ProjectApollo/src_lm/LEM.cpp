@@ -1120,8 +1120,8 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 			case OAPI_KEY_W:
 				if (AOTReticleDetent.GetState() == 1)
 				{
-					sprintf(oapiDebugString(), "AOT DETENT ENABLED");
-					DebugLineClearTimer = 5;
+					//sprintf(oapiDebugString(), "AOT DETENT ENABLED");
+					//DebugLineClearTimer = 5;
 				}
 				else
 				{
@@ -1136,8 +1136,8 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 			case OAPI_KEY_S:
 				if (AOTReticleDetent.GetState() == 1)
 				{
-					sprintf(oapiDebugString(), "AOT DETENT ENABLED");
-					DebugLineClearTimer = 5;
+					//sprintf(oapiDebugString(), "AOT DETENT ENABLED");
+					//DebugLineClearTimer = 5;
 				}
 				else
 				{
@@ -1155,13 +1155,13 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 					optics.AOTDetentToggle(); // Toggle AOT detent
 					if (AOTReticleDetent.GetState() == 1)
 					{
-						sprintf(oapiDebugString(), "AOT DETENT ENABLED");
+						//sprintf(oapiDebugString(), "AOT DETENT ENABLED");
 					}
 					else
 					{
-						sprintf(oapiDebugString(), "AOT DETENT DISABLED");
+						//sprintf(oapiDebugString(), "AOT DETENT DISABLED");
 					}
-					DebugLineClearTimer = 5;
+					//DebugLineClearTimer = 5;
 				}
 				break;
 
