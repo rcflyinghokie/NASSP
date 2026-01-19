@@ -199,3 +199,113 @@ void CryoPressureSwitch::SaveState(FILEHANDLE scn, char *name_str)
 	sprintf(buffer, "%d %d", PressureSwitch1, PressureSwitch2);
 	oapiWriteScenario_string(scn, name_str, buffer);
 }
+
+ExteriorLighting::ExteriorLighting()
+{
+	saturn = NULL;
+	SpotDeployed = false;
+	EVALtDeployed = false;
+}
+
+ExteriorLighting::~ExteriorLighting()
+{
+
+}
+
+void ExteriorLighting::Init(Saturn *s, CircuitBrakerSwitch *RDVMNB, ThreeSourceTwoDestSwitch *RDZSPOT, PowerMerge *RUNEVAAC, ToggleSwitch *RUNEVA, ElectricLight *EVALT)
+{
+	saturn = s;
+	RNDZSPOTMNBcb = RDVMNB;
+	RDZSPOTsw = RDZSPOT;
+	ACPower = RUNEVAAC;
+	RUNEVAsw = RUNEVA;
+	EVALight = EVALT;
+}
+
+bool ExteriorLighting::IsRunEVAOn()
+{
+	if (saturn->stage == CSM_LEM_STAGE && ACPower->Voltage() > SP_MIN_ACVOLTAGE && RUNEVAsw->IsUp())  //stage check prevents ghost lighting after SM sep
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+void ExteriorLighting::SystemTimestep(double simdt)
+{
+	if (!saturn->LETAttached())
+	{
+		EVALtDeployed = true;
+	}
+
+	if (RDZSPOTsw->IsDown() && RNDZSPOTMNBcb->IsPowered())
+	{
+		SpotDeployed = true;
+	}
+
+	//Running Lights
+	int i;
+
+	if (IsRunEVAOn()) {
+		for (i = 0; i < 8; i++) saturn->runningLights[i].active = true;
+		ACPower->DrawPower(7.0);
+	}
+	else {
+		for (i = 0; i < 8; i++) saturn->runningLights[i].active = false;
+	}
+
+	//EVA Light
+	if (IsRunEVAOn() && EVALtDeployed)
+	{
+		EVALight->Enable();
+	}
+	else
+	{
+		EVALight->Disable();
+	}
+
+	//EVA Pole Lt execute Animation
+	if (anim_EVALt != 0) {
+		if (EVALtDeployed)
+			saturn->SetAnimation(anim_EVALt, 1.0); // deployed
+		else
+			saturn->SetAnimation(anim_EVALt, 0.0); // stowed
+	}
+}
+
+void ExteriorLighting::LoadState(char *line, int strlen)
+{
+	int i, j;
+
+	sscanf(line + strlen + 1, "%i %i", &i, &j);
+
+	SpotDeployed = (i != 0);
+	EVALtDeployed = (j != 0);
+}
+
+void ExteriorLighting::SaveState(FILEHANDLE scn, char *name_str)
+{
+	char buffer[100];
+
+	sprintf(buffer, "%d %d", SpotDeployed, EVALtDeployed);
+	oapiWriteScenario_string(scn, name_str, buffer);
+}
+
+void ExteriorLighting::DefineAnimations(UINT idx)
+{
+	ANIMATIONCOMPONENT_HANDLE ach_EVALtDeployedX;
+	ANIMATIONCOMPONENT_HANDLE ach_EVALtDeployedZ;
+	ANIMATIONCOMPONENT_HANDLE ach_EVALtDeployedY;
+	static UINT EVALtDeployedGrp10[1] = { 10 };
+	const VECTOR3 EVALtDeployedPivot = { 1.67261, 0.996135, 3.146 };    //EVA Lt Pole Pivot Point
+	static MGROUP_ROTATE mgr_EVALtDeployedGrp10X(idx, EVALtDeployedGrp10, 1, EVALtDeployedPivot, _V(1, 0, 0), (float)(RAD * -8.15));
+	static MGROUP_ROTATE mgr_EVALtDeployedGrp10Z(idx, EVALtDeployedGrp10, 1, EVALtDeployedPivot, _V(0, 0, 1), (float)(RAD * 30)); //inverse sign in Blender
+	static MGROUP_ROTATE mgr_EVALtDeployedGrp10Y(idx, EVALtDeployedGrp10, 1, EVALtDeployedPivot, _V(0, 1, 0), (float)(RAD * -124.32)); //inverse sign in Blender
+	anim_EVALt = saturn->CreateAnimation(0.0);
+	ach_EVALtDeployedY = saturn->AddAnimationComponent(anim_EVALt, 0.0, 1.0, &mgr_EVALtDeployedGrp10Y);
+	ach_EVALtDeployedZ = saturn->AddAnimationComponent(anim_EVALt, 0.0, 1.0, &mgr_EVALtDeployedGrp10Z);
+	ach_EVALtDeployedX = saturn->AddAnimationComponent(anim_EVALt, 0.0, 1.0, &mgr_EVALtDeployedGrp10X);
+}
