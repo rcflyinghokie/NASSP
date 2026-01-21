@@ -2607,7 +2607,7 @@ protected:
 
 	SwitchRow InteriorLightsFloodSwitchesRow;
 	ToggleSwitch InteriorLightsFloodDimSwitch;
-	ToggleSwitch InteriorLightsFloodFixedSwitch;
+	TwoSourceSwitch InteriorLightsFloodFixedSwitch;
 
 	//////////////////////
 	// Panel 5 rotaries //
@@ -2699,7 +2699,7 @@ protected:
 	SwitchRow Panel100SwitchesRow;
 	ToggleSwitch UtilityPowerSwitch;
 	ToggleSwitch Panel100FloodDimSwitch;	
-	ToggleSwitch Panel100FloodFixedSwitch;
+	TwoSourceSwitch Panel100FloodFixedSwitch;
 	ToggleSwitch GNPowerOpticsSwitch;
 	GuardedToggleSwitch GNPowerIMUSwitch;
 	ThreePosSwitch Panel100RNDZXPDRSwitch;
@@ -2938,7 +2938,7 @@ protected:
 	ToggleSwitch FloodDimSwitch;
 
 	SwitchRow FloodFixedSwitchRow;
-	ThreePosSwitch FloodFixedSwitch;
+	ThreeSourceSwitch FloodFixedSwitch;
 
 	//////////////////////
 	// Panel 7 switches //
@@ -3861,6 +3861,14 @@ protected:
 	ThreePhasePowerMerge SuitCompressor1Feeder;
 	ThreePhasePowerMerge SuitCompressor2Feeder;
 
+	// Interior Lighting
+	FloodLights LeftFloodLights;
+	FloodLights RightFloodLights;
+	FloodLights LEBFloodLights;
+
+	TunnelLights MNATunnelLights;
+	TunnelLights MNBTunnelLights;
+
 	// Exterior Lighting
 	ExteriorLighting ExteriorLighting;
 	PowerMerge RunEVAFeeder;
@@ -4757,6 +4765,8 @@ protected:
 	friend class AR_GCore;
 	friend class ApolloRTCCMFD;
 	friend class RTCC;
+	friend class FloodLights;
+	friend class TunnelLights;
 	friend class ExteriorLighting;
 
 	friend void cbCSMVesim(int inputID, int eventType, int newValue, void *pdata);
