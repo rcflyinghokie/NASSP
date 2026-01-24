@@ -680,6 +680,20 @@ TradeoffDataDisplayBuffer::TradeoffDataDisplayBuffer()
 	}
 }
 
+MPTVehicleDataBlock::MPTVehicleDataBlock()
+{
+	ConfigChangeInd = 0;
+	TUP = 0;
+	CSMArea = 0.0;
+	SIVBArea = 0.0;
+	LMAscentArea = 0.0;
+	LMDescentArea = 0.0;
+	CSMMass = 0.0;
+	SIVBMass = 0.0;
+	LMAscentMass = 0.0;
+	LMDescentMass = 0.0;
+}
+
 void MPTVehicleDataBlock::SaveState(FILEHANDLE scn)
 {
 	oapiWriteScenario_int(scn, "ConfigCode", ConfigCode.to_ulong());
@@ -4412,6 +4426,13 @@ double RTCC::CalcGETBase()
 	return SystemParameters.GMTBASE + SystemParameters.MCGMTL / 24.0;
 }
 
+double RTCC::CalcTEPHEM(double GMTLO) const
+{
+	// Input and output in seconds
+	double MJD = SystemParameters.GMTBASE + GMTLO / 24.0 / 3600.0;
+	return (MJD - SystemParameters.TEPHEM0) * 24.0 * 3600.0;
+}
+
 double RTCC::GETfromGMT(double GMT) const
 {
 	return GMT - SystemParameters.MCGMTL * 3600.0;
@@ -6569,8 +6590,8 @@ void RTCC::SaveState(FILEHANDLE scn) {
 	oapiWriteScenario_string(scn, "MED_K30", Buffer);
 	sprintf(Buffer, "%d %d %d %d %lf %lf", med_k31.TableIndicator, med_k31.PlanNumber, med_k31.UllageQuads, med_k31.LOSMode, med_k31.DeltaPitch, med_k31.TimeStep);
 	oapiWriteScenario_string(scn, "MED_K31", Buffer);
-	sprintf(Buffer, "%d %d %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf", med_k32.Vehicle, med_k32.RequestIndicator, med_k32.ChaserVectorTime, med_k32.TargetVectorTime, med_k32.T_NCC, med_k32.DH_min,
-		med_k32.DH_max, med_k32.DH_inc, med_k32.T2_min, med_k32.T2_max, med_k32.TimeStep, med_k32.dt_TPI_slip);
+	sprintf(Buffer, "%d %d %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf", med_k32.Vehicle, med_k32.RequestIndicator, med_k32.ChaserVectorTime, med_k32.TargetVectorTime,
+		med_k32.T_NCC, med_k32.DH_min, med_k32.DH_max, med_k32.DH_inc, med_k32.T2_min, med_k32.T2_max, med_k32.TimeStep, med_k32.dt_TPI_slip);
 	oapiWriteScenario_string(scn, "MED_K32", Buffer);
 
 	oapiWriteLine(scn, RTCC_END_STRING);
@@ -8661,9 +8682,9 @@ void RTCC::LunarLaunchWindowProcessor(const LunarLiftoffTimeOpt &opt)
 	Header.AEGInd = 1;
 	Header.ErrorInd = 0;
 	Header.NumBlocks = 1;
-	sv[0].coe_osc = OrbMech::GIMIKC(opt.sv_CSM.R, opt.sv_CSM.V, mu);
+	sv[0].coe_osc = OrbMech::GIMIKC(opt.sv_CSM.sv.R, opt.sv_CSM.sv.V, mu);
 	sv[0].Item7 =SystemParameters.GMTBASE;
-	sv[0].TE = sv[0].TS = OrbMech::GETfromMJD(opt.sv_CSM.MJD,SystemParameters.GMTBASE);
+	sv[0].TE = sv[0].TS = opt.sv_CSM.sv.GMT;
 	//Initialize
 	pmmlaeg.CALL(Header, sv[0], sv_temp[0]);
 
@@ -9191,8 +9212,8 @@ RTCC_PMMLLWP_20_16:
 RTCC_PMMLLWP_22_19:
 	//Set up RET and RPT
 	PZLRPT.plans = I_LOOP;
-	PZLRPT.CSMSTAID = "";
-	PZLRPT.CSM_GMTV = OrbMech::GETfromMJD(opt.sv_CSM.MJD,SystemParameters.GMTBASE);
+	PZLRPT.CSMSTAID = opt.CSMStationID;
+	PZLRPT.CSM_GMTV = opt.sv_CSM.sv.GMT;
 	PZLRPT.CSM_GETV = GETfromGMT(PZLRPT.CSM_GMTV);
 	if (opt.M == 2)
 	{
@@ -16703,7 +16724,7 @@ void RTCC::PMMFUD(int veh, unsigned man, int action, std::string StationID)
 			PMXSPT("PMMFUD", 42);
 			return;
 		}
-
+		//Compute and store new number of the TLI (TBD), the deorbit (TBD), last executed, last frozen, and remaining maneuvers
 		if (mpt->LastExecutedManeuver > 0)
 		{
 			mpt->LastExecutedManeuver -= man;
@@ -16712,7 +16733,7 @@ void RTCC::PMMFUD(int veh, unsigned man, int action, std::string StationID)
 		{
 			mpt->LastFrozenManeuver -= man;
 		}
-
+		//Move up the area, weight, begin time, end time sets in header to their proper place
 		for (unsigned i = man;i < mpt->ManeuverNum;i++)
 		{
 			mpt->TimeToBeginManeuver[i - man] = mpt->TimeToBeginManeuver[i];
@@ -16722,9 +16743,13 @@ void RTCC::PMMFUD(int veh, unsigned man, int action, std::string StationID)
 		}
 
 		mpt->ManeuverNum -= man;
+		//Store in header the configuration code, docking angle, areas, vehicle weights, and fuel weights from descriptive block of last maneuver to be deleted
 		mpt->DeltaDockingAngle = mpt->mantable[man - 1].DockingAngle;
 		mpt->ConfigurationArea = mpt->mantable[man - 1].TotalAreaAfter;
+		//Leave TUP intact
+		int TUP = mpt->CommonBlock.TUP;
 		mpt->CommonBlock = mpt->mantable[man - 1].CommonBlock;
+		mpt->CommonBlock.TUP = TUP;
 		//TBD: Compute and store new GET to begin venting
 
 		for (unsigned i = 0;i < man;i++)
@@ -17147,6 +17172,7 @@ void RTCC::EMSEPH(int QUEID, StateVectorTableEntry &sv, int &L, double PresentGM
 	{
 		table->EPHEM.table.clear();
 		table->MANTIMES.Table.clear();
+		table->LUNRSTAY.LunarStayBeginGMT = table->LUNRSTAY.LunarStayEndGMT = -1.0;
 	}
 
 	RTCCNIAuxOutputTable aux;
@@ -18519,10 +18545,47 @@ RTCC_PMSVCT_15:
 	EMSTRAJ(sv1, L);
 }
 
-int RTCC::PMSVEC(int L, double GMT, VehicleDataBlock &block, std::string &StaID)
+int RTCC::PMSVEC(int MV, bool chaser, double GMT, std::string VectorID, VehicleDataBlock &block, std::string &StaID)
 {
-	MissionPlanTable *mpt = GetMPTPointer(L);
+	//INPUTS:
+	//MV: Maneuver vehicle code (1 = CSM, 3 = LEM)
+	//chaser: true = get chaser vehicle data, false = get target vehicle data
+	//GMT: Requested vector time (not used of StaID is set)
+	//VectorID: If set then GMT is ignored and a vector from the Vector Panel Summary is requested
+	//OUTPUTS:
+	//block: vehicle data block for requested vehicle
+	//StaID: Station ID associated with the output state vector
+	int L;
+	MissionPlanTable *mpt;
 	EphemerisData sv;
+	bool StaIDInput;
+
+	//Initialize
+	StaIDInput = false;
+	if (chaser)
+	{
+		L = MV;
+	}
+	else
+	{
+		L = 4 - MV;
+	}
+	mpt = GetMPTPointer(L);
+
+	//StaID input?
+	if (VectorID.empty() == false)
+	{
+		if (BMSVPSVectorFetch(VectorID, block.sv))
+		{
+			PMXSPT("PMSVEC", 49);
+			return 1;
+		}
+		GMT = block.sv.GMT;
+		StaID = VectorID;
+		StaIDInput = true;
+	}
+	//Get K-Factor
+	block.KFactor = mpt->KFactor;
 
 	//Are there any maneuvers?
 	if (mpt->mantable.size() == 0)
@@ -18530,6 +18593,8 @@ int RTCC::PMSVEC(int L, double GMT, VehicleDataBlock &block, std::string &StaID)
 		//No
 		block.Area = mpt->ConfigurationArea;
 		block.Weight = mpt->TotalInitMass;
+		//If station ID was input then we are done
+		if (StaIDInput) return 0;
 	}
 	else
 	{
@@ -18569,6 +18634,8 @@ int RTCC::PMSVEC(int L, double GMT, VehicleDataBlock &block, std::string &StaID)
 			block.Area = mpt->mantable[num - 1].TotalAreaAfter;
 			block.Weight = mpt->mantable[num - 1].TotalMassAfter;
 		}
+		//If station ID was input then  we are done
+		if (StaIDInput) return 0;
 		//Is vector time within 3 minutes of last maneuver time?
 		if (num > 0U && GMT < mpt->mantable[num - 1].GMT_BO + 3.0*60.0)
 		{
@@ -18579,14 +18646,13 @@ int RTCC::PMSVEC(int L, double GMT, VehicleDataBlock &block, std::string &StaID)
 			goto PMSVEC_2_2;
 		}
 	}
-
+	//Get state vector from ephemeris
 	if (EMSFFV(GMT, L, block.sv))
 	{
 		PMXSPT("PMSVEC", 49);
 		return 1;
 	}
 PMSVEC_2_2:
-	block.KFactor = mpt->KFactor;
 	StaID = mpt->StationID;
 	return 0;
 }
@@ -18732,7 +18798,7 @@ RTCC_PMSEXE_B:
 	EMSNAP(L, 7);
 }
 
-void RTCC::PMMPAD(AEGBlock sv, double mass, double THT, double dt, double H_P, int Thruster, double DPSScaleFactor)
+void RTCC::PMMPAD(AEGBlock sv, double THT, double dt, double H_P, int Thruster, double DPSScaleFactor)
 {
 	AEGDataBlock sv_temp, sv_a, sv_apo, sv_peri;
 	double INFO[10], T_next, R_PD, beta, rho0, R_E, A, B, C, D, rho, R, r, rr, RR, DV1, DV2, DV, mu, V_b, X, r_dot_b, V_H_b, r_dot_a, V_H_a, V_a2, eacosEa, easinEa;
@@ -18763,7 +18829,7 @@ void RTCC::PMMPAD(AEGBlock sv, double mass, double THT, double dt, double H_P, i
 	eps1 = 185.2;
 	iter_max = 10;
 
-	W_E = mass;
+	W_E = sv.Data.Item7;
 	if (Thruster == RTCC_ENGINETYPE_CSMSPS)
 	{
 		F = SystemParameters.MCTST1;
@@ -21507,6 +21573,73 @@ MissionPlanTable* RTCC::GetMPTPointer(int L)
 	}
 }
 
+MPTVehicleDataBlock *RTCC::MPTDockingManeuver(int L, double GMT_BO, PLAWDTOutput &plawdtout)
+{
+	//Returns weight table from other MPT at desired (GMT_BO) time
+
+	PLAWDTInput plawdtin;
+	unsigned int N, M, I, block;
+	MissionPlanTable *other_mpt;
+	MPTVehicleDataBlock *OtherCommonBlock;
+	
+	other_mpt = GetMPTPointer(4 - L);
+	N = other_mpt->ManeuverNum;
+	M = N;
+	I = 0;
+
+	//Find MPT block on other MPT before maneuver
+	if (N > 0)
+	{
+		do
+		{
+			//Is burnout of maneuver before burnout of maneuver on other MPT?
+			if (GMT_BO <= other_mpt->mantable[I].GMT_BO)
+			{
+				//Yes
+				//Is burnout of maneuver before ignition of maneuver on other MPT?
+				if (GMT_BO < other_mpt->mantable[I].GMT_1)
+				{
+					//Yes
+					M = M - 1;
+				}
+				break;
+			}
+			if (M == 1) break;
+			M = M - 1;
+			I = I + 1;
+		} while (true);
+	}
+	block = N - M;
+	if (block == 0U)
+	{
+		plawdtin.Num = (unsigned int)other_mpt->CommonBlock.ConfigCode.to_ulong();
+		plawdtin.T_IN = GMTfromGET(other_mpt->SIVBVentingBeginGET);
+		OtherCommonBlock = &other_mpt->CommonBlock;
+	}
+	else
+	{
+		//Maneuver block
+		plawdtin.Num = (unsigned int)other_mpt->mantable[block - 1].CommonBlock.ConfigCode.to_ulong();
+		plawdtin.T_IN = other_mpt->mantable[block - 1].GMT_BO;
+		OtherCommonBlock = &other_mpt->mantable[block - 1].CommonBlock;
+	}
+	plawdtin.T_UP = GMT_BO;
+	plawdtin.TableCode = -(4 - L);
+	plawdtin.CSMArea = OtherCommonBlock->CSMArea;
+	plawdtin.SIVBArea = OtherCommonBlock->SIVBArea;
+	plawdtin.LMAscArea = OtherCommonBlock->LMAscentArea;
+	plawdtin.LMDscArea = OtherCommonBlock->LMDescentArea;
+	plawdtin.CSMWeight = OtherCommonBlock->CSMMass;
+	plawdtin.SIVBWeight = OtherCommonBlock->SIVBMass;
+	plawdtin.LMAscWeight = OtherCommonBlock->LMAscentMass;
+	plawdtin.LMDscWeight = OtherCommonBlock->LMDescentMass;
+
+	//Update from t_wts to t_end
+	PLAWDT(plawdtin, plawdtout);
+
+	return OtherCommonBlock;
+}
+
 OBJHANDLE RTCC::GetGravref(int body)
 {
 	if (body == BODY_EARTH)
@@ -21720,7 +21853,7 @@ int RTCC::PMMXFR(int id, void *data)
 			CCP = mpt->mantable.back().CommonBlock.ConfigCode;
 		}
 		CC = inp->EndConfiguration;
-		err = PMMXFRCheckConfigThruster(true, inp->ConfigurationChangeIndicator, CCP, TVC, inp->ThrusterCode, CC, CCMI);
+		err = PMMXFRCheckConfigThruster(true, inp->GMTI, inp->TableCode, inp->ConfigurationChangeIndicator, CCP, TVC, inp->ThrusterCode, CC, CCMI);
 		if (err)
 		{
 			return 1;
@@ -22035,7 +22168,7 @@ int RTCC::PMMXFR(int id, void *data)
 			CCP = mpt->mantable.back().CommonBlock.ConfigCode;
 		}
 		CC = CCMI = CCP;
-		err = PMMXFRCheckConfigThruster(false, 0, CCP, TVC, inp->ManData[working_man - 1].Thruster, CC, CCMI);
+		err = PMMXFRCheckConfigThruster(false, 0.0, 0, 0, CCP, TVC, inp->ManData[working_man - 1].Thruster, CC, CCMI);
 		//Is attitude mode an AGS?
 		if (inp->ManData[working_man - 1].Attitude == 5)
 		{
@@ -22209,7 +22342,7 @@ int RTCC::PMMXFR(int id, void *data)
 		err = PMMXFRFormatManeuverCode(med_m86.Veh, RTCC_ENGINETYPE_LMDPS, RTCC_ATTITUDE_PGNS_DESCENT, CurMan, purpose, TVC, code);
 		//Check configuration and thrust
 		CC = CCP;
-		err = PMMXFRCheckConfigThruster(true, 0, CCP, TVC, RTCC_ENGINETYPE_LMDPS, CC, CCMI);
+		err = PMMXFRCheckConfigThruster(true, 0.0, 0, 0, CCP, TVC, RTCC_ENGINETYPE_LMDPS, CC, CCMI);
 
 		man.code = code;
 		mpt->mantable.push_back(man);
@@ -22263,7 +22396,7 @@ int RTCC::PMMXFR(int id, void *data)
 		err = PMMXFRFormatManeuverCode(med_m85.VEH, RTCC_ENGINETYPE_LMAPS, RTCC_ATTITUDE_PGNS_ASCENT, CurMan, purpose, TVC, code);
 		//Check configuration and thrust
 		CC[RTCC_CONFIG_A] = true;
-		err = PMMXFRCheckConfigThruster(true, RTCC_CONFIGCHANGE_UNDOCKING, CCP, TVC, RTCC_ENGINETYPE_LMAPS, CC, CCMI);
+		err = PMMXFRCheckConfigThruster(true, 0.0, 0, RTCC_CONFIGCHANGE_UNDOCKING, CCP, TVC, RTCC_ENGINETYPE_LMAPS, CC, CCMI);
 
 		man.code = code;
 		man.GMTMAN = man.GMTI;
@@ -22507,18 +22640,27 @@ int RTCC::PMMXFRFormatManeuverCode(int Table, int Thruster, int Attitude, unsign
 	return 0;
 }
 
-int RTCC::PMMXFRCheckConfigThruster(bool CheckConfig, int CCI, const std::bitset<4> &CCP, int TVC, int Thruster, std::bitset<4> &CC, std::bitset<4> &CCMI)
+int RTCC::PMMXFRCheckConfigThruster(bool CheckConfig, double GMT, int L, int CCI, const std::bitset<4> &CCP, int TVC, int Thruster, std::bitset<4> &CC, std::bitset<4> &CCMI)
 {
+	//CCI: Configuration change indicator (0 = no change, 1 = undocking, 2 = docking)
+	//CCP: Configuration code prior to maneuver
+	//CC: Configuration code at end of maneuver
+	//CCMI: Configuration code at start maneuver
+	//TVC: Thrusting Vehicle Code (0 = CSM, 1 = LM, 2 = S-IVB)
+
 	if (CheckConfig)
 	{
 		if (CCI > 1)
 		{
+			//Docking
 			CCMI = CCP;
 		}
 		else
 		{
+			//No change or undocking
 			if (CCI < 1)
 			{
+				//No change
 				CC = CCP;
 			}
 
@@ -22564,13 +22706,15 @@ int RTCC::PMMXFRCheckConfigThruster(bool CheckConfig, int CCI, const std::bitset
 		}
 	}
 
-	//No configuration change
+	//Configuration Change
 	if (CCI < 1)
 	{
+		//No configuration change
 		return 0;
 	}
 	else if (CCI == 1)
 	{
+		//Undocking
 		if (CCP == CC)
 		{
 			PMXSPT("PMMXFR", 6);
@@ -22586,8 +22730,39 @@ int RTCC::PMMXFRCheckConfigThruster(bool CheckConfig, int CCI, const std::bitset
 			return 0;
 		}
 	}
+	else
+	{
+		//Docking
+		//Obtain CCPP from other MPT
+		MissionPlanTable *mpt = GetMPTPointer(4 - L);
+		std::bitset<4> CCPP = mpt->CommonBlock.ConfigCode;
 
-	//TBD: Docking
+		for (unsigned i = 0; i < mpt->mantable.size(); i++)
+		{
+			if (GMT > mpt->mantable[i].GMTMAN)
+			{
+				CCPP = mpt->mantable[i].CommonBlock.ConfigCode;
+			}
+		}
+		//Are CCP and CCPP disjoint?
+		std::bitset<4> TEMP;
+
+		TEMP = CCP & CCPP;
+		if (TEMP != 0)
+		{
+			//No
+			PMXSPT("PMMXFR", 6);
+			return 6;
+		}
+		//Is union of CCP and CCPP = CC?
+		TEMP = CCP | CCPP;
+		if (TEMP != CC)
+		{
+			//No
+			PMXSPT("PMMXFR", 6);
+			return 6;
+		}
+	}
 
 	return 0;
 }
@@ -24721,6 +24896,7 @@ void RTCC::PMMREAST(int med, EphemerisData *sv)
 	int ASTCode = i;
 
 	//Convert MED, fetch state vector, propagate to TIG
+	ASTData AST;
 	EphemerisData sv0, sv_abort;
 
 	if (sv)
@@ -24729,9 +24905,46 @@ void RTCC::PMMREAST(int med, EphemerisData *sv)
 	}
 	else
 	{
-		if (EMSFFV(PZREAP.RTEVectorTime*3600.0, RTCC_MPT_CSM, sv0))
+		StateVectorTableEntry entry;
+		if (PZREAP.VECTYPE < 6)
 		{
-			return;
+			//Useable Vector Table
+			entry = BZUSEVEC.data[PZREAP.VECTYPE + PZREAP.VECID * 6];
+			if (entry.ID == -1) return;
+			sv0 = entry.Vector;
+			AST.StationID = entry.VectorCode;
+		}
+		else if (PZREAP.VECTYPE == 6)
+		{
+			//Anchor vector
+			if (PZREAP.VECID == 0)
+			{
+				entry = EZANCHR1.AnchorVectors[9];
+			}
+			else
+			{
+				entry = EZANCHR3.AnchorVectors[9];
+			}
+			if (entry.ID == -1) return;
+			sv0 = entry.Vector;
+			AST.StationID = entry.VectorCode;
+		}
+		else
+		{
+			//Ephemeris
+			int L = PZREAP.VECID == 0 ? RTCC_MPT_CSM : RTCC_MPT_LM;
+			if (EMSFFV(PZREAP.RTEVectorTime*3600.0, L, sv0))
+			{
+				return;
+			}
+			if (L == RTCC_MPT_CSM)
+			{
+				AST.StationID = PZMPTCSM.StationID;
+			}
+			else
+			{
+				AST.StationID = PZMPTLEM.StationID;
+			}
 		}
 	}
 
@@ -24762,7 +24975,6 @@ void RTCC::PMMREAST(int med, EphemerisData *sv)
 	}
 
 	EphemerisData sv_ig, sv_r;
-	ASTData AST;
 	char typname[8];
 
 	//Here the logic diverts between Earth vs. Moon centered state vectors
@@ -25029,7 +25241,6 @@ void RTCC::PMMREAST(int med, EphemerisData *sv)
 		AST.ASTCode = PZREAP.LastASTCode + 1;
 	}
 	PZREAP.LastASTCode = AST.ASTCode;
-	AST.StationID = PZMPTCSM.StationID; //TBD
 	AST.AbortGMT = sv_ig.GMT;
 
 	EphemerisData sv_r_ECT;
@@ -26526,7 +26737,7 @@ RTCC_PCRENT_3D:
 	goto RTCC_PCRENT_1A;
 }
 
-bool RTCC::PMMLRBTI(EphemerisData sv)
+bool RTCC::PMMLRBTI(EphemerisData sv, std::string StationID)
 {
 	EMMENIInputTable in;
 	in.StopParamRefFrame = 1;
@@ -26567,6 +26778,8 @@ bool RTCC::PMMLRBTI(EphemerisData sv)
 	opt.REVS2 = PZLOIPLN.REVS2;
 	opt.R_LLS = BZLAND.rad[RTCC_LMPOS_BEST];
 	opt.usePlaneSolnForInterSoln = PZLOIPLN.PlaneSolnForInterSoln;
+	opt.VectorTime = sv.GMT;
+	opt.StationID = StationID;
 
 	double h_pc = length(opt.SPH.R) - opt.R_LLS;
 
@@ -26609,7 +26822,8 @@ bool RTCC::PMMLRBTI(EphemerisData sv)
 
 void RTCC::PMDLRBTI(const rtcc::LOIOptions &opt, const rtcc::LOIOutputData &out)
 {
-	PZLRBTI.VectorGET = med_k18.VectorTime;
+	PZLRBTI.VectorGET = GETfromGMT(opt.VectorTime);
+	PZLRBTI.StaID = opt.StationID;
 	PZLRBTI.lat_lls = BZLAND.lat[0] * DEG;
 	PZLRBTI.lng_lls = BZLAND.lng[0] * DEG;
 	PZLRBTI.R_lls = BZLAND.rad[RTCC_LMPOS_BEST] / 1852.0;
@@ -28996,67 +29210,112 @@ int RTCC::PMQAFMED(std::string med, std::vector<std::string> data)
 	//Update return to Earth constraints
 	else if (med == "86")
 	{
-		if (med_f86.Constraint == "DVMAX")
+		if (data.size() < 2)
 		{
-			PZREAP.DVMAX = med_f86.Value;
+			return 1;
 		}
-		else if (med_f86.Constraint == "TZMIN")
+		double Value;
+		if (sscanf(data[1].c_str(), "%lf", &Value) != 1)
 		{
-			PZREAP.TZMIN = med_f86.Value;
+			return 2;
 		}
-		else if (med_f86.Constraint == "TZMAX")
+
+		if (data[0] == "DVMAX")
 		{
-			PZREAP.TZMAX = med_f86.Value;
+			PZREAP.DVMAX = Value;
 		}
-		else if (med_f86.Constraint == "GMAX")
+		else if (data[0] == "TZMIN")
 		{
-			PZREAP.GMAX = med_f86.Value;
+			PZREAP.TZMIN = Value;
 		}
-		else if (med_f86.Constraint == "HMINMC")
+		else if (data[0] == "TZMAX")
 		{
-			PZREAP.HMINMC = med_f86.Value;
+			PZREAP.TZMAX = Value;
 		}
-		else if (med_f86.Constraint == "IRMAX")
+		else if (data[0] == "GMAX")
 		{
-			PZREAP.IRMAX = med_f86.Value;
+			PZREAP.GMAX = Value;
 		}
-		else if (med_f86.Constraint == "RRBIAS")
+		else if (data[0] == "HMINMC")
 		{
-			PZREAP.RRBIAS = med_f86.Value;
+			PZREAP.HMINMC = Value;
 		}
-		else if (med_f86.Constraint == "VRMAX")
+		else if (data[0] == "IRMAX")
 		{
-			PZREAP.VRMAX = med_f86.Value;
+			PZREAP.IRMAX = Value;
+		}
+		else if (data[0] == "RRBIAS")
+		{
+			PZREAP.RRBIAS = Value;
+		}
+		else if (data[0] == "VRMAX")
+		{
+			PZREAP.VRMAX = Value;
+		}
+		else
+		{
+			return 2;
 		}
 	}
 	//Update return to Earth constraints
 	else if (med == "87")
 	{
-		if (med_f87.Constraint == "TGTLN")
+		if (data.size() < 2)
 		{
-			if (med_f87.Value == "SHALLOW")
+			return 1;
+		}
+
+		if (data[0] == "TGTLN")
+		{
+			if (data[1] == "SHALLOW")
 			{
 				PZREAP.TGTLN = 0;
 			}
-			else if (med_f87.Value == "STEEP")
+			else if (data[1] == "STEEP")
 			{
 				PZREAP.TGTLN = 1;
 			}
+			else
+			{
+				return 2;
+			}
 		}
-		else if (med_f87.Constraint == "MOTION")
+		else if (data[0] == "MOTION")
 		{
-			if (med_f87.Value == "EITHER")
+			if (data[1] == "EITHER")
 			{
 				PZREAP.MOTION = 0;
 			}
-			else if (med_f87.Value == "DIRECT")
+			else if (data[1] == "DIRECT")
 			{
 				PZREAP.MOTION = 1;
 			}
-			else if (med_f87.Value == "CIRCUM")
+			else if (data[1] == "CIRCUM")
 			{
 				PZREAP.MOTION = 2;
 			}
+			else
+			{
+				return 2;
+			}
+		}
+		else if (data[0] == "VECID")
+		{
+			if (data.size() < 3) return 1;
+
+			if (data[1] == "CSM") PZREAP.VECID = 0;
+			else if (data[1] == "LEM") PZREAP.VECID = 1;
+			else return 2;
+
+			if (data[2] == "CMC") PZREAP.VECTYPE = 0;
+			else if (data[2] == "LGC") PZREAP.VECTYPE = 1;
+			else if (data[2] == "AGS") PZREAP.VECTYPE = 2;
+			else if (data[2] == "IU") PZREAP.VECTYPE = 3;
+			else if (data[2] == "HSR") PZREAP.VECTYPE = 4;
+			else if (data[2] == "DC") PZREAP.VECTYPE = 5;
+			else if (data[2] == "ANC") PZREAP.VECTYPE = 6;
+			else if (data[2] == "EPH") PZREAP.VECTYPE = 7;
+			else return 2;
 		}
 	}
 
@@ -34550,10 +34809,12 @@ void RTCC::PMMDMT(int L, unsigned man, RTCCNIAuxOutputTable *aux)
 	//mptman->StationIDFrozen = mpt->StationID;
 	mptman->CommonBlock.TUP = abs(mpt->CommonBlock.TUP);
 
-	double W_S_Prior, S_Fuel, WDOT, T, F;
+	//Update fuel masses
+	double WDOT, T, F;
 
 	MPTVehicleDataBlock *CommonBlockBefore;
 
+	//Get previous fuel masses. Either initial masses or at the end of the previous maneuver.
 	if (man == 1)
 	{
 		CommonBlockBefore = &mpt->CommonBlock;
@@ -34562,66 +34823,50 @@ void RTCC::PMMDMT(int L, unsigned man, RTCCNIAuxOutputTable *aux)
 	{
 		CommonBlockBefore = &mpt->mantable[man - 2].CommonBlock;
 	}
+	//Copy over previous fuel masses
+	mptman->CommonBlock.SIVBFuelRemaining = CommonBlockBefore->SIVBFuelRemaining;
+	mptman->CommonBlock.SPSFuelRemaining = CommonBlockBefore->SPSFuelRemaining;
+	mptman->CommonBlock.CSMRCSFuelRemaining = CommonBlockBefore->CSMRCSFuelRemaining;
+	mptman->CommonBlock.LMRCSFuelRemaining = CommonBlockBefore->LMRCSFuelRemaining;
+	mptman->CommonBlock.LMAPSFuelRemaining = CommonBlockBefore->LMAPSFuelRemaining;
+	mptman->CommonBlock.LMDPSFuelRemaining = CommonBlockBefore->LMDPSFuelRemaining;
 
-	W_S_Prior = CommonBlockBefore->SIVBMass;
-	S_Fuel = CommonBlockBefore->SIVBFuelRemaining;
-
-	//S-IVB in configuration at init?
-	if (mptman->ConfigCodeBefore[RTCC_CONFIG_S])
+	//Account for S-IVB venting
+	if (mptman->CommonBlock.ConfigCode[RTCC_CONFIG_S])
 	{
 		//Weight loss due to continuous venting
-		double DW = W_S_Prior - aux->W_SIVB;
+		double DW = CommonBlockBefore->SIVBMass - aux->W_SIVB;
 		//Subtract from S-IVB fuel remaining before maneuver
-		S_Fuel = S_Fuel - DW;
-		//S-IVB maneuver?
-		if (mptman->TVC == 2)
-		{
-			mptman->CommonBlock.SIVBFuelRemaining = S_Fuel - aux->MainFuelUsed;
-
-			T = SystemParameters.MCTSAV;
-			WDOT = SystemParameters.MCTWAV;
-			F = mptman->CommonBlock.SIVBFuelRemaining;
-
-			mptman->CommonBlock.SPSFuelRemaining = CommonBlockBefore->SPSFuelRemaining;
-			mptman->CommonBlock.CSMRCSFuelRemaining = CommonBlockBefore->CSMRCSFuelRemaining;
-			mptman->CommonBlock.LMRCSFuelRemaining = CommonBlockBefore->LMRCSFuelRemaining;
-			mptman->CommonBlock.LMAPSFuelRemaining = CommonBlockBefore->LMAPSFuelRemaining;
-			mptman->CommonBlock.LMDPSFuelRemaining = CommonBlockBefore->LMDPSFuelRemaining;
-		}
+		mptman->CommonBlock.SIVBFuelRemaining -= DW;
 	}
 
-	if (mptman->TVC != 2)
+	//Update fuels
+	if (mptman->TVC == RTCC_MANVEHICLE_CSM)
 	{
-		if (mptman->TVC == 1)
+		//CSM maneuver
+		mptman->CommonBlock.SPSFuelRemaining -= aux->MainFuelUsed;
+		mptman->CommonBlock.CSMRCSFuelRemaining -= aux->RCSFuelUsed;
+	}
+	else if (mptman->TVC == RTCC_MANVEHICLE_LM)
+	{
+		mptman->CommonBlock.LMRCSFuelRemaining -= aux->RCSFuelUsed;
+		if (mptman->Thruster == RTCC_ENGINETYPE_LMAPS)
 		{
-			mptman->CommonBlock.SPSFuelRemaining = CommonBlockBefore->SPSFuelRemaining - aux->MainFuelUsed;
-			mptman->CommonBlock.CSMRCSFuelRemaining = CommonBlockBefore->CSMRCSFuelRemaining - aux->RCSFuelUsed;
-			mptman->CommonBlock.LMRCSFuelRemaining = CommonBlockBefore->LMRCSFuelRemaining;
-			mptman->CommonBlock.LMAPSFuelRemaining = CommonBlockBefore->LMAPSFuelRemaining;
-			mptman->CommonBlock.LMDPSFuelRemaining = CommonBlockBefore->LMDPSFuelRemaining;
+			mptman->CommonBlock.LMAPSFuelRemaining -= aux->MainFuelUsed;
+			mptman->CommonBlock.LMDPSFuelRemaining = 0.0;
 		}
-		else
+		else if (mptman->Thruster == RTCC_ENGINETYPE_LMDPS)
 		{
-			mptman->CommonBlock.SPSFuelRemaining = CommonBlockBefore->SPSFuelRemaining;
-			mptman->CommonBlock.CSMRCSFuelRemaining = CommonBlockBefore->CSMRCSFuelRemaining;
-			mptman->CommonBlock.LMRCSFuelRemaining = CommonBlockBefore->LMRCSFuelRemaining - aux->RCSFuelUsed;
-			if (mptman->Thruster == RTCC_ENGINETYPE_LMAPS)
-			{
-				mptman->CommonBlock.LMAPSFuelRemaining = CommonBlockBefore->LMAPSFuelRemaining - aux->MainFuelUsed;
-				mptman->CommonBlock.LMDPSFuelRemaining = 0.0;
-			}
-			else if (mptman->Thruster == RTCC_ENGINETYPE_LMDPS)
-			{
-				mptman->CommonBlock.LMDPSFuelRemaining = CommonBlockBefore->LMDPSFuelRemaining - aux->MainFuelUsed;
-				mptman->CommonBlock.LMAPSFuelRemaining = CommonBlockBefore->LMAPSFuelRemaining;
-			}
-			else
-			{
-				mptman->CommonBlock.LMDPSFuelRemaining = CommonBlockBefore->LMDPSFuelRemaining;
-				mptman->CommonBlock.LMAPSFuelRemaining = CommonBlockBefore->LMAPSFuelRemaining;
-			}
+			mptman->CommonBlock.LMDPSFuelRemaining -= aux->MainFuelUsed;
 		}
+	}
+	else
+	{
+		mptman->CommonBlock.SIVBFuelRemaining -= aux->MainFuelUsed;
+	}
 
+	if (mptman->TVC != RTCC_MANVEHICLE_SIVB)
+	{
 		//Get engine parameters
 		double OnboardThrust;
 		EngineParametersTable(mptman->Thruster, T, WDOT, OnboardThrust);
@@ -34652,62 +34897,34 @@ void RTCC::PMMDMT(int L, unsigned man, RTCCNIAuxOutputTable *aux)
 			break;
 		}
 	}
-
-	if (mptman->CommonBlock.ConfigChangeInd == RTCC_CONFIGCHANGE_DOCKING)
+	else
 	{
-		//TBD: Docking maneuver
+		T = SystemParameters.MCTSAV;
+		WDOT = SystemParameters.MCTWAV;
+		F = mptman->CommonBlock.SIVBFuelRemaining;
 	}
 
 	//Mass Maintenance
-	mptman->TotalMassAfter = 0.0;
-	mptman->CommonBlock.CSMMass = 0.0;
-	mptman->CommonBlock.LMAscentMass = 0.0;
-	mptman->CommonBlock.LMDescentMass = 0.0;
-	mptman->CommonBlock.SIVBMass = 0.0;
-	mptman->TotalAreaAfter = 0.0;
-	mptman->CommonBlock.CSMArea = 0.0;
-	mptman->CommonBlock.LMAscentArea = 0.0;
-	mptman->CommonBlock.LMDescentArea = 0.0;
-	mptman->CommonBlock.SIVBArea = 0.0;
-	if (mptman->CommonBlock.ConfigCode[RTCC_CONFIG_C])
+	for (int i = 0; i < 4; i++)
 	{
-		//Was it an CSM engine?
-		if (mptman->Thruster == RTCC_ENGINETYPE_CSMSPS || mptman->Thruster == RTCC_ENGINETYPE_CSMRCSMINUS2 || mptman->Thruster == RTCC_ENGINETYPE_CSMRCSMINUS4 || mptman->Thruster == RTCC_ENGINETYPE_CSMRCSPLUS2 || mptman->Thruster == RTCC_ENGINETYPE_CSMRCSPLUS4)
+		if (mptman->CommonBlock.ConfigCode[i])
 		{
-			mptman->CommonBlock.CSMMass = aux->W_CSM - aux->MainFuelUsed - aux->RCSFuelUsed;
+			mptman->CommonBlock.Masses[i] = CommonBlockBefore->Masses[i];
+			mptman->CommonBlock.Areas[i] = CommonBlockBefore->Areas[i];
 		}
 		else
 		{
-			mptman->CommonBlock.CSMMass = aux->W_CSM;
-		}
-		mptman->TotalMassAfter += mptman->CommonBlock.CSMMass;
-
-		mptman->CommonBlock.CSMArea = CommonBlockBefore->CSMArea;
-		if (mptman->CommonBlock.CSMArea > mptman->TotalAreaAfter)
-		{
-			mptman->TotalAreaAfter = mptman->CommonBlock.CSMArea;
+			mptman->CommonBlock.Masses[i] = 0.0;
+			mptman->CommonBlock.Areas[i] = 0.0;
 		}
 	}
-	if (mptman->CommonBlock.ConfigCode[RTCC_CONFIG_A])
+
+	//Account for mass loss
+	if (mptman->TVC == RTCC_MANVEHICLE_CSM)
 	{
-		//Was it an LM ascent stage engine?
-		if (mptman->Thruster == RTCC_ENGINETYPE_LMAPS || mptman->Thruster == RTCC_ENGINETYPE_LMRCSMINUS2 || mptman->Thruster == RTCC_ENGINETYPE_LMRCSMINUS4 || mptman->Thruster == RTCC_ENGINETYPE_LMRCSPLUS2 || mptman->Thruster == RTCC_ENGINETYPE_LMRCSPLUS4)
-		{
-			mptman->CommonBlock.LMAscentMass = aux->W_LMA - aux->MainFuelUsed - aux->RCSFuelUsed;
-		}
-		else
-		{
-			mptman->CommonBlock.LMAscentMass = aux->W_LMA;
-		}
-		mptman->TotalMassAfter += mptman->CommonBlock.LMAscentMass;
-
-		mptman->CommonBlock.LMAscentArea = CommonBlockBefore->LMAscentArea;
-		if (mptman->CommonBlock.LMAscentArea > mptman->TotalAreaAfter)
-		{
-			mptman->TotalAreaAfter = mptman->CommonBlock.LMAscentArea;
-		}
+		mptman->CommonBlock.CSMMass = aux->W_CSM - aux->MainFuelUsed - aux->RCSFuelUsed;
 	}
-	if (mptman->CommonBlock.ConfigCode[RTCC_CONFIG_D])
+	else if (mptman->TVC == RTCC_MANVEHICLE_LM)
 	{
 		if (mptman->Thruster == RTCC_ENGINETYPE_LMDPS)
 		{
@@ -34716,36 +34933,66 @@ void RTCC::PMMDMT(int L, unsigned man, RTCCNIAuxOutputTable *aux)
 		}
 		else
 		{
-			mptman->CommonBlock.LMDescentMass = aux->W_LMD;
-		}
-		
-		mptman->TotalMassAfter += mptman->CommonBlock.LMDescentMass;
-
-		mptman->CommonBlock.LMDescentArea = CommonBlockBefore->LMDescentArea;
-		if (mptman->CommonBlock.LMDescentArea > mptman->TotalAreaAfter)
-		{
-			mptman->TotalAreaAfter = mptman->CommonBlock.LMDescentArea;
+			mptman->CommonBlock.LMAscentMass = aux->W_LMA - aux->MainFuelUsed - aux->RCSFuelUsed;
 		}
 	}
-	if (mptman->CommonBlock.ConfigCode[RTCC_CONFIG_S])
+	else
 	{
-		if (mptman->Thruster == RTCC_ENGINETYPE_LOX_DUMP || mptman->Thruster == RTCC_ENGINETYPE_SIVB_MAIN)
-		{
-			mptman->CommonBlock.SIVBMass = aux->W_SIVB - aux->MainFuelUsed - aux->RCSFuelUsed;
-		}
-		else
-		{
-			mptman->CommonBlock.SIVBMass = aux->W_SIVB;
-		}
-		
-		mptman->TotalMassAfter += mptman->CommonBlock.SIVBMass;
+		mptman->CommonBlock.SIVBMass = aux->W_SIVB - aux->MainFuelUsed - aux->RCSFuelUsed;
+	}
 
-		mptman->CommonBlock.SIVBArea = CommonBlockBefore->SIVBArea;
-		if (mptman->CommonBlock.SIVBArea > mptman->TotalAreaAfter)
+	//Docking maneuver
+	if (mptman->CommonBlock.ConfigChangeInd == RTCC_CONFIGCHANGE_DOCKING)
+	{
+		//Search other MPT for the specified vehicle areas and weights prior to this maneuver
+		PLAWDTOutput plawdtout;
+		MPTVehicleDataBlock *OtherCommonBlock;
+
+		OtherCommonBlock = MPTDockingManeuver(L, mptman->GMT_BO, plawdtout);
+		//TBD: Process PLAWDT error?
+
+		//CSM in CC?
+		if (plawdtout.CC[RTCC_CONFIG_C])
 		{
-			mptman->TotalAreaAfter = mptman->CommonBlock.SIVBArea;
+			//Store CSM area, weight, RCS fuel, SPS fuel
+			mptman->CommonBlock.CSMArea = plawdtout.CSMArea;
+			mptman->CommonBlock.CSMMass = plawdtout.CSMWeight;
+			mptman->CommonBlock.CSMRCSFuelRemaining = OtherCommonBlock->CSMRCSFuelRemaining;
+			mptman->CommonBlock.SPSFuelRemaining = OtherCommonBlock->SPSFuelRemaining;
+		}
+		if (plawdtout.CC[RTCC_CONFIG_S])
+		{
+			//Store S-IVB area, weight. Adjust S-IVB fuel for venting
+			mptman->CommonBlock.SIVBArea = plawdtout.SIVBArea;
+			mptman->CommonBlock.SIVBMass = plawdtout.SIVBWeight;
+			double DW = OtherCommonBlock->SIVBMass - plawdtout.SIVBWeight;
+			mptman->CommonBlock.SIVBFuelRemaining = OtherCommonBlock->SIVBFuelRemaining - DW;
+		}
+		if (plawdtout.CC[RTCC_CONFIG_A])
+		{
+			//Store LM ascent area, weight, RCS fuel, APS fuel
+			mptman->CommonBlock.LMAscentArea = plawdtout.LMAscArea;
+			mptman->CommonBlock.LMAscentMass = plawdtout.LMAscWeight;
+			mptman->CommonBlock.LMRCSFuelRemaining = OtherCommonBlock->LMRCSFuelRemaining;
+			mptman->CommonBlock.LMAPSFuelRemaining = OtherCommonBlock->LMAPSFuelRemaining;
+		}
+		if (plawdtout.CC[RTCC_CONFIG_A])
+		{
+			//Store LM ascent area, weight, DPS fuel
+			mptman->CommonBlock.LMDescentArea = plawdtout.LMDscArea;
+			mptman->CommonBlock.LMDescentMass = plawdtout.LMDscWeight;
+			mptman->CommonBlock.LMDPSFuelRemaining = OtherCommonBlock->LMDPSFuelRemaining;
 		}
 	}
+	
+	//Sum weights of vehicles in configuration at end of maneuver
+	mptman->TotalMassAfter = mptman->CommonBlock.CSMMass + mptman->CommonBlock.LMAscentMass + mptman->CommonBlock.LMDescentMass + mptman->CommonBlock.SIVBMass;
+
+	//Compute maximum area
+	mptman->TotalAreaAfter = mptman->CommonBlock.CSMArea;
+	if (mptman->CommonBlock.LMAscentArea > mptman->TotalAreaAfter) mptman->TotalAreaAfter = mptman->CommonBlock.LMAscentArea;
+	if (mptman->CommonBlock.LMDescentArea > mptman->TotalAreaAfter) mptman->TotalAreaAfter = mptman->CommonBlock.LMDescentArea;
+	if (mptman->CommonBlock.SIVBArea > mptman->TotalAreaAfter) mptman->TotalAreaAfter = mptman->CommonBlock.SIVBArea;
 
 	mpt->WeightAfterManeuver[man - 1] = mptman->TotalMassAfter;
 	mpt->AreaAfterManeuver[man - 1] = mptman->TotalAreaAfter;

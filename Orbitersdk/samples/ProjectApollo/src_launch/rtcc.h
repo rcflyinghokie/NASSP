@@ -135,7 +135,8 @@ struct MED_K16
 	double GETTH3 = 0.0;
 	double GETTH4 = 0.0;
 	double DesiredHeight = 60.0*1852.0;
-	int Vehicle = RTCC_MPT_CSM; //1 = CSM, 3 = LEM (Instead of Vector ID)
+	int Vehicle = RTCC_MPT_CSM; //1 = CSM, 3 = LEM
+	std::string VectorID;
 };
 
 //Fuel Remaining
@@ -581,7 +582,8 @@ struct LunarLiftoffTimeOpt
 	double R_LLS;
 	//Longitude at which TPI is to be scheduled
 	double lng_TPI;
-	SV sv_CSM;			//CSM State vector
+	VehicleDataBlock sv_CSM; //CSM State vector
+	std::string CSMStationID;
 };
 
 struct LLTPOpt
@@ -790,7 +792,9 @@ struct DKICommon
 struct SPQOpt //Coelliptic Sequence Processor
 {
 	VehicleDataBlock sv_A;
+	std::string ChaserStationID;
 	VehicleDataBlock sv_P;
+	std::string TargetStationID;
 	//GMT of CSI maneuver (<= 0 if not scheduled)
 	double GMT_CSI;
 	//GMT of CDH maneuver
@@ -1238,31 +1242,40 @@ struct DetailedManeuverTable
 
 struct MPTVehicleDataBlock
 {
+	MPTVehicleDataBlock();
 	void SaveState(FILEHANDLE scn);
 	void LoadState(char *line, int &inttemp);
 
 	//Word 12 (Bytes 1, 2)
 	std::bitset<4> ConfigCode;
 	//Word 12 (Bytes 3, 4)
-	int ConfigChangeInd = 0;
+	int ConfigChangeInd;
 	//Word 12 (Bytes 5, 6)
-	int TUP = 0;
-	//Word 13
-	double CSMArea = 0.0;
-	//Word 14
-	double SIVBArea = 0.0;
-	//Word 15
-	double LMAscentArea = 0.0;
-	//Word 16
-	double LMDescentArea = 0.0;
-	//Word 17
-	double CSMMass = 0.0;
-	//Word 18
-	double SIVBMass = 0.0;
-	//Word 19
-	double LMAscentMass = 0.0;
-	//Word 20
-	double LMDescentMass = 0.0;
+	int TUP;
+	//Words 13-16
+	union
+	{
+		double Areas[4];
+		struct
+		{
+			double CSMArea;
+			double SIVBArea;
+			double LMAscentArea;
+			double LMDescentArea;
+		};
+	};
+	//Words 17-20
+	union
+	{
+		double Masses[4];
+		struct
+		{
+			double CSMMass;
+			double SIVBMass;
+			double LMAscentMass;
+			double LMDescentMass;
+		};
+	};
 	//Word 21
 	double CSMRCSFuelRemaining = 0.0;
 	//Word 22
@@ -2646,7 +2659,7 @@ public:
 	//RTE Digital Reentry Subroutine
 	void PCRENT(PCMATCArray &FD, const RTEDMEDData &IMD, const RTEDSPMData &SPS, double PHIMP, double LIMP, RTEDigitalSolutionTable &RED, int &ICC);
 	//Lunar Orbit Insertion Computational Unit
-	bool PMMLRBTI(EphemerisData sv);
+	bool PMMLRBTI(EphemerisData sv, std::string StationID = "");
 	//Lunar Orbit Insertion Display
 	void PMDLRBTI(const rtcc::LOIOptions &opt, const rtcc::LOIOutputData &out);
 	//Central Manual Entry Device Decoder
@@ -2681,6 +2694,7 @@ public:
 	double GetGMTLO() { return SystemParameters.MCGMTL; }
 	void SetGMTLO(double gmt) { SystemParameters.MCGMTL = gmt; }
 	double CalcGETBase();
+	double CalcTEPHEM(double GMTLO) const;
 	double GetGMTBase() { return SystemParameters.GMTBASE; }
 	void SetGMTBase(double gmt) { SystemParameters.GMTBASE = gmt; }
 	double GETfromGMT(double GMT) const;
@@ -2715,7 +2729,7 @@ public:
 	void PMSVCT(int QUEID, int L);
 	void PMSVCT(int QUEID, int L, StateVectorTableEntry sv0);
 	//Vector Fetch Load Module
-	int PMSVEC(int L, double GMT, VehicleDataBlock &block, std::string &StaID);
+	int PMSVEC(int MV, bool chaser, double GMT, std::string VectorID, VehicleDataBlock &block, std::string &StaID);
 	//Maneuver Execution Program
 	void PMSEXE(int L, double gmt);
 	//Earth Orbit Insertion Processor
@@ -2723,7 +2737,7 @@ public:
 	//SLV Targeting Load Module
 	void PMMPAR(VECTOR3 RT, VECTOR3 VT, double TT);
 	//Perigee Adjust
-	void PMMPAD(AEGBlock sv, double mass, double THT, double dt, double H_P, int Thruster, double DPSScaleFactor);
+	void PMMPAD(AEGBlock sv, double THT, double dt, double H_P, int Thruster, double DPSScaleFactor);
 	//Perigee Adjust Display
 	void PMDPAD();
 	//Mission Planning Print Load Module
@@ -3162,20 +3176,6 @@ public:
 		double BackupLongT = 9999.9;
 	} med_f82;
 
-	//Update return to Earth constraints
-	struct MED_F86
-	{
-		std::string Constraint;
-		double Value;
-	} med_f86;
-
-	//Update return to Earth constraints
-	struct MED_F87
-	{
-		std::string Constraint;
-		std::string Value;
-	} med_f87;
-
 	//Generate DKI
 	struct MED_K00
 	{
@@ -3209,6 +3209,8 @@ public:
 		int ChaserVehicle = 1; //1 = CSM, 3 = LEM
 		double ChaserThresholdGET = -1.0;
 		double TargetThresholdGET = -1.0;
+		//0 = CSI on time, 1 = CDH (Delete CSI), 2 = optimum CSI
+		int CSIMode = 0;
 		//CSI time (GET)
 		double t_CSI = 0.0;
 		//1 = CDH at upcoming apsis (AEG), 2 = CDH on time, 3 = angle from CSI, 4 = CDH at upcoming apsis (Keplerian), 5 = Number of half revs
@@ -3219,6 +3221,12 @@ public:
 		double CDH_Time = 0.0;
 		//For option 3
 		double CDH_Angle = PI;
+		//Optimum CSI range in minutes
+		double dt_CSI_Range = 15.0;
+		//0 = CSI and CDH in-plane, 1 = CSI and CDH parallel to target
+		bool ParallelDVInd = false;
+		std::string ChaserVectorID;
+		std::string TargetVectorID;
 	} med_k01;
 
 	//Maneuver Line Definition Initialization
@@ -3250,6 +3258,7 @@ public:
 		double DH1 = 10.0*1852.0;
 		double DH2 = 15.0*1852.0;
 		double DH3 = 20.0*1852.0;
+		std::string VectorID;
 	} med_k15;
 
 	//LOI Computation
@@ -3263,6 +3272,7 @@ public:
 		double psi_MX = 271.0;
 		double psi_MN = 269.0;
 		double VectorTime = 0.0;
+		std::string VectorID;
 	} med_k18;
 
 	//GPM Maneuver Computation
@@ -3271,6 +3281,7 @@ public:
 		int Vehicle = 1; //1 = CSM, 3 = LM
 		double VectorTime = 0.0;
 		double ThresholdTime = 0.0;
+		std::string VectorID;
 	} med_k20;
 
 	//Perifocus Adjust Computation
@@ -3283,6 +3294,7 @@ public:
 		double H_P = 0.0;
 		int Thruster = RTCC_ENGINETYPE_CSMSPS;
 		double DPSScaleFactor = 0.0;
+		std::string VectorID;
 	} med_k28;
 
 	//Two Impulse Multiple Solution
@@ -3296,6 +3308,8 @@ public:
 		double EndTime = 0.0;
 		double TimeStep = 60.0;
 		double TimeRange = 600.0;
+		std::string ChaserVectorID;
+		std::string TargetVectorID;
 	} med_k30;
 
 	//Two Impulse Single Solution
@@ -3651,7 +3665,7 @@ public:
 
 	struct VectorPanelSummaryDisplay
 	{
-		double gmt = 0.0;
+		double gmt = -10000000000000.0;
 		//0 = CSM, 1 = LM
 		std::string AnchorVectorID[2];
 		std::string AnchorVectorGMT[2];
@@ -4609,6 +4623,7 @@ public:
 	{
 		//Block 1
 		double VectorGET = 0.0;
+		std::string VectorID;
 		int Column = 1;
 		int Mode = 1;
 		double MidcourseGET = 0.0;
@@ -5135,12 +5150,13 @@ public:
 	void MPTGetConfigFromString(const std::string &str, std::bitset<4> &cfg);
 	void MPTGetStringFromConfig(const std::bitset<4> &cfg, char *str);
 	MissionPlanTable *GetMPTPointer(int L);
+	MPTVehicleDataBlock *MPTDockingManeuver(int L, double GMT_BO, PLAWDTOutput &plawdtout);
 protected:
 
 	//Auxiliary subroutines
 	int PMMXFRGroundRules(MissionPlanTable * mpt, double GMTI, unsigned ReplaceMan, bool &LastManReplaceFlag, double &LowerLimit, double &UpperLimit, unsigned &CurMan, double &VectorFetchTime);
 	int PMMXFRFormatManeuverCode(int Table, int Thruster, int Attitude, unsigned Maneuver, std::string ID, int &TVC, std::string &code);
-	int PMMXFRCheckConfigThruster(bool CheckConfig, int CCI, const std::bitset<4> &CCP, int TVC, int Thruster, std::bitset<4> &CC, std::bitset<4> &CCMI);
+	int PMMXFRCheckConfigThruster(bool CheckConfig, double GMT, int L, int CCI, const std::bitset<4> &CCP, int TVC, int Thruster, std::bitset<4> &CC, std::bitset<4> &CCMI);
 	int PMMXFRFetchVector(double GMTI, int L, EphemerisData &sv);
 	int PMMXFRFetchAnchorVector(int L, EphemerisData &sv);
 	void PMMXFRWeightAtInitiation(int CCI, int CCMI, double &weight);
