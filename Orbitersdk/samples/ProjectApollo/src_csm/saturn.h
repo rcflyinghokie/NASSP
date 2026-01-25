@@ -4113,6 +4113,7 @@ protected:
 	int coascdrreticleidx;
 	DEVMESHHANDLE vcmesh;
 
+
 	double DockAngle;
 
 	double 	Offset1st;
@@ -4818,6 +4819,7 @@ protected:
 	friend class AR_GCore;
 	friend class ApolloRTCCMFD;
 	friend class RTCC;
+
 	// Friend class Simbay equipment
 	friend class HF_Antenna_1;
 	friend class HF_Antenna_2;
