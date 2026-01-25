@@ -1165,8 +1165,13 @@ void Saturn::initSaturn()
 	coascdrreticleidx = -1;
 
 
+	yagiidx = -1;
+	simbay1idx = -1;
+	simbay2idx = -1;
+	dipoleboxesidx = -1;
 	dipoleantenna1idx = -1;
 	dipoleantenna2idx = -1;
+	subsatellitestoredidx = -1;
 
 	vcmesh = NULL;
 	vis = NULL;
@@ -1580,13 +1585,6 @@ void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 
 	SetAnimations(simdt);
 
-
-	//HF Dipole Antennas animations update (Only CSM 114)
-	hf_antenna_1.TimeStep(simt, simdt);
-	hf_antenna_2.TimeStep(simt, simdt);
-
-	//SIMBay animations (only J Missions, Apollo 15+
-	simbay.TimeStep(simt, simdt);
 
 	//
 	// We die horribly if you set 100x or higher acceleration during launch.

@@ -1728,10 +1728,6 @@ protected:
 	int fdaiDisabled;
 	int fdaiSmooth;
 
-	///SIMBay Animations
-	UINT DipoleAntenna1Anim;
-	UINT DipoleAntenna2Anim;
-
 	//Panels
 
 	PanelGroup pgPanels100;
@@ -4131,6 +4127,8 @@ protected:
 	VECTOR3 currentCoG;
 
 	int yagiidx;
+	int simbay1idx;
+	int simbay2idx;
 	int dipoleboxesidx;
 	int dipoleantenna1idx;
 	int dipoleantenna2idx;
@@ -4859,6 +4857,8 @@ extern MESHHANDLE hcmCOAScdrreticle;
 
 
 extern MESHHANDLE hYAGI;
+extern MESHHANDLE hSMSIMBAY1;
+extern MESHHANDLE hSMSIMBAY2;
 extern MESHHANDLE hDIPOLEBOXES;
 extern MESHHANDLE hDIPOLEANTENNA1;
 extern MESHHANDLE hDIPOLEANTENNA2;

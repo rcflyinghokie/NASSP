@@ -5788,7 +5788,7 @@ void HF_Antenna_1::DefineAnimations(UINT idx)
 	ach_DipoleAntenna1Grp14Deployed = sat->AddAnimationComponent(DipoleAntenna1Anim, 0.9333, 1.0, mgs_DipoleAntenna1Grp14);
 }
 
-void HF_Antenna_1::TimeStep(double simt, double simdt)
+void HF_Antenna_1::SystemTimestep(double simdt)
 {
 	if (sat->GetStage() != CSM_LEM_STAGE) return;
 
@@ -5910,7 +5910,7 @@ void HF_Antenna_2::DefineAnimations(UINT idx)
 	ach_DipoleAntenna2Grp14Deployed = sat->AddAnimationComponent(DipoleAntenna2Anim, 0.9333, 1.0, mgs_DipoleAntenna2Grp14);
 }
 
-void HF_Antenna_2::TimeStep(double simt, double simdt)
+void HF_Antenna_2::SystemTimestep(double simdt)
 {
 	if (sat->GetStage() != CSM_LEM_STAGE) return;
 

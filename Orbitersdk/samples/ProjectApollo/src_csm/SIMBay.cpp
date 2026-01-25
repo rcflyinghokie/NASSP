@@ -42,7 +42,6 @@
 #include "tracer.h"
 #include "Mission.h"
 #include "papi.h"
-#include "SIMBay.h"
 
 using namespace nassp;
 
@@ -303,7 +302,7 @@ void SIMBay::DefineAnimations(UINT idx)
 }
 
 
-void SIMBay::TimeStep(double simt, double simdt)
+void SIMBay::SystemTimestep(double simdt)
 {
 	double speed = 0.33; // anim duration: 3 sec
 	double mappingspeed = 1.0 / 80; // mapping camera extend anim duration: 1m 20sec
