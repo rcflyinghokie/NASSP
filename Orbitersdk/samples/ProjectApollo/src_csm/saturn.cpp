@@ -1163,6 +1163,8 @@ void Saturn::initSaturn()
 	seatsunfoldedidx = -1;
 	coascdridx = -1;
 	coascdrreticleidx = -1;
+
+
 	dipoleantenna1idx = -1;
 	dipoleantenna2idx = -1;
 
@@ -1577,6 +1579,7 @@ void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 	TRACE(buffer);
 
 	SetAnimations(simdt);
+
 
 	//HF Dipole Antennas animations update (Only CSM 114)
 	hf_antenna_1.TimeStep(simt, simdt);

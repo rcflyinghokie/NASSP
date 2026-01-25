@@ -1261,11 +1261,11 @@ public:
 
 	void SetSIMBayPanelMesh();
 
+	void AddCMMeshes(const VECTOR3 &mesh_dir);
+
 	void SetDipoleAntennasMesh(); //Dipole Antennas mesh visibility (Jett or No Jett)
 
 	void SubSatelliteMesh(); //Subsatellite (stored) mesh visibility (at cover deploy)
-
-	void AddCMMeshes(const VECTOR3 &mesh_dir);
 
 	///
 	/// Check whether the Launch Escape Tower is attached.
@@ -4116,11 +4116,6 @@ protected:
 	int coascdridx;
 	int coascdrreticleidx;
 	DEVMESHHANDLE vcmesh;
-	int yagiidx;
-	int dipoleboxesidx;
-	int dipoleantenna1idx;
-	int dipoleantenna2idx;
-	int subsatellitestoredidx;
 
 	double DockAngle;
 
@@ -4134,6 +4129,12 @@ protected:
 	double LastFuelWeight;
 	double CurrentFuelWeight;
 	VECTOR3 currentCoG;
+
+	int yagiidx;
+	int dipoleboxesidx;
+	int dipoleantenna1idx;
+	int dipoleantenna2idx;
+	int subsatellitestoredidx;
 
 	//
 	// Panels
@@ -4855,6 +4856,8 @@ extern MESHHANDLE hcmseatsfolded;
 extern MESHHANDLE hcmseatsunfolded;
 extern MESHHANDLE hcmCOAScdr;
 extern MESHHANDLE hcmCOAScdrreticle;
+
+
 extern MESHHANDLE hYAGI;
 extern MESHHANDLE hDIPOLEBOXES;
 extern MESHHANDLE hDIPOLEANTENNA1;

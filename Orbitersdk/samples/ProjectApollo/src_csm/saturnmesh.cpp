@@ -92,6 +92,8 @@ MESHHANDLE hcmseatsfolded;
 MESHHANDLE hcmseatsunfolded;
 MESHHANDLE hcmCOAScdr;
 MESHHANDLE hcmCOAScdrreticle;
+
+
 MESHHANDLE hSMSIMBAY1; //Apollo 15/16 SIMBAY
 MESHHANDLE hSMSIMBAY2; //Apollo 17 SIMBAY
 MESHHANDLE hYAGI;
@@ -671,6 +673,8 @@ void SaturnInitMeshes()
 	LOAD_MESH(hcmseatsunfolded, "ProjectApollo/CM-VC-SeatsUnfolded");
 	LOAD_MESH(hcmCOAScdr, "ProjectApollo/CM-COAS-CDR");
 	LOAD_MESH(hcmCOAScdrreticle, "ProjectApollo/CM-COAS-CDR_Reticle");
+
+
 	LOAD_MESH(hSMSIMBAY1, "ProjectApollo/SM-SIMBAY1");
 	LOAD_MESH(hSMSIMBAY2, "ProjectApollo/SM-SIMBAY2");
 	LOAD_MESH(hYAGI, "ProjectApollo/Yagi");
