@@ -1,0 +1,26 @@
+NASSP Autosave Feature
+
+Automatically saves your mission progress at regular intervals while flying.
+
+Settings (in Project Apollo Configurator):
+
+  Enable autosave
+    Turns the autosave feature on or off.
+
+  Interval (minutes)
+    How often to save, from 1 to 60 minutes. Default is 10 minutes.
+
+  Show save notifications
+    When enabled, a brief on-screen message appears each time an autosave
+    occurs, showing the save name.
+
+How it works:
+
+  - Autosave only triggers when your CSM or LM vessel has focus.
+  - Scenarios are saved to: Scenarios/Autosave/<mission>/
+  - Each save is named with the Ground Elapsed Time (e.g., GET-001.23.45).
+  - Saves accumulate - older autosaves are not deleted, so you can return
+    to any previous checkpoint.
+
+To restore from an autosave, use Orbiter's scenario browser and navigate to
+the Autosave folder, then select the mission and desired GET timestamp.
