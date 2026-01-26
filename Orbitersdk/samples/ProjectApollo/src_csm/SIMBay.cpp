@@ -49,31 +49,31 @@ SIMBay::SIMBay() {
 	sat = NULL;
 
 	//CSM 112&114 Common animations
-	MappingCameraCoverAnim = 0;
+	MappingCameraCoverAnim = -1;
 	MappingCameraCoverAnimState = 0;
-	PanoramicCameraAnim = 0;
+	PanoramicCameraAnim = -1;
 	PanoramicCameraAnimState = 0;
-	MappingCameraAnim = 0;
+	MappingCameraAnim = -1;
 	MappingCameraAnimState = 0;
 
 	//CSM 112 Specific Animations
-	GammaBayAnim = 0;
+	GammaBayAnim = -1;
 	GammaBayAnimState = 0;
-	GammaBayJettAnim = 0;
+	GammaBayJettAnim = -1;
 	GammaBayJettAnimState = 0;
-	MassSpectrometerAnim = 0;
+	MassSpectrometerAnim = -1;
 	MassSpectrometerAnimState = 0;
-	MassSpectrometerJettAnim = 0;
+	MassSpectrometerJettAnim = -1;
 	MassSpectrometerJettAnimState = 0;
-	SubSatCoverAnim = 0;
+	SubSatCoverAnim = -1;
 	SubSatCoverAnimState = 0;
-	XRayCoverAnim = 0;
+	XRayCoverAnim = -1;
 	XRayCoverAnimState = 0;
 
 	//CSM 114 Specific Animations
-	IRCoverAnim = 0;
+	IRCoverAnim = -1;
 	IRCoverAnimState = 0;
-	UVCoverAnim = 0;
+	UVCoverAnim = -1;
 	UVCoverAnimState = 0;
 }
 

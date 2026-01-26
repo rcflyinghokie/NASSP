@@ -5714,7 +5714,7 @@ bool CTE::TimingSignal()
 
 HF_Antenna_1::HF_Antenna_1() {
 	sat = NULL;
-	DipoleAntenna1Anim = 0;
+	DipoleAntenna1Anim = -1;
 	DipoleAntenna1AnimState = 0;
 }
 
@@ -5836,7 +5836,7 @@ void HF_Antenna_1::SaveState(FILEHANDLE scn) {
 
 HF_Antenna_2::HF_Antenna_2() {
 	sat = NULL;
-	DipoleAntenna2Anim = 0;
+	DipoleAntenna2Anim = -1;
 	DipoleAntenna2AnimState = 0;
 }
 
