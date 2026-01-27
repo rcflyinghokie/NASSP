@@ -2599,7 +2599,7 @@ void SaturnPanel230CSM112::Register(PanelSwitchScenarioHandler* PSH)
 	MassSpectrometer2Switch.Register(*PSH, "MassSpectrometer2Switch", TOGGLESWITCH_UP, SPRINGLOADEDSWITCH_UP);
 	MassSpectrometer2Switch.SetSideways(2);
 	//Switches Row 2
-	ImageMtnSwitch.Register(*PSH, "ImageMtnSwitch", THREEPOSSWITCH_CENTER);
+	ImageMtnSwitch.Register(*PSH, "ImageMtnSwitch", THREEPOSSWITCH_CENTER, SPRINGLOADEDSWITCH_CENTER_SPRINGUP);
 	ImageMtnSwitch.SetSideways(2);
 	LaserAltmSwitch.Register(*PSH, "LaserAltmSwitch", TOGGLESWITCH_UP);
 	LaserAltmSwitch.SetSideways(2);
@@ -2621,7 +2621,7 @@ void SaturnPanel230CSM112::Register(PanelSwitchScenarioHandler* PSH)
 	DsCamSwitch.Register(*PSH, "DsCamSwitch", TOGGLESWITCH_UP);
 	DsCamSwitch.SetSideways(2);
 	//Switches Row 4
-	PanoramicCamera1Switch.Register(*PSH, "PanoramicCamera1Switch", THREEPOSSWITCH_CENTER);
+	PanoramicCamera1Switch.Register(*PSH, "PanoramicCamera1Switch", THREEPOSSWITCH_CENTER, SPRINGLOADEDSWITCH_CENTER_SPRINGUP);
 	PanoramicCamera1Switch.SetSideways(2);
 	PanoramicCamera2Switch.Register(*PSH, "PanoramicCamera2Switch", TOGGLESWITCH_UP);
 	PanoramicCamera2Switch.SetSideways(2);
@@ -2657,7 +2657,7 @@ void SaturnPanel230CSM114::Register(PanelSwitchScenarioHandler* PSH)
 	HFAntennaJettSwitch.Register(*PSH, "HFAntennaJettSwitch", TOGGLESWITCH_UP, SPRINGLOADEDSWITCH_UP);
 	HFAntennaJettSwitch.SetSideways(2);
 	//Switches Row 2
-	ImageMtnSwitch.Register(*PSH, "ImageMtnSwitch", THREEPOSSWITCH_DOWN);
+	ImageMtnSwitch.Register(*PSH, "ImageMtnSwitch", THREEPOSSWITCH_CENTER, SPRINGLOADEDSWITCH_CENTER_SPRINGUP);
 	ImageMtnSwitch.SetSideways(2);
 	LaserAltmSwitch.Register(*PSH, "LaserAltmSwitch", TOGGLESWITCH_UP);
 	LaserAltmSwitch.SetSideways(2);
@@ -2675,7 +2675,7 @@ void SaturnPanel230CSM114::Register(PanelSwitchScenarioHandler* PSH)
 	IRSwitch.Register(*PSH, "IRSwitch", TOGGLESWITCH_UP);
 	IRSwitch.SetSideways(2);
 	//Switches Row 4
-	PanoramicCamera1Switch.Register(*PSH, "PanoramicCamera1Switch", THREEPOSSWITCH_CENTER);
+	PanoramicCamera1Switch.Register(*PSH, "PanoramicCamera1Switch", THREEPOSSWITCH_CENTER, SPRINGLOADEDSWITCH_CENTER_SPRINGUP);
 	PanoramicCamera1Switch.SetSideways(2);
 	PanoramicCamera2Switch.Register(*PSH, "PanoramicCamera2Switch", TOGGLESWITCH_UP);
 	PanoramicCamera2Switch.SetSideways(2);
