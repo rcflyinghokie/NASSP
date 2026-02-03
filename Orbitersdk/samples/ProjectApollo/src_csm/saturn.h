@@ -1109,6 +1109,8 @@ public:
 	virtual void SetPrimECSTestHeaterPowerW(double power);
 	virtual void SetSecECSTestHeaterPowerW(double power);
 
+	virtual void StartCMPEVA();
+
 	///
 	/// Enable or disable generic Service Module systems based on current state.
 	/// \brief Check SM systems state.
@@ -1341,6 +1343,19 @@ public:
 	// Custom quicksave behaviour
 	//
 	void QuicksaveScenario();
+
+	//
+    // CSM EVA
+    //
+	void ToggleCMPEVA();
+
+	void UpdateEVA(void);
+
+	virtual void StopEVA();
+
+	OBJHANDLE hCMPEVA;
+
+	int cmpeva; //CMP EVA Started or not
 
 	//CSM Running Lights
 	void SetRunningLights();
