@@ -334,6 +334,7 @@ void TunnelLights::SystemTimestep(double simdt)
 	MNcb->DrawPower(GetOutput() * 9.0); //Each tunnel segment consists of 3 lights at 3W each 
 }
 
+//Exterior Lights
 ExteriorLighting::ExteriorLighting()
 {
 	saturn = NULL;
