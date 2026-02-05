@@ -181,7 +181,7 @@ struct RTCCNIAuxOutputTable
 	double DV_U;
 	//Words 40-41: Open (CSM and LM weight?)
 	double W_CSM, W_LMA, W_LMD;
-	//Word 42: S-IVB weighr at maneuver initiation
+	//Word 42: S-IVB weight at maneuver initiation
 	double W_SIVB;
 	//Word 43, total configuration weight at maneuver initiation
 	double WTINIT;
@@ -709,6 +709,7 @@ struct SLVTargetingParametersTable
 	double BIAS = 0.0;
 	double LATLS = 0.0;
 	double LONGLS = 0.0;
+	int Pad = 1; //Launchpad (1 = CSM, 2 = LM)
 };
 
 struct StationData

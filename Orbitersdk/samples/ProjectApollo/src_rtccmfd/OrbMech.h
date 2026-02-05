@@ -229,7 +229,6 @@ namespace OrbMech {
 	OELEMENTS coe_from_sv(VECTOR3 R, VECTOR3 V, double mu);
 	VECTOR3 elegant_lambert(VECTOR3 R1, VECTOR3 V1, VECTOR3 R2, double dt, int N, bool prog, double mu);
 	void SolveQuartic(double *A, double *R, int &N);
-	double NSRsecant(int Epoch, VECTOR3 RA, VECTOR3 VA, VECTOR3 RP, VECTOR3 VP, double mjd0, double x, double DH, OBJHANDLE gravref);
 	void ra_and_dec_from_r(VECTOR3 R, double &ra, double &dec);
 	void rv_from_r0v0_ta(VECTOR3 R0, VECTOR3 V0, double dt, VECTOR3 &R1, VECTOR3 &V1, double mu);
 	int time_theta(VECTOR3 R1, VECTOR3 V1, double dtheta, double mu, double &dt);
@@ -275,6 +274,7 @@ namespace OrbMech {
 	void CALCSXA(MATRIX3 SMNB, VECTOR3 S_SM, double &TA, double &SA);
 	MATRIX3 AXISGEN(VECTOR3 s_NBA, VECTOR3 s_NBB, VECTOR3 s_SMA, VECTOR3 s_SMB);
 	MATRIX3 ROTCOMP(VECTOR3 U_R, double A);
+	MATRIX3 THREEAXISPOINTING(VECTOR3 R, VECTOR3 V ,VECTOR3 SCAXIS, VECTOR3 LAMC, double TVR);
 	VECTOR3 backupgdcalignment(const VECTOR3 *navstars, MATRIX3 REFS, VECTOR3 R_C, double R_E, int prefset, int &set);
 	MATRIX3 AGSStarAlignment(const VECTOR3 *navstars, VECTOR3 Att1, VECTOR3 Att2, int star1, int star2, int axis, int detent, double AOTCounter);
 	bool oneclickcoast(int Epoch, VECTOR3 R0, VECTOR3 V0, double mjd0, double dt, VECTOR3 &R1, VECTOR3 &V1, OBJHANDLE gravref, OBJHANDLE &gravout);
@@ -327,7 +327,14 @@ namespace OrbMech {
 	template <typename T> int sign(T val);
 	int DoubleToBuffer(double x, double q, int m);
 	void AGCSignedValue(int &val);
-	int DoubleToDEDA(double x, double q);
+	void DoubleToAGCTriple(double val, int* oct);
+	int AEAToSigned(int val);
+	double AEAToDouble(int val, int SF);
+	int AEAToDEDA(int val);
+	int DoubleToAEA(double x, int q);
+	int DoubleToDEDA(double x, int q);
+	int DecimalToOctal(int x);
+
 	double cot(double a);
 	double sec(double a);
 	void fabs_vektor(double* vektor, int n);
@@ -384,11 +391,14 @@ namespace OrbMech {
 	MATRIX3 GetVesselToLocalRotMatrix(VESSEL *v);
 	double GetSemiMajorAxis(VECTOR3 R, VECTOR3 V, double mu);
 	double GetMeanMotion(VECTOR3 R, VECTOR3 V, double mu);
+	double GetTrueMotion(VECTOR3 R, VECTOR3 V, double mu);
 	double CMCEMSRangeToGo(MATRIX3 Rot_J_B, VECTOR3 R05G, double MJD05G, double lat, double lng);
 	//RTCC EMXING support routine, calculate direction vectors and sine of elevation angle
 	void EMXINGElev(VECTOR3 R, VECTOR3 R_S, VECTOR3 &N, VECTOR3 &rho, double &sinang);
 	//RTCC EMXING support routine, calculates elevation slope function
 	double EMXINGElevSlope(VECTOR3 R, VECTOR3 V, VECTOR3 R_S, int body);
+	//Calculates station vector in ECT coordinates
+	VECTOR3 EMXING_Station_ECT(double GMT, double R_E_sin_lat, double R_E_cos_lat, double stat_lng);
 	double LongitudeConversion(double lng, double T, double w_E, double lng_0, bool inertial_to_geographic);
 
 	//AEG
@@ -397,14 +407,10 @@ namespace OrbMech {
 	CELEMENTS KeplerToEquinoctial(CELEMENTS kep);
 	CELEMENTS EquinoctialToKepler(CELEMENTS aeq);
 	void BrouwerSecularRates(CELEMENTS coe_osc, CELEMENTS coe_mean, int body, double &l_dot, double &g_dot, double &h_dot);
-	SV PMMAEGS(int Epoch, SV sv0, int opt, double param, bool &error, double DN = 0.0);
-	SV PMMAEG(int Epoch, SV sv0, int opt, double param, bool &error, double DN = 0.0);
-	SV PMMLAEG(int Epoch, SV sv0, int opt, double param, bool &error, double DN = 0.0);
 	//Inertial to Keplerian Conversion Subroutine
 	CELEMENTS GIMIKC(VECTOR3 R, VECTOR3 V, double mu);
 	//Keplerian to Inertial Conversion Subroutine
 	void GIMKIC(CELEMENTS elem, double mu, VECTOR3 &R, VECTOR3 &V);
-	SV PositionMatch(int Epoch, SV sv_A, SV sv_P, double mu);
 	//Phase angle determination
 	double THETR(double u1, double u2, double i1, double i2, double h1, double h2);
 	double PHSANG(VECTOR3 R, VECTOR3 V, VECTOR3 R_D);
@@ -419,12 +425,13 @@ namespace OrbMech {
 	double fraction_pq(double x);
 	double fraction_xi(double x);
 	double LinearInterpolation(double x0, double y0, double x1, double y1, double x);
-	void CubicInterpolation(double *x, double *y, double *a);
-	void VandermondeMatrix(double *x, int N, double **V);
 	int LUPDecompose(double **A, int N, double Tol, int *P);
 	void LUPSolve(double **A, int *P, double *b, int N, std::vector<double> &x);
 	void LUPInvert(double **A, int *P, int N, double **IA);
+	//Linear function only
 	void LinearLeastSquares(std::vector<double> &x, std::vector<double> &y, double &b1, double &b2);
+	//General polynomial
+	void LinearLeastSquares(std::vector<double> &x, std::vector<double> &y, int M, std::vector<double> &b);
 	double Sum(double *x, int N);
 	double SumProd(double *x, double *y, int N);
 	double SumQuad(double *x, int N);
@@ -447,6 +454,8 @@ namespace OrbMech {
 	//Time format MM:SS.C
 	void format_time_MMSSC(char *buf, double time);
 	//Time format HH:MM
+	void format_time_HHMM(char *buf, double time);
+	//Time format HHH:MM
 	void format_time_HHHMM(char *buf, double time);
 	//Time format HH:MM:SS
 	void format_time_HHMMSS(char *buf, double time);
@@ -459,6 +468,8 @@ namespace OrbMech {
 	//Time format HHH:MM:SS.CS
 	void format_time_HHHMMSSCS(char *buf, double time);
 	void format_time_prec(char *buf, double time);
+	//Declination format +HH:MM
+	void format_declination_HHMM(char *buf, double decl);
 }
 
 inline CELEMENTS operator+(const CELEMENTS &a, const CELEMENTS &b)

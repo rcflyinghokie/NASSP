@@ -74,6 +74,7 @@
 #include "dinput.h"
 #include "vesim.h"
 
+class MCC;
 class IU;
 class SIBSystems;
 class SICSystems;
@@ -2587,7 +2588,7 @@ protected:
 
 	SwitchRow InteriorLightsFloodSwitchesRow;
 	ToggleSwitch InteriorLightsFloodDimSwitch;
-	ToggleSwitch InteriorLightsFloodFixedSwitch;
+	TwoSourceSwitch InteriorLightsFloodFixedSwitch;
 
 	//////////////////////
 	// Panel 5 rotaries //
@@ -2679,7 +2680,7 @@ protected:
 	SwitchRow Panel100SwitchesRow;
 	ToggleSwitch UtilityPowerSwitch;
 	ToggleSwitch Panel100FloodDimSwitch;	
-	ToggleSwitch Panel100FloodFixedSwitch;
+	TwoSourceSwitch Panel100FloodFixedSwitch;
 	ToggleSwitch GNPowerOpticsSwitch;
 	GuardedToggleSwitch GNPowerIMUSwitch;
 	ThreePosSwitch Panel100RNDZXPDRSwitch;
@@ -2918,7 +2919,7 @@ protected:
 	ToggleSwitch FloodDimSwitch;
 
 	SwitchRow FloodFixedSwitchRow;
-	ThreePosSwitch FloodFixedSwitch;
+	ThreeSourceSwitch FloodFixedSwitch;
 
 	//////////////////////
 	// Panel 7 switches //
@@ -3840,6 +3841,14 @@ protected:
 	ThreePhasePowerMerge SuitCompressor1Feeder;
 	ThreePhasePowerMerge SuitCompressor2Feeder;
 
+	// Interior Lighting
+	FloodLights LeftFloodLights;
+	FloodLights RightFloodLights;
+	FloodLights LEBFloodLights;
+
+	TunnelLights MNATunnelLights;
+	TunnelLights MNBTunnelLights;
+
 	// GSE
 	Pump* GSEGlycolPump;
 	h_Radiator* GSERadiator;
@@ -3939,10 +3948,8 @@ protected:
 	// LM PAD
 	//
 
-	int LMPadCount;
-	unsigned int *LMPad;
-	int AEAPadCount;
-	unsigned int *AEAPad;
+	std::vector<unsigned int> LMPad;
+	std::vector<unsigned int> AEAPad;
 
 	//
 	// Do we have a crew, or is this an unmanned flight?
@@ -4643,11 +4650,6 @@ protected:
 	// InitSaturn is called twice, but some things must run only once
 	bool InitSaturnCalled;
 
-	int LMPadLoadCount;
-	int LMPadValueCount;
-	int AEAPadLoadCount;
-	int AEAPadValueCount;
-
 #define SISYSTEMS_START_STRING		"SISYSTEMS_BEGIN"
 #define SISYSTEMS_END_STRING		"SISYSTEMS_END"
 
@@ -4727,6 +4729,8 @@ protected:
 	friend class AR_GCore;
 	friend class ApolloRTCCMFD;
 	friend class RTCC;
+	friend class FloodLights;
+	friend class TunnelLights;
 
 	friend void cbCSMVesim(int inputID, int eventType, int newValue, void *pdata);
 };
