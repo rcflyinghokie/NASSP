@@ -4071,6 +4071,8 @@ protected:
 	bool ViewCueCardArrows;
 	int smidx;
 
+	VCPointingArrow pointingArrow;
+
 	double DockAngle;
 
 	double 	Offset1st;
