@@ -49,6 +49,7 @@ set(SOURCES
     ${NASSP_SOURCE_ROOT}/src_csm/secs.cpp
     ${NASSP_SOURCE_ROOT}/src_csm/smjc.cpp
     ${NASSP_SOURCE_ROOT}/src_csm/sps.cpp
+    ${NASSP_SOURCE_ROOT}/src_csm/SIMBay.cpp
     ${NASSP_SOURCE_ROOT}/src_mfd/MFDconnector.cpp
     ${NASSP_SOURCE_ROOT}/src_rtccmfd/OrbMech.cpp
     ${NASSP_SOURCE_ROOT}/src_saturn/saturn1b.cpp
