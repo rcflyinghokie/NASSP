@@ -2492,6 +2492,9 @@ void LEM::CreateMissionSpecificSystems()
 		Panel12AntYawKnob.SetInitValue(6.0); //Initializes S Band Antenna Yaw Knob To Proper Closeout Angles
 		LandingAntSwitch.SetState(1); //Initializes LDG ANT Switch To Proper Closeout Position (DES)
 	}
+
+	LR.SelfTest(pMission->GetLMNumber());
+	RR.SelfTest(pMission->GetLMNumber());
 }
 
 // SYSTEMS COMPONENTS
@@ -2593,24 +2596,43 @@ bool LEM_RadarTape::TimingFailure()
 		return false;
 }
 
-
 void LEM_RadarTape::Timestep(double simdt) {
-	
+
 	if (!IsPowered())
 	{
 		return;
 	}
-	
-	if( lem->AltRngMonSwitch.GetState()==TOGGLESWITCH_UP ) {
-		setRange(lem->RR.GetRadarRange());
-		setRate(lem->RR.GetRadarRate());
-	} 
+
+	if (lem->AltRngMonSwitch.GetState()==TOGGLESWITCH_UP) {
+		if (lem->RadarTestSwitch.GetState() == THREEPOSSWITCH_UP && lem->RR.GetRadarRate() == 0.0)
+		{
+			setRange(lem->RR.GetRadarRange());
+			setRate(lem->RR.GetRadarRate());
+		}
+		else if (lem->RadarTestSwitch.GetState() == THREEPOSSWITCH_UP)
+		{
+			setRange(lem->RR.GetRadarRange());
+			setRate(lem->RR.GetRadarRate() - 0.6096); // 2 f/s bias from procedures (TM=R2-2)
+		}
+		else
+		{
+			setRange(lem->RR.GetRadarRange());
+			setRate(lem->RR.GetRadarRate());
+		}
+	}
 	else {
 		if (lem->ModeSelSwitch.IsUp()) // LR
 		{
 			if (lem->LR.IsRangeDataGood())
 			{
-				setRange(lem->LR.GetAltitude());
+				if (lem->LR.antennaAngle == 0)
+				{
+					setRange(lem->LR.GetAltitude() * cos(Radians(15))); // Tapemeter slant range bias of cos 15 deg in position 2
+				}
+				else
+				{
+					setRange(lem->LR.GetAltitude()); // Position 1
+				}
 			}
 			else
 			{
@@ -2618,7 +2640,14 @@ void LEM_RadarTape::Timestep(double simdt) {
 			}
 			if (lem->LR.IsVelocityDataGood())
 			{
-				setRate(lem->LR.GetAltitudeRate());
+				if ((lem->pMission->GetLMNumber()) == 3)
+				{
+					setRate(lem->LR.GetAltitudeRate() * 1.82388664); // Generates seen rate signal from LM-3 \\FIXME: This is a hack, need to investigate why LM-3 generates this rate signal
+				}
+				else
+				{
+					setRate(lem->LR.GetAltitudeRate());
+				}
 			}
 			/*else
 			{
