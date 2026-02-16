@@ -1366,6 +1366,12 @@ public:
 	//
 	void QuicksaveScenario();
 
+	//CSM Running Lights
+	void SetRunningLights();
+
+	VECTOR3 runningLightsPos[8];
+	BEACONLIGHTSPEC runningLights[8];             // running lights
+
 	//
     // CSM EVA
     //
@@ -1378,12 +1384,6 @@ public:
 	OBJHANDLE hCMPEVA;
 
 	int cmpeva; //CMP EVA Started or not
-
-	//CSM Running Lights
-	void SetRunningLights();
-
-	VECTOR3 runningLightsPos[8];
-	BEACONLIGHTSPEC runningLights[8];             // running lights
 
 protected:
 
