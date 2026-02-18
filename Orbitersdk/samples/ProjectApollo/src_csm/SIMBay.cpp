@@ -377,15 +377,21 @@ void SIMBay::SystemTimestep(double simdt)
 		//Gamma Bay animaton
 		if (sat->GammaBayDeployed)
 		{
-			GammaBayAnimState += simdt * spectspeed;
-			if (GammaBayAnimState > 1.0)
-				GammaBayAnimState = 1.0;
+			if (!sat->Panel230CSM112->GammaBay1Switch.IsCenter())
+			{
+				GammaBayAnimState += simdt * spectspeed;
+				if (GammaBayAnimState > 1.0)
+					GammaBayAnimState = 1.0;
+			}
 		}
 		else
 		{
-			GammaBayAnimState -= simdt * spectspeed;
-			if (GammaBayAnimState < 0.0)
-				GammaBayAnimState = 0.0;
+			if (!sat->Panel230CSM112->GammaBay1Switch.IsCenter())
+			{
+				GammaBayAnimState -= simdt * spectspeed;
+				if (GammaBayAnimState < 0.0)
+					GammaBayAnimState = 0.0;
+			}
 		}
 		sat->SetAnimation(GammaBayAnim, GammaBayAnimState);
 
@@ -413,15 +419,21 @@ void SIMBay::SystemTimestep(double simdt)
 		//Mass Spectrometer animaton
 		if (sat->MassSpectrometerDeployed)
 		{
-			MassSpectrometerAnimState += simdt * spectspeed;
-			if (MassSpectrometerAnimState > 1.0)
-				MassSpectrometerAnimState = 1.0;
+			if (!sat->Panel230CSM112->MassSpectrometer1Switch.IsCenter())
+			{
+				MassSpectrometerAnimState += simdt * spectspeed;
+				if (MassSpectrometerAnimState > 1.0)
+					MassSpectrometerAnimState = 1.0;
+			}
 		}
 		else
 		{
-			MassSpectrometerAnimState -= simdt * spectspeed;
-			if (MassSpectrometerAnimState < 0.0)
-				MassSpectrometerAnimState = 0.0;
+			if (!sat->Panel230CSM112->MassSpectrometer1Switch.IsCenter())
+			{
+				MassSpectrometerAnimState -= simdt * spectspeed;
+				if (MassSpectrometerAnimState < 0.0)
+					MassSpectrometerAnimState = 0.0;
+			}
 		}
 		sat->SetAnimation(MassSpectrometerAnim, MassSpectrometerAnimState);
 
