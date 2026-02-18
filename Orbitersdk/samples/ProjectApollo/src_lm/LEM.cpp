@@ -535,6 +535,8 @@ void LEM::Init()
 	CDRinPLSS = 0;
 	LMPinPLSS = 0;
 
+	spaceeva = false;
+
 	CMPowerToCDRBusRelayA = false;
 	CMPowerToCDRBusRelayB = false;
 
@@ -1504,6 +1506,8 @@ void LEM::clbkPreStep (double simt, double simdt, double mjd) {
 
 	// Autosave (checks focus internally, reads config from file)
 	NASSPAutosave::Update(GetHandle(), GetName(), pMission->GetMissionName().c_str(), MissionTime);
+
+	if (spaceeva)UpdateSpaceEVA(); //if lmp eva active (vessel created), enables EVA Timestep
 }
 
 
@@ -2061,6 +2065,11 @@ void LEM::GetScenarioState(FILEHANDLE scn, void *vs)
 		else if (!strnicmp(line, "<INTERNALS>", 11)) { //INTERNALS signals the PanelSDK part of the scenario
 			Panelsdk.Load(scn);			//send the loading to the Panelsdk
 		}
+		else if (!strnicmp(line, "SPACEEVA", 8)) {
+			//Load EVA State from scn file
+			sscanf(line + 8, "%f", &ftcp);
+			spaceeva = ftcp;
+		}
 		else if (!strnicmp(line, ChecklistControllerStartString, strlen(ChecklistControllerStartString)))
 		{
 			checkControl.load(scn);
@@ -2410,6 +2419,8 @@ void LEM::clbkSaveState (FILEHANDLE scn)
 	oapiWriteScenario_float (scn, "ASCFUEL", AscentFuelMassKg);
 	oapiWriteScenario_float(scn, "DSCEMPTYMASS", DescentEmptyMassKg);
 	oapiWriteScenario_float(scn, "ASCEMPTYMASS", AscentEmptyMassKg);
+
+	oapiWriteScenario_int(scn, "SPACEEVA", spaceeva);
 
 	if (!Crewed) {
 		oapiWriteScenario_int (scn, "UNMANNED", 1);

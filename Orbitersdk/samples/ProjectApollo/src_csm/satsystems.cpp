@@ -4188,3 +4188,11 @@ void Saturn::EnginesSoundTimestep() {
 		EngineS.stop();
 	}
 }
+
+void Saturn::StartCMPEVA()
+{
+	if (SideHatch.IsOpen() && !cmpeva)
+	{
+		ToggleCMPEVA();
+	}
+}
