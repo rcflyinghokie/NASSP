@@ -4176,7 +4176,6 @@ protected:
 
 	VCPointingArrow pointingArrow;
 
-
 	double DockAngle;
 
 	double 	Offset1st;

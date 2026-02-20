@@ -1180,9 +1180,9 @@ void Saturn::initSaturn()
 	seatsunfoldedidx = -1;
 	coascdridx = -1;
 	coascdrreticleidx = -1;
+	smidx = -1;
 	cmvccuecardsarrowsidx = -1;
 	hcmPointingArrowidx = -1;
-	smidx = -1;
 
 
 	yagiidx = -1;
