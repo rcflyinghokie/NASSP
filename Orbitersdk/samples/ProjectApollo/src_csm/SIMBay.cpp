@@ -274,7 +274,7 @@ void SIMBay::DefineAnimations(UINT idx)
 		ach_SIMBAYGrp7and31Y = sat->AddAnimationComponent(SubSatCoverAnim, 0.0, 1.0, mgr_SIMBAYGrp7and31Y);
 		ach_SIMBAYGrp7and31Z = sat->AddAnimationComponent(SubSatCoverAnim, 0.5, 1.0, mgr_SIMBAYGrp7and31Z);
 	}
-		
+
 	///CSM 114 Specific Animations:
 	if (sat->pMission->GetPanel230Version() == 2)
 	{
@@ -377,21 +377,15 @@ void SIMBay::SystemTimestep(double simdt)
 		//Gamma Bay animaton
 		if (sat->GammaBayDeployed)
 		{
-			if (!sat->Panel230CSM112->GammaBay1Switch.IsCenter())
-			{
-				GammaBayAnimState += simdt * spectspeed;
-				if (GammaBayAnimState > 1.0)
-					GammaBayAnimState = 1.0;
-			}
+			GammaBayAnimState += simdt * spectspeed;
+			if (GammaBayAnimState > 1.0)
+				GammaBayAnimState = 1.0;
 		}
 		else
 		{
-			if (!sat->Panel230CSM112->GammaBay1Switch.IsCenter())
-			{
-				GammaBayAnimState -= simdt * spectspeed;
-				if (GammaBayAnimState < 0.0)
-					GammaBayAnimState = 0.0;
-			}
+			GammaBayAnimState -= simdt * spectspeed;
+			if (GammaBayAnimState < 0.0)
+				GammaBayAnimState = 0.0;
 		}
 		sat->SetAnimation(GammaBayAnim, GammaBayAnimState);
 
@@ -419,21 +413,15 @@ void SIMBay::SystemTimestep(double simdt)
 		//Mass Spectrometer animaton
 		if (sat->MassSpectrometerDeployed)
 		{
-			if (!sat->Panel230CSM112->MassSpectrometer1Switch.IsCenter())
-			{
-				MassSpectrometerAnimState += simdt * spectspeed;
-				if (MassSpectrometerAnimState > 1.0)
-					MassSpectrometerAnimState = 1.0;
-			}
+			MassSpectrometerAnimState += simdt * spectspeed;
+			if (MassSpectrometerAnimState > 1.0)
+				MassSpectrometerAnimState = 1.0;
 		}
 		else
 		{
-			if (!sat->Panel230CSM112->MassSpectrometer1Switch.IsCenter())
-			{
-				MassSpectrometerAnimState -= simdt * spectspeed;
-				if (MassSpectrometerAnimState < 0.0)
-					MassSpectrometerAnimState = 0.0;
-			}
+			MassSpectrometerAnimState -= simdt * spectspeed;
+			if (MassSpectrometerAnimState < 0.0)
+				MassSpectrometerAnimState = 0.0;
 		}
 		sat->SetAnimation(MassSpectrometerAnim, MassSpectrometerAnimState);
 
