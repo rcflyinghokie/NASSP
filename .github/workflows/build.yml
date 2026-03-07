@@ -48,6 +48,13 @@ jobs:
       
     - name: Install
       run: cmake --install ${{github.workspace}}/build
+      
+    - name: Write version file
+      run: |
+        $version = "${{ env.BUILD_NAME }}"
+        @"
+        $version
+        "@ | Out-File -Encoding UTF8 "${{ github.workspace }}/install/NASSP_VERSION.txt"
 
     - name: Write version file
       run: |
