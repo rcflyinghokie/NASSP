@@ -2654,11 +2654,7 @@ void LEM_RadarTape::Timestep(double simdt) {
 			{
 				if ((lem->pMission->GetLMNumber()) == 3)
 				{
-					setRate(lem->LR.GetAltitudeRate() * 1.82388664); // Generates seen rate signal from LM-3 \\FIXME: This is a hack, need to investigate why LM-3 generates this rate signal
-				}
-				else if ((lem->pMission->GetLMNumber()) == 4)
-				{
-					setRate(GetLRAltitudeRate());
+					setRate(lem->LR.GetAltitudeRate() * 1.82388664); // Generates seen rate signal from LM-3 \\FIXME: This is a hack, need to investigate why LM-3 generates this rate signal. LM-4 might need similar adjustment later
 				}
 				else
 				{
@@ -2677,12 +2673,15 @@ void LEM_RadarTape::Timestep(double simdt) {
 			setRate(ags_altrate);
 		}
 	}
+
 	// Altitude/Range
+	reqRange = fmod(reqRange, 405.0*1852.0);
+
 	if (reqRange < (1000.0 * 0.3048))
 	{
 		desRange = 6317.0 + 2086.0 - 82.0 - ((reqRange * 3.2808399) * 40.0 * 50.0 / 1000.0);
 	}
-	else if (reqRange < (120000.0 * 0.3048) )
+	else if (reqRange < (120000.0 * 0.3048))
 	{
 		desRange = 6443.0 - 82.0 - ((reqRange * 3.2808399) * 40.0 / 1000.0);
 	}
@@ -2715,7 +2714,7 @@ void LEM_RadarTape::Timestep(double simdt) {
 		reqRate += 304.8;
 	}
 
-	desRate  = 2881.0 - 82.0 -  (reqRate * 3.2808399 * 40.0 * 100.0 / 1000.0);
+	desRate = 2881.0 - 82.0 + (reqRate * 3.2808399 * 40.0 * 100.0 / 1000.0);
 	TapeDrive(dispRate, desRate, 500.0, simdt);
 	if (dispRate < 0)
 	{
