@@ -147,7 +147,7 @@ void SCE::Timestep()
 	//BAT BUS B VOLTS (CC0211V)
 	AA[3] = scale_data(sat->BatteryBusB.Voltage(), 0.0, 45.0);
 	//BAT RELAY BUS VOLTS (CC0232V)
-	AA[4] = scale_data(sat->BatteryRelayBus.Voltage(), 0.0, 45.0);
+	AA[4] = scale_data(sat->FuelCell1BusContCB.Voltage(), 0.0, 45.0); //Relay bus voltage through Fuel Cell Bus Cont 1 cb
 	//RAD FLOW CONT SYS 1 OR 2 (SF0266X)
 	AA[5] = sat->EcsRadiatorIndicator.GetState() == 1 ? 5.0 : 0.0;
 	//BMAG MODE SW - ROLL ATT 1 RT 2 (CH3635X)

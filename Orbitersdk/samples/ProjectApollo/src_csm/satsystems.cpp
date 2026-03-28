@@ -3791,7 +3791,7 @@ void Saturn::GetBatteryBusStatus( BatteryBusStatus &bs )
 	bs.BatBusACurrent = BatteryBusA.Current();
 	bs.BatBusBVoltage = BatteryBusB.Voltage();
 	bs.BatBusBCurrent = BatteryBusB.Current();
-	bs.BatteryRelayBusVoltage = BatteryRelayBus.Voltage();
+	bs.BatteryRelayBusVoltage = FuelCell1BusContCB.Voltage(); //Relay bus voltage through Fuel Cell Bus Cont 1 cb
 }
 
 //
