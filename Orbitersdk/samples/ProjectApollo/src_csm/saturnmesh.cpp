@@ -96,6 +96,7 @@ MESHHANDLE hcmCOAScdr;
 MESHHANDLE hcmCOAScdrreticle;
 MESHHANDLE hcmCueCardsArrows;
 MESHHANDLE hcmPointingArrow;
+MESHHANDLE hCMVCOptics;
 
 
 MESHHANDLE hSMSIMBAY1; //Apollo 15/16 SIMBAY
@@ -679,6 +680,7 @@ void SaturnInitMeshes()
 	LOAD_MESH(hcmCOAScdrreticle, "ProjectApollo/CM-COAS-CDR_Reticle");
 	LOAD_MESH(hcmCueCardsArrows, "ProjectApollo/Helpers/CM-CueCardsArrows");
 	LOAD_MESH(hcmPointingArrow, "ProjectApollo/Helpers/PointingArrow");
+	LOAD_MESH(hCMVCOptics, "ProjectApollo/CMVC_Optics");
 
 
 	LOAD_MESH(hSMSIMBAY1, "ProjectApollo/SM-SIMBAY1");
@@ -1140,6 +1142,9 @@ void Saturn::SetCSMStage (VECTOR3 cg_ofs)
 
 	// Pointing Arrow
 	hcmPointingArrowidx = AddMesh(hcmPointingArrow, &mesh_dir);
+
+	// Optics
+	hCMVCOpticsidx = AddMesh(hCMVCOptics, &mesh_dir);
 
 	// VC
 	UpdateVC(mesh_dir);
@@ -1717,6 +1722,9 @@ void Saturn::SetReentryMeshes() {
 	// Pointing Arrow
 	hcmPointingArrowidx = AddMesh(hcmPointingArrow, &mesh_dir);
 
+	// Optics
+	hCMVCOpticsidx = AddMesh(hCMVCOptics, &mesh_dir);
+
 	// VC
 	UpdateVC(mesh_dir);
 	seatsfoldedidx = AddMesh(hcmseatsfolded, &mesh_dir);
@@ -2007,6 +2015,9 @@ void Saturn::SetRecovery()
 
 	// Pointing Arrow
 	hcmPointingArrowidx = AddMesh(hcmPointingArrow, &mesh_dir);
+
+	// Optics
+	hCMVCOpticsidx = AddMesh(hCMVCOptics, &mesh_dir);
 
 	// VC
 	UpdateVC(mesh_dir);
