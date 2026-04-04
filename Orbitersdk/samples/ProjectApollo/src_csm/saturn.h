@@ -612,6 +612,7 @@ public:
 		SRF_VC_DIGITAL90,
 		SRF_VC_EVENT_TIMER_DIGITS90,
 		SRF_VC_ABORT,
+		SRF_VC_OPTICS,
 
 		//
 		// NSURF MUST BE THE LAST ENTRY HERE. PUT ANY NEW SURFACE IDS ABOVE THIS LINE
@@ -1314,6 +1315,7 @@ public:
 	void DoMeshAnimation(AnimState &, UINT &, double, double);
 
 	void UpdatePointingArrow();
+	void UpdateCMVCOptics();
 	void UpdateSideHatchClickspots(const VECTOR3 &ofs);
 	void UpdateForwardHatchClickspots(const VECTOR3 &ofs);
 
@@ -4056,6 +4058,8 @@ protected:
     #define SATVIEW_LOWER_CENTER    9
     #define SATVIEW_UPPER_CENTER    10
 	#define SATVIEW_SIDEHATCH       11
+	#define SATVIEW_OPTICS_SCT		12
+	#define SATVIEW_OPTICS_SXT		13
 
 	unsigned int	viewpos;
 
@@ -4080,6 +4084,7 @@ protected:
 	int coascdrreticleidx;
 	int cmvccuecardsarrowsidx;
 	int hcmPointingArrowidx;
+	int hCMVCOpticsidx;
 
 	DEVMESHHANDLE vcmesh;
 	bool ViewCueCardArrows;
@@ -4828,5 +4833,6 @@ extern MESHHANDLE hcmCOAScdr;
 extern MESHHANDLE hcmCOAScdrreticle;
 extern MESHHANDLE hcmCueCardsArrows;
 extern MESHHANDLE hcmPointingArrow;
+extern MESHHANDLE hCMVCOptics;
 
 #endif // _PA_SATURN_H
