@@ -230,60 +230,17 @@ const unsigned int tapeSize = 18000;
 ///
 class DSE : public e_object
 {
-enum DSEState
-{
-	STOPPED,			/// Tape is stopped
-	STARTING_PLAY,		/// Tape is accelerating to play speed
-	STARTING_REWIND,	/// Tape is accelerating to rewind speed
-	STARTING_RECORD,	/// Tape is accelerating to record speed
-	SLOWING_RECORD,		/// Tape is slowing to record speed
-	PLAYING,			/// Tape is playing
-	RECORDING,			/// Tape is recording
-	REWINDING,			/// Tape is rewinding
-	STOPPING,			/// Tape is stopping
-	STOPPING_REWIND,	/// Tape is stopping rewind
-};
 
 public:
 	DSE();
 	virtual ~DSE();
 
 	void Init(Saturn *vessel);	       // Initialization
-	
-	///
-	/// \brief Power check.
-	///
+
 	bool IsPowered();
+	bool TapeMotion();
 
-	///
-	/// \brief Tape motion indicator.
-	///
-	bool TapeMotion(); 
-
-	///
-	/// \brief Start tape playing.
-	///
-	void Play();
-
-	///
-	/// \brief Start tape rewinding.
-	///
-	void Rewind();
-
-	///
-	/// \brief Stop tape playing.
-	///
-	void Stop();
-
-	///
-	/// \brief Start tape recording.
-	///
-	void Record( bool hbr );
-
-	///
-	/// \brief Timestep processing.
-	///
-	void TimeStep( double simt, double simdt );
+	void TimeStep(double simt, double simdt);
 
 	void LoadState(char *line);
 	void SaveState(FILEHANDLE scn);
@@ -291,12 +248,22 @@ public:
 protected:
 	Saturn *sat;					    /// Ship we're installed in
 	DSEChunk tape[tapeSize];			/// Simulated tape.
-	double tapeSpeedInchesPerSecond;	/// Tape speed in inches per second.
+	double tapeSpeed;	/// Tape speed in inches per second.
+	double tapePosition;	/// Tape position.
 	double desiredTapeSpeed;			/// Desired tape speed in inches per second.
-	double tapeMotion;					/// Tape motion from 0.0 to 1.0.
-	DSEState state;						/// Tape state.
+	double motorDirection;				/// Tape motor direction, 1 for forward, -1 for reverse, 0 for stopped.
 
-	double lastEventTime;				/// Last event time.
+	bool TapeRecorderPCM();
+	int TapeRecorderRCD();
+	int TapeRecorderFWD();
+	bool EndOfTapeFWD();
+	bool EndOfTapeREW();
+	bool LBR();
+
+	bool record;
+	bool playback;
+	bool fwdSwitchChange;
+	bool K1, K2, K3, K4, K5, K6, K7;
 };
 
 //Up Data Link Equipment
@@ -321,6 +288,13 @@ public:
 	bool GetRangingSignal2() { return Relays[21]; }
 	bool GetSBandPALogic1() { return Relays[24]; }
 	bool GetSBandPALogic2() { return Relays[25]; }
+	bool GetTapeRecorderPCMLogic1() { return Relays[26]; }
+	bool GetTapeRecorderPCMLogic2() { return Relays[27]; }
+	bool GetTapeRecorderRCDLogic1() { return Relays[28]; }
+	bool GetTapeRecorderRCDLogic2() { return Relays[29]; }
+	bool GetTapeRecorderFWDLogic1() { return Relays[30]; }
+	bool GetTapeRecorderFWDLogic2() { return Relays[31]; }
+
 protected:
 	bool IsPowered();
 	void OverrideReset();
@@ -390,11 +364,12 @@ public:
 	unsigned char mcc_data[2048];	// MCC-provided incoming data
 
 	bool registerSocket(SOCKET sock);
+	bool LowBitrateLogic();
 
 	Saturn *sat;					// Ship we're installed in
 	friend class MCC;				// Allow MCC to write directly to buffer
 protected:
-	bool LowBitrateLogic();
+
 };
 
 // Premodulation Processor
