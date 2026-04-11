@@ -235,12 +235,12 @@ public:
 	DSE();
 	virtual ~DSE();
 
-	void Init(Saturn *vessel);	       // Initialization
-
-	bool IsPowered();
+	void Init(Saturn *vessel, CircuitBrakerSwitch *accb, CircuitBrakerSwitch *dccb);	       // Initialization
+	bool IsACPowered();
+	bool IsDCPowered();
 	bool TapeMotion();
-
-	void TimeStep(double simt, double simdt);
+	void TimeStep(double simdt);
+	void SystemTimestep(double simdt);			// System Timestep
 
 	void LoadState(char *line);
 	void SaveState(FILEHANDLE scn);
@@ -248,22 +248,25 @@ public:
 protected:
 	Saturn *sat;					    /// Ship we're installed in
 	DSEChunk tape[tapeSize];			/// Simulated tape.
+
+	CircuitBrakerSwitch *ACbreaker;		/// AC circuit breaker.
+	CircuitBrakerSwitch *DCbreaker;		/// DC circuit breaker.
+
 	double tapeSpeed;	/// Tape speed in inches per second.
 	double tapePosition;	/// Tape position.
 	double desiredTapeSpeed;			/// Desired tape speed in inches per second.
 	double motorDirection;				/// Tape motor direction, 1 for forward, -1 for reverse, 0 for stopped.
 
-	bool TapeRecorderPCM();
-	int TapeRecorderRCD();
-	int TapeRecorderFWD();
 	bool EndOfTapeFWD();
 	bool EndOfTapeREW();
-	bool LBR();
+	void SwitchLogic();
+	void RelayLogic();
 
 	bool record;
 	bool playback;
 	bool fwdSwitchChange;
 	bool K1, K2, K3, K4, K5, K6, K7;
+	bool FWD, REW, RCD, PLAY, CSMPCM, LMPCM, LBR, HBR;
 };
 
 //Up Data Link Equipment
