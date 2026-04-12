@@ -5196,7 +5196,6 @@ void DSEChunk::Erase( const DSEChunkType dataType )
 	chunkType = dataType;
 	chunkValidBytes = 0;
 }
-
 DSE::DSE()
 {
 	sat = NULL;
@@ -5213,7 +5212,7 @@ DSE::DSE()
 	K3 = false; //Latched with record or play, else unlatched
 	K4 = false; //Latched with play, unlatched with record
 	K5 = false; //Latched with play, unlatched with record
-	K6 = false; //Latched with PCM/ANLG, unlatched with LM PCM
+	K6 = false; //Latched with LM PCM, unlatched with PC/ANLG
 	K7 = false; //Latched with fwd/rev, unlatched with end of tape
 
 	FWD = false;
@@ -5306,7 +5305,7 @@ void DSE::SwitchLogic()
 		FWD = false;
 		REW = false;
 	}
-	else if (!sat->udl.GetTapeRecorderFWDLogic1() && !sat->udl.GetTapeRecorderFWDLogic2())
+	else if (!sat->udl.GetTapeRecorderFWDLogic1() && !sat->udl.GetTapeRecorderFWDLogic2()) //Reset (Reset/Reset)
 	{
 		if (sat->TapeRecorderForwardSwitch.GetState() == 2)
 		{
@@ -5324,17 +5323,17 @@ void DSE::SwitchLogic()
 			REW = false;
 		}
 	}
-	else if (!sat->udl.GetTapeRecorderFWDLogic1() && sat->udl.GetTapeRecorderFWDLogic2())
+	else if (!sat->udl.GetTapeRecorderFWDLogic1() && sat->udl.GetTapeRecorderFWDLogic2()) //Forward (Reset/Set)
 	{
 		FWD = true;
 		REW = false;
 	}
-	else if (!sat->udl.GetTapeRecorderFWDLogic1() && sat->udl.GetTapeRecorderFWDLogic2())
+	else if (sat->udl.GetTapeRecorderFWDLogic1() && sat->udl.GetTapeRecorderFWDLogic2()) //Rewind (Set/Set)
 	{
 		FWD = false;
 		REW = true;
 	}
-	else
+	else //Stop (Set/Reset)
 	{
 		FWD = false;
 		REW = false;
@@ -5346,14 +5345,14 @@ void DSE::SwitchLogic()
 		RCD = false;
 		PLAY = false;
 	}
-	else if (!sat->udl.GetTapeRecorderRCDLogic1() && !sat->udl.GetTapeRecorderRCDLogic2())
+	else if (!sat->udl.GetTapeRecorderRCDLogic1() && !sat->udl.GetTapeRecorderRCDLogic2()) //(Reset (Reset/Reset)
 	{
 		if (sat->TapeRecorderRecordSwitch.GetState() == 2)
 		{
 			RCD = true;
 			PLAY = false;
 		}
-		else if (sat->TapeRecorderForwardSwitch.GetState() == 0)
+		else if (sat->TapeRecorderRecordSwitch.GetState() == 0)
 		{
 			RCD = false;
 			PLAY = true;
@@ -5364,17 +5363,17 @@ void DSE::SwitchLogic()
 			PLAY = false;
 		}
 	}
-	else if (!sat->udl.GetTapeRecorderRCDLogic1() && sat->udl.GetTapeRecorderRCDLogic2())
+	else if (!sat->udl.GetTapeRecorderRCDLogic1() && sat->udl.GetTapeRecorderRCDLogic2()) //Record (Reset/Set)
 	{
 		RCD = true;
 		PLAY = false;
 	}
-	else if (!sat->udl.GetTapeRecorderRCDLogic1() && sat->udl.GetTapeRecorderRCDLogic2())
+	else if (sat->udl.GetTapeRecorderRCDLogic1() && sat->udl.GetTapeRecorderRCDLogic2()) //Playback (Set/Set)
 	{
 		RCD = false;
 		PLAY = true;
 	}
-	else
+	else //Off (Set/Reset)
 	{
 		RCD = false;
 		PLAY = false;
@@ -5386,20 +5385,28 @@ void DSE::SwitchLogic()
 		CSMPCM = false;
 		LMPCM = false;
 	}
-	else if (sat->udl.GetTapeRecorderPCMLogic1())
+	else if (!sat->udl.GetTapeRecorderPCMLogic1() && !sat->udl.GetTapeRecorderPCMLogic2()) //Reset (Reset/Reset)
 	{
-		CSMPCM = false;
-		LMPCM = true; //Forces 60/120 ips playback
+		if (sat->TapeRecorderPCMSwitch.IsDown())
+		{
+			CSMPCM = false;
+			LMPCM = true; //Forces 60/120 ips playback
+		}
+		else
+		{
+			CSMPCM = true; //Allows playback based on recorded bitrate (not implemented yet)
+			LMPCM = false;
+		}
 	}
-	else if (sat->TapeRecorderPCMSwitch.IsDown() && !sat->udl.GetTapeRecorderPCMLogic1() && !sat->udl.GetTapeRecorderPCMLogic2())
-	{
-		CSMPCM = false;
-		LMPCM = true; //Forces 60/120 ips playback
-	}
-	else
+	else if (!sat->udl.GetTapeRecorderPCMLogic1() && sat->udl.GetTapeRecorderPCMLogic2()) //PCM/ANLG (Reset/Set)
 	{
 		CSMPCM = true; //Allows playback based on recorded bitrate (not implemented yet)
 		LMPCM = false;
+	}
+	else //LM PCM (Set/XX)
+	{
+		CSMPCM = false;
+		LMPCM = true; //Forces 60/120 ips playback
 	}
 
 	//LBR switch
@@ -5408,20 +5415,28 @@ void DSE::SwitchLogic()
 		LBR = false;
 		HBR = false;
 	}
-	else if (sat->udl.GetBitrateLogic1())
+	else if (!sat->udl.GetBitrateLogic1() && !sat->udl.GetBitrateLogic2()) //Reset (Reset/Reset)
 	{
-		LBR = true;
-		HBR = false;
+		if (sat->PCMBitRateSwitch.IsDown())
+		{
+			LBR = true;
+			HBR = false;
+		}
+		else
+		{
+			LBR = false;
+			HBR = true;
+		}
 	}
-	else if (sat->PCMBitRateSwitch.IsDown() && !sat->udl.GetBitrateLogic1() && !sat->udl.GetBitrateLogic2())
-	{
-		LBR = true;
-		HBR = false;
-	}
-	else
+	else if (!sat->udl.GetBitrateLogic1() && sat->udl.GetBitrateLogic2()) //HBR (Reset/Set)
 	{
 		LBR = false;
 		HBR = true;
+	}
+	else //LBR (Set/XX)
+	{
+		LBR = true;
+		HBR = false;
 	}
 }
 
@@ -5477,18 +5492,18 @@ void DSE::RelayLogic()
 
 	if (CSMPCM)
 	{
-		K6 = true;
+		K6 = false;
 	}
 	else if (LMPCM)
 	{
-		K6 = false;
+		K6 = true;
 	}
 
-	if (K3 && K4 && K6)
+	if (K3 && K4 && !K6)
 	{
 		K2 = true;
 	}
-	else if (K3 && K4 && !K6)
+	else if (K3 && K4 && K6)
 	{
 		K2 = false;
 	}
@@ -5629,7 +5644,7 @@ void DSE::LoadState(char *line) {
 void DSE::SaveState(FILEHANDLE scn) {
 	char buffer[256];
 
-	sprintf(buffer, "%lf %lf %d %d %d %d %d %d %d", tapeSpeed, desiredTapeSpeed, K1, K2, K3, K4, K5, K6, K7);
+	sprintf(buffer, "%lf %lf %d %d %d %d %d %d %d", tapeSpeed, tapePosition, K1, K2, K3, K4, K5, K6, K7);
 	oapiWriteScenario_string(scn, "DATARECORDER", buffer);
 }
 
