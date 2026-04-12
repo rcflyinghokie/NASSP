@@ -4238,6 +4238,7 @@ protected:
 	bool FovFixed;
 	bool FovExternal;
 	double FovSave;
+	double FovSaveVCOptics;
 	int maxTimeAcceleration;
 	bool IsMultiThread;
 
