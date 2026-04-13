@@ -71,6 +71,7 @@
 #include "checklistController.h"
 #include "payload.h"
 #include "LMMalfunctionSimulation.h"
+#include "CueCardManager.h"
 
 enum LMRCSThrusters
 {
@@ -135,6 +136,7 @@ public:
 	bool SignalFailure();
 	bool TimingFailure();
 	bool IsPowered();
+
 private:
 	void TapeDrive(double &Angle, double AngleCmd, double RateLimit, double simdt);
 	LEM *lem;					// Pointer at LEM
@@ -150,6 +152,10 @@ private:
 	double desRange, desRate;
 	double LGCaltUpdateTime, LGCaltRateUpdateTime;
 	double AGSaltUpdateTime, AGSaltRateUpdateTime;
+	double GetLRAltitude();
+	double GetLRAltitudeRate();
+	double GetRRRange();
+	double GetRRRate();
 
 	const double ALTSCALEFACTOR = 0.3048 * 2.345 * pow(2.0, -3.0);
 	const double ALTRATESCALEFACTOR = 0.3048 * pow(2.0, -4.0);
@@ -488,6 +494,7 @@ public:
 	void SetTrackLight();
 	void SetDockingLights();
 	void SetCOAS();
+	void SetVCCueCardsArrows();
 	void SetWindowShades();
 	double GetMissionTime() { return MissionTime; }; // This must be here for the MFD can't use it.
 	int GetApolloNo() { return ApolloNo; }
@@ -618,6 +625,8 @@ public:
 	virtual void AEAPadLoad(unsigned int address, unsigned int value);
 	virtual void StopEVA(bool isCDR);
 	virtual bool IsForwardHatchOpen() { return ForwardHatch.IsOpen(); }
+
+	virtual void StopSpaceEVA();
 
 	char *getOtherVesselName() { return agc.OtherVesselName;};
 	APSPropellantSource *GetAPSPropellant() { return &APSPropellant; };
@@ -753,6 +762,12 @@ protected:
 
 	void DoMeshAnimation(AnimState &, UINT &, double, double);
 
+	void ToggleSpaceEVA();
+
+	void UpdateSpaceEVA(void);
+
+	OBJHANDLE hSPACEEVA;
+
 #ifdef _OPENORBITER
 	void SetVCLighting(UINT meshidx, DWORD *matList, MatProp EmissionMode, double state, int cnt);
 	void SetVCLighting(UINT meshidx, int material, MatProp EmissionMode, double state, int cnt);
@@ -792,6 +807,7 @@ protected:
 	PanelSwitches MainPanel;
 	PanelSwitchesVC MainPanelVC;
 	PanelSwitchScenarioHandler PSH;
+	CueCardManager CueCards;
 
 	SwitchRow AbortSwitchesRow;
 
@@ -1618,6 +1634,8 @@ protected:
 	int CDRinPLSS;
 	int LMPinPLSS;
 
+	int spaceeva;
+
 #define LMVIEW_CDR		 0
 #define LMVIEW_LMP		 1
 #define LMVIEW_LPD		 2
@@ -1724,6 +1742,7 @@ protected:
 	UINT windowshadesidx;
 	UINT xpointershadesidx;
 	UINT hLMPointingArrowidx;
+	int LMvccuecardsarrowsidx;
 
 	DEVMESHHANDLE probes;
 	DEVMESHHANDLE deflectors;
@@ -1732,6 +1751,7 @@ protected:
 	DEVMESHHANDLE cdrmesh;
 	DEVMESHHANDLE lmpmesh;
 	DEVMESHHANDLE vcmesh;
+	bool ViewCueCardArrows;
 
 	// VC animations
 	UINT anim_fdaiR_cdr, anim_fdaiR_lmp;
@@ -2166,6 +2186,7 @@ extern MESHHANDLE hLMDescentNoLeg;
 extern MESHHANDLE hLMAscent;
 extern MESHHANDLE hLMVC;
 extern MESHHANDLE hLMPointingArrow;
+extern MESHHANDLE hLMCueCardsArrows;
 
 extern void LEMLoadMeshes();
 
