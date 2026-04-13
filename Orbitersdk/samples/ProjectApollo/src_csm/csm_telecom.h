@@ -741,7 +741,6 @@ public:
 	void DefineAnimations(UINT idx);
 	void SetAnimation(double state);
 	void UpdateAnimation(double simdt);
-	void TimeStep(double simt, double simdt);   // TimeStep
 	void SystemTimestep(double simdt);			// System Timestep
 	void LoadState(char* line);
 	void SaveState(FILEHANDLE scn);
