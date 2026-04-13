@@ -6083,15 +6083,21 @@ void HF_Antenna_1::SystemTimestep(double simdt)
 		//Dipole Antenna1 Deploying
 		if (sat->DipoleAntenna1Deployed)
 		{
-			DipoleAntenna1AnimState += simdt * speed;
-			if (DipoleAntenna1AnimState > 1.0)
-				DipoleAntenna1AnimState = 1.0;
+			if (!sat->Panel230CSM114->HFAntenna1Switch.IsCenter())
+			{
+				DipoleAntenna1AnimState += simdt * speed;
+				if (DipoleAntenna1AnimState > 1.0)
+					DipoleAntenna1AnimState = 1.0;
+			}
 		}
 		else
 		{
-			DipoleAntenna1AnimState -= simdt * speed;
-			if (DipoleAntenna1AnimState < 0.0)
-				DipoleAntenna1AnimState = 0.0;
+			if (!sat->Panel230CSM114->HFAntenna1Switch.IsCenter())
+			{
+				DipoleAntenna1AnimState -= simdt * speed;
+				if (DipoleAntenna1AnimState < 0.0)
+					DipoleAntenna1AnimState = 0.0;
+			}
 		}
 		sat->SetAnimation(DipoleAntenna1Anim, DipoleAntenna1AnimState);
 
@@ -6211,15 +6217,21 @@ void HF_Antenna_2::SystemTimestep(double simdt)
 		//Dipole Antenna2 Deploying
 		if (sat->DipoleAntenna2Deployed)
 		{
-			DipoleAntenna2AnimState += simdt * speed;
-			if (DipoleAntenna2AnimState > 1.0)
-				DipoleAntenna2AnimState = 1.0;
+			if (!sat->Panel230CSM114->HFAntenna2Switch.IsCenter())
+			{
+				DipoleAntenna2AnimState += simdt * speed;
+				if (DipoleAntenna2AnimState > 1.0)
+					DipoleAntenna2AnimState = 1.0;
+			}
 		}
 		else
 		{
-			DipoleAntenna2AnimState -= simdt * speed;
-			if (DipoleAntenna2AnimState < 0.0)
-				DipoleAntenna2AnimState = 0.0;
+			if (!sat->Panel230CSM114->HFAntenna2Switch.IsCenter())
+			{
+				DipoleAntenna2AnimState -= simdt * speed;
+				if (DipoleAntenna2AnimState < 0.0)
+					DipoleAntenna2AnimState = 0.0;
+			}
 		}
 		sat->SetAnimation(DipoleAntenna2Anim, DipoleAntenna2AnimState);
 

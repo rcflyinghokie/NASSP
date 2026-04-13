@@ -1136,7 +1136,7 @@ void SM::SetMainState(int s)
 	SMBusAPowered = (state.u.SMBusAPowered != 0);
 	SMBusBPowered = (state.u.SMBusBPowered != 0);
 	showYagi = (state.u.showYagi != 0);
-	SIMBayVersion = (state.u.showYagi != 0);
+	SIMBayVersion = (state.u.SIMBayVersion != 0);
 }
 
 void SM::clbkLoadStateEx (FILEHANDLE scn, void *vstatus)
