@@ -166,16 +166,16 @@ void SIMBay::DefineAnimations(UINT idx)
 		MGROUP_TRANSLATE* mgt_GammaBayTubeGrp39 = new MGROUP_TRANSLATE(idx, GammaBayTubeGrp39, 1, _V(3.23032, 4.17653, 0));
 		MGROUP_TRANSLATE* mgt_GammaBaySpectGrp22 = new MGROUP_TRANSLATE(idx, GammaBaySpectGrp22, 1, _V(3.23032, 4.17653, 0));
 		GammaBayAnim = sat->CreateAnimation(0.0);
-		ach_GammaBayCoverGrp23 = sat->AddAnimationComponent(GammaBayAnim, 0.0, 0.01875, mgr_GammaBayCoverGrp23);
-		ach_GammaBayTubeGrp32 = sat->AddAnimationComponent(GammaBayAnim, 0.01875, 1.0, mgt_GammaBayTubeGrp32);
-		ach_GammaBayTubeGrp33 = sat->AddAnimationComponent(GammaBayAnim, 0.01875, 1.0, mgt_GammaBayTubeGrp33);
-		ach_GammaBayTubeGrp34 = sat->AddAnimationComponent(GammaBayAnim, 0.01875, 1.0, mgt_GammaBayTubeGrp34);
-		ach_GammaBayTubeGrp35 = sat->AddAnimationComponent(GammaBayAnim, 0.01875, 1.0, mgt_GammaBayTubeGrp35);
-		ach_GammaBayTubeGrp36 = sat->AddAnimationComponent(GammaBayAnim, 0.01875, 1.0, mgt_GammaBayTubeGrp36);
-		ach_GammaBayTubeGrp37 = sat->AddAnimationComponent(GammaBayAnim, 0.01875, 1.0, mgt_GammaBayTubeGrp37);
-		ach_GammaBayTubeGrp38 = sat->AddAnimationComponent(GammaBayAnim, 0.01875, 1.0, mgt_GammaBayTubeGrp38);
-		ach_GammaBayTubeGrp39 = sat->AddAnimationComponent(GammaBayAnim, 0.01875, 1.0, mgt_GammaBayTubeGrp39);
-		ach_GammaBaySpectGrp22 = sat->AddAnimationComponent(GammaBayAnim, 0.01875, 1.0, mgt_GammaBaySpectGrp22);
+		ach_GammaBayCoverGrp23 = sat->AddAnimationComponent(GammaBayAnim, 0.0, 0.003, mgr_GammaBayCoverGrp23);
+		ach_GammaBayTubeGrp32 = sat->AddAnimationComponent(GammaBayAnim, 0.0, 1.0, mgt_GammaBayTubeGrp32);
+		ach_GammaBayTubeGrp33 = sat->AddAnimationComponent(GammaBayAnim, 0.0, 1.0, mgt_GammaBayTubeGrp33);
+		ach_GammaBayTubeGrp34 = sat->AddAnimationComponent(GammaBayAnim, 0.0, 1.0, mgt_GammaBayTubeGrp34);
+		ach_GammaBayTubeGrp35 = sat->AddAnimationComponent(GammaBayAnim, 0.0, 1.0, mgt_GammaBayTubeGrp35);
+		ach_GammaBayTubeGrp36 = sat->AddAnimationComponent(GammaBayAnim, 0.0, 1.0, mgt_GammaBayTubeGrp36);
+		ach_GammaBayTubeGrp37 = sat->AddAnimationComponent(GammaBayAnim, 0.0, 1.0, mgt_GammaBayTubeGrp37);
+		ach_GammaBayTubeGrp38 = sat->AddAnimationComponent(GammaBayAnim, 0.0, 1.0, mgt_GammaBayTubeGrp38);
+		ach_GammaBayTubeGrp39 = sat->AddAnimationComponent(GammaBayAnim, 0.0, 1.0, mgt_GammaBayTubeGrp39);
+		ach_GammaBaySpectGrp22 = sat->AddAnimationComponent(GammaBayAnim, 0.0, 1.0, mgt_GammaBaySpectGrp22);
 
 		//Gamma Bay spectrometer Jett
 		ANIMATIONCOMPONENT_HANDLE ach_GammaBaySpectAllGrp;
@@ -228,22 +228,22 @@ void SIMBay::DefineAnimations(UINT idx)
 		MGROUP_TRANSLATE* mgt_MassSpecTubeGrp48 = new MGROUP_TRANSLATE(idx, MassSpecTubeGrp48, 1, _V(4.70952, 2.38721, 0));
 		MGROUP_TRANSLATE* mgt_MassSpecGrp26 = new MGROUP_TRANSLATE(idx, MassSpecGrp26, 1, _V(4.70952, 2.38721, 0));
 		MassSpectrometerAnim = sat->CreateAnimation(0.0);
-		ach_MassSpecCoverGrp25Xfr1 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 0.01875, mgr_MassSpecCoverGrp25Yfr1);
-		ach_MassSpecCoverGrp25Yfr1 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 0.01875, mgr_MassSpecCoverGrp25Zfr1);
-		ach_MassSpecCoverGrp25Zfr1 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 0.01875, mgr_MassSpecCoverGrp25Xfr1);
+		ach_MassSpecCoverGrp25Xfr1 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 0.003, mgr_MassSpecCoverGrp25Yfr1);
+		ach_MassSpecCoverGrp25Yfr1 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 0.003, mgr_MassSpecCoverGrp25Zfr1);
+		ach_MassSpecCoverGrp25Zfr1 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 0.003, mgr_MassSpecCoverGrp25Xfr1);
 
-		ach_MassSpecCoverGrp25Xfr2 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 0.01875, mgr_MassSpecCoverGrp25Yfr2);
-		ach_MassSpecCoverGrp25Yfr2 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 0.01875, mgr_MassSpecCoverGrp25Zfr2);
-		ach_MassSpecCoverGrp25Zfr2 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 0.01875, mgr_MassSpecCoverGrp25Xfr2);
-		ach_MassSpecTubeGrp41 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.01875, 1.0, mgt_MassSpecTubeGrp41);
-		ach_MassSpecTubeGrp42 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.01875, 1.0, mgt_MassSpecTubeGrp42);
-		ach_MassSpecTubeGrp43 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.01875, 1.0, mgt_MassSpecTubeGrp43);
-		ach_MassSpecTubeGrp44 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.01875, 1.0, mgt_MassSpecTubeGrp44);
-		ach_MassSpecTubeGrp45 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.01875, 1.0, mgt_MassSpecTubeGrp45);
-		ach_MassSpecTubeGrp46 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.01875, 1.0, mgt_MassSpecTubeGrp46);
-		ach_MassSpecTubeGrp47 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.01875, 1.0, mgt_MassSpecTubeGrp47);
-		ach_MassSpecTubeGrp48 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.01875, 1.0, mgt_MassSpecTubeGrp48);
-		ach_MassSpecGrp26 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.01875, 1.0, mgt_MassSpecGrp26);
+		ach_MassSpecCoverGrp25Xfr2 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 0.003, mgr_MassSpecCoverGrp25Yfr2);
+		ach_MassSpecCoverGrp25Yfr2 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 0.003, mgr_MassSpecCoverGrp25Zfr2);
+		ach_MassSpecCoverGrp25Zfr2 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 0.003, mgr_MassSpecCoverGrp25Xfr2);
+		ach_MassSpecTubeGrp41 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 1.0, mgt_MassSpecTubeGrp41);
+		ach_MassSpecTubeGrp42 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 1.0, mgt_MassSpecTubeGrp42);
+		ach_MassSpecTubeGrp43 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 1.0, mgt_MassSpecTubeGrp43);
+		ach_MassSpecTubeGrp44 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 1.0, mgt_MassSpecTubeGrp44);
+		ach_MassSpecTubeGrp45 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 1.0, mgt_MassSpecTubeGrp45);
+		ach_MassSpecTubeGrp46 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 1.0, mgt_MassSpecTubeGrp46);
+		ach_MassSpecTubeGrp47 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 1.0, mgt_MassSpecTubeGrp47);
+		ach_MassSpecTubeGrp48 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 1.0, mgt_MassSpecTubeGrp48);
+		ach_MassSpecGrp26 = sat->AddAnimationComponent(MassSpectrometerAnim, 0.0, 1.0, mgt_MassSpecGrp26);
 
 		//Mass spectrometer Jett
 		ANIMATIONCOMPONENT_HANDLE ach_MassSpectAllGrp;
@@ -377,15 +377,21 @@ void SIMBay::SystemTimestep(double simdt)
 		//Gamma Bay animaton
 		if (sat->GammaBayDeployed)
 		{
-			GammaBayAnimState += simdt * spectspeed;
-			if (GammaBayAnimState > 1.0)
-				GammaBayAnimState = 1.0;
+			if (!sat->Panel230CSM112->GammaBay1Switch.IsCenter())
+			{
+				GammaBayAnimState += simdt * spectspeed;
+				if (GammaBayAnimState > 1.0)
+					GammaBayAnimState = 1.0;
+			}
 		}
 		else
 		{
-			GammaBayAnimState -= simdt * spectspeed;
-			if (GammaBayAnimState < 0.0)
-				GammaBayAnimState = 0.0;
+			if (!sat->Panel230CSM112->GammaBay1Switch.IsCenter())
+			{
+				GammaBayAnimState -= simdt * spectspeed;
+				if (GammaBayAnimState < 0.0)
+					GammaBayAnimState = 0.0;
+			}
 		}
 		sat->SetAnimation(GammaBayAnim, GammaBayAnimState);
 
@@ -413,15 +419,21 @@ void SIMBay::SystemTimestep(double simdt)
 		//Mass Spectrometer animaton
 		if (sat->MassSpectrometerDeployed)
 		{
-			MassSpectrometerAnimState += simdt * spectspeed;
-			if (MassSpectrometerAnimState > 1.0)
-				MassSpectrometerAnimState = 1.0;
+			if (!sat->Panel230CSM112->MassSpectrometer1Switch.IsCenter())
+			{
+				MassSpectrometerAnimState += simdt * spectspeed;
+				if (MassSpectrometerAnimState > 1.0)
+					MassSpectrometerAnimState = 1.0;
+			}
 		}
 		else
 		{
-			MassSpectrometerAnimState -= simdt * spectspeed;
-			if (MassSpectrometerAnimState < 0.0)
-				MassSpectrometerAnimState = 0.0;
+			if (!sat->Panel230CSM112->MassSpectrometer1Switch.IsCenter())
+			{
+				MassSpectrometerAnimState -= simdt * spectspeed;
+				if (MassSpectrometerAnimState < 0.0)
+					MassSpectrometerAnimState = 0.0;
+			}
 		}
 		sat->SetAnimation(MassSpectrometerAnim, MassSpectrometerAnimState);
 

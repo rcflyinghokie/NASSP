@@ -2040,17 +2040,17 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 	checkControl.save(scn);
 	eventControl.save(scn);
 
+	//Save EVA State in scn file
+	char buffer[100];
+	sprintf(buffer, "%d", cmpeva);
+	oapiWriteScenario_string(scn, "CMPEVA", buffer);
+
 	//save state of sim bay instruments
 	if (pMission->GetPanel230Version() == 2) hf_antenna_1.SaveState(scn);
 	if (pMission->GetPanel230Version() == 2) hf_antenna_2.SaveState(scn);
 	if (pMission->IsJMission()) simbay.MappingCameraSaveState(scn);
 	if (pMission->GetPanel230Version() == 1) simbay.GammaBaySaveState(scn);
 	if (pMission->GetPanel230Version() == 1) simbay.MassSpectrometerSaveState(scn);
-
-	//Save EVA State in scn file
-	char buffer[100];
-	sprintf(buffer, "%d", cmpeva);
-	oapiWriteScenario_string(scn, "CMPEVA", buffer);
 }
 
 void Saturn::QuicksaveScenario()
