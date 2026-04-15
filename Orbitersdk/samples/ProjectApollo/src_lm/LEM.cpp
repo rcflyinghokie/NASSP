@@ -1945,6 +1945,9 @@ void LEM::GetScenarioState(FILEHANDLE scn, void *vs)
 		else if (!strnicmp(line, "VHFTRANSCEIVER", 14)) {
 			VHF.LoadState(line);
 		}
+		else if (!strnicmp(line, "DATARECORDER", 12)) {
+			DSEA.LoadState(line);
+			}
 		else if (!strnicmp(line, "LCA_START", sizeof("LCA_START"))) {
 			lca.LoadState(scn,"LCA_END");
 		}
@@ -2502,6 +2505,7 @@ void LEM::clbkSaveState (FILEHANDLE scn)
 	SBand.SaveState(scn);
 	SBandSteerable.SaveState(scn);
 	VHF.SaveState(scn);
+	DSEA.SaveState(scn);
 
 	// Save Lighting
 	lca.SaveState(scn, "LCA_START", "LCA_END");
