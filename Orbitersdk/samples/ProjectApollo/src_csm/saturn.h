@@ -919,6 +919,9 @@ public:
 	// Variables for checklists
 	char Checklist_Variable[16][32];
 
+	// For hiding the Optics Panel122 and DSKY
+	bool ViewOpticsPanels;
+
 	//
 	// General functions that handle calls from Orbiter.
 	//
