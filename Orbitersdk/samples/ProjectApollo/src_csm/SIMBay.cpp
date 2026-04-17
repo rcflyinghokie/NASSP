@@ -86,6 +86,18 @@ void SIMBay::DefineAnimations(UINT idx)
 	if (sat->pMission->GetPanel230Version() == 1 || sat->pMission->GetPanel230Version() == 2)
 	{
 		///CSM112-114 Common Animations:
+ 
+		//Mapping Camera extend
+		ANIMATIONCOMPONENT_HANDLE ach_MappingGrp;
+		ANIMATIONCOMPONENT_HANDLE ach_ShadeGrp;
+		static UINT MappingGrp[9] = { 1,2,3,4,14,18,19,20,21 };
+		static UINT ShadeGrp[1] = { 21 };
+		MGROUP_TRANSLATE* mgt_MappingGrp = new MGROUP_TRANSLATE(idx, MappingGrp, 9, _V(0.161347, 0.234723, 0));
+		MGROUP_TRANSLATE* mgt_ShadeGrp = new MGROUP_TRANSLATE(idx, ShadeGrp, 1, _V(-0.119963, 0.084116, 0));
+		MappingCameraAnim = sat->CreateAnimation(0.0);
+		ach_MappingGrp = sat->AddAnimationComponent(MappingCameraAnim, 0.0, 0.5, mgt_MappingGrp);
+		ach_ShadeGrp = sat->AddAnimationComponent(MappingCameraAnim, 0.5, 1.0, mgt_ShadeGrp);
+
 		///Mapping Camera Cover
 		ANIMATIONCOMPONENT_HANDLE ach_SIMBAYGrp16DeployedXfr1;
 		ANIMATIONCOMPONENT_HANDLE ach_SIMBAYGrp16DeployedYfr1;
@@ -109,16 +121,7 @@ void SIMBay::DefineAnimations(UINT idx)
 		ach_SIMBAYGrp16DeployedZfr2 = sat->AddAnimationComponent(MappingCameraCoverAnim, 0.5, 1.0, mgr_SIMBAYGrp16Yfr2);
 		ach_SIMBAYGrp16DeployedYfr2 = sat->AddAnimationComponent(MappingCameraCoverAnim, 0.5, 1.0, mgr_SIMBAYGrp16Zfr2);
 
-		//Mapping Camera extend
-		ANIMATIONCOMPONENT_HANDLE ach_MappingGrp;
-		ANIMATIONCOMPONENT_HANDLE ach_ShadeGrp;
-		static UINT MappingGrp[9] = { 1,2,3,4,14,18,19,20,21 };
-		static UINT ShadeGrp[1] = { 21 };
-		MGROUP_TRANSLATE* mgt_MappingGrp = new MGROUP_TRANSLATE(idx, MappingGrp, 9, _V(0.161347, 0.234723, 0));
-		MGROUP_TRANSLATE* mgt_ShadeGrp = new MGROUP_TRANSLATE(idx, ShadeGrp, 1, _V(-0.119963, 0.084116, 0));
-		MappingCameraAnim = sat->CreateAnimation(0.0);
-		ach_MappingGrp = sat->AddAnimationComponent(MappingCameraAnim, 0.0, 0.5, mgt_MappingGrp);
-		ach_ShadeGrp = sat->AddAnimationComponent(MappingCameraAnim, 0.5, 1.0, mgt_ShadeGrp);
+
 
 		//Panoramic Camera
 		ANIMATIONCOMPONENT_HANDLE ach_SIMBAYGrp9and10Z;
