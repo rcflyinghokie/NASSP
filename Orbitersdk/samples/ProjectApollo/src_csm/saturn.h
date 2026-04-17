@@ -617,6 +617,7 @@ public:
 		SRF_VC_ABORT,
 		SRF_VC_OPTICS_DSKY,
 		SRF_VC_OPTICS_P122,
+		SRF_VC_OPTICS_DUALVIEW_RETICLE,
 
 		//
 		// NSURF MUST BE THE LAST ENTRY HERE. PUT ANY NEW SURFACE IDS ABOVE THIS LINE
@@ -4242,6 +4243,7 @@ protected:
 	bool FovExternal;
 	double FovSave;
 	double FovSaveVCOptics;
+	bool GNPanelView = false;
 	int maxTimeAcceleration;
 	bool IsMultiThread;
 
