@@ -47,6 +47,7 @@
 
 #include "connector.h"
 #include "nassputils.h"
+#include "LM_VC_Resource.h"
 
 using namespace nassp;
 
@@ -457,8 +458,8 @@ LEM::LEM(OBJHANDLE hObj, int fmodel) : Payload (hObj, fmodel),
 	AscentECAMainFeeder("Ascent-ECA-Main-Feeder", Panelsdk),
 	AscentECAContFeeder("Ascent-ECA-Cont-Feeder", Panelsdk),
 	vesim(&cbLMVesim, this),
-	Failures(this)
-
+	Failures(this),
+	CueCards(vcidx, this, 25)
 {
 	dllhandle = g_Param.hDLL; // DS20060413 Save for later
 	InitLEMCalled = false;
@@ -532,6 +533,8 @@ void LEM::Init()
 	status = 0;
 	CDRinPLSS = 0;
 	LMPinPLSS = 0;
+
+	spaceeva = false;
 
 	CMPowerToCDRBusRelayA = false;
 	CMPowerToCDRBusRelayB = false;
@@ -622,6 +625,8 @@ void LEM::Init()
 	vcidx = -1;
 	windowshadesidx = -1;
 	xpointershadesidx = -1;
+	hLMPointingArrowidx = -1;
+	LMvccuecardsarrowsidx = -1;
 
 	drogue = NULL;
 	probes = NULL;
@@ -638,6 +643,7 @@ void LEM::Init()
 	aeaa = NULL;
 
 	COASreticlevisible = 0;
+	ViewCueCardArrows = false;
 
 	trackLightPos = _V(0, 0, 0);
 	for (int i = 0;i < 5;i++)
@@ -704,6 +710,7 @@ void LEM::Init()
 		fdaiSmooth = false;
 
 		InitVCAnimations();
+		pointingArrow.Init(this);
 
 		PanelId = LMPANEL_MAIN;	// default panel
 		InitSwitches();
@@ -888,6 +895,25 @@ int LEM::clbkConsumeDirectKey(char* kstate)
 int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 
 	if (enableVESIM) vesim.clbkConsumeBufferedKey(key, down, keystate);
+
+	// Help key for CueCard Arrows
+	if (KEYMOD_LCONTROL(keystate)) {
+		if (down) {
+			switch (key) {
+			case OAPI_KEY_H:
+				if (InVC && oapiCameraInternal())
+				{
+					if (ViewCueCardArrows == true) {
+						ViewCueCardArrows = false;
+					}
+					else {
+						ViewCueCardArrows = true;
+					}
+					return 1;
+				}
+			}
+		}
+	}
 
 	// DS20060404 Allow keys to control DSKY like in the CM
 	if (KEYMOD_SHIFT(keystate) && !KEYMOD_CONTROL(keystate) && !KEYMOD_ALT(keystate)) {
@@ -1330,11 +1356,23 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 	return 0;
 }
 
+void LEM::DoMeshAnimation(AnimState &state, UINT &anim, double speed, double simdt)
+{
+	if (state.Moving()) {
+		state.Move(simdt / speed);
+		SetAnimation(anim, state.pos);
+	}
+}
+
 void LEM::SetAnimations(double simdt) {
 	//
 	//EVA Antenna
 	//
 	VHF.SetAnimation(EvaAntennaHandle.GetAnimState());
+
+	if (AOTReticleDetent.GetState() == 0) AOT_ReticleKnobState.action = AnimState::CLOSING;
+	else AOT_ReticleKnobState.action = AnimState::OPENING;
+	DoMeshAnimation(AOT_ReticleKnobState, AOT_ReticleKnobAnimTrans, 0.1, simdt);
 }
 
 //
@@ -1485,6 +1523,8 @@ void LEM::clbkPreStep (double simt, double simdt, double mjd) {
 		//We have focus on this vessel, and are in the VC
 		MoveFlashlight();
 	}
+
+	if (spaceeva)UpdateSpaceEVA(); //if lmp eva active (vessel created), enables EVA Timestep
 }
 
 
@@ -1737,7 +1777,7 @@ void LEM::PostLoadSetup(bool define_anims)
 void LEM::GetScenarioState(FILEHANDLE scn, void *vs)
 {
 	char *line;
-	int	SwitchState;
+	int	SwitchState, i;
 	float ftcp;
 
 	while (oapiReadScenario_nextline(scn, line)) {
@@ -1901,6 +1941,9 @@ void LEM::GetScenarioState(FILEHANDLE scn, void *vs)
 		else if (!strnicmp(line, "VHFTRANSCEIVER", 14)) {
 			VHF.LoadState(line);
 		}
+		else if (!strnicmp(line, "DATARECORDER", 12)) {
+			DSEA.LoadState(line);
+			}
 		else if (!strnicmp(line, "LCA_START", sizeof("LCA_START"))) {
 			lca.LoadState(scn,"LCA_END");
 		}
@@ -2039,8 +2082,16 @@ void LEM::GetScenarioState(FILEHANDLE scn, void *vs)
 		else if (!strnicmp(line, "EVENTTIMER_START", sizeof("EVENTTIMER_START"))) {
 			EventTimerDisplay.LoadState(scn, EVENTTIMER_END_STRING);
 		}
+		else if (!strnicmp(line, CUECARDS_START_STRING, sizeof(CUECARDS_START_STRING))) {
+			CueCards.LoadState(scn);
+		}
 		else if (!strnicmp(line, "<INTERNALS>", 11)) { //INTERNALS signals the PanelSDK part of the scenario
 			Panelsdk.Load(scn);			//send the loading to the Panelsdk
+		}
+		else if (!strnicmp(line, "SPACEEVA", 8)) {
+			//Load EVA State from scn file
+			sscanf(line + 8, "%d", &i);
+			spaceeva = i;
 		}
 		else if (!strnicmp(line, ChecklistControllerStartString, strlen(ChecklistControllerStartString)))
 		{
@@ -2131,6 +2182,22 @@ void LEM::clbkVisualCreated(VISHANDLE vis, int refcount)
 	if (vcidx != -1) {
 		vcmesh = GetDevMesh(vis, vcidx);
 		SetCOAS();
+	}
+
+	// This is Mission Specific code to change for now only the Panel 14 DC FEEDER text.
+	// First hide all the texts
+	HideMeshGroup(vcidx, VC_GRP_Panel12_16_DC_FEEDER_FAULT, true);
+	HideMeshGroup(vcidx, VC_GRP_Panel12_16_DC_FEEDER_FAULT_2, true);
+	HideMeshGroup(vcidx, VC_GRP_Panel12_16_DC_BUS_FAULT, true);
+
+	if (pMission->GetLMNumber() < 6) {												// up to Apollo 11
+		HideMeshGroup(vcidx, VC_GRP_Panel12_16_DC_BUS_FAULT, false);
+	}
+	else if (pMission->GetLMNumber() > 5 && (pMission->GetLMNumber() < 9)) {		// Apollo 12 to 14
+		HideMeshGroup(vcidx, VC_GRP_Panel12_16_DC_FEEDER_FAULT, false);
+	}
+	else {
+		HideMeshGroup(vcidx, VC_GRP_Panel12_16_DC_FEEDER_FAULT_2, false);			// Apollo 15 to 17
 	}
 }
 
@@ -2376,6 +2443,8 @@ void LEM::clbkSaveState (FILEHANDLE scn)
 	oapiWriteScenario_float(scn, "DSCEMPTYMASS", DescentEmptyMassKg);
 	oapiWriteScenario_float(scn, "ASCEMPTYMASS", AscentEmptyMassKg);
 
+	oapiWriteScenario_int(scn, "SPACEEVA", spaceeva);
+
 	if (!Crewed) {
 		oapiWriteScenario_int (scn, "UNMANNED", 1);
 	}
@@ -2401,6 +2470,7 @@ void LEM::clbkSaveState (FILEHANDLE scn)
 		aea.SaveState(scn, "AEA_START", "AEA_END");
 		asa.SaveState(scn, "ASA_START", "ASA_END");
 	}
+	CueCards.SaveState(scn);
 
 	//
 	// Save the Panel SDK state.
@@ -2431,6 +2501,7 @@ void LEM::clbkSaveState (FILEHANDLE scn)
 	SBand.SaveState(scn);
 	SBandSteerable.SaveState(scn);
 	VHF.SaveState(scn);
+	DSEA.SaveState(scn);
 
 	// Save Lighting
 	lca.SaveState(scn, "LCA_START", "LCA_END");

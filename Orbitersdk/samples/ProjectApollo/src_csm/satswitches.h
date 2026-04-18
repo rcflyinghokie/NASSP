@@ -890,7 +890,7 @@ public:
 	virtual bool CheckMouseClick(int event, int mx, int my);
 };
 
-class DSEIndicatorSwitch : public IndicatorSwitch
+class DSETalkback : public IndicatorSwitch
 {
 public:
 	void Init(int xp, int yp, int w, int h, SURFHANDLE surf, SwitchRow &row, DSE *d, bool failopen = false);
@@ -1010,4 +1010,16 @@ protected:
 	SURFHANDLE surface2;
 
 	UINT animNeedle;
+};
+
+class SaturnSPSInjectorValveIndicator : public SaturnRoundMeter
+{
+public:
+	SaturnSPSInjectorValveIndicator();
+	void Init(oapi::Pen *p0, oapi::Pen *p1, SwitchRow &row, Saturn *s, int index);
+
+	double QueryValue();
+	void DoDrawSwitch(double v, SURFHANDLE drawSurface);
+protected:
+	int Index;
 };

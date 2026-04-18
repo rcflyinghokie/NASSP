@@ -481,7 +481,6 @@ public:
 	void Init(oapi::Pen *p0, oapi::Pen *p1, SwitchRow &row, LEM *s, SURFHANDLE frameSurface);
 	double QueryValue();
 	void DoDrawSwitch(double v, SURFHANDLE drawSurface);
-	void OnPostStep(double SimT, double DeltaT, double MJD);
 protected:
 	SURFHANDLE FrameSurface;
 };
@@ -491,7 +490,6 @@ public:
 	void Init(oapi::Pen *p0, oapi::Pen *p1, SwitchRow &row, LEM *s, SURFHANDLE frameSurface);
 	double QueryValue();
 	void DoDrawSwitch(double v, SURFHANDLE drawSurface);
-	void OnPostStep(double SimT, double DeltaT, double MJD);
 protected:
 	SURFHANDLE FrameSurface;
 };
@@ -534,6 +532,16 @@ public:
 protected:
 	SCEA_SolidStateSwitch * ssswitch1;
 	SCEA_SolidStateSwitch * ssswitch2;
+};
+
+class RecorderTalkback : public IndicatorSwitch
+{
+public:
+	void Init(int xp, int yp, int w, int h, SURFHANDLE surf, SwitchRow &row, LM_DSEA *d, bool failopen = false);
+	int GetState();
+
+protected:
+	LM_DSEA *dsea;
 };
 
 class LEMRCSQuadTalkback : public IndicatorSwitch {
