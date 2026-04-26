@@ -1750,6 +1750,7 @@ enum VCOptics {
 	AID_VC_OPTICS_REJECT_BUTTON,
 
 	AID_VC_OPTICS_HIDEPANELS,
+	AID_VC_OPTICS_DUALVIEW,
 };
 
 // Next default values for new objects
