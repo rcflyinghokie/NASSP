@@ -72,6 +72,7 @@
 #define DIRECTINPUT_VERSION 0x0800
 #include "dinput.h"
 #include "vesim.h"
+#include <gcConst.h>
 
 class MCC;
 class IU;
@@ -904,7 +905,7 @@ public:
 
 	// For hiding the Optics Panel122 and DSKY
 	bool ViewOpticsPanels;
-
+	bool OpticsVCDualView = false;
 	//
 	// General functions that handle calls from Orbiter.
 	//
@@ -4333,9 +4334,13 @@ protected:
 //	CAMERAHANDLE hFDAICam = NULL;
 //	SURFHANDLE srfFDAICamTexture;
 //	SURFHANDLE hFDAISurf;
+	CAMERAHANDLE hOpticsEarthReticleCam = NULL;
+	SURFHANDLE srfhOpticsEarthReticleCamTexture;
+	SURFHANDLE hOpticsDualViewReticleSurf;
 
 //	void InitFDAICustomCamera(void);
-
+	void UpdateOpticsCustomCam(VECTOR3, VECTOR3, VECTOR3);
+	
 	//
 	// Systems functions.
 	//
