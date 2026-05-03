@@ -2078,14 +2078,22 @@ bool Saturn::clbkVCMouseEvent (int id, int event, VECTOR3 &p)
 		return true;
 
 	case AID_VC_OPTICS_RETICLE_PLUS:
-		VCOpticsRetBright += 0.1f;
-		if (VCOpticsRetBright >1.0) VCOpticsRetBright = 1.0;
+		{
+		DWORD currentAlpha = (VCOpticsRetAlpha >> 24);
+		if (currentAlpha <= 242) currentAlpha += 13; 
+		else currentAlpha = 255;
+		VCOpticsRetAlpha = (currentAlpha << 24) | 0xFFFFFF;
 		return true;
+		}
 
 	case AID_VC_OPTICS_RETICLE_MINUS:
-		VCOpticsRetBright -= 0.1f;
-		if (VCOpticsRetBright <0.0) VCOpticsRetBright = 0.0;
+		{
+		DWORD currentAlpha = (VCOpticsRetAlpha >> 24);
+		if (currentAlpha >= 13) currentAlpha -= 13;
+		else currentAlpha = 1;
+		VCOpticsRetAlpha = (currentAlpha << 24) | 0xFFFFFF;
 		return true;
+		}
 	}
 
 	// Now check if any switch in the optics panels is clicked
@@ -6881,8 +6889,7 @@ void Saturn::UpdateCMVCOptics() {
 #ifdef _OPENORBITER
 		oapi::Sketchpad* skp = oapiGetSketchpad(srfOpticsCustomCam);
 		if (skp) {
-			DWORD alphaColor = 0x80FFFFFF;
-			oapi::Brush* pBrush = oapiCreateBrush(alphaColor);
+			oapi::Brush* pBrush = oapiCreateBrush(VCOpticsRetAlpha);
 			skp->SetBrush(pBrush);
 			skp->SetBlendState(Sketchpad::COPY_ALPHA);
 			skp->Rectangle(0, 0, 2048, 2048);

@@ -932,7 +932,8 @@ public:
 	// For hiding the Optics Panel122 and DSKY
 	bool ViewOpticsPanels;
 	bool OpticsVCDualView = false;
-	double VCOpticsRetBright = 1.0;
+	DWORD VCOpticsRetAlpha = 0x80FFFFFF; // Semitransparent CustomCamera
+
 	//
 	// General functions that handle calls from Orbiter.
 	//
