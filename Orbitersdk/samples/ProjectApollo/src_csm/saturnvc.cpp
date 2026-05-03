@@ -50,7 +50,10 @@
 #include "EmissionListCMVC.h"
 #include "MissionSpecificPanels.h"
 
+// Sketchpad2 is for superimposing tests
+#ifndef _OPENORBITER
 #include "Sketchpad2.h"
+#endif // !_OPENORBITER
 
 // ==============================================================
 // VC Constants
@@ -6480,6 +6483,7 @@ void Saturn::UpdateOpticsCustomCam(VECTOR3 camPos, VECTOR3 camDir, VECTOR3 camUp
 			CustomCam = false;
 		}
 
+#ifndef _OPENORBITER
 		// 3rd option for Superimposing using Sketchpad3
 		// but unfortunately it doesn't work either
 		oapi::Sketchpad3* skp = (oapi::Sketchpad3*)oapiGetSketchpad(srfOpticsCustomCam2);
@@ -6492,6 +6496,7 @@ void Saturn::UpdateOpticsCustomCam(VECTOR3 camPos, VECTOR3 camDir, VECTOR3 camUp
 
 			oapiReleaseSketchpad(skp);
 		}
+#endif // !_OPENORBITER
 //		oapiBlt(srf[SRF_VC_OPTICS_CUSTOMCAM], srfOpticsCustomCam2, 0, 0, 0, 0, 2048, 2048);
 	}
 }
