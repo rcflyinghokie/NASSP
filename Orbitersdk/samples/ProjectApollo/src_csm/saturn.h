@@ -4360,7 +4360,6 @@ protected:
 
 	CAMERAHANDLE hOpticsCustomCam = NULL;
 	SURFHANDLE srfOpticsCustomCam;
-	SURFHANDLE srfOpticsCustomCam2;
 
 	void UpdateOpticsCustomCam(VECTOR3, VECTOR3, VECTOR3);
 	

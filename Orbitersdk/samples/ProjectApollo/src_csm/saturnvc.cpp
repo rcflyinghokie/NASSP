@@ -50,11 +50,6 @@
 #include "EmissionListCMVC.h"
 #include "MissionSpecificPanels.h"
 
-// Sketchpad2 is for superimposing tests
-#ifndef _OPENORBITER
-#include "Sketchpad2.h"
-#endif // !_OPENORBITER
-
 // ==============================================================
 // VC Constants
 // ==============================================================
@@ -652,9 +647,7 @@ void Saturn::InitVC()
 	srf[SRF_VC_4DSKY_LEB] = oapiGetTextureHandle(hCMVC, VC_TEX_CMVCTex2_dds);
 
 	srfOpticsCustomCam = oapiCreateSurfaceEx(2048, 2048, OAPISURFACE_TEXTURE | OAPISURFACE_RENDERTARGET | OAPISURFACE_SKETCHPAD | OAPISURFACE_NOMIPMAPS | OAPISURFACE_ALPHA | OAPISURFACE_RENDER3D);
-	srfOpticsCustomCam2 = oapiCreateSurfaceEx(2048, 2048, OAPISURFACE_TEXTURE | OAPISURFACE_RENDERTARGET | OAPISURFACE_SKETCHPAD | OAPISURFACE_NOMIPMAPS | OAPISURFACE_ALPHA | OAPISURFACE_RENDER3D);
-//	oapiSetTexture(GetMeshTemplate(hCMVCOpticsidx), 5, srfOpticsCustomCam2);
-	oapiSetTexture(GetDevMesh(vis, hCMVCOpticsidx), 5, srfOpticsCustomCam2);
+
 	// Set Colour Key
 
 	oapiSetSurfaceColourKey(srf[SRF_VC_DIGITALDISP], ck);
@@ -6481,31 +6474,6 @@ void Saturn::UpdateOpticsCustomCam(VECTOR3 camPos, VECTOR3 camDir, VECTOR3 camUp
 			pCore->CustomCameraOnOff(hOpticsCustomCam, true);
 			CustomCam = false;
 		}
-
-		// 3rd option for Superimposing using Sketchpad3
-		// but unfortunately it doesn't work either
-#ifdef _OPENORBITER
-		oapi::Sketchpad* skp = oapiGetSketchpad(srfOpticsCustomCam2);
-		if (skp) {
-			skp->SetBlendState(Sketchpad::COPY);
-			skp->CopyRect(srfOpticsCustomCam, NULL, 0, 0);
-
-//			skp->SetBlendState(Sketchpad::COPY_ALPHA);
-//			skp->CopyRect(srf[SRF_VC_OPTICS_CUSTOMCAM], NULL, 0, 0);
-			oapiReleaseSketchpad(skp);
-		}
-#else
-		oapi::Sketchpad3* skp = (oapi::Sketchpad3*)oapiGetSketchpad(srfOpticsCustomCam2);
-		if (skp) {
-			skp->SetBlendState(SKPBS_COPY);
-			skp->CopyRect(srfOpticsCustomCam, NULL, 0, 0);
-
-//			skp->SetBlendState(SKPBS_COPY_ALPHA);
-//			skp->CopyRect(srf[SRF_VC_OPTICS_CUSTOMCAM], NULL, 0, 0);
-			oapiReleaseSketchpad(skp);
-		}
-#endif // _OPENORBITER
-//		oapiBlt(srf[SRF_VC_OPTICS_CUSTOMCAM], srfOpticsCustomCam2, 0, 0, 0, 0, 2048, 2048);
 	}
 }
 
@@ -6835,11 +6803,8 @@ void Saturn::UpdateCMVCOptics() {
 	//		aperture = 0.03191;
 		} else {
 			if (optics.SextDualView && optics.SextDVLOSTog){
-	//		if (optics.SextDualView){
 				setVCCameraLOS(optics.SextShaft, 0.0);
-	//			setVCCameraLOS(optics.SextShaft, optics.SextTrunion);
 				HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_CUSTOM_CAM, true);
-	//			HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_RETICLE, true);
 			}
 			else
 			{
@@ -6896,7 +6861,6 @@ void Saturn::UpdateCMVCOptics() {
 
 	static std::vector<OpticsMeshGroup> cmvcOptics(NUM_MSHGRPS + NUM_RTCL);	// 8 meshgroups from mesh + 3 extra for the reticles
 
-
 	if (optics.SextDualView) {
 		// local custom camera direction
 		VECTOR3 localDir = _V(0.0, -OPTICS_BASE_COS, OPTICS_BASE_SIN);
@@ -6912,33 +6876,32 @@ void Saturn::UpdateCMVCOptics() {
 
 		UpdateOpticsCustomCam(camPos, localDir, localUp);
 
-		// 1st Option
-		// Change Diffuse material settings.
-		// Adjusted with the Reticle Brightness wheel 
-		// Unfortunately it doesn't work
-		gcCore *pCore = gcGetCoreInterface();
-		FVECTOR4 value;
-		value.r = (float)VCOpticsRetBright;
-		value.g = (float)VCOpticsRetBright;
-		value.b = (float)VCOpticsRetBright;
-		value.a = (float)VCOpticsRetBright;
-
+		// Superimposing using Sketchpad3(O16Beta) or DrawAPi(OO)
+		// but unfortunately it doesn't work in 016Beta
 #ifdef _OPENORBITER
-		pCore->SetMeshMaterial(hOpticsMesh, 5, MAT_LIGHT, &value);
+		oapi::Sketchpad* skp = oapiGetSketchpad(srfOpticsCustomCam);
+		if (skp) {
+			DWORD alphaColor = 0x80FFFFFF;
+			oapi::Brush* pBrush = oapiCreateBrush(alphaColor);
+			skp->SetBrush(pBrush);
+			skp->SetBlendState(Sketchpad::COPY_ALPHA);
+			skp->Rectangle(0, 0, 2048, 2048);
+			oapiReleaseBrush(pBrush);
+			oapiReleaseSketchpad(skp);
+		}
 #else
-		pCore->MeshMaterial(hOpticsMesh, 5, MESHM_DIFFUSE, &value, true);
-#endif
-
-		// 2nd Option
-		// Change Diffuse material settings.
-		// Adjusted with the Reticle Brightness wheel 
-		// Unfortunately it doesn't work either
-//		MATERIAL *mat = oapiMeshMaterial(GetMeshTemplate(hCMVCOpticsidx), 5); 
-//		mat->diffuse.a = (float)VCOpticsRetBright;
-//		mat->ambient.a = (float)VCOpticsRetBright;
-//		oapiSetMaterial(hOpticsMesh, 5, mat);
-//		sprintf(oapiDebugString(), "%.3f ",VCOpticsRetBright);
-
+		oapi::Sketchpad3* skp = (oapi::Sketchpad3*)oapiGetSketchpad(srfOpticsCustomCam);
+		if (skp) {
+			DWORD alphaColor = 0x80FFFFFF;
+			oapi::Brush* pBrush = oapiCreateBrush(alphaColor);
+			skp->SetBrush(pBrush);
+			skp->SetBlendState(SKPBS_COPY_ALPHA);
+			skp->Rectangle(0, 0, 2048, 2048);
+			oapiReleaseBrush(pBrush);
+			oapiReleaseSketchpad(skp);
+		}
+#endif // _OPENORBITER
+		oapiBlt(srf[SRF_VC_OPTICS_CUSTOMCAM], srfOpticsCustomCam, 0, 0, 0, 0, 2048, 2048);
 	}
 
 	// Make copies of the mesh Vertices 
