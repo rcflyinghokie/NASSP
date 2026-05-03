@@ -75,9 +75,11 @@
 
 #ifdef _OPENORBITER
 #include <gcCoreAPI.h>
+#include "DrawAPi.h"
 #else
 #include <gcConst.h>
-#endif
+#include "Sketchpad2.h"	// Sketchpad2 is for superimposing tests in O16Beta. In OO we use the DrawAPi.h
+#endif // _OPENORBITER
 
 class MCC;
 class IU;

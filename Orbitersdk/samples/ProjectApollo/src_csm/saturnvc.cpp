@@ -6472,7 +6472,6 @@ void Saturn::InitFDAI(UINT mesh)
 
 // CustomCamera for Optics
 void Saturn::UpdateOpticsCustomCam(VECTOR3 camPos, VECTOR3 camDir, VECTOR3 camUp) {
-
 	gcCore* pCore = gcGetCoreInterface();
 	if (pCore) {
 		// (1.073 * RAD) This should be normaly (1.5 * RAD) but it's not working
@@ -6483,9 +6482,19 @@ void Saturn::UpdateOpticsCustomCam(VECTOR3 camPos, VECTOR3 camDir, VECTOR3 camUp
 			CustomCam = false;
 		}
 
-#ifndef _OPENORBITER
 		// 3rd option for Superimposing using Sketchpad3
 		// but unfortunately it doesn't work either
+#ifdef _OPENORBITER
+		oapi::Sketchpad* skp = oapiGetSketchpad(srfOpticsCustomCam2);
+		if (skp) {
+			skp->SetBlendState(Sketchpad::COPY);
+			skp->CopyRect(srfOpticsCustomCam, NULL, 0, 0);
+
+//			skp->SetBlendState(Sketchpad::COPY_ALPHA);
+//			skp->CopyRect(srf[SRF_VC_OPTICS_CUSTOMCAM], NULL, 0, 0);
+			oapiReleaseSketchpad(skp);
+		}
+#else
 		oapi::Sketchpad3* skp = (oapi::Sketchpad3*)oapiGetSketchpad(srfOpticsCustomCam2);
 		if (skp) {
 			skp->SetBlendState(SKPBS_COPY);
@@ -6493,10 +6502,9 @@ void Saturn::UpdateOpticsCustomCam(VECTOR3 camPos, VECTOR3 camDir, VECTOR3 camUp
 
 //			skp->SetBlendState(SKPBS_COPY_ALPHA);
 //			skp->CopyRect(srf[SRF_VC_OPTICS_CUSTOMCAM], NULL, 0, 0);
-
 			oapiReleaseSketchpad(skp);
 		}
-#endif // !_OPENORBITER
+#endif // _OPENORBITER
 //		oapiBlt(srf[SRF_VC_OPTICS_CUSTOMCAM], srfOpticsCustomCam2, 0, 0, 0, 0, 2048, 2048);
 	}
 }
