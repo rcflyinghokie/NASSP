@@ -1748,6 +1748,8 @@ enum VCOptics {
 
 	AID_VC_OPTICS_HIDEPANELS,
 	AID_VC_OPTICS_DUALVIEW,
+	AID_VC_OPTICS_RETICLE_PLUS,
+	AID_VC_OPTICS_RETICLE_MINUS,
 };
 
 // Next default values for new objects
