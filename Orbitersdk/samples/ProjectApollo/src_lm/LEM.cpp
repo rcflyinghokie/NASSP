@@ -1717,6 +1717,9 @@ void LEM::PostLoadSetup(bool define_anims)
 	CheckDescentStageSystems();
 	if (define_anims) DefineAnimations();
 
+	//Reload cue cards, if required
+	CueCards.ResetCueCards();
+
 	///
 	// Realism Mode Settings
 	//
@@ -2129,6 +2132,9 @@ void LEM::clbkSetClassCaps (FILEHANDLE cfg) {
 
 void LEM::clbkPostCreation()
 {
+	//Set up systems
+	imu.clbkPostCreation();
+
 	//Find MCC, if it exists
 	pMCC = NULL;
 	hMCC = oapiGetVesselByName("MCC");
