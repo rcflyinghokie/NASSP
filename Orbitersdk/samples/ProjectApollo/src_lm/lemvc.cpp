@@ -766,6 +766,7 @@ bool LEM::clbkLoadVC (int id)
 		oapiVCSetNeighbours(LMVIEW_CBLEFT, LMVIEW_DSKY, LMVIEW_RDVZWIN, LMVIEW_LPD);
 		InVC = true;
 		InPanel = false;
+		oapiCameraSetAperture(30*RAD);
 		SetView();
 		SetLMMeshVis();
 		SetCOAS();

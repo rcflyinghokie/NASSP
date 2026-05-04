@@ -76,9 +76,11 @@
 
 #ifdef _OPENORBITER
 #include <gcCoreAPI.h>
+#include "DrawAPi.h"
 #else
 #include <gcConst.h>
-#endif
+#include "Sketchpad2.h"	// Sketchpad2 is for superimposing tests in O16Beta. In OO we use the DrawAPi.h
+#endif // _OPENORBITER
 
 class MCC;
 class IU;
@@ -300,6 +302,24 @@ typedef struct {
 	double InjectorFlange1TempF;
 	double InjectorFlange2TempF;
 } SPSStatus;
+
+// Some defines for the VC Optics
+// Order of meshgroups and textures
+#define CMVC_SCT_EYEPIECE	0
+#define CMVC_SXT_EYEPIECE	1
+#define CMVC_OPTICS_DSKY	2
+#define CMVC_OPTICS_P122	3
+#define CMVC_OPTICS_CLKPNTS	4
+#define CMVC_SXT_CUSTOM_CAM	5
+#define CMVC_SCT_RETICLE	6
+#define CMVC_SXT_RETICLE	7
+
+#define NUM_MSHGRPS	8
+#define NUM_RTCL	2
+#define FIRSTMSHGRP	0
+#define LASTMSHGRP	5
+#define FIRSTRTCL	6
+#define LASTRTCL	7
 
 // Vesim input IDs
 #define CSM_AXIS_INPUT_RHC_R        1
@@ -623,7 +643,8 @@ public:
 		SRF_VC_ABORT,
 		SRF_VC_OPTICS_DSKY,
 		SRF_VC_OPTICS_P122,
-		SRF_VC_OPTICS_DUALVIEW_RETICLE,
+		SRF_VC_OPTICS_CUSTOMCAM,
+		SRF_VC_4DSKY_LEB,
 
 		//
 		// NSURF MUST BE THE LAST ENTRY HERE. PUT ANY NEW SURFACE IDS ABOVE THIS LINE
@@ -929,6 +950,8 @@ public:
 	// For hiding the Optics Panel122 and DSKY
 	bool ViewOpticsPanels;
 	bool OpticsVCDualView = false;
+	DWORD VCOpticsRetAlpha = 0x80FFFFFF; // Semitransparent CustomCamera
+
 	//
 	// General functions that handle calls from Orbiter.
 	//
@@ -4433,14 +4456,9 @@ protected:
 	void SetVCLighting(UINT meshidx, int material, int EmissionMode, double state, int cnt);
 #endif
 
-//	CAMERAHANDLE hFDAICam = NULL;
-//	SURFHANDLE srfFDAICamTexture;
-//	SURFHANDLE hFDAISurf;
-	CAMERAHANDLE hOpticsEarthReticleCam = NULL;
-	SURFHANDLE srfhOpticsEarthReticleCamTexture;
-	SURFHANDLE hOpticsDualViewReticleSurf;
+	CAMERAHANDLE hOpticsCustomCam = NULL;
+	SURFHANDLE srfOpticsCustomCam;
 
-//	void InitFDAICustomCamera(void);
 	void UpdateOpticsCustomCam(VECTOR3, VECTOR3, VECTOR3);
 	
 	//
