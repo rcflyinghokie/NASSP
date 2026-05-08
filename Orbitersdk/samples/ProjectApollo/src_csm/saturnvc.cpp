@@ -648,6 +648,10 @@ void Saturn::InitVC()
 
 	srfOpticsCustomCam = oapiCreateSurfaceEx(2048, 2048, OAPISURFACE_TEXTURE | OAPISURFACE_RENDERTARGET | OAPISURFACE_SKETCHPAD | OAPISURFACE_NOMIPMAPS | OAPISURFACE_ALPHA | OAPISURFACE_RENDER3D);
 
+#ifndef _OPENORBITER
+	oapiSetTexture(GetDevMesh(vis, hCMVCOpticsidx), 5, srfOpticsCustomCam);
+#endif
+
 	// Set Colour Key
 
 	oapiSetSurfaceColourKey(srf[SRF_VC_DIGITALDISP], ck);
@@ -926,6 +930,7 @@ bool Saturn::clbkLoadVC (int id)
 		return true;
 
 	case SATVIEW_OPTICS_SCT:
+		CMVCOpticsInitP122Switches();
 		HideMeshGroup(hCMVCOpticsidx, CMVC_SCT_EYEPIECE,	false);
 		HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_EYEPIECE,	true);
 		HideMeshGroup(hCMVCOpticsidx, CMVC_OPTICS_DSKY,		!ViewOpticsPanels);
@@ -948,6 +953,7 @@ bool Saturn::clbkLoadVC (int id)
 		return true;
 
 	case SATVIEW_OPTICS_SXT:
+		CMVCOpticsInitP122Switches();
 		HideMeshGroup(hCMVCOpticsidx, CMVC_SCT_EYEPIECE,	true);	
 		HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_EYEPIECE,	false);	
 		HideMeshGroup(hCMVCOpticsidx, CMVC_OPTICS_DSKY,		!ViewOpticsPanels);
@@ -1816,7 +1822,7 @@ void Saturn::RegisterActiveAreas() {
 	oapiVCRegisterArea(AID_VC_OPTICS_HIDEPANELS, PANEL_REDRAW_NEVER, PANEL_MOUSE_DOWN);
 
 	oapiVCRegisterArea(AID_VC_OPTICS_DUALVIEW, PANEL_REDRAW_NEVER, PANEL_MOUSE_DOWN);
-	oapiVCRegisterArea(AID_VC_OPTICS_RETICLE_PLUS, PANEL_REDRAW_NEVER, PANEL_MOUSE_DOWN);
+	oapiVCRegisterArea(AID_VC_OPTICS_RETICLE_PLUS, PANEL_REDRAW_NEVER, PANEL_MOUSE_PRESSED);
 	oapiVCRegisterArea(AID_VC_OPTICS_RETICLE_MINUS, PANEL_REDRAW_NEVER, PANEL_MOUSE_DOWN);
 }
 
@@ -2078,22 +2084,12 @@ bool Saturn::clbkVCMouseEvent (int id, int event, VECTOR3 &p)
 		return true;
 
 	case AID_VC_OPTICS_RETICLE_PLUS:
-		{
-		DWORD currentAlpha = (VCOpticsRetAlpha >> 24);
-		if (currentAlpha <= 242) currentAlpha += 13; 
-		else currentAlpha = 255;
-		VCOpticsRetAlpha = (currentAlpha << 24) | 0xFFFFFF;
+		VCOpticsRetAlpha = (std::clamp((int)(VCOpticsRetAlpha >> 24) + 1, 1, 255) << 24) | 0xFFFFFF;
 		return true;
-		}
 
 	case AID_VC_OPTICS_RETICLE_MINUS:
-		{
-		DWORD currentAlpha = (VCOpticsRetAlpha >> 24);
-		if (currentAlpha >= 13) currentAlpha -= 13;
-		else currentAlpha = 1;
-		VCOpticsRetAlpha = (currentAlpha << 24) | 0xFFFFFF;
+		VCOpticsRetAlpha = (std::clamp((int)(VCOpticsRetAlpha >> 24) - 1, 1, 255) << 24) | 0xFFFFFF;
 		return true;
-		}
 	}
 
 	// Now check if any switch in the optics panels is clicked
@@ -2464,9 +2460,10 @@ bool Saturn::clbkVCMouseEvent (int id, int event, VECTOR3 &p)
 				if (event == PANEL_MOUSE_LBDOWN){
 					oapiBlt(srf[SRF_VC_OPTICS_DSKY], srf[SRF_VC_OPTICS_DSKY], 431, 517, 380, 770, 76, 76);
 					dsky2.ProceedPressed();
-				}
-				else
+				}else{
 					oapiBlt(srf[SRF_VC_OPTICS_DSKY], srf[SRF_VC_OPTICS_DSKY], 431, 517, 380, 998, 76, 76);
+					dsky2.ProceedReleased();
+				}
 				return true;
 
 			case AID_VC_OPTICS_DSKY_KEYREL:
@@ -6896,19 +6893,18 @@ void Saturn::UpdateCMVCOptics() {
 			oapiReleaseBrush(pBrush);
 			oapiReleaseSketchpad(skp);
 		}
-#else
-		oapi::Sketchpad3* skp = (oapi::Sketchpad3*)oapiGetSketchpad(srfOpticsCustomCam);
-		if (skp) {
-			DWORD alphaColor = 0x80FFFFFF;
-			oapi::Brush* pBrush = oapiCreateBrush(alphaColor);
-			skp->SetBrush(pBrush);
-			skp->SetBlendState(SKPBS_COPY_ALPHA);
-			skp->Rectangle(0, 0, 2048, 2048);
-			oapiReleaseBrush(pBrush);
-			oapiReleaseSketchpad(skp);
-		}
-#endif // _OPENORBITER
 		oapiBlt(srf[SRF_VC_OPTICS_CUSTOMCAM], srfOpticsCustomCam, 0, 0, 0, 0, 2048, 2048);
+#else
+//		oapi::Sketchpad3* skp = (oapi::Sketchpad3*)oapiGetSketchpad(srfOpticsCustomCam);
+//		if (skp) {
+//			oapi::Brush* pBrush = oapiCreateBrush(VCOpticsRetAlpha);
+//			skp->SetBrush(pBrush);
+//			skp->SetBlendState(SKPBS_COPY_ALPHA);
+//			skp->Rectangle(0, 0, 2048, 2048);
+//			oapiReleaseBrush(pBrush);
+//			oapiReleaseSketchpad(skp);
+//		}
+#endif // _OPENORBITER
 	}
 
 	// Make copies of the mesh Vertices 
@@ -6958,6 +6954,7 @@ void Saturn::UpdateCMVCOptics() {
 		FovSaveVCOptics = 30*RAD;
 
 		initVCOptics = false;
+		CMVCOpticsInitP122Switches();	// Sync Panel 122 switches with the VC.
 	}
 
 	// Rotate Reticle
@@ -7021,4 +7018,35 @@ void Saturn::UpdateCMVCOptics() {
 	oapiBlt(srf[SRF_VC_OPTICS_DSKY], srf[SRF_VC_4DSKY_LEB], 0, 0, 1754, 2107, 606, 400);
 
 	SetMeshVisibilityMode(hCMVCOpticsidx, MESHVIS_VC);
+}
+
+void Saturn::CMVCOpticsInitP122Switches(){
+	if (OpticsZeroSwitch.IsUp())
+		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 120, 120, 0, 1408, 144, 240);
+	else
+		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 120, 120, 144, 1408, 144, 240);
+
+	if (ControllerTelescopeTrunnionSwitch.IsUp())
+		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 442, 120, 288, 1408, 144, 240);
+	else if (ControllerTelescopeTrunnionSwitch.IsCenter())
+		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 442, 120, 432, 1408, 144, 240);
+	else
+		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 442, 120, 576, 1408, 144, 240);
+
+	if (ControllerCouplingSwitch.IsUp())
+		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 708, 122, 720, 1408, 144, 240);
+	else
+		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 708, 122, 864, 1408, 144, 240);
+
+	if (OpticsModeSwitch.IsUp())
+		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 450, 462, 1008, 1408, 144, 240);
+	else
+		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 450, 462, 1152, 1408, 144, 240);
+
+	if (ControllerSpeedSwitch.IsUp())
+		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 716, 462, 1296, 1408, 144, 240);
+	else if (ControllerSpeedSwitch.IsCenter())
+		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 716, 462, 1440, 1408, 144, 240);
+	else
+		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 716, 462, 1584, 1408, 144, 240);
 }
