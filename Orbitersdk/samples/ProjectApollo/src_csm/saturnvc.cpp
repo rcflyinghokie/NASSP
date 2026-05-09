@@ -648,12 +648,7 @@ void Saturn::InitVC()
 
 	srfOpticsCustomCam = oapiCreateSurfaceEx(2048, 2048, OAPISURFACE_TEXTURE | OAPISURFACE_RENDERTARGET | OAPISURFACE_SKETCHPAD | OAPISURFACE_NOMIPMAPS | OAPISURFACE_ALPHA | OAPISURFACE_RENDER3D);
 
-#ifndef _OPENORBITER
-	oapiSetTexture(GetDevMesh(vis, hCMVCOpticsidx), 5, srfOpticsCustomCam);
-#endif
-
 	// Set Colour Key
-
 	oapiSetSurfaceColourKey(srf[SRF_VC_DIGITALDISP], ck);
 	oapiSetSurfaceColourKey(srf[SRF_VC_DIGITALDISP2], ck);
 	oapiSetSurfaceColourKey(srf[SRF_VC_DSKYDISP], ck);
@@ -6893,18 +6888,18 @@ void Saturn::UpdateCMVCOptics() {
 			oapiReleaseBrush(pBrush);
 			oapiReleaseSketchpad(skp);
 		}
-		oapiBlt(srf[SRF_VC_OPTICS_CUSTOMCAM], srfOpticsCustomCam, 0, 0, 0, 0, 2048, 2048);
 #else
-//		oapi::Sketchpad3* skp = (oapi::Sketchpad3*)oapiGetSketchpad(srfOpticsCustomCam);
-//		if (skp) {
-//			oapi::Brush* pBrush = oapiCreateBrush(VCOpticsRetAlpha);
-//			skp->SetBrush(pBrush);
-//			skp->SetBlendState(SKPBS_COPY_ALPHA);
-//			skp->Rectangle(0, 0, 2048, 2048);
-//			oapiReleaseBrush(pBrush);
-//			oapiReleaseSketchpad(skp);
-//		}
+		oapi::Sketchpad3* skp = (oapi::Sketchpad3*)oapiGetSketchpad(srfOpticsCustomCam);
+		if (skp) {
+			oapi::Brush* pBrush = oapiCreateBrush(VCOpticsRetAlpha);
+			skp->SetBrush(pBrush);
+			skp->SetBlendState(SKPBS_COPY_ALPHA);
+			skp->Rectangle(0, 0, 2048, 2048);
+			oapiReleaseBrush(pBrush);
+			oapiReleaseSketchpad(skp);
+		}
 #endif // _OPENORBITER
+		oapiBlt(srf[SRF_VC_OPTICS_CUSTOMCAM], srfOpticsCustomCam, 0, 0, 0, 0, 2048, 2048);
 	}
 
 	// Make copies of the mesh Vertices 

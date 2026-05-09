@@ -611,6 +611,13 @@ void LEM::SetView() {
 			v.z += -vcFreeCamy;
 			break;
 
+		case LMVIEW_OPTICS:
+			v =_V(0, 1.13, 1.26) + ofs;
+			SetCameraDefaultDirection(_V(cos(45.0*RAD)*sin(optics.OpticsShaft*PI / 3.0), sin(45.0*RAD), cos(45.0*RAD)*cos(optics.OpticsShaft*PI / 3.0)), optics.OpticsShaft*PI / 3.0);
+			v.x += vcFreeCamx;
+			v.y += vcFreeCamz;
+			v.z += -vcFreeCamy;
+			break;
 		}
 
 		v.x += ViewOffsetx;
@@ -855,7 +862,7 @@ bool LEM::clbkLoadVC (int id)
 		viewpos = LMVIEW_AOT;
 		SetCameraRotationRange(0.8 * PI, 0.8 * PI, 0.4 * PI, 0.4 * PI);
 		SetCameraMovement(_V(0.05, 0.0, -0.05), 0, 90 * RAD, _V(-0.1, 0.0, 0.0), 0, 0, _V(0.1, 0.0, 0.0), 0, 0);
-		oapiVCSetNeighbours(-1, -1, -1, LMVIEW_DSKY);
+		oapiVCSetNeighbours(-1, -1,LMVIEW_OPTICS, LMVIEW_DSKY);
 		InVC = true;
 		InPanel = false;
 		SetView();
@@ -930,6 +937,21 @@ bool LEM::clbkLoadVC (int id)
 		SetCameraRotationRange(0.8 * PI, 0.8 * PI, 0.4 * PI, 0.4 * PI);
 		SetCameraMovement(_V(0.0, 0.0, 0.0), 0, 0, _V(0.0, 0.0, 0.0), 0, 0, _V(0.0, 0.0, 0.0), 0, 0);
 		oapiVCSetNeighbours(-1, -1, -1, LMVIEW_CDR);
+		InVC = true;
+		InPanel = false;
+		SetView();
+		SetLMMeshVis();
+		SetCOAS();
+
+		RegisterActiveAreas();
+
+		return true;
+
+	case LMVIEW_OPTICS:
+		viewpos = LMVIEW_OPTICS;
+		SetCameraRotationRange(0.8 * PI, 0.8 * PI, 0.4 * PI, 0.4 * PI);
+		SetCameraMovement(_V(0.0, 0.0, 0.0), 0, 0, _V(0.0, 0.0, 0.0), 0, 0, _V(0.0, 0.0, 0.0), 0, 0);
+		oapiVCSetNeighbours(-1, -1, -1, LMVIEW_AOT);
 		InVC = true;
 		InPanel = false;
 		SetView();
@@ -1943,6 +1965,7 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 
 	case AID_LMVC_POINTINGARROW:
 		UpdatePointingArrow();
+		UpdateLMVCOptics();
 		SetVCCueCardsArrows();
 		return true;
 
@@ -4025,3 +4048,145 @@ void LEM::HideMeshGroup(int meshidx, int meshgrp, bool hide){
 	}
 }
 
+//
+// This is the CMVC Optics stuff.
+//
+void LEM::UpdateLMVCOptics() {
+	// If we are not in Optics view, Sextant or Teleskop, hide the VC Optics mesh
+	if (viewpos != LMVIEW_OPTICS) {
+		SetMeshVisibilityMode(hLMVCOpticsidx, MESHVIS_NEVER);
+		return;
+	}
+
+	// If we are not in VC return
+	if (!vcmesh) return;
+	if (oapiGetFocusInterface() != this) return;
+
+	// struct for storing the original vertices from the mesh
+	// We do this to avoid rounding errors in every calculation.
+	// For this, we use the original vertices from the mesh.
+	typedef struct OpticsMeshGroup{
+		std::vector<VECTOR3> data;
+		std::vector<VECTOR3> datanew;		// This is for storing the transformed vertices, not the original ones.
+		std::vector<NTVERTEX> vertexdata;	// This is for sending the transformad vertices to D3D9 client
+		int vtxcnt;
+		MESHGROUP *mshgrp;
+		GROUPREQUESTSPEC grp;
+		int ordernr;
+	} OpticsMeshGroup;
+
+	static bool initVCOptics = true;
+	static VECTOR3  camPosGlobal, camPos, camDir, globVesselPos, camPointing, ofs, opticsPos, final_vertex;
+	static double cos_a, sin_a;
+	static DEVMESHHANDLE hOpticsMesh;
+	static GROUPEDITSPEC ges;
+	double aperture = 1.0;
+	SetCameraDefaultDirection(_V(cos(45.0*RAD)*sin(optics.OpticsShaft*PI / 3.0), sin(45.0*RAD), cos(45.0*RAD)*cos(optics.OpticsShaft*PI / 3.0)), optics.OpticsShaft*PI / 3.0);
+			
+	// Get Camera position. Is set in SATVIEW_OPTICS_SCT and SATVIEW_OPTICS_SXT
+	// Global camera position and direction
+	oapiCameraGlobalPos(&camPosGlobal);
+	oapiCameraGlobalDir(&camDir);
+
+	MATRIX3 mRot;
+	oapiCameraRotationMatrix(&mRot);
+	// The up vector is the second column of the camera matrix.
+	VECTOR3 gCamUp = _V(mRot.m12, mRot.m22, mRot.m32);
+
+	// Transformation into the local ship system
+	Global2Local(camPosGlobal, camPos);
+
+	VECTOR3 lCamDir, lCamUp, lCamRight;
+
+	// Local viewing direction
+	VECTOR3 gTarget = camPosGlobal + camDir;
+	VECTOR3 lTarget;
+	Global2Local(gTarget, lTarget);
+	lCamDir = lTarget - camPos;
+	normalise(lCamDir);
+
+	// Local Up Vector
+	VECTOR3 gUpPos = camPosGlobal + gCamUp;
+	VECTOR3 lUpPos;
+	Global2Local(gUpPos, lUpPos);
+	lCamUp = lUpPos - camPos;
+	normalise(lCamUp);
+
+	// Local Right Vector
+	lCamRight = crossp(lCamUp, lCamDir);
+	normalise(lCamRight);
+
+	GetMeshOffset(vcidx, ofs);
+	hOpticsMesh = GetDevMesh(vis, hLMVCOpticsidx);
+
+	static std::vector<OpticsMeshGroup> lmvcOptics(3);	// 2 meshgroups from mesh + 1 extra for the reticles
+
+	// Make copies of the mesh Vertices 
+	if (initVCOptics) {
+		MESHHANDLE hLVOptics = GetMeshTemplate(hLMVCOpticsidx);		// handle for VC Optics Mesh
+
+		// Order of mesh groups. This must be the same in the mesh
+		// 0 = Eyepiece, 1 = Reticle
+		for (int i = 0; i < 2; i++){
+			lmvcOptics[i].mshgrp = oapiMeshGroup(hLVOptics, i);
+			lmvcOptics[i].vtxcnt = lmvcOptics[i].mshgrp->nVtx;
+			lmvcOptics[i].data.resize(lmvcOptics[i].vtxcnt);
+			lmvcOptics[i].datanew.resize(lmvcOptics[i].vtxcnt);
+			if (i == 1 ) lmvcOptics[i+1].data.resize(lmvcOptics[i].vtxcnt);
+
+			for (int j = 0; j < lmvcOptics[i].vtxcnt; j++) {
+				lmvcOptics[i].data[j] = _V(lmvcOptics[i].mshgrp->Vtx[j].x, lmvcOptics[i].mshgrp->Vtx[j].y, lmvcOptics[i].mshgrp->Vtx[j].z);
+
+				// We copy all the original mesh reticle vertices from the positions 1 of the mesh array to positions 2
+				// This is needed for the rotation of the reticles. We need only the vertices. 
+				if (i == 1 ) lmvcOptics[i+1].data[j] = _V(lmvcOptics[i].mshgrp->Vtx[j].x, lmvcOptics[i].mshgrp->Vtx[j].y, lmvcOptics[i].mshgrp->Vtx[j].z);
+			}
+			lmvcOptics[i].vertexdata.resize(lmvcOptics[i].vtxcnt);
+			lmvcOptics[i].grp.Vtx = lmvcOptics[i].vertexdata.data();
+			lmvcOptics[i].grp.nVtx = lmvcOptics[i].vtxcnt;
+		}
+
+//		FovSaveVCOptics = 30*RAD;
+
+		initVCOptics = false;
+	}
+
+	// Rotate Reticle
+	if (!oapiGetPause()) {				// *** oapiGetPause() maybe unnecessary ***
+		cos_a = std::cos(optics.OpticsReticle);
+		sin_a = std::sin(optics.OpticsReticle);
+		for (int i = 0; i < lmvcOptics[1].vtxcnt; i++) {
+			lmvcOptics[1].data[i].x = lmvcOptics[1+1].data[i].x * cos_a - lmvcOptics[1+1].data[i].y * sin_a;
+			lmvcOptics[1].data[i].y = lmvcOptics[1+1].data[i].x * sin_a + lmvcOptics[1+1].data[i].y * cos_a;
+			lmvcOptics[1].data[i].z = lmvcOptics[1+1].data[i].z;
+		}
+	}
+
+	// Position the Opticsmesh 15cm in front of the camera
+	opticsPos = camPos - ofs + (lCamDir * 0.15);
+
+	ges.flags = GRPEDIT_VTXCRD;
+	ges.vIdx = 0;
+
+	// Transform Vertices
+	for (int i = 0; i < 2; i++){
+		for (int j = 0; j < lmvcOptics[i].vtxcnt; j++) {
+			VECTOR3 vScaled = lmvcOptics[i].data[j] * aperture;	// Multiply by the aperture to compensate for the field of view
+
+			final_vertex = lCamRight * vScaled.x + lCamUp * vScaled.y + lCamDir * vScaled.z;
+			final_vertex += opticsPos;
+			lmvcOptics[i].datanew[j] = final_vertex;
+
+			lmvcOptics[i].grp.Vtx[j].x = (float)final_vertex.x;
+			lmvcOptics[i].grp.Vtx[j].y = (float)final_vertex.y;
+			lmvcOptics[i].grp.Vtx[j].z = (float)final_vertex.z;
+		}
+
+		// Send Mesh-Update to Orbiter
+		ges.nVtx = lmvcOptics[i].vtxcnt;
+		ges.Vtx = lmvcOptics[i].grp.Vtx;
+		oapiEditMeshGroup(hOpticsMesh, i, &ges);
+	}
+
+	SetMeshVisibilityMode(hLMVCOpticsidx, MESHVIS_VC);
+}
