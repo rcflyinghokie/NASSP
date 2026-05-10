@@ -6787,12 +6787,9 @@ void Saturn::UpdateCMVCOptics() {
 			
 	if (viewpos == SATVIEW_OPTICS_SXT) { // Sextant
 		if (!OpticsVCDualView){
-	//		if (optics.SextDualView && optics.SextDVLOSTog){
 			if (optics.SextDualView){
-	//			setVCCameraLOS(optics.SextShaft, 0.0);
 				setVCCameraLOS(optics.SextShaft, optics.SextTrunion);
 				HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_CUSTOM_CAM, false);
-	//			HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_RETICLE, true);
 			}
 			else
 			{
@@ -6823,8 +6820,7 @@ void Saturn::UpdateCMVCOptics() {
 //		aperture = 1;	
 	}
 
-	// Get Camera position. Is set in SATVIEW_OPTICS_SCT and SATVIEW_OPTICS_SXT
-	// Global camera position and direction
+	// Get global camera position and direction. Is set in SATVIEW_OPTICS_SCT and SATVIEW_OPTICS_SXT
 	oapiCameraGlobalPos(&camPosGlobal);
 	oapiCameraGlobalDir(&camDir);
 
@@ -6876,29 +6872,20 @@ void Saturn::UpdateCMVCOptics() {
 
 		UpdateOpticsCustomCam(camPos, localDir, localUp);
 
-		// Superimposing using Sketchpad3(O16Beta) or DrawAPi(OO)
-		// but unfortunately it doesn't work in 016Beta
+		// Superimposing using Sketchpad3 in Orbiter2016Beta or Sketchpad(DrawAPi) in OpenOrbiter
 #ifdef _OPENORBITER
 		oapi::Sketchpad* skp = oapiGetSketchpad(srfOpticsCustomCam);
-		if (skp) {
-			oapi::Brush* pBrush = oapiCreateBrush(VCOpticsRetAlpha);
-			skp->SetBrush(pBrush);
-			skp->SetBlendState(Sketchpad::COPY_ALPHA);
-			skp->Rectangle(0, 0, 2048, 2048);
-			oapiReleaseBrush(pBrush);
-			oapiReleaseSketchpad(skp);
-		}
 #else
 		oapi::Sketchpad3* skp = (oapi::Sketchpad3*)oapiGetSketchpad(srfOpticsCustomCam);
+#endif // _OPENORBITER
 		if (skp) {
 			oapi::Brush* pBrush = oapiCreateBrush(VCOpticsRetAlpha);
 			skp->SetBrush(pBrush);
-			skp->SetBlendState(SKPBS_COPY_ALPHA);
+			skp->SetBlendState(SKP_COPY_ALPHA);
 			skp->Rectangle(0, 0, 2048, 2048);
 			oapiReleaseBrush(pBrush);
 			oapiReleaseSketchpad(skp);
 		}
-#endif // _OPENORBITER
 		oapiBlt(srf[SRF_VC_OPTICS_CUSTOMCAM], srfOpticsCustomCam, 0, 0, 0, 0, 2048, 2048);
 	}
 

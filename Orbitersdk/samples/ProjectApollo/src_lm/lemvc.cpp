@@ -614,6 +614,7 @@ void LEM::SetView() {
 		case LMVIEW_OPTICS:
 			v =_V(0, 1.13, 1.26) + ofs;
 			SetCameraDefaultDirection(_V(cos(45.0*RAD)*sin(optics.OpticsShaft*PI / 3.0), sin(45.0*RAD), cos(45.0*RAD)*cos(optics.OpticsShaft*PI / 3.0)), optics.OpticsShaft*PI / 3.0);
+			oapiCameraSetCockpitDir(0, 0);
 			v.x += vcFreeCamx;
 			v.y += vcFreeCamz;
 			v.z += -vcFreeCamy;
@@ -703,7 +704,7 @@ void LEM::SetView() {
 		oapiGetViewportSize(&w, &h);
 		oapiCameraSetAperture(atan(tan(RAD*30.0)*min(h / 1080.0, 1.0)));
 	}
-	else if (InPanel && PanelId == LMPANEL_AOTZOOM) {
+	else if ((InPanel && PanelId == LMPANEL_AOTZOOM)|| (InVC && viewpos == LMVIEW_OPTICS)) {
 		// if this is the first time we've been here, save the current FOV
 		if (InFOV) {
 			SaveFOV = oapiCameraAperture();
@@ -952,6 +953,7 @@ bool LEM::clbkLoadVC (int id)
 		SetCameraRotationRange(0.8 * PI, 0.8 * PI, 0.4 * PI, 0.4 * PI);
 		SetCameraMovement(_V(0.0, 0.0, 0.0), 0, 0, _V(0.0, 0.0, 0.0), 0, 0, _V(0.0, 0.0, 0.0), 0, 0);
 		oapiVCSetNeighbours(-1, -1, -1, LMVIEW_AOT);
+		oapiCameraSetAperture(30.0*RAD);
 		InVC = true;
 		InPanel = false;
 		SetView();
@@ -4055,6 +4057,7 @@ void LEM::UpdateLMVCOptics() {
 	// If we are not in Optics view, Sextant or Teleskop, hide the VC Optics mesh
 	if (viewpos != LMVIEW_OPTICS) {
 		SetMeshVisibilityMode(hLMVCOpticsidx, MESHVIS_NEVER);
+		SetMeshVisibilityMode(ascidx, MESHVIS_EXTERNAL);
 		return;
 	}
 
@@ -4082,9 +4085,9 @@ void LEM::UpdateLMVCOptics() {
 	static GROUPEDITSPEC ges;
 	double aperture = 1.0;
 	SetCameraDefaultDirection(_V(cos(45.0*RAD)*sin(optics.OpticsShaft*PI / 3.0), sin(45.0*RAD), cos(45.0*RAD)*cos(optics.OpticsShaft*PI / 3.0)), optics.OpticsShaft*PI / 3.0);
+	oapiCameraSetCockpitDir(0, 0);
 			
-	// Get Camera position. Is set in SATVIEW_OPTICS_SCT and SATVIEW_OPTICS_SXT
-	// Global camera position and direction
+	// Get global camera position and direction
 	oapiCameraGlobalPos(&camPosGlobal);
 	oapiCameraGlobalDir(&camDir);
 
@@ -4189,4 +4192,5 @@ void LEM::UpdateLMVCOptics() {
 	}
 
 	SetMeshVisibilityMode(hLMVCOpticsidx, MESHVIS_VC);
+	SetMeshVisibilityMode(ascidx, MESHVIS_VC);
 }
