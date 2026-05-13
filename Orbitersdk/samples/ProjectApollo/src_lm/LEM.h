@@ -561,6 +561,7 @@ public:
 
 	void SetAnimations(double);
 	void UpdatePointingArrow();
+	void UpdateLMVCOptics();
 
 	//
 	// VISHANDLE
@@ -1648,6 +1649,7 @@ protected:
 #define LMVIEW_ECS		 9
 #define LMVIEW_ECS2		 10
 #define LMVIEW_RDVZWIN   11
+#define LMVIEW_OPTICS    12
 
 #define VIEWANGLE 30
 
@@ -1742,6 +1744,7 @@ protected:
 	UINT windowshadesidx;
 	UINT xpointershadesidx;
 	UINT hLMPointingArrowidx;
+	int hLMVCOpticsidx;
 	int LMvccuecardsarrowsidx;
 
 	DEVMESHHANDLE probes;
@@ -2186,6 +2189,7 @@ extern MESHHANDLE hLMDescentNoLeg;
 extern MESHHANDLE hLMAscent;
 extern MESHHANDLE hLMVC;
 extern MESHHANDLE hLMPointingArrow;
+extern MESHHANDLE hLMVCOptics;
 extern MESHHANDLE hLMCueCardsArrows;
 
 extern void LEMLoadMeshes();

@@ -1350,6 +1350,7 @@ public:
 
 	void UpdatePointingArrow();
 	void UpdateCMVCOptics();
+	void CMVCOpticsInitP122Switches();
 	void UpdateSideHatchClickspots(const VECTOR3 &ofs);
 	void UpdateForwardHatchClickspots(const VECTOR3 &ofs);
 
