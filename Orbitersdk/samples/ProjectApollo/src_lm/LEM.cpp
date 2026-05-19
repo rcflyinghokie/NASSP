@@ -381,7 +381,7 @@ LEM::LEM(OBJHANDLE hObj, int fmodel) : Payload (hObj, fmodel),
 	ED28VBusB("ED-28V-BusB", NULL),
 	ACBusA("AC-Bus-A",NULL),
 	ACBusB("AC-Bus-B",NULL),
-	dsky(soundlib, agc, 015),
+	dsky(soundlib, agc, Panelsdk, 015),
 	LandingGearPyros("Landing-Gear-Pyros", Panelsdk),
 	LandingGearPyrosFeeder("Landing-Gear-Pyros-Feeder", Panelsdk),
 	StagingBoltsPyros("Staging-Bolts-Pyros", Panelsdk),
@@ -453,12 +453,14 @@ LEM::LEM(OBJHANDLE hObj, int fmodel) : Payload (hObj, fmodel),
 	lm_vhf_to_csm_csm_connector(this, &VHF),
 	cdi(this),
 	AOTLampFeeder("AOT-Lamp-Feeder", Panelsdk),
-	NumDockCompLTGFeeder("Num-Dock-Comp-LTG-Feeder", Panelsdk),
 	DescentECAMainFeeder("Descent-ECA-Main-Feeder", Panelsdk),
 	DescentECAContFeeder("Descent-ECA-Cont-Feeder", Panelsdk),
 	AscentECAMainFeeder("Ascent-ECA-Main-Feeder", Panelsdk),
 	AscentECAContFeeder("Ascent-ECA-Cont-Feeder", Panelsdk),
 	vesim(&cbLMVesim, this),
+	lca(Panelsdk),
+	ComponentLights(Panelsdk),
+
 	Failures(this),
 	CueCards(vcidx, this, 25)
 {
@@ -539,6 +541,7 @@ void LEM::Init()
 
 	CMPowerToCDRBusRelayA = false;
 	CMPowerToCDRBusRelayB = false;
+	SLADockingLightPressureSwitchRelay = false;
 
 	InVC = false;
 	InPanel = false;
@@ -1742,6 +1745,15 @@ void LEM::PostLoadSetup(bool define_anims)
 	case THREEPOSSWITCH_DOWN:    // OFF	
 		break;                   // Handled later
 	}
+	// Lighting wiring
+	if (SLADockingLightPressureSwitchRelay)
+	{
+		DockingLightSwitchConnector.WireTo(&CDR_LTG_ANUN_DOCK_COMPNT_CB);
+	}
+	else
+	{
+		DockingLightSwitchConnector.WireTo(NULL);
+	}
 
 	HRESULT         hr;
 	// Having read the configuration file, set up DirectX...	
@@ -1940,6 +1952,11 @@ void LEM::GetScenarioState(FILEHANDLE scn, void *vs)
 			sscanf(line + 21, "%d", &i);
 			CMPowerToCDRBusRelayB = (i == 1);
 		}
+		else if (!strnicmp(line, "SLADockingLightPressureSwitchRelay", 34)) {
+			int i;
+			sscanf(line + 34, "%d", &i);
+			SLADockingLightPressureSwitchRelay = (i == 1);
+			}
 		else if (!strnicmp(line, "UNIFIEDSBAND", 12)) {
 			SBand.LoadState(line);
 		}
@@ -1951,9 +1968,6 @@ void LEM::GetScenarioState(FILEHANDLE scn, void *vs)
 		}
 		else if (!strnicmp(line, "DATARECORDER", 12)) {
 			DSEA.LoadState(line);
-			}
-		else if (!strnicmp(line, "LCA_START", sizeof("LCA_START"))) {
-			lca.LoadState(scn,"LCA_END");
 		}
 		else if (!strnicmp(line, CWEA_START_STRING, sizeof(CWEA_START_STRING))) {
 			CWEA.LoadState(scn, CWEA_END_STRING);
@@ -2507,15 +2521,13 @@ void LEM::clbkSaveState (FILEHANDLE scn)
 	drb.SaveState(scn);
 	papiWriteScenario_bool(scn, "CMPowerToCDRBusRelayA", CMPowerToCDRBusRelayA);
 	papiWriteScenario_bool(scn, "CMPowerToCDRBusRelayB", CMPowerToCDRBusRelayB);
+	papiWriteScenario_bool(scn, "SLADockingLightPressureSwitchRelay", SLADockingLightPressureSwitchRelay);
 
 	// Save COMM
 	SBand.SaveState(scn);
 	SBandSteerable.SaveState(scn);
 	VHF.SaveState(scn);
 	DSEA.SaveState(scn);
-
-	// Save Lighting
-	lca.SaveState(scn, "LCA_START", "LCA_END");
 
 	// Save CWEA
 	CWEA.SaveState(scn, CWEA_START_STRING, CWEA_END_STRING);

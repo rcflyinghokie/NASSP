@@ -5665,6 +5665,62 @@ void DSKYPushSwitch::DoDrawSwitch(SURFHANDLE DrawSurface) {
 	}
 }
 
+RotVariableVoltageTransformer::RotVariableVoltageTransformer(char* i_name, double MinVolt, double MaxVolt, bool DCAC) : VariableVoltageTransformer(i_name, MinVolt, MaxVolt, DCAC)
+{
+	rotary = NULL;
+}
+
+void RotVariableVoltageTransformer::Init(ContinuousSwitch* rot)
+{
+	rotary = rot;
+}
+
+double RotVariableVoltageTransformer::GetValue()
+{
+	if (rotary) return rotary->GetOutput();
+	else return 0.0;
+}
+
+RotVoltageTransformerOverride::RotVoltageTransformerOverride(char* i_name, double MinVolt, double MaxVolt, bool DCAC) : RotVariableVoltageTransformer(i_name, MinVolt, MaxVolt, DCAC)
+{
+	OverrideSwitch = NULL;
+}
+
+void RotVoltageTransformerOverride::Init(ContinuousSwitch* rot, ToggleSwitch* ovrdsw)
+{
+	RotVariableVoltageTransformer::Init(rot);
+
+	OverrideSwitch = ovrdsw;
+}
+
+void RotVoltageTransformerOverride::UpdateFlow(double dt)
+{
+	if (SRC)
+	{
+		// If override switch is up, pass through input voltage without change. Otherwise use rotational switch control.
+		if (OverrideSwitch->IsUp())
+		{
+			Volts = SRC->Voltage();
+		}
+		else
+		{
+			double DesVolts = min_output_voltage + (max_output_voltage - min_output_voltage) * GetValue();
+			Volts = min(SRC->Voltage(), DesVolts);
+		}
+	}
+	else
+	{
+		Volts = 0.0;
+	}
+
+	if (Volts > 0.0) {
+		Amperes = (power_load / Volts);
+	}
+
+	last_power_load = power_load;
+	power_load = 0.0;
+}
+
 PanelGroup::~PanelGroup()
 {
 	while (!panels.empty()) {
