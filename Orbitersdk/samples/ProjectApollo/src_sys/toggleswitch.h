@@ -1901,6 +1901,30 @@ protected:
 	virtual void DoDrawSwitch(SURFHANDLE DrawSurface);
 };
 
+// Variable voltage transformer using a rotational switch as control
+class RotVariableVoltageTransformer : public VariableVoltageTransformer
+{
+public:
+	RotVariableVoltageTransformer(char* i_name, double MinVolt, double MaxVolt, bool DCAC = false);
+	virtual void Init(ContinuousSwitch* rot);
+
+	double GetValue();
+protected:
+	ContinuousSwitch* rotary;
+};
+
+// Variable voltage transformer using a rotational switch as control and a toggle switch as override
+class RotVoltageTransformerOverride : public RotVariableVoltageTransformer
+{
+public:
+	RotVoltageTransformerOverride(char* i_name, double MinVolt, double MaxVolt, bool DCAC = false);
+	void Init(ContinuousSwitch* rot, ToggleSwitch* ovrdsw);
+
+	void UpdateFlow(double dt);
+protected:
+	ToggleSwitch* OverrideSwitch;
+};
+
 ///
 /// This is going to become the core of the panel callback system.  It follows a standard
 /// functor model.  This allows each switch to call into the appropriate system rather than
