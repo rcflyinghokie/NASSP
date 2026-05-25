@@ -1218,15 +1218,6 @@ LEM_LCA::LEM_LCA(PanelSDK& p) :
 {
 	lem = NULL;
 	LCAHeat = 0;
-
-	p.AddElectrical(&CDR_Bus_28V_6V_Converter, false);
-	p.AddElectrical(&LMP_Bus_28V_6V_Converter, false);
-	p.AddElectrical(&Fixed_5_5VDC_Output, false);
-	p.AddElectrical(&Fixed_6VDC_Output, false);
-	p.AddElectrical(&Variable_2_5VDC_Output, false);
-
-	p.AddElectrical(&Num_Override_20_110VAC_Output, false);
-	p.AddElectrical(&Int_Override_15_75VAC_Output, false);
 }
 
 void LEM_LCA::Init(LEM *l, e_object *cdrcb, e_object *lmpcb, e_object *acnumcb, e_object *acintcb, h_HeatLoad *lca_h)
@@ -1404,7 +1395,7 @@ void LEM_FloodLights::Init(LEM *l, e_object *flood_cb, ThreePosSwitch *flood_sw,
 
 bool LEM_FloodLights::IsPowered()
 {
-	if (FloodCB->Voltage() > SP_MIN_DCVOLTAGE) {
+	if (FloodCB->Voltage() > 1.8) { //1.8 VDC turn on limit
 		return true;
 	}
 	return false;
@@ -1420,38 +1411,38 @@ bool LEM_FloodLights::IsHatchOpen()
 
 double LEM_FloodLights::GetLMPRotaryVoltage()
 {
-	if (IsPowered() && (IsHatchOpen() || FloodSwitch->GetState() == THREEPOSSWITCH_UP))
+	if (IsPowered() && (IsHatchOpen() || FloodSwitch->GetState() != THREEPOSSWITCH_CENTER))
 	{
 		return LMPRotary->GetOutput() * FloodCB->Voltage();
-	}
-	else if (IsPowered() && FloodSwitch->GetState() == THREEPOSSWITCH_DOWN)
-	{
-		return FloodCB->Voltage();
 	}
 	return 0.0;
 }
 
 double LEM_FloodLights::GetLMPOutput() //Used to light LMP floods
 {
-	return GetLMPRotaryVoltage() / 28.0;
+	if (GetLMPRotaryVoltage() > 1.8) //1.8 VDC turn on limit
+	{
+		return GetLMPRotaryVoltage() / 28.0;
+	}
+	return 0.0;
 }
 
 double LEM_FloodLights::GetCDRRotaryVoltage()
 {
-	if (IsPowered() && (IsHatchOpen() || FloodSwitch->GetState() == THREEPOSSWITCH_UP))
+	if (IsPowered() && (IsHatchOpen() || FloodSwitch->GetState() != THREEPOSSWITCH_CENTER))
 	{
 		return CDRRotary->GetOutput() * FloodCB->Voltage();
-	}
-	else if (IsPowered() && FloodSwitch->GetState() == THREEPOSSWITCH_DOWN)
-	{
-		return FloodCB->Voltage();
 	}
 	return 0.0;
 }
 
 double LEM_FloodLights::GetCDROutput() //Used to light CDR floods
 {
-	return GetCDRRotaryVoltage() / 28.0;
+	if (GetCDRRotaryVoltage() > 1.8) //1.8 VDC turn on limit
+	{
+		return GetCDRRotaryVoltage() / 28.0;
+	}
+	return 0.0;
 }
 
 double LEM_FloodLights::GetSideOutput() //Can be used to light Panel 11, 14, 16 floods
@@ -1603,8 +1594,6 @@ LEM_ComponentLights::LEM_ComponentLights(PanelSDK& p) :
 	FixedPower = NULL;
 	CDR_Feed = NULL;
 	LMP_Feed = NULL;
-
-	p.AddElectrical(&Feeder_6VDC_Output, false);
 
 	NoTrack = false;
 	CO2 = false;

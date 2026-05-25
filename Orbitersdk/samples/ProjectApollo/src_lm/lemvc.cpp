@@ -1823,8 +1823,8 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 		// MAT_LIGHT changes the Brightness of the Material
 		// MAT_EMISSION changes the Brightness of the Material controlled by its _emis Texture
 		SetVCLighting(vcidx, FloodLights_LMVC, MAT_LIGHT, floodRotaryValue, NUM_ELEMENTS(FloodLights_LMVC));
-		floodLight_Left->SetIntensity(FloodLights.GetCDROutput()); // Need to add side panel floods
-		floodLight_Right->SetIntensity(FloodLights.GetLMPOutput()); // Need to add side panel floods
+		floodLight_Left->SetIntensity(FloodLights.GetCDROutput() + (FloodLights.GetSideOutput() * 0.25)); // Need to add actual side panel floods
+		floodLight_Right->SetIntensity(FloodLights.GetLMPOutput() + (FloodLights.GetSideOutput() * 0.25)); // Need to add actual side panel floods
 		SetVCLighting(vcidx, IntegralLights_LMVC, MAT_EMISSION, lca.GetIntegralOutput() + floodRotaryValue, NUM_ELEMENTS(IntegralLights_LMVC));
 		SetVCLighting(vcidx, IntegralLights_LMVC_NoTex, MAT_LIGHT, lca.GetIntegralOutput() + floodRotaryValue, NUM_ELEMENTS(IntegralLights_LMVC_NoTex));
 
