@@ -2606,27 +2606,28 @@ bool LEM_RadarTape::SignalFailure() //TODO: Light needs to flash progressively f
 		}
 	}
 	else {
-		if (lem->ModeSelSwitch.IsUp()) // LR
+		if (lem->crossPointerLeft.GetModeSelectLRRelay()) // LR
 		{
 			if (lem->LR.IsRangeDataGood() == false || lem->LR.IsVelocityDataGood() == false || lem->LR.GetAltitude() == 0.0 || abs(lem->LR.GetAltitudeRate()) < 1.524) //5 ft/s = 1.524 m/s
 			{
 				return true; //Needs to check landing radar rate and range signals and return true if not present
 			}
 		}
-		else if (lem->ModeSelSwitch.IsCenter()) //PGNS
-		{
-			if ((LGCaltUpdateTime + 1.0) < oapiGetSimTime() || (LGCaltRateUpdateTime + 1.0) < oapiGetSimTime() || lgc_alt == 0.0 || abs(lgc_altrate) < 1.524) //5 ft/s = 1.524 m/s
-			{
-				return true; //Needs to check LGC rate and range signals and return true if not present
-			}
-		}
-		else //AGS
+		else if (lem->crossPointerLeft.GetModeSelectAGSRelay()) //AGS
 		{
 			if ((AGSaltUpdateTime + 1.0) < oapiGetSimTime() || (AGSaltRateUpdateTime + 1.0) < oapiGetSimTime() || ags_alt == 0.0 || abs(ags_altrate) < 1.524) //5 ft/s = 1.524 m/s
 			{
 				return true; //Needs to check AGS rate and range signals and return true if not present
 			}
 		}
+		else //PGNS
+		{
+			if ((LGCaltUpdateTime + 1.0) < oapiGetSimTime() || (LGCaltRateUpdateTime + 1.0) < oapiGetSimTime() || lgc_alt == 0.0 || abs(lgc_altrate) < 1.524) //5 ft/s = 1.524 m/s
+			{
+				return true; //Needs to check LGC rate and range signals and return true if not present
+			}
+		}
+
 		return false;
 	}
 	return false;
@@ -2675,18 +2676,18 @@ void LEM_RadarTape::Timestep(double simdt) {
 		return;
 	}
 
-	if (lem->AltRngMonSwitch.GetState()==TOGGLESWITCH_UP) 
+	if (lem->AltRngMonSwitch.GetState() == TOGGLESWITCH_UP)
 	{
 		setRange(GetRRRange());
 		setRate(GetRRRate());
 	}
-	else 
+	else
 	{
-		if (lem->ModeSelSwitch.IsUp()) // LR
+		if (lem->crossPointerLeft.GetModeSelectLRRelay()) //LR
 		{
 			if (lem->LR.IsRangeDataGood())
 			{
-				setRange(GetLRAltitude() * cos(Radians(15))); // Tapemeter slant range bias, multiplied by cos 15 deg
+				setRange(GetLRAltitude() * cos(Radians(15))); //Tapemeter slant range bias, multiplied by cos 15 deg
 			}
 			else
 			{
@@ -2696,7 +2697,7 @@ void LEM_RadarTape::Timestep(double simdt) {
 			{
 				if ((lem->pMission->GetLMNumber()) == 3)
 				{
-					setRate(lem->LR.GetAltitudeRate() * 1.82388664); // Generates seen rate signal from LM-3 \\FIXME: This is a hack, need to investigate why LM-3 generates this rate signal. LM-4 might need similar adjustment later
+					setRate(lem->LR.GetAltitudeRate() * 1.82388664); //Generates seen rate signal from LM-3 \\FIXME: This is a hack, need to investigate why LM-3 generates this rate signal. LM-4 might need similar adjustment later
 				}
 				else
 				{
@@ -2704,15 +2705,15 @@ void LEM_RadarTape::Timestep(double simdt) {
 				}
 			}
 		}
-		else if (lem->ModeSelSwitch.IsCenter()) //PGNS
-		{
-			setRange(lgc_alt);
-			setRate(lgc_altrate);
-		}
-		else //AGS
+		else if (lem->crossPointerLeft.GetModeSelectAGSRelay()) //AGS
 		{
 			setRange(ags_alt);
 			setRate(ags_altrate);
+		}
+		else //PGNS
+		{
+			setRange(lgc_alt);
+			setRate(lgc_altrate);
 		}
 	}
 
@@ -2977,7 +2978,8 @@ CrossPointer::CrossPointer()
 	xtrans = ytrans = NULL;
 
 	RateErrorRelay = false;
-	ModeSelectRelay = false;
+	ModeSelectLRRelay = false;
+	ModeSelectAGSRelay = false;
 
 	ElevRt = false;
 	AzRt = false;
@@ -3012,7 +3014,7 @@ bool CrossPointer::IsPowered()
 
 void CrossPointer::RelayBox()
 {
-	//Rate Error Monitor CDR (9K32B) and LMP (9K30B)
+	//Rate Error Monitor CDR (9K32) and LMP (9K30)
 	if (IsPowered() && rateErrMonSw->IsDown())
 	{
 		RateErrorRelay = true;
@@ -3022,14 +3024,24 @@ void CrossPointer::RelayBox()
 		RateErrorRelay = false;
 	}
 
-	//Mode Select Switch (9K34A)
-	if (lem->CDR_XPTR_CB.IsPowered() && lem->ModeSelSwitch.IsDown())
+	//Mode Select Switch LR (9K29)
+	if (lem->CDR_XPTR_CB.IsPowered() && lem->ModeSelSwitch.IsUp())
 	{
-		ModeSelectRelay = true;
+		ModeSelectLRRelay = true;
 	}
 	else
 	{
-		ModeSelectRelay = false;
+		ModeSelectLRRelay = false;
+	}
+
+	//Mode Select Switch AGS (9K34)
+	if (lem->CDR_XPTR_CB.IsPowered() && lem->ModeSelSwitch.IsDown())
+	{
+		ModeSelectAGSRelay = true;
+	}
+	else
+	{
+		ModeSelectAGSRelay = false;
 	}
 }
 
@@ -3047,6 +3059,9 @@ double CrossPointer::GetDimmableLightsLit()
 
 void CrossPointer::Timestep(double simdt)
 {
+	//Relays
+	RelayBox();
+
 	if (!IsPowered())
 	{
 		vel_x = 0;
@@ -3072,7 +3087,7 @@ void CrossPointer::Timestep(double simdt)
 	{
 		double vx = 0, vy = 0;
 
-		if (lem->ModeSelSwitch.IsUp()) //Landing Radar
+		if (ModeSelectLRRelay) //Landing Radar
 		{
 			if (lem->LR.IsVelocityDataGood())
 			{
@@ -3091,7 +3106,12 @@ void CrossPointer::Timestep(double simdt)
 				vy = 0;
 			}
 		}
-		else if (lem->ModeSelSwitch.IsCenter())	//PGNS
+		else if (ModeSelectAGSRelay) //AGS
+		{
+			vx = 0;
+			vy = lem->aea.GetLateralVelocity() * 0.3048;
+		}
+		else	//PGNS
 		{
 			lgc_forward = 0.5571 * (double)lem->scdu.GetAltOutput();
 			lgc_lateral = 0.5571 * (double)lem->tcdu.GetAltOutput();
@@ -3105,11 +3125,7 @@ void CrossPointer::Timestep(double simdt)
 				vy *= -1.0;
 			}
 		}
-		else //AGS
-		{
-			vx = 0;
-			vy = lem->aea.GetLateralVelocity() * 0.3048;
-		}
+
 		vel_x = callout_x = vx / 0.3048 * 20.0 / 200.0;
 		vel_y = callout_y = vy / 0.3048 * 20.0 / 200.0;
 	}
@@ -3123,9 +3139,6 @@ void CrossPointer::Timestep(double simdt)
 
 	//The output scaling is 20 for full deflection.
 	UpdateDisplayValues(simdt);
-
-	//Lighting
-	RelayBox();
 
 	if (!RateErrorRelay)
 	{
@@ -3151,7 +3164,7 @@ void CrossPointer::Timestep(double simdt)
 		AzRt = false;
 		LatVel = true;
 
-		if (!ModeSelectRelay)
+		if (!ModeSelectAGSRelay)
 		{
 			FwdVel = true;
 		}

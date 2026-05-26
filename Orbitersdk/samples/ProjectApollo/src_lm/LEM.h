@@ -186,7 +186,8 @@ public:
 	void RelayBox();
 
 	bool GetRateErrorRelay() { return RateErrorRelay; };
-	bool GetModeSelectRelay() { return ModeSelectRelay; };
+	bool GetModeSelectLRRelay() { return ModeSelectLRRelay; };
+	bool GetModeSelectAGSRelay() { return ModeSelectAGSRelay; };
 
 	bool GetElevRtLt() { return ElevRt; };
 	bool GetAzRtLt() { return AzRt; };
@@ -208,7 +209,8 @@ protected:
 	double callout_x, callout_y;
 
 	bool RateErrorRelay;
-	bool ModeSelectRelay;
+	bool ModeSelectLRRelay;
+	bool ModeSelectAGSRelay;
 	bool ElevRt;
 	bool AzRt;
 	bool LatVel;
