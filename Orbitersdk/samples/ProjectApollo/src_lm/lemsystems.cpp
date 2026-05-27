@@ -2649,7 +2649,7 @@ Panel2RelayBox::~Panel2RelayBox()
 
 }
 
-void Panel2RelayBox::Init(LEM *l, e_object *cdr_xptr_src, e_object *lmp_xptr_src, e_object *lmp_fdai_src, ToggleSwitch *rateErrMonLMP, ModeSelectSwitch *ModeSel)
+void Panel2RelayBox::Init(LEM *l, e_object *cdr_xptr_src, e_object *lmp_xptr_src, e_object *lmp_fdai_src, ToggleSwitch *rateErrMonLMP, ThreePosSwitch *ModeSel)
 {
 	lem = l;
 	cdr_xptr_cb = cdr_xptr_src;
@@ -2708,6 +2708,9 @@ void Panel2RelayBox::Timestep(double simdt)
 		K34A = false;
 		K34B = false;
 	}
+
+	//Set/Reset LGC Input Bit
+	lem->agc.SetInputChannelBit(030, DisplayInertialData, !K29A && !K34A);
 }
 
 void Panel2RelayBox::LoadState(char *line)

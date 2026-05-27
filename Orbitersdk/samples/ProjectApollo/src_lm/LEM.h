@@ -141,7 +141,7 @@ class Panel2RelayBox
 public:
 	Panel2RelayBox();
 	virtual ~Panel2RelayBox();
-	void Init(LEM *l, e_object *cdr_xptr_src, e_object *lmp_xptr_src, e_object *lmp_fdai_src, ToggleSwitch *rateErrMonLMP, ModeSelectSwitch *ModeSel);
+	void Init(LEM *l, e_object *cdr_xptr_src, e_object *lmp_xptr_src, e_object *lmp_fdai_src, ToggleSwitch *rateErrMonLMP, ThreePosSwitch *ModeSel);
 	void SaveState(FILEHANDLE scn, char *start_str);
 	void LoadState(char *line);
 	void Timestep(double simdt);
@@ -161,7 +161,7 @@ protected:
 	e_object *lmp_xptr_cb;
 	e_object *lmp_fdai_cb;
 	ToggleSwitch *LMPRateErrMonSw;
-	ModeSelectSwitch *ModeSelSw;
+	ThreePosSwitch *ModeSelSw;
 
 	bool K29A; //9K29A - Mode Select Landing Radar Relay A
 	bool K29B; //9K29B - Mode Select Landing Radar Relay B
@@ -944,7 +944,7 @@ protected:
 
 	SwitchRow GuidContSwitchRow;
 	ToggleSwitch GuidContSwitch;
-	ModeSelectSwitch ModeSelSwitch;
+	ThreePosSwitch ModeSelSwitch;
 	ToggleSwitch AltRngMonSwitch;
 
 	SwitchRow LeftMasterAlarmSwitchRow;
