@@ -116,7 +116,7 @@ public:
 	Panel1RelayBox();
 	virtual ~Panel1RelayBox();
 	void Init(LEM *l, e_object *thrust_src, e_object *cdr_xptr_src, ToggleSwitch *thrust, ToggleSwitch *rateErrMonCDR);
-	void SaveState(FILEHANDLE scn, char *start_str);
+	void SaveState(FILEHANDLE scn);
 	void LoadState(char *line);
 	void Timestep(double simdt);
 
@@ -142,7 +142,7 @@ public:
 	Panel2RelayBox();
 	virtual ~Panel2RelayBox();
 	void Init(LEM *l, e_object *cdr_xptr_src, e_object *lmp_xptr_src, e_object *lmp_fdai_src, ToggleSwitch *rateErrMonLMP, ThreePosSwitch *ModeSel);
-	void SaveState(FILEHANDLE scn, char *start_str);
+	void SaveState(FILEHANDLE scn);
 	void LoadState(char *line);
 	void Timestep(double simdt);
 

@@ -2611,18 +2611,18 @@ void Panel1RelayBox::Timestep(double simdt)
 void Panel1RelayBox::LoadState(char *line)
 {
 	int inttemp[3];
-	sscanf(line + 15, "%d %d %d", &inttemp[0], &inttemp[1], &inttemp[2]);
+	sscanf(line + 14, "%d %d %d", &inttemp[0], &inttemp[1], &inttemp[2]);
 	K28 = (inttemp[0] != 0);
 	K32A = (inttemp[1] != 0);
 	K32B = (inttemp[2] != 0);
 }
 
-void Panel1RelayBox::SaveState(FILEHANDLE scn, char *line_str)
+void Panel1RelayBox::SaveState(FILEHANDLE scn)
 {
 	char buffer[128];
 
 	sprintf(buffer, "%d %d %d", K28, K32A, K32B);
-	oapiWriteScenario_string(scn, line_str, buffer);
+	oapiWriteScenario_string(scn, "PANEL1RELAYBOX", buffer);
 }
 
 Panel2RelayBox::Panel2RelayBox()
@@ -2716,7 +2716,7 @@ void Panel2RelayBox::Timestep(double simdt)
 void Panel2RelayBox::LoadState(char *line)
 {
 	int inttemp[8];
-	sscanf(line + 15, "%d %d %d %d %d %d %d %d", &inttemp[0], &inttemp[1], &inttemp[2], &inttemp[3], &inttemp[4], &inttemp[5], &inttemp[6], &inttemp[7]);
+	sscanf(line + 14, "%d %d %d %d %d %d %d %d", &inttemp[0], &inttemp[1], &inttemp[2], &inttemp[3], &inttemp[4], &inttemp[5], &inttemp[6], &inttemp[7]);
 	K29A = (inttemp[0] != 0);
 	K29B = (inttemp[1] != 0);
 	K30A = (inttemp[2] != 0);
@@ -2727,12 +2727,12 @@ void Panel2RelayBox::LoadState(char *line)
 	K34B = (inttemp[7] != 0);
 }
 
-void Panel2RelayBox::SaveState(FILEHANDLE scn, char *line_str)
+void Panel2RelayBox::SaveState(FILEHANDLE scn)
 {
 	char buffer[128];
 
 	sprintf(buffer, "%d %d %d %d %d %d %d %d", K29A, K29B, K30A, K30B, K31A, K31B, K34A, K34B);
-	oapiWriteScenario_string(scn, line_str, buffer);
+	oapiWriteScenario_string(scn, "PANEL2RELAYBOX", buffer);
 }
 
 //Radar Tapemeter
