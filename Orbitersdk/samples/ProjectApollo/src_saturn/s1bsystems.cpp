@@ -310,6 +310,11 @@ SIBSystems::SIBSystems(VESSEL *v, THRUSTER_HANDLE *h1, PROPELLANT_HANDLE &h1prop
 	SCMUmb = NULL;
 }
 
+SIBSystems::~SIBSystems()
+{
+	DisconnectUmbilical();
+}
+
 void SIBSystems::SaveState(FILEHANDLE scn) {
 	oapiWriteLine(scn, SISYSTEMS_START_STRING);
 
@@ -739,11 +744,11 @@ double SIBSystems::GetSumThrust()
 	return thrust;
 }
 
-void SIBSystems::SetEngineFailed(int n)
+void SIBSystems::SetEngineFailed(int n, bool fail)
 {
 	if (n < 0 || n > 7) return;
 
-	h1engines[n]->SetFailed();
+	h1engines[n]->SetFailed(fail);
 }
 
 bool SIBSystems::GetEngineStop()
@@ -801,19 +806,18 @@ void SIBSystems::SwitchSelector(int channel)
 	}
 }
 
-void SIBSystems::ConnectUmbilical(SCMUmbilical *umb)
-{
-	SCMUmb = umb;
-}
-
 void SIBSystems::DisconnectUmbilical()
 {
-	SCMUmb = NULL;
+	if (SCMUmb)
+	{
+		SCMUmb->sib = NULL;
+		SCMUmb = NULL;
+	}
 }
 
 bool SIBSystems::IsUmbilicalConnected()
 {
-	if (SCMUmb && SCMUmb->IsUmbilicalConnected()) return true;
+	if (SCMUmb) return true;
 
 	return false;
 }

@@ -24,6 +24,7 @@
 
 #include "RF_calc.h"
 #include "paCBGmessageID.h"
+#include "timingequipment.h"
 
 /* PCM DOWN-TELEMETRY
 
@@ -194,7 +195,8 @@ public:
 	LM_VHF();
 	void Init(LEM *vessel, h_HeatLoad *vhfh);	       // Initialization
 	void Timestep(double simt);        // TimeStep
-	
+	void DefineAnimations(UINT idx);
+	void SetAnimation(double position);
 	void SystemTimestep(double simdt); // System Timestep
 	void LoadState(char *line);
 	void SaveState(FILEHANDLE scn);
@@ -235,9 +237,13 @@ public:
 
 	double RCVDinputPowRCVR_A; //Power received by transcever A in dBm
 	double RCVDinputPowRCVR_B;//Power received by transcever B in dBm
+
+	//Animations
+	UINT anim_VHF;
+
 };
 
-class LM_PCM
+class LM_PCM : public TimingEquipment
 {
 public:
 	LM_PCM();
@@ -246,7 +252,7 @@ public:
 	void Timestep(double simt);     // TimeStep
 	void SystemTimestep(double simdt);
 
-	bool TimingSignal();	//Geenerates 512khz timing signal
+	virtual bool TimingSignal();	//Geenerates 512khz timing signal
 
 	double last_update;				// simt of last update
 protected:
@@ -326,6 +332,7 @@ class LEM_SteerableAnt: public LM_SBandAntenna {
 public:
 	LEM_SteerableAnt();
 	void Init(LEM *s, h_Radiator *an, Boiler *anheat, h_HeatLoad *anthtld);
+	void AngleInit(int LMNumber);
 	void LoadState(char *line);
 	void SaveState(FILEHANDLE scn);
 	void Timestep(double simdt);
@@ -357,6 +364,7 @@ protected:
 	double	sband_proc_last[2];
 
 	bool moving;
+	double driverateratio;
 	double hpbw_factor;
 
 	const MATRIX3 NBSA = _M(cos(45.0*RAD), -sin(45.0*RAD), 0.0, sin(45.0*RAD), cos(45.0*RAD), 0.0, 0.0, 0.0, 1.0);
@@ -380,52 +388,36 @@ protected:
 	double hpbw_factor;			//Beamwidth factor
 };
 
+//Interface for Erectable Antenna
+class LM_ErectableAnt : public LM_SBandAntenna
+{
+public:
+	LM_ErectableAnt();
+	void Init(LEM *vessel);
+	void Timestep();
+
+	RFCALC_RFProperties GroundTransmitterRFProperties;
+protected:
+	LEM *lem;
+	double AntGain;
+	double AntWavelength;
+};
+
 ///
 /// LM DSE holds 5,400 inches of tape (4 tracks, 2.5 hours each at 0.6 inches/second, making 21,600 inches of recordable tape)
 ///
 class LM_DSEA : public e_object
 {
-	enum LM_DSEAState
-	{
-		STOPPED,			/// Tape is stopped
-		STARTING_RECORD,	/// Tape is accelerating to play speed
-		SLOWING_RECORD,		/// Tape is slowing to record speed
-		RECORDING,			/// Tape is recording
-		STOPPING,			/// Tape is stopping
-	};
-
 public:
 	LM_DSEA();
 	virtual ~LM_DSEA();
 
 	void Init(LEM *l, h_HeatLoad *dseht);	       // Initialization
-
-									   ///
-									   /// \brief Tape motion indicator.
-									   ///
 	bool TapeMotion();
-
-	///
-	/// \brief Stop tape playing.
-	///
-	void Stop();
-
-	///
-	/// \brief Start tape recording.
-	///
-	void Record();
-
-	bool RecordLogic();
-	bool IsSWPowered();
 	bool IsACPowered();
-	bool IsPCMPowered();
-	bool LMPVoiceXmit();
-	bool CDRVoiceXmit();
-	bool VoiceXmit();
-	bool ICSPTT();
-	bool VOXPTT();
+	bool TimingSignal();
+	void Timestep(double simdt);
 	void SystemTimestep(double simdt);
-	void Timestep(double simt, double simdt);
 
 	void LoadState(char *line);
 	void SaveState(FILEHANDLE scn);
@@ -433,10 +425,21 @@ public:
 protected:
 	LEM *lem;						    /// Ship we're installed in
 	h_HeatLoad *DSEHeat;				/// Heatload
-	double tapeSpeedInchesPerSecond;	/// Tape speed in inches per second.
-	double desiredTapeSpeed;			/// Desired tape speed in inches per second.
-	double tapeMotion;					/// Tape motion from 0.0 to 1.0.
-	LM_DSEAState state;					/// Tape state.
 
-	double lastEventTime;				/// Last event time.
+	double tapeSpeed;			/// Tape speed in inches per second.
+	double tapePosition;		/// Tape position.
+	double desiredTapeSpeed;	/// Desired tape speed in inches per second.
+	double motorDirection;		/// Tape motor direction, 1 for forward, -1 for reverse, 0 for stopped.
+	int trackNumber;				/// Tape track number (1-4) 
+
+	void tapeTrack();
+	bool CDRAudioRec();
+	bool LMPAudioRec();
+	bool LMPVoiceXmit();
+	bool CDRVoiceXmit();
+	bool CDRPTT();
+	bool LMPPTT();
+
+	bool FWD;
+	bool REV;
 };

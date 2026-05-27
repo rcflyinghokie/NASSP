@@ -37,7 +37,7 @@ public:
 	void SetEDSCutoff() { EDSCutoff = true; }
 	void SetGSECutoff() { GSECutoff = true; }
 	void SetThrusterDir(double beta_y, double beta_p);
-	void SetFailed() { EngineFailed = true; }
+	void SetFailed(bool fail) { EngineFailed = fail; }
 
 	bool GetThrustOK() { return ThrustOK; }
 	double GetThrustLevel() { return ThrustLevel; }
@@ -96,7 +96,7 @@ public:
 	void SetThrusterDir(int n, double beta_y, double beta_p);
 	void SwitchSelector(int channel);
 
-	void SetEngineFailed(int n);
+	void SetEngineFailed(int n, bool condition);
 
 	bool PropellantLowLevel();
 	void GetThrustOK(bool *ok);
@@ -106,14 +106,13 @@ public:
 
 	virtual bool GetEngineStop();
 
-	virtual void ConnectUmbilical(TSMUmbilical *umb);
-	virtual void DisconnectUmbilical();
-	bool IsUmbilicalConnected();
+	TSMUmbilical *TSMUmb;
 protected:
-
 	bool TripleVoting(bool vote1, bool vote2, bool vote3);
 	double GetSumThrust();
 	bool ESEGetSICThrustOKSimulate(int eng, int n);
+	void DisconnectUmbilical();
+	bool IsUmbilicalConnected();
 
 	VESSEL *vessel;
 	PROPELLANT_HANDLE &main_propellant;
@@ -140,6 +139,4 @@ protected:
 	bool PointLevelSensorArmed;
 
 	bool ThrustOK[15];
-
-	TSMUmbilical *TSMUmb;
 };

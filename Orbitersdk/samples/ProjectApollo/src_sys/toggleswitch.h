@@ -74,6 +74,9 @@
 #define TIME_UPDATE_MINUTES 1
 #define TIME_UPDATE_HOURS	2
 
+// Lowpass filter for gauges assumes 5tau ~~ minMaxTime.  All 5tau components can be globally scaled by GAUGE_LPF_SCALAR if relationship does not hold well. (higher->faster)
+#define GAUGE_LPF_SCALAR 1.5
+
 class SwitchRow;
 class PanelSwitchScenarioHandler;
 class PanelSwitchCallbackInterface;
@@ -227,11 +230,17 @@ public:
 	virtual void DefineVCAnimations(UINT vc_idx);
 	virtual const VECTOR3& GetDirection() const;
 	virtual const VECTOR3& GetReference() const;
+
+	/// Reference position in Virtual Cockpit for checklist
+	virtual VECTOR3 GetChecklistReference() const;
+
 	virtual void OnPostStep(double SimT, double DeltaT, double MJD) {}
+	virtual void OnPostCreation() {}
 
 	virtual void SetReference(const VECTOR3& ref);
 	virtual void SetReference(const VECTOR3& ref, const VECTOR3& dir);
 	virtual void SetDirection(const VECTOR3& _dir);
+	virtual void SetArrowOffset(const VECTOR3 & _off);
 	void SetInitialAnimState(double fState);
 	double InitialAnimState() const { return fInitialAnimState; };
 	
@@ -291,11 +300,16 @@ protected:
 	bool bHasAnimations;
 	bool bHasDirection;
 	bool bHasReference;
+	bool bHasMeshGroup;
 
 	double fInitialAnimState;
 
 	VECTOR3 reference;
 	VECTOR3 dir;
+
+	// reference is used in general for the arrow in the VC pointing to current active checklist switch
+	// If a different position is desired, this value can be set to make the arrow point to an offset position
+	VECTOR3 arrowoffset;
 
 	PanelSwitchItem *next;
 	PanelSwitchItem *nextForScenario;
@@ -766,18 +780,28 @@ protected:
 };
 
 ///
+/// A two-position switch which is pushed in/out rather than toggled up/down, but is toggle.
+/// \brief Two-position toggled push switch.
+/// \ingroup PanelItems
+///
+
+class ToggledPushSwitch : public SimplePushSwitch {
+public:
+	bool CheckMouseClick(int event, int mx, int my);
+	bool CheckMouseClickVC(int event, VECTOR3 &p);
+};
+
+///
 /// A two-position electrical circuit breaker switch which is pushed in and pulled out rather 
 /// than toggled up/down, and turns its electrical supply on and off as it does so.
 /// \brief Two-position circuit breaker switch.
 /// \ingroup PanelItems
 ///
-class CircuitBrakerSwitch: public SimplePushSwitch {
+class CircuitBrakerSwitch: public ToggledPushSwitch {
 
 public:
 	CircuitBrakerSwitch() { MaxAmps = 0.0; };
 
-	bool CheckMouseClick(int event, int mx, int my);
-	bool CheckMouseClickVC(int event, VECTOR3 &p);
 	void Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row, e_object *s = 0, double amps = 30.0);
 
 	double Voltage();
@@ -910,11 +934,6 @@ public:
 class CMCOpticsZeroSwitch : public ToggleSwitch {
 public:
 	void DoDrawSwitch(SURFHANDLE DrawSurface);
-};
-
-class ModeSelectSwitch : public AGCThreePoswitch {
-public:
-	virtual bool SwitchTo(int newState, bool dontspring = false);
 };
 
 class SwitchCover
@@ -1098,7 +1117,7 @@ public:
 	bool IsLit() { return lit; };
 
 	void DefineVCAnimations(UINT vc_idx);
-	void SetReference(const VECTOR3& _dir, const VECTOR3& coverref, const VECTOR3& _coverdir);
+	void SetReference(const VECTOR3& _dir, const VECTOR3& coverref, const VECTOR3& ref, const VECTOR3& _coverdir);
 	void DefineMeshGroup(UINT _grpIndex, UINT _coverGrpIndex);
 
 protected:
@@ -1172,6 +1191,7 @@ public:
 	virtual void Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultVal, double minVal, double maxVal);
 	virtual void Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row);
 
+	void SetInitValue(double defaultValue);
 	void DefineVCAnimations(UINT vc_idx);
 	void DefineMeshGroup(UINT _grpIndex);
 
@@ -1630,8 +1650,11 @@ public:
 	bool VCMouseEvent(int id, int event, VECTOR3 &p);
 	bool VCRedrawEvent(int id, int event, SURFHANDLE surf);
 	void OnPostStep(double SimT, double DeltaT, double MJD);
+	void OnPostCreation();
 	void AddSwitch(PanelSwitchItem *s, int area = -1);
 	void ClearSwitches();
+	PanelSwitchItem* PanelSwitchesVC::GetFlashingItem();
+
 protected:
 	std::vector<PanelSwitchItem*>SwitchList;
 	std::vector<int> SwitchArea;
@@ -1721,6 +1744,7 @@ protected:
 	oapi::Pen *Pen1;
 
 	void DrawNeedle (SURFHANDLE surf, int x, int y, double rad, double angle);
+	void DrawNeedle2(SURFHANDLE surf, int x, int y, double rad_1, double rad_2, double angle);
 
 	const double GetRotationRange() const;
 	double RotationRange;
@@ -1872,6 +1896,30 @@ protected:
 	virtual void DoDrawSwitch(SURFHANDLE DrawSurface);
 };
 
+// Variable voltage transformer using a rotational switch as control
+class RotVariableVoltageTransformer : public VariableVoltageTransformer
+{
+public:
+	RotVariableVoltageTransformer(char* i_name, double MinVolt, double MaxVolt, bool DCAC = false);
+	virtual void Init(ContinuousSwitch* rot);
+
+	double GetValue();
+protected:
+	ContinuousSwitch* rotary;
+};
+
+// Variable voltage transformer using a rotational switch as control and a toggle switch as override
+class RotVoltageTransformerOverride : public RotVariableVoltageTransformer
+{
+public:
+	RotVoltageTransformerOverride(char* i_name, double MinVolt, double MaxVolt, bool DCAC = false);
+	void Init(ContinuousSwitch* rot, ToggleSwitch* ovrdsw);
+
+	void UpdateFlow(double dt);
+protected:
+	ToggleSwitch* OverrideSwitch;
+};
+
 ///
 /// This is going to become the core of the panel callback system.  It follows a standard
 /// functor model.  This allows each switch to call into the appropriate system rather than
@@ -1924,4 +1972,36 @@ public:
 	virtual bool AddPanel(BasicPanel* pPanel, PanelSwitchScenarioHandler *PSH);
 private:
 	std::vector<BasicPanel*> panels;
+};
+
+//Class for generating the pointing arrow and circle in the Virtual Cockpit for checklist items
+class VCPointingArrow
+{
+public:
+	VCPointingArrow();
+	~VCPointingArrow();
+
+	void Init(VESSEL* v);
+
+	void Timestep(int PointingArrowidx, DEVMESHHANDLE hArrowMesh, const VECTOR3& ofs, const VECTOR3& activeSwitchPos);
+protected:
+	bool first;
+	MESHGROUP* arrow_group;
+	int arrowVertsCnt, circleVertsCnt;
+	VECTOR3* arrowData;
+	MESHGROUP* circle_group;
+	GROUPREQUESTSPEC arrow_grp, circle_grp;
+	VECTOR3* circleData;
+	VECTOR3* circleDataOrig;
+	double rotationangle, rad, cos_a, sin_a;
+	VECTOR3 camPosGlobal, camPos, camDir, globVesselPos, camPointing;
+	VECTOR3 arrowCurPos, circleCurPos;
+	VECTOR3 pointing_dir;
+	VECTOR3 rot_axis, circle_dir, rot_axis_circle, final_vertex;
+	double dot, angle;
+	MATRIX3 rotation, rotation_circle;
+	double dot_circle, angle_circle;
+	GROUPEDITSPEC ges;
+
+	VESSEL* vessel;
 };

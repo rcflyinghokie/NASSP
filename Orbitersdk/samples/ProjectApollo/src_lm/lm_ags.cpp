@@ -723,7 +723,7 @@ VECTOR3 LEM_AEA::GetTotalAttitude()
 
 VECTOR3 LEM_AEA::GetAttitudeError()
 {
-	if (lem->AGS_AC_CB.Voltage() < SP_MIN_ACVOLTAGE)
+	if (lem->atca.Get28VAC800HzSinglePhaseVoltage() < SP_MIN_DCVOLTAGE)
 	{
 		return _V(0, 0, 0);
 	}
@@ -970,8 +970,10 @@ void LEM_AEA::LoadState(FILEHANDLE scn,char *end_str)
 
 // Data Entry and Display Assembly
 
-LEM_DEDA::LEM_DEDA(LEM *lm, SoundLib &s,LEM_AEA &computer) :  lem(lm), soundlib(s), ags(computer)
+LEM_DEDA::LEM_DEDA(LEM *lm, SoundLib &s, LEM_AEA &computer) : lem(lm), soundlib(s), ags(computer)
 {
+	OpErrLtPower = NULL;
+	SegmentPower = NULL;
 	Reset();
 }
 
@@ -982,10 +984,12 @@ LEM_DEDA::~LEM_DEDA()
 	//
 }
 
-void LEM_DEDA::Init(e_object *powered)
+void LEM_DEDA::Init(e_object *powered, e_object *segmentlightpower, e_object *anunpower)
 
 {
 	WireTo(powered);
+	SegmentPower = segmentlightpower;
+	OpErrLtPower = anunpower;
 	Reset();
 	ResetKeyDown();
 	FirstTimeStep = true;
@@ -1066,7 +1070,7 @@ void LEM_DEDA::LoadState(FILEHANDLE scn,char *end_str){
 }
 
 bool LEM_DEDA::IsPowered()
-{ 
+{
 	if (Voltage() > 25.0)
 		return true;
 
@@ -1075,21 +1079,21 @@ bool LEM_DEDA::IsPowered()
 
 bool LEM_DEDA::HasAnnunPower()
 {
-	if (lem->lca.GetAnnunVoltage() > 2.25)
+	if (OpErrLtPower->Voltage() > 1.8)
 		return true;
 
 	return false;
 }
 bool LEM_DEDA::HasNumPower()
 {
-	if (lem->lca.GetNumericVoltage() > 25.0)
+	if (SegmentPower->Voltage() > 20.0)
 		return true;
 
 	return false;
 }
 bool LEM_DEDA::HasIntglPower()
 {
-	if (lem->lca.GetIntegralVoltage() > 20.0)
+	if (lem->lca.Int_Override_15_75VAC_Output.Voltage() > 15.0)
 		return true;
 
 	return false;
@@ -1105,7 +1109,6 @@ void LEM_DEDA::Reset()
 
 {
 	OprErrLight = false;
-	LightsLit = 0;
 	SegmentsLit = 0;
 	State = 0;
 
@@ -1150,7 +1153,7 @@ void LEM_DEDA::SystemTimestep(double simdt)
 {
 	if (!IsPowered())
 		return;
-	
+
 	// We will use a similar scan as the DSKY power consumption
 
 	// The DSKY power consumption is a little bit hard to figure out. According 
@@ -1165,8 +1168,11 @@ void LEM_DEDA::SystemTimestep(double simdt)
 	//
 
 	SegmentsLit = 0;
-	LightsLit = 0;
-	if (OprErrLit()) LightsLit++;
+	if (OprErrLit())
+	{
+		OpErrLtPower->DrawPower((OpErrLtPower->Voltage() / 5.0) * 0.6);
+	}
+
 	//
 	// Check the segments
 	//
@@ -1175,9 +1181,7 @@ void LEM_DEDA::SystemTimestep(double simdt)
 	SegmentsLit += SixDigitDisplaySegmentsLit(Data);
 
 	// 10 lights with together max. 6W, 184 segments with together max. 4W  
-	DrawPower((LightsLit * 0.6) + (SegmentsLit * 0.022));
-
-	//sprintf(oapiDebugString(), "DSKY %f", (LightsLit * 0.6) + (SegmentsLit * 0.022));
+	SegmentPower->DrawPower((SegmentPower->Voltage() / 115.0) * (SegmentsLit * 0.022));
 }
 
 int LEM_DEDA::ThreeDigitDisplaySegmentsLit(char *Str)
@@ -1196,7 +1200,7 @@ int LEM_DEDA::ThreeDigitDisplaySegmentsLit(char *Str)
 	}
 
 	if (Str[2] >= '0' && Str[2] <= '9') {
-		Curdigit = Str[1] - '0';
+		Curdigit = Str[2] - '0';
 		s += SegmentCount[Curdigit];
 	}
 	return s;
@@ -1205,8 +1209,8 @@ int LEM_DEDA::ThreeDigitDisplaySegmentsLit(char *Str)
 void LEM_DEDA::RenderThreeDigitDisplay(SURFHANDLE surf, SURFHANDLE digits, int dstx, int dsty, char *Str, int TexMul)
 
 {
-	const int DigitWidth = 19*TexMul;
-	const int DigitHeight = 21*TexMul;
+	const int DigitWidth = 21*TexMul;
+	const int DigitHeight = 23*TexMul;
 	int Curdigit;
 
 	if (Str[0] >= '0' && Str[0] <= '9') {
@@ -1216,12 +1220,12 @@ void LEM_DEDA::RenderThreeDigitDisplay(SURFHANDLE surf, SURFHANDLE digits, int d
 
 	if (Str[1] >= '0' && Str[1] <= '9') {
 		Curdigit = Str[1] - '0';
-		oapiBlt(surf, digits, dstx + 20*TexMul, dsty, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
+		oapiBlt(surf, digits, dstx + DigitWidth, dsty, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
 	}
 
 	if (Str[2] >= '0' && Str[2] <= '9') {
 		Curdigit = Str[2] - '0';
-		oapiBlt(surf, digits, dstx + 39*TexMul, dsty, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
+		oapiBlt(surf, digits, dstx + (DigitWidth * 2), dsty, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
 	}
 }
 
@@ -1247,25 +1251,22 @@ int LEM_DEDA::SixDigitDisplaySegmentsLit(char *Str)
 void LEM_DEDA::RenderSixDigitDisplay(SURFHANDLE surf, SURFHANDLE digits, int dstx, int dsty, char *Str, int TexMul)
 
 {
-	const int DigitWidth = 19*TexMul;
-	const int DigitHeight = 21*TexMul;
+	const int DigitWidth = 21*TexMul;
+	const int DigitHeight = 23*TexMul;
 	int	Curdigit;
 	int i;
 
 	if (Str[0] == '-') {
-		oapiBlt(surf, digits, dstx + 4*TexMul, dsty, 10 * DigitWidth, 0, DigitWidth, DigitHeight);
+		oapiBlt(surf, digits, dstx, dsty, 11 * DigitWidth, 0, DigitWidth, DigitHeight);
 	}
 	else if (Str[0] == '+') {
-		oapiBlt(surf, digits, dstx + 4*TexMul, dsty, 11 * DigitWidth, 0, DigitWidth, DigitHeight);
+		oapiBlt(surf, digits, dstx, dsty, 10 * DigitWidth, 0, DigitWidth, DigitHeight);
 	}
 
 	for (i = 1; i < 6; i++) {
 		if (Str[i] >= '0' && Str[i] <= '9') {
 			Curdigit = Str[i] - '0';
-			oapiBlt(surf, digits, dstx + ((DigitWidth + 1) * i) + 4, dsty, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
-		}
-		else {
-//			oapiBlt(surf, digits, dstx + (10*i), dsty, 440, 6, 10, 15);
+			oapiBlt(surf, digits, dstx + ((DigitWidth + 1) * i), dsty, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
 		}
 	}
 }

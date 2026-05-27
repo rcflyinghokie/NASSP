@@ -98,6 +98,7 @@ namespace mission {
 		bLMHasAscEngArmAssy = false;
 		bLMHasLegs = true;
 		bLMHasDeflectors = true;
+		bLMHasCask = true;
 		bCSMHasHGA = true;
 		bCSMHasVHFRanging = true;
 		strCMCVersion = "Artemis072";
@@ -111,6 +112,8 @@ namespace mission {
 		iCMtoLMPowerConnectionVersion = 0;
 		EmptySMCG = _V(914.5916, -6.6712, 12.2940); //Includes: empty SM and SLA ring, but no SM RCS
 		bHasRateAidedOptics = false;
+		bCSMUseDefaultCueCards = true;
+		bLMUseDefaultCueCards = true;
 
 		CM_IMUDriftRates = _M(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 		CM_PIPABias = _V(0.0, 0.0, 0.0);
@@ -123,6 +126,7 @@ namespace mission {
 		bCrossPointerShades = false;
 		iLMNumber = 5; //LM-5
 		bLMEventTimerReverseAtZero = false;
+		bApollo13Failures = false;
 		strCDRName = "CDR";
 		strCMPName = "CMP";
 		strLMPName = "LMP";
@@ -156,6 +160,31 @@ namespace mission {
 		AddCSMCueCard(8, "LMP_BOOST-ABORTS");
 		AddCSMCueCard(9, "LOI_LIMITS");
 		AddCSMCueCard(10, "CSM_ANTENNA_LOCATIONS");
+		AddLMCueCard(0, "A15LM_DPS_PROCEDURE");
+		AddLMCueCard(1, "A15LM_CDR_LMP_BUS_LOST");
+		AddLMCueCard(2, "A15LM_DPS_APS_RCS");
+		AddLMCueCard(3, "A15LM_DPS_ASCENT");
+		AddLMCueCard(4, "A15LM_FT_NM");
+		AddLMCueCard(5, "A15LM_ABORT_OPS_MANUAL_STAGE_A");
+		AddLMCueCard(5, "A15LM_ABORT_OPS_MANUAL_STAGE_B");
+		AddLMCueCard(6, "A15LM_ASCENT_MONITOR_CHART");
+		AddLMCueCard(6, "A15LM_DESCENT_H_vs_HDOT");
+		AddLMCueCard(7, "A15LM_DPS_BURN");
+		AddLMCueCard(7, "A15LM_NO_DPI_APS_BURN");
+		AddLMCueCard(7, "A15LM_MISSION_RULES_NOGO");
+		AddLMCueCard(7, "A15LM_ALARM_CODES");
+		AddLMCueCard(8, "A15LM_DPS_ABORT_INSERTION");
+		AddLMCueCard(8, "A15LM_STAGING");
+		AddLMCueCard(8, "A15LM_ABNORMAL_VEHICLE_DYNAMICS");
+		AddLMCueCard(8, "A15LM_LIGHT_MEANING_IMMEDIATE");
+		AddLMCueCard(9, "A15LM_DPS_PRE_SHe_PRESS_RNG");
+		AddLMCueCard(10, "A15LM_BUS_LOSS");
+		AddLMCueCard(11, "A15LM_DEDA_ADDRESSES");
+		AddLMCueCard(12, "A15LM_S_BAND_ANTENNA_ANGLES");
+		AddLMCueCard(13, "A15LM_LM_COMM_MODES");
+		AddLMCueCard(13, "A15LM_LOSS_OF_COMM");
+		//AddLMCueCard(0, "A15LM_COAS_BORESIGHT_LOG"); Backside card, skipped
+		//AddLMCueCard(17, "A15LM_CDR_WARNING_LIGHTS"); Unknown location
 	}
 
 	bool Mission::LoadMission(const int iMission)
@@ -183,6 +212,10 @@ namespace mission {
 		}
 
 		char line[256];
+
+		AdditionalGroundStations.clear();
+		GroundStationsPositions.clear();
+		GroundStationsActive.clear();
 
 		while (hFile.getline(line, sizeof line))
 		{
@@ -225,6 +258,10 @@ namespace mission {
 			else if (!_strnicmp(line, "LMHasDeflectors=", 16)) {
 				strncpy(buffer, line + 16, 255);
 				bLMHasDeflectors = !_strnicmp(buffer, "TRUE", 4);
+			}
+			else if (!_strnicmp(line, "LMHasCask=", 10)) {
+				strncpy(buffer, line + 10, 255);
+				bLMHasCask = !_strnicmp(buffer, "TRUE", 4);
 			}
 			else if (!_strnicmp(line, "CSMHasHGA=", 10)) {
 				strncpy(buffer, line + 10, 255);
@@ -291,6 +328,10 @@ namespace mission {
 				strncpy(buffer, line + 26, 255);
 				bLMEventTimerReverseAtZero = !_strnicmp(buffer, "TRUE", 4);
 			}
+			else if (!_strnicmp(line, "Apollo13Failures=", 17)) {
+				strncpy(buffer, line + 17, 255);
+				bApollo13Failures = !_strnicmp(buffer, "TRUE", 4);
+			}
 			else if (!_strnicmp(line, "CDRVesselName=", 14)) {
 				strncpy(buffer, line + 14, 255);
 				strCDRName.assign(buffer);
@@ -315,6 +356,16 @@ namespace mission {
 				strncpy(buffer, line + 12, 255);
 				strLMPSuitName.assign(buffer);
 			}
+			else if(!_strnicmp(line, "CSMDefaultCueCards=", 19)) {
+				strncpy(buffer, line + 19, 255);
+				bCSMUseDefaultCueCards = !_strnicmp(buffer, "TRUE", 4);
+				if (!bCSMUseDefaultCueCards) ClearCueCards(0);
+			}
+			else if (!_strnicmp(line, "LMDefaultCueCards=", 18)) {
+				strncpy(buffer, line + 18, 255);
+				bLMUseDefaultCueCards = !_strnicmp(buffer, "TRUE", 4);
+				if (!bLMUseDefaultCueCards) ClearCueCards(1);
+				}
 			else if (!_strnicmp(line, "CSMCueCard=", 11)) {
 				ReadCueCardLine(line + 11, 0);
 			}
@@ -411,6 +462,15 @@ namespace mission {
 			else if (!_strnicmp(line, "LMPIPASCALEZ=", 13)) {
 				sscanf(line + 13, "%lf", &LM_PIPAScale.z);
 			}
+			else if (!_strnicmp(line, "GroundStation=", 14)) {
+				ReadGroundStationLine(line + 14);
+			}
+			else if (!_strnicmp(line, "GroundStationPosition=", 22)) {
+				ReadGroundStationPostionLine(line + 22);
+			}
+			else if (!_strnicmp(line, "GroundStationActive=", 20)) {
+				ReadGroundStationActiveLine(line + 20);
+			}
 		}
 		hFile.close();
 
@@ -494,6 +554,11 @@ namespace mission {
 	bool Mission::LMHasDeflectors() const
 	{
 		return bLMHasDeflectors;
+	}
+
+	bool Mission::LMHasCask() const
+	{
+		return bLMHasCask;
 	}
 
 	bool Mission::CSMHasHGA() const
@@ -590,9 +655,14 @@ namespace mission {
 		return GetCueCards(CSMCueCards, counter, loc, meshname, ofs);
 	}
 
+	bool Mission::GetLMCueCards(unsigned &counter, unsigned &loc, std::string &meshname, VECTOR3 &ofs)
+	{
+		return GetCueCards(LMCueCards, counter, loc, meshname, ofs);
+	}
+
 	bool Mission::GetCueCards(const std::vector<CueCardConfig> &cue, unsigned &counter, unsigned &loc, std::string &meshname, VECTOR3 &ofs)
 	{
-		while (counter < CSMCueCards.size())
+		while (counter < cue.size())
 		{
 			if (cue[counter].meshname != "" && cue[counter].meshname != "None")
 			{
@@ -634,6 +704,18 @@ namespace mission {
 	void Mission::AddLMCueCard(unsigned location, std::string meshname, VECTOR3 ofs)
 	{
 		AddCueCard(1, location, meshname, ofs);
+	}
+
+	void Mission::ClearCueCards(int vehicle)
+	{
+		if (vehicle == 0)
+		{
+			CSMCueCards.clear();
+		}
+		else
+		{
+			LMCueCards.clear();
+		}
 	}
 
 	void Mission::UpdateTEPHEM0()
@@ -689,5 +771,67 @@ namespace mission {
 	bool Mission::IsLMEventTimerReversingAtZero() const
 	{
 		return bLMEventTimerReverseAtZero;
+	}
+
+	std::vector<GroundStationData> Mission::GetGroundStationData() const
+	{
+		return AdditionalGroundStations;
+	}
+
+	std::vector<GroundStationPosition> Mission::GetGroundStationPosition() const
+	{
+		return GroundStationsPositions;
+	}
+
+	std::vector<GroundStationActive> Mission::GetGroundStationActive() const
+	{
+		return GroundStationsActive;
+	}
+
+	void Mission::ReadGroundStationLine(char *line)
+	{
+		GroundStationData temp;
+
+		int itemp[3];
+
+		if (sscanf(line, "%d %s %s %lf %lf %d %d %d %d %d %d %d %d %d %d %d %d",
+			&temp.Num, temp.Name, temp.Code, &temp.Position[0], &temp.Position[1], &itemp[0], &temp.TrackingCaps, &temp.USBCaps, &temp.SBandAntenna, &temp.TelemetryCaps,
+			&temp.CommCaps, &itemp[1], &itemp[2], &temp.DownTlmCaps, &temp.UpTlmCaps, &temp.StationType, &temp.StationPurpose) == 17)
+		{
+			temp.Active = (itemp[0] != 0);
+			temp.HasRadar = (itemp[1] != 0);
+			temp.HasAcqAid = (itemp[2] != 0);
+
+			AdditionalGroundStations.push_back(temp);
+		}
+	}
+
+	void Mission::ReadGroundStationPostionLine(char *line)
+	{
+		GroundStationPosition temp;
+
+		if (sscanf(line, "%d %lf %lf", &temp.Num, &temp.Position[0], &temp.Position[1]) == 3)
+		{
+			GroundStationsPositions.push_back(temp);
+		}
+	}
+
+	void Mission::ReadGroundStationActiveLine(char *line)
+	{
+		GroundStationActive temp;
+
+		int itemp;
+
+		if (sscanf(line, "%d %d", &temp.Num, &itemp) == 2)
+		{
+			temp.Active = (itemp != 0);
+
+			GroundStationsActive.push_back(temp);
+		}
+	}
+
+	bool Mission::DoApollo13Failures() const
+	{
+		return bApollo13Failures;
 	}
 }

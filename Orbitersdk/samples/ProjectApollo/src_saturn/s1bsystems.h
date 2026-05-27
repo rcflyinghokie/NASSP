@@ -38,7 +38,7 @@ public:
 	void SetGSECutoff() { GSECutoff = true; }
 	void SetThrustNotOKCutoff() { ThrustNotOKCutoff = true; }
 	void SetThrusterDir(double beta_y, double beta_p);
-	void SetFailed() { EngineFailed = true; }
+	void SetFailed(bool fail) { EngineFailed = fail; }
 
 	bool GetThrustOK() { return ThrustOK; }
 	double GetThrustLevel() { return ThrustLevel; }
@@ -78,11 +78,12 @@ class SIBSystems
 {
 public:
 	SIBSystems(VESSEL *v, THRUSTER_HANDLE *h1, PROPELLANT_HANDLE &h1prop, Pyro &SIB_SIVB_Sep, Sound &LaunchS, Sound &SShutS);
+	~SIBSystems();
 	void Timestep(double misst, double simdt);
 	void SaveState(FILEHANDLE scn);
 	void LoadState(FILEHANDLE scn);
 
-	void SetEngineFailed(int n);
+	void SetEngineFailed(int n, bool fail);
 
 	virtual void SetEngineStart(int n);
 	void SwitchSelector(int channel);
@@ -108,12 +109,12 @@ public:
 	virtual bool GetEngineStop();
 	bool FireRetroRockets();
 
-	virtual void ConnectUmbilical(SCMUmbilical *umb);
-	virtual void DisconnectUmbilical();
-	bool IsUmbilicalConnected();
+	SCMUmbilical *SCMUmb;
 protected:
 	double GetSumThrust();
 	bool ESEGetSIBThrustOKSimulate(int eng, int n);
+	void DisconnectUmbilical();
+	bool IsUmbilicalConnected();
 
 	VESSEL *vessel;
 	PROPELLANT_HANDLE &main_propellant;
@@ -200,6 +201,4 @@ protected:
 	bool ThrustOK[24];
 
 	bool OutboardEnginesCutoffSignal;
-
-	SCMUmbilical *SCMUmb;
 };

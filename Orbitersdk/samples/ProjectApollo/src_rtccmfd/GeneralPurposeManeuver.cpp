@@ -24,6 +24,11 @@ See http://nassp.sourceforge.net/license/ for more details.
 #include "rtcc.h"
 #include "GeneralPurposeManeuver.h"
 
+GMPOpt::GMPOpt()
+{
+	OptApsid = true;
+}
+
 RTCCGeneralPurposeManeuverProcessor::RTCCGeneralPurposeManeuverProcessor(RTCC *r) : RTCCModule(r)
 {
 
@@ -40,15 +45,15 @@ int RTCCGeneralPurposeManeuverProcessor::PCMGPM(const GMPOpt &IOPT)
 	DetermineManeuverType();
 
 	//Coast to threshold time
-	EphemerisData sv1;
+	VehicleDataBlock sv1;
 	double TIG_GMT, dt1;
 
 	TIG_GMT = pRTCC->GMTfromGET(opt->TIG_GET);
-	dt1 = TIG_GMT - opt->sv_in.GMT;
-	sv1 = pRTCC->coast(opt->sv_in, dt1, opt->Weight, opt->Area, opt->KFactor, false);
+	dt1 = TIG_GMT - opt->sv_in.sv.GMT;
+	sv1 = pRTCC->coast(opt->sv_in, dt1);
 
 	//Convert to AEG
-	aeg = pRTCC->SVToAEG(sv1, opt->Area, opt->Weight, opt->KFactor);
+	aeg = pRTCC->SVToAEG(sv1.sv, sv1.Area, sv1.Weight, sv1.KFactor);
 
 	//Initialize AEG
 	pRTCC->PMMAEGS(aeg.Header, aeg.Data, aeg.Data);
@@ -63,7 +68,7 @@ int RTCCGeneralPurposeManeuverProcessor::PCMGPM(const GMPOpt &IOPT)
 		return 4;
 	}
 
-	if (sv1.RBI == BODY_EARTH)
+	if (sv1.sv.RBI == BODY_EARTH)
 	{
 		R_E = pRTCC->SystemParameters.MCECAP;
 		mu = OrbMech::mu_Earth;
@@ -460,7 +465,10 @@ void RTCCGeneralPurposeManeuverProcessor::PCGPMP()
 	if (ManeuverType == 0)
 	{
 		FlightControllerInput();
-		PlaneChange();
+		if (ErrorIndicator == 0)
+		{
+			PlaneChange();
+		}
 	}
 	//Plane change
 	else if (ManeuverType == 1)
@@ -704,6 +712,12 @@ void RTCCGeneralPurposeManeuverProcessor::FlightControllerInput()
 	r_a_dot = r_b_dot + dr_dot;
 	V_a2 = r_a_dot * r_a_dot + v_H_a2;
 	sv_a.coe_osc.a = mu * sv_b.R / (2.0*mu - sv_b.R*V_a2);
+	//Orbit not-elliptical
+	if (sv_a.coe_osc.a <= 0.0)
+	{
+		ErrorIndicator = 9;
+		return;
+	}
 	e_a2 = 1.0 - (sv_b.R*sv_b.R*v_H_a2) / mu / sv_a.coe_osc.a;
 	sv_a.coe_osc.e = sqrt(e_a2);
 	E_a = pRTCC->GLQATN(sv_b.R*r_a_dot*sqrt(sv_a.coe_osc.a), (sv_a.coe_osc.a - sv_b.R)*sqrt(mu));
@@ -717,6 +731,9 @@ void RTCCGeneralPurposeManeuverProcessor::FlightControllerInput()
 void RTCCGeneralPurposeManeuverProcessor::HeightManeuver(bool circ)
 {
 	double DH, dv_h, V_a2, x_a, E_a, V_a, r_b_dot, V_H_a, r_D;
+	int IMAX;
+
+	IMAX = 10;
 
 	if (circ)
 	{
@@ -775,17 +792,37 @@ void RTCCGeneralPurposeManeuverProcessor::HeightManeuver(bool circ)
 		{
 			DH = r_D - sv_temp.R;
 		}
-		if (abs(DH) < eps1 || I > 5)
+		if (abs(DH) < eps1 || I > IMAX)
 		{
 			break;
 		}
 		dv_h = mu * DH / (4.0*pow(sv_a.coe_osc.a, 2)*V_a);
+		//Limit change in DV. Is equation above even correct?
+		if (abs(dv_h) > 1000.0)
+		{
+			if (dv_h > 0.0)
+			{
+				dv_h = 1000.0;
+			}
+			else
+			{
+				dv_h = -1000.0;
+			}
+		}
+
 		V_H_a = V_H_a + dv_h;
 		V_a2 = V_H_a * V_H_a + r_b_dot * r_b_dot;
 		V_a = sqrt(V_a2);
 		sv_a.coe_osc.a = mu * sv_b.R / (2.0*mu - sv_b.R*V_a2);
 		x_a = sv_a.R*sv_a.R*V_H_a*V_H_a;
 		sv_a.coe_osc.e = sqrt(1.0 - x_a / mu / sv_a.coe_osc.a);
+		//Orbit too eccentric
+		if (sv_a.coe_osc.e >= 1.0)
+		{
+			ErrorIndicator = 9;
+			return;
+		}
+
 		E_a = pRTCC->GLQATN(sv_b.R*r_b_dot*sqrt(sv_a.coe_osc.a), sqrt(mu)*(sv_a.coe_osc.a - sv_b.R));
 		sv_a.coe_osc.l = E_a - sv_a.coe_osc.e*sin(E_a);
 		sv_a.f = pRTCC->GLQATN(sv_b.R*r_b_dot*sqrt(x_a), x_a - mu * sv_b.R);
@@ -798,7 +835,7 @@ void RTCCGeneralPurposeManeuverProcessor::HeightManeuver(bool circ)
 		{
 			sv_a.coe_osc.g += PI2;
 		}
-	} while (I < 5);
+	} while (I < IMAX);
 }
 
 int RTCCGeneralPurposeManeuverProcessor::OptimumApsidesChange()
@@ -918,7 +955,7 @@ void RTCCGeneralPurposeManeuverProcessor::NodeShift()
 int RTCCGeneralPurposeManeuverProcessor::ApsidesChange(bool limit)
 {
 	double r_AD, r_PD, dr_a_max, dr_p_max, a_D, e_D, cos_theta_A, theta_A, r_a, r_p, cos_E_a;
-	double dr_ap0, dr_ap1, dr_p0, dr_p1, dr_ap_c, dr_p_c, ddr_ap, ddr_p, E_a;
+	double dr_ap0, dr_ap1, dr_p0, dr_p1, dr_ap_c, dr_p_c, ddr_ap, ddr_p, E_a, temp_l;
 	int err;
 
 	pRTCC->PMMAPD(aeg.Header, sv_b, 0, 0, INFO, &sv_AP, &sv_PE);
@@ -998,7 +1035,16 @@ int RTCCGeneralPurposeManeuverProcessor::ApsidesChange(bool limit)
 
 		E_a = acos(cos_E_a);
 		sv_a.f = acos2((sv_a.coe_osc.a*(1.0 - sv_a.coe_osc.e * sv_a.coe_osc.e) - sv_b.R) / (sv_a.coe_osc.e*sv_b.R));
-		if (sv_b.coe_osc.l > PI)
+		//Optimum solution places post-maneuver mean anomaly in same 180 degree range as the pre-maneuver mean anomaly
+		if (opt->OptApsid)
+		{
+			temp_l = sv_b.coe_osc.l;
+		}
+		else
+		{
+			temp_l = PI2 - sv_b.coe_osc.l;
+		}
+		if (temp_l > PI)
 		{
 			E_a = PI2 - E_a;
 			sv_a.f = PI2 - sv_a.f;

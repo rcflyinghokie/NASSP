@@ -298,13 +298,11 @@ void LMCabinPressMeter::OnPostStep(double SimT, double DeltaT, double MJD) {
 
 // ECS indicator, cabin CO2 level
 LMCO2Meter::LMCO2Meter()
-
 {
 	NeedleSurface = 0;
 }
 
 void LMCO2Meter::Init(SURFHANDLE surf, SwitchRow &row, LEM *s)
-
 {
 	MeterSwitch::Init(row);
 	lem = s;
@@ -312,53 +310,19 @@ void LMCO2Meter::Init(SURFHANDLE surf, SwitchRow &row, LEM *s)
 }
 
 double LMCO2Meter::QueryValue()
-
 {
 	if(!lem){ return 0; }
-	return lem->scera1.GetVoltage(5, 2)*6.0;
+	return lem->ecs.GetSensorCO2Voltage();
 }
 
 void LMCO2Meter::DoDrawSwitch(double v, SURFHANDLE drawSurface)
-
 {
-	double cf,sf; // Correction Factor, Scale factor
-	int btm;      // Bottom of this segment
-	// Determine needle range and scale factor
-	if(v <= 5){
-		btm = 114;
-		sf = 8.0;
-		cf = 0;
-	}else{
-		if(v <= 10){
-			btm = 74;
-			cf = 5;
-			sf = 4.0;
-		}else{
-			if(v <= 15){
-				btm = 54;
-				cf = 10;
-				sf = 3.0;
-			}else{
-				if(v <= 20){
-					btm = 39;
-					cf = 15;
-					sf = 2;
-				}else{
-					btm = 29;
-					cf = 20;
-					sf = 1.5;
-				}
-			}
-		}
-	}
-	oapiBlt(drawSurface, NeedleSurface,  267, btm-((int)((v-cf)*sf)), 7, 0, 7, 7, SURF_PREDEF_CK);
+	oapiBlt(drawSurface, NeedleSurface, 267, 114 - ((int)(v * 20.0)), 7, 0, 7, 7, SURF_PREDEF_CK);
 }
 
 void LMCO2Meter::OnPostStep(double SimT, double DeltaT, double MJD)
-
 {
-	double v = ((GetDisplayValue() - minValue) * 0.98) / (maxValue - minValue);
-	// Still needs scale factor, right now its wrongly 1:1 for entire range
+	double v = (GetDisplayValue() - minValue) / (maxValue - minValue);
 
 	lem->SetAnimation(anim_switch, v);
 }
@@ -638,6 +602,20 @@ void LMRCSAPressInd::OnPostStep(double SimT, double DeltaT, double MJD) {
 	lem->SetAnimation(anim_switch, v);
 }
 
+bool LMRCSAPressInd::GetHeX10Lt() // Only one X10 light on the display, so this check and power draw will only be in the RCS A meter
+{
+	if (lem->TempPressMonRotary.GetState() == 0) return true; // Helium is x10
+	return false;
+}
+
+void LMRCSAPressInd::SystemTimestep(double simdt)
+{
+	if (GetHeX10Lt())
+	{
+		lem->lca.Num_Override_20_110VAC_Output.DrawPower(0.5 * (lem->lca.Num_Override_20_110VAC_Output.Voltage() / 115.0)); //Assumes 0.5W per lamp, needs to be checked
+	}
+}
+
 // RCS indicator, RCS B Press
 LMRCSBPressInd::LMRCSBPressInd()
 
@@ -850,6 +828,7 @@ void CommandedThrustInd::Init(SURFHANDLE surf, SwitchRow &row, LEM *s)
 	MeterSwitch::Init(row);
 	lem = s;
 	NeedleSurface = surf;
+	minMaxTime = 0;	// Don't animate/interpolate between reported values
 }
 
 double CommandedThrustInd::QueryValue()
@@ -1293,57 +1272,14 @@ double LEMVoltCB::Current()
 	return Amperes;
 }
 
-void EngineStartButton::Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row, int xoffset, int yoffset, ToggleSwitch* stopbutton, LEM *l) {
+void EngineStartButton::Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row, int xoffset, int yoffset, LEM *l) {
 	SimplePushSwitch::Init(xp, yp, w, h, surf, bsurf, row, xoffset, yoffset);
 	lem = l;
-	this->stopbutton = stopbutton;
-}
-
-bool EngineStartButton::CheckMouseClick(int event, int mx, int my) {
-
-	int OldState = state;
-
-	if (!visible) return false;
-	if (mx < x || my < y) return false;
-	if (mx >(x + width) || my >(y + height)) return false;
-
-	if (event & PANEL_MOUSE_LBDOWN)
-	{
-		Push();
-	}
-	return true;
-}
-
-bool EngineStartButton::CheckMouseClickVC(int event, VECTOR3 &p) {
-
-	int OldState = state;
-
-	if (event & PANEL_MOUSE_LBDOWN)
-	{
-		Push();
-	}
-	return true;
-}
-
-bool EngineStartButton::Push()
-
-{
-	//Can only be switched when off and engine stop button is also off
-	if (stopbutton->GetState() == 0 && state == 0)
-	{
-		if (SimplePushSwitch::SwitchTo(1)) {
-
-			Sclick.play();
-			return true;
-		}
-	}
-
-	return false;
 }
 
 void EngineStartButton::DoDrawSwitch(SURFHANDLE DrawSurface) {
 
-	if (lem->lca.GetAnnunVoltage() > 2.25 && (lem->LampToneTestRotary.GetState() == 3 || IsUp())) {
+	if (LightLogic()) {
 		if (IsUp())
 		{
 			oapiBlt(DrawSurface, SwitchSurface, x, y, xOffset, yOffset + height, width, height, SURF_PREDEF_CK);
@@ -1367,7 +1303,7 @@ void EngineStartButton::DoDrawSwitch(SURFHANDLE DrawSurface) {
 
 void EngineStartButton::DoDrawSwitchVC(SURFHANDLE surf, SURFHANDLE DrawSurface, int TexMul) {
 
-	if (lem->lca.GetAnnunVoltage() > 2.25 && (lem->LampToneTestRotary.GetState() == 3 || IsUp())) {
+	if (LightLogic()) {
 		if (IsUp())
 		{
 			oapiBlt(surf, DrawSurface, 0, 0, xOffset*TexMul, yOffset*TexMul + height*TexMul, width*TexMul, height*TexMul, SURF_PREDEF_CK);
@@ -1389,10 +1325,22 @@ void EngineStartButton::DoDrawSwitchVC(SURFHANDLE surf, SURFHANDLE DrawSurface, 
 	}
 }
 
-void EngineStopButton::Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row, int xoffset, int yoffset, SimplePushSwitch* startbutton, LEM *l) {
+bool EngineStartButton::LightLogic()
+{
+	return (lem->LtgORideAnunSwitch.Voltage() > 1.8 && (lem->LampToneTestRotary.GetState() == 3 || lem->scca2.GetK15()));
+}
+
+void EngineStopButton::Init(int xp, int yp, int w, int h, SURFHANDLE surf, SURFHANDLE bsurf, SwitchRow &row, int xoffset, int yoffset, LEM *l) {
 	ToggleSwitch::Init(xp, yp, w, h, surf, bsurf, row, xoffset, yoffset);
 	lem = l;
-	this->startbutton = startbutton;
+}
+
+void EngineStartButton::SystemTimestep(double simdt)
+{
+	if (LightLogic())
+	{
+		lem->LtgORideAnunSwitch.DrawPower(0.5 * (lem->LtgORideAnunSwitch.Voltage() / 6.0)); //Assumes 0.5W per lamp, needs to be checked
+	}
 }
 
 bool EngineStopButton::CheckMouseClick(int event, int mx, int my) {
@@ -1426,24 +1374,28 @@ bool EngineStopButton::Push()
 {
 	int newstate = !state;
 	if (ToggleSwitch::SwitchTo(newstate)) {
-		
-		if (newstate == 1)
-		{
-			if (startbutton)
-			{
-				startbutton->SwitchTo(0);
-			}
-		}
 		Sclick.play();
 		return true;
 	}
-
 	return false;
+}
+
+bool EngineStopButton::LightLogic()
+{
+	return (lem->LtgORideAnunSwitch.Voltage() > 1.8 && (lem->LampToneTestRotary.GetState() == 3 || IsUp()));
+}
+
+void EngineStopButton::SystemTimestep(double simdt)
+{
+	if (LightLogic())
+	{
+		lem->LtgORideAnunSwitch.DrawPower(0.5 * (lem->LtgORideAnunSwitch.Voltage() / 6.0)); //Assumes 0.5W per lamp, needs to be checked
+	}
 }
 
 void EngineStopButton::DoDrawSwitch(SURFHANDLE DrawSurface) {
 	
-	if (lem->lca.GetAnnunVoltage() > 2.25 && (lem->LampToneTestRotary.GetState() == 3 || IsUp())){
+	if (lem->LtgORideAnunSwitch.Voltage() > 1.8 && (lem->LampToneTestRotary.GetState() == 3 || IsUp())){
 		if (IsUp())
 		{
 			oapiBlt(DrawSurface, SwitchSurface, x, y, xOffset, yOffset + height, width, height, SURF_PREDEF_CK);
@@ -1702,11 +1654,6 @@ void LEMSteerableAntennaPitchMeter::DoDrawSwitch(double v, SURFHANDLE drawSurfac
 	oapiBlt(drawSurface, FrameSurface, 0, 0, 0, 0, 91, 90, SURF_PREDEF_CK);
 }
 
-void LEMSteerableAntennaPitchMeter::OnPostStep(double SimT, double DeltaT, double MJD) {
-	double v = (GetDisplayValue() + 75) / 330;
-	lem->SetAnimation(anim_switch, v);
-}
-
 void LEMSteerableAntennaYawMeter::Init(oapi::Pen *p0, oapi::Pen *p1, SwitchRow &row, LEM *s, SURFHANDLE frameSurface)
 {
 	LEMRoundMeter::Init(p0, p1, row, s);
@@ -1721,11 +1668,6 @@ void LEMSteerableAntennaYawMeter::DoDrawSwitch(double v, SURFHANDLE drawSurface)
 	v = (120.0 - v) * 0.75;
 	DrawNeedle(drawSurface, 91 / 2, 90 / 2, 25.0, v * RAD);
 	oapiBlt(drawSurface, FrameSurface, 0, 0, 0, 0, 91, 90, SURF_PREDEF_CK);
-}
-
-void LEMSteerableAntennaYawMeter::OnPostStep(double SimT, double DeltaT, double MJD){
-	double v = (GetDisplayValue() + 75) / 150;
-	lem->SetAnimation(anim_switch, (v + 0.56) * 0.47);
 }
 
 void LEMSBandAntennaStrengthMeter::Init(oapi::Pen *p0, oapi::Pen *p1, SwitchRow &row, LEM *s, SURFHANDLE frameSurface)
@@ -1827,6 +1769,17 @@ int LEMDoubleSCEATalkback::GetState()
 	return state;
 }
 
+void RecorderTalkback::Init(int xp, int yp, int w, int h, SURFHANDLE surf, SwitchRow &row, LM_DSEA *d, bool failopen)
+{
+	dsea = d;
+	IndicatorSwitch::Init(xp, yp, w, h, surf, row, failopen);
+}
+
+int RecorderTalkback::GetState()
+{
+	return dsea->TapeMotion() ? 1 : 0;
+}
+
 LEMRCSQuadTalkback::LEMRCSQuadTalkback()
 {
 	ssswitch = 0;
@@ -1863,6 +1816,7 @@ void LEMDPSDigitalMeter::Init(SURFHANDLE surf, SwitchRow &row, LEM *l)
 	MeterSwitch::Init(row);
 	Digits = surf;
 	lem = l;
+	minMaxTime = 0;	// Don't animate/interpolate between reported values
 }
 
 void LEMDPSDigitalMeter::InitVC(SURFHANDLE surf)
@@ -1870,43 +1824,64 @@ void LEMDPSDigitalMeter::InitVC(SURFHANDLE surf)
 	DigitsVC = surf;
 }
 
+bool LEMDPSDigitalMeter::IsPowered()
+{
+	if (Voltage() < SP_MIN_DCVOLTAGE || lem->QTYMonSwitch.IsDown() || lem->PROP_PQGS_CB.Voltage() < SP_MIN_DCVOLTAGE || lem->lca.Num_Override_20_110VAC_Output.Voltage() < 20.0)
+	{
+		return false;
+	}
+
+	return true;
+}
+
 void LEMDPSDigitalMeter::DoDrawSwitch(double v, SURFHANDLE drawSurface)
 {
 	if (lem->stage > 1) return;
-	if (Voltage() < SP_MIN_DCVOLTAGE || lem->QTYMonSwitch.IsDown() || lem->PROP_PQGS_CB.Voltage() < SP_MIN_DCVOLTAGE ||  lem->lca.GetNumericVoltage() < 25.0) return;
+	if (!IsPowered()) return;
 
 	double percent = v * 100.0;
 
-	const int DigitWidth = 19;
-	const int DigitHeight = 21;
-	int Curdigit2 = (int)percent;
-	int Curdigit = (int)percent / 10;
+	const int DigitWidth = 21;
+	const int DigitHeight = 23;
+	int Curdigit2 = (int)percent % 10;
+	int Curdigit = (int)(percent / 10) % 10;
 
 	oapiBlt(drawSurface, Digits, 0, 0, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
-	oapiBlt(drawSurface, Digits, DigitWidth + 1, 0, DigitWidth * (Curdigit2 - (Curdigit * 10)), 0, DigitWidth, DigitHeight);
+	oapiBlt(drawSurface, Digits, DigitWidth, 0, DigitWidth * Curdigit2, 0, DigitWidth, DigitHeight);
 }
 
 void LEMDPSDigitalMeter::DrawSwitchVC(int id, int event, SURFHANDLE surf)
 {
 	if (lem->stage > 1) return;
-	if (Voltage() < SP_MIN_DCVOLTAGE || lem->QTYMonSwitch.IsDown() || lem->PROP_PQGS_CB.Voltage() < SP_MIN_DCVOLTAGE || lem->lca.GetNumericVoltage() < 25.0) return;
+	if (!IsPowered()) return;
 
 	double percent = GetDisplayValue() * 100.0;
 
-	const int DigitWidth = 19*TexMul;
-	const int DigitHeight = 21*TexMul;
-	int Curdigit2 = (int)percent;
-	int Curdigit = (int)percent / 10;
+	const int DigitWidth = 21 * TexMul;
+	const int DigitHeight = 23 * TexMul;
+	int Curdigit2 = (int)percent % 10;
+	int Curdigit = (int)(percent / 10) % 10;
 
 	oapiBlt(surf, DigitsVC, 0, 0, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
-	oapiBlt(surf, DigitsVC, DigitWidth + 1, 0, DigitWidth * (Curdigit2 - (Curdigit * 10)), 0, DigitWidth, DigitHeight);
+	oapiBlt(surf, DigitsVC, DigitWidth, 0, DigitWidth * Curdigit2, 0, DigitWidth, DigitHeight);
+}
+
+void LEMDPSDigitalMeter::SystemTimestep(double simdt)
+{
+	double EL = (4.0 * 7.0 * 0.022); // Assumes .022W per segment
+
+	if (IsPowered())
+	{
+		lem->lca.Num_Override_20_110VAC_Output.DrawPower((EL) * (lem->lca.Num_Override_20_110VAC_Output.Voltage() / 115.0));
+	}
+
+	//sprintf(oapiDebugString(), "EL %lf Power %lf", EL, (EL * (lem->lca.Num_Override_20_110VAC_Output.Voltage() / 115.0)));
 }
 
 double LEMDPSOxidPercentMeter::QueryValue()
 {
 	return lem->GetDPSPropellant()->GetOxidPercent();
 }
-
 
 double LEMDPSFuelPercentMeter::QueryValue()
 {
@@ -1927,6 +1902,17 @@ void LEMDigitalHeliumPressureMeter::Init(SURFHANDLE surf, SwitchRow &row, Rotati
 	source = s;
 	Digits = surf;
 	lem = l;
+	minMaxTime = 0;	// Don't animate/interpolate between reported values
+}
+
+bool LEMDigitalHeliumPressureMeter::IsPowered()
+{
+	if (Voltage() < SP_MIN_DCVOLTAGE || source->GetState() == 0 || lem->lca.Num_Override_20_110VAC_Output.Voltage() < 20.0)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 double LEMDigitalHeliumPressureMeter::QueryValue()
@@ -1960,19 +1946,17 @@ double LEMDigitalHeliumPressureMeter::QueryValue()
 
 void LEMDigitalHeliumPressureMeter::DoDrawSwitch(double v, SURFHANDLE drawSurface)
 {
-	if (Voltage() < SP_MIN_DCVOLTAGE || source->GetState() == 0 || lem->lca.GetNumericVoltage() < 25.0) return;
+	if (!IsPowered()) return;
 
-	const int DigitWidth = 19;
-	const int DigitHeight = 21;
-	int Curdigit4 = (int)v;
-	int Curdigit3 = (int)v / 10;
-	int Curdigit2 = (int)v / 100;
-	int Curdigit = (int)v / 1000;
+	const int DigitWidth = 21;
+	const int DigitHeight = 23;
+	int divisor = 1000;
 
-	oapiBlt(drawSurface, Digits, 0, 0, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
-	oapiBlt(drawSurface, Digits, (DigitWidth + 1), 0, DigitWidth * (Curdigit2 - (Curdigit * 10)), 0, DigitWidth, DigitHeight);
-	oapiBlt(drawSurface, Digits, (DigitWidth + 1) * 2, 0, DigitWidth * (Curdigit3 - (Curdigit2 * 10)), 0, DigitWidth, DigitHeight);
-	oapiBlt(drawSurface, Digits, (DigitWidth + 1) * 3, 0, DigitWidth * (Curdigit4 - (Curdigit3 * 10)), 0, DigitWidth, DigitHeight);
+	for (int i = 0; i < 4; ++i) {
+		int Curdigit = (int)(v / divisor) % 10;
+		oapiBlt(drawSurface, Digits, (int)(DigitWidth * i * 1.15), 0, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
+		divisor /= 10;
+	}
 }
 
 void LEMDigitalHeliumPressureMeter::InitVC(SURFHANDLE surf)
@@ -1982,21 +1966,31 @@ void LEMDigitalHeliumPressureMeter::InitVC(SURFHANDLE surf)
 
 void LEMDigitalHeliumPressureMeter::DrawSwitchVC(int id, int event, SURFHANDLE surf)
 {
-	if (Voltage() < SP_MIN_DCVOLTAGE || source->GetState() == 0 || lem->lca.GetNumericVoltage() < 25.0) return;
+	if (!IsPowered()) return;
 
 	double v = GetDisplayValue();
 
-	const int DigitWidth = 19*TexMul;
-	const int DigitHeight = 21*TexMul;
-	int Curdigit4 = (int)v;
-	int Curdigit3 = (int)v / 10;
-	int Curdigit2 = (int)v / 100;
-	int Curdigit = (int)v / 1000;
+	const int DigitWidth = 21 * TexMul;
+	const int DigitHeight = 23 * TexMul;
+	int divisor = 1000;
 
-	oapiBlt(surf, DigitsVC, 0, 0, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
-	oapiBlt(surf, DigitsVC, (DigitWidth + 1), 0, DigitWidth * (Curdigit2 - (Curdigit * 10)), 0, DigitWidth, DigitHeight);
-	oapiBlt(surf, DigitsVC, (DigitWidth + 1) * 2, 0, DigitWidth * (Curdigit3 - (Curdigit2 * 10)), 0, DigitWidth, DigitHeight);
-	oapiBlt(surf, DigitsVC, (DigitWidth + 1) * 3, 0, DigitWidth * (Curdigit4 - (Curdigit3 * 10)), 0, DigitWidth, DigitHeight);
+	for (int i = 0; i < 4; ++i) {
+		int Curdigit = (int)(v / divisor) % 10;
+		oapiBlt(surf, DigitsVC, (int)(DigitWidth * i * 1.15), 0, DigitWidth * Curdigit, 0, DigitWidth, DigitHeight);
+		divisor /= 10;
+	}
+}
+
+void LEMDigitalHeliumPressureMeter::SystemTimestep(double simdt)
+{
+	double EL = (4.0 * 7.0 * 0.022); // Assumes .022W per segment
+
+	if (IsPowered())
+	{
+		lem->lca.Num_Override_20_110VAC_Output.DrawPower((EL) * (lem->lca.Num_Override_20_110VAC_Output.Voltage() / 115.0));
+	}
+
+	//sprintf(oapiDebugString(), "EL %lf Power %lf", EL, (EL * (lem->lca.Num_Override_20_110VAC_Output.Voltage() / 115.0)));
 }
 
 void DEDAPushSwitch::DoDrawSwitch(SURFHANDLE DrawSurface) {
@@ -2253,4 +2247,81 @@ void LEMMasterAlarmSwitch::DrawSwitchVC(int id, int event, SURFHANDLE surf)
 void LEMMasterAlarmSwitch::InitVC(SURFHANDLE surf)
 {
 	switchsurfacevc = surf;
+}
+
+LEMEvaAntennaHandle::LEMEvaAntennaHandle()
+{
+	mshEVAAntHandleRotate = NULL;
+	mshEVAAntHandleDown = NULL;
+	mshEVAAntHandleUp = NULL;
+}
+
+LEMEvaAntennaHandle::~LEMEvaAntennaHandle()
+{
+	if (mshEVAAntHandleRotate)
+		delete mshEVAAntHandleRotate;
+
+	if (mshEVAAntHandleDown)
+		delete mshEVAAntHandleDown;
+
+	if (mshEVAAntHandleUp)
+		delete mshEVAAntHandleUp;
+}
+
+void LEMEvaAntennaHandle::DefineVCAnimations(UINT vc_idx)
+{
+	if (bHasDirection && bHasMeshGroup && !bHasAnimations)
+	{
+		mshEVAAntHandleDown = new MGROUP_TRANSLATE(vc_idx, &grpIndex, 1, GetDirection());
+		mshEVAAntHandleRotate = new MGROUP_ROTATE(vc_idx, &grpIndex, 1, GetReference(), _V(0, 1, 0), (float)(300 * RAD));
+		mshEVAAntHandleUp = new MGROUP_TRANSLATE(vc_idx, &grpIndex, 1, GetDirection() * -1);
+
+		anim_switch = OurVessel->CreateAnimation(InitialAnimState());
+		OurVessel->AddAnimationComponent(anim_switch, 0.0, 0.1, mshEVAAntHandleDown);
+		OurVessel->AddAnimationComponent(anim_switch, 0.1, 0.9, mshEVAAntHandleRotate);
+		OurVessel->AddAnimationComponent(anim_switch, 0.9, 1.0, mshEVAAntHandleUp);
+		VerifyAnimations();
+	}
+	/*
+	else
+	{
+		char Buff[128];
+		sprintf(Buff, "Could not create animation for %s. bRef %d bDir %d bMesh %d", name, bHasReference, bHasDirection, bHasMeshGroup);
+		oapiWriteLog(Buff);
+	}
+	*/
+}
+
+void LEMEvaAntennaHandle::OnPostStep(double SimT, double DeltaT, double MJD)
+{
+	animState.Move(1.0*DeltaT); // 1.0 is speed
+}
+
+void LEMEvaAntennaHandle::DrawSwitchVC(int id, int event, SURFHANDLE surf)
+{
+	if (!bHasAnimations) return;
+	OurVessel->SetAnimation(anim_switch, animState.pos);
+}
+
+bool LEMEvaAntennaHandle::SwitchTo(int newState, bool dontspring)
+{
+	if (ToggledPushSwitch::SwitchTo(newState, dontspring))
+	{
+		// Set animation state
+		if (state == TOGGLESWITCH_UP && !animState.Open()) animState.action = AnimState::OPENING;
+		else if (state == TOGGLESWITCH_DOWN && !animState.Closed()) animState.action = AnimState::CLOSING;
+		return true;
+	}
+	return false;
+}
+
+void LEMEvaAntennaHandle::OnPostCreation()
+{
+	if (state == TOGGLESWITCH_UP) animState.Set(AnimState::OPEN, 1.0);
+	else animState.Set(AnimState::CLOSED, 0.0);
+}
+
+double LEMEvaAntennaHandle::GetAnimState()
+{
+	return animState.pos;
 }

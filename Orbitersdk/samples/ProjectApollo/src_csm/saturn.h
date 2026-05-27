@@ -26,7 +26,6 @@
 #if !defined(_PA_SATURN_H)
 #define _PA_SATURN_H
 
-
 //
 // I hate nested includes, but this is much easier than adding them to all the files
 // which need them.
@@ -74,6 +73,7 @@
 #include "dinput.h"
 #include "vesim.h"
 
+class MCC;
 class IU;
 class SIBSystems;
 class SICSystems;
@@ -91,7 +91,6 @@ namespace mission
 
 #define RCS_CM_RING_1		4
 #define RCS_CM_RING_2		5
-
 
 ///
 /// \brief Cabin atmosphere status.
@@ -173,6 +172,7 @@ typedef struct {
 typedef struct {
 	int crewNumber;
 	int crewStatus;
+	double UCTAStatus;
 	double PrimECSHeating;
 	double PrimECSTestHeating;
 	double SecECSHeating;
@@ -484,7 +484,6 @@ public:
 		SRF_ORDEAL_ROTARY,
 		SRF_LV_ENG_S1B,
 		SRF_SPSMININDICATOR,
-		SRF_SPS_INJ_VLV,
 		SRF_SM_RCS_MODE,
 		SRF_THUMBWHEEL_GPI_PITCH,
 		SRF_THUMBWHEEL_GPI_YAW,
@@ -600,12 +599,12 @@ public:
 		SRF_VC_EMS_SCROLL_BUG,
 		SRF_VC_EMS_LIGHTS,
 		SRF_VC_INDICATOR,
+		SRF_VC_INDICATOR_LM,
 		SRF_VC_ECSINDICATOR,
 		SRF_VC_SEQUENCERSWITCHES,
 		SRF_VC_LVENGLIGHTS_S1B,
 		SRF_VC_SPS_FONT_BLACK,
 		SRF_VC_SPS_FONT_WHITE,
-		SRF_VC_SPS_INJ_VLV,
 		SRF_VC_SPSMAXINDICATOR,
 		SRF_VC_SPSMININDICATOR,
 		SRF_VC_THUMBWHEEL_LARGEFONTSINV,
@@ -738,6 +737,24 @@ public:
 		MainState() { word = 0; };
 	};
 
+	union CrewEquipmentState {
+		struct {
+			unsigned wasteDisposalStatus : 1;
+			unsigned panel382CoverStatus : 1;
+			unsigned altimeterCoverStowed : 1;
+			unsigned ordealStowed : 1;
+			unsigned DSKY_GlareshadeStowed : 1;
+			unsigned EMSDV_GlareshadeStowed : 1;
+			unsigned AccelerometerCoverStowed : 1;
+			unsigned MissionTimer_GlareshadeStowed : 1;
+			unsigned Sextant_EyepieceStowed : 1;
+			unsigned Telescope_EyepieceStowed : 1;
+		};
+		unsigned long word;
+
+		CrewEquipmentState() { word = 0; };
+	};
+
 	//
 	// Now the actual code and data for the class.
 	//
@@ -810,11 +827,11 @@ public:
 
 	///
 	/// This function can be used during the countdown to update the MissionTime. Since we launch when
-	/// MissionTime reaches zero, setting MissionTime to (-t) tells the code when to launch.
+	/// MissionTime reaches zero, delay the MissionTime by dt tells the code when to launch.
 	/// \brief Update the launch time.
-	/// \param t Specifies the time in seconds to wait before launch.
+	/// \param t Specifies the time in seconds to delay the launch.
 	///
-	void UpdateLaunchTime(double t);	
+	virtual void UpdateLaunchTime(double dt);
 
 	///
 	/// Set up the default mesh for the virtual cockpit.
@@ -1092,6 +1109,8 @@ public:
 	virtual void SetPrimECSTestHeaterPowerW(double power);
 	virtual void SetSecECSTestHeaterPowerW(double power);
 
+	virtual void StartCMPEVA();
+
 	///
 	/// Enable or disable generic Service Module systems based on current state.
 	/// \brief Check SM systems state.
@@ -1195,6 +1214,11 @@ public:
 	void SetSideHatchMesh();
 
 	///
+	/// \brief Set boost protective cover mesh
+	///
+	void SetBPCMesh(UINT idx);
+
+	///
 	/// \brief Set fwd hatch mesh
 	///
 	void SetFwdHatchMesh();
@@ -1219,6 +1243,8 @@ public:
 	/// \brief Set VC seats mesh
 	///
 	void SetVCSeatsMesh();
+
+	void SetVCCueCardsArrows();
 
 	void SetCOASMesh();
 
@@ -1281,8 +1307,62 @@ public:
 	virtual SIBSystems *GetSIB() { return NULL; }
 	virtual SICSystems *GetSIC() { return NULL; }
 	SECS *GetSECS() { return &secs; }
+	mission::Mission *GetMission() { return pMission; }
 
 	void ClearMeshes();
+	void SetAnimations(double);
+	void DoMeshAnimation(AnimState &, UINT &, double, double);
+
+	void UpdatePointingArrow();
+	void UpdateSideHatchClickspots(const VECTOR3 &ofs);
+	void UpdateForwardHatchClickspots(const VECTOR3 &ofs);
+
+	void HideMeshGroup(int, int, bool);
+	void updateOrdealMshGrp(int, int, VECTOR3, VECTOR3, double);
+
+	//
+	// Flashlight for VC
+	//
+	void MoveFlashlight();
+	void SetFlashlightOn(bool state);
+	void ToggleFlashlight();
+	SpotLight* flashlight;
+	COLOUR4 flashlightColor;
+	COLOUR4 flashlightColor2;
+	VECTOR3 flashlightPos;
+	VECTOR3 flashlightDirLocal;
+	bool flashlightOn;
+
+	//
+	// FloodLight
+	//
+	PointLight* floodLight_P5;
+	PointLight* floodLight_P8;
+	PointLight* floodLight_P100;
+
+	//
+	// Custom quicksave behaviour
+	//
+	void QuicksaveScenario();
+
+	//CSM Running Lights
+	void SetRunningLights();
+
+	VECTOR3 runningLightsPos[8];
+	BEACONLIGHTSPEC runningLights[8];             // running lights
+
+	//
+    // CSM EVA
+    //
+	void ToggleCMPEVA();
+
+	void UpdateEVA(void);
+
+	virtual void StopEVA();
+
+	OBJHANDLE hCMPEVA;
+
+	int cmpeva; //CMP EVA Started or not
 
 protected:
 
@@ -1383,6 +1463,18 @@ protected:
 	///
 	bool SLAWillSeparate;
 
+	///
+	/// True if wide ELS-type SLA panels are installed.
+	/// \brief Use wide ELS-type SLA panels.
+	///
+	bool UseWideSLA;
+
+	///
+	/// True if SLA has flashing beacons as on Apollo 7.
+	/// \brief SLA has beacons.
+	///
+	bool SLAHasBeacons;
+
 	bool SIMBayPanelJett;
 
 	bool DeleteLaunchSite;
@@ -1399,9 +1491,21 @@ protected:
 	//
 
 	///
+	/// The current Simulated Time, which runs continuously throughout the mission.
+	/// If the mission elapsed time is not changed before launch, essentially a launch
+	/// delay, then SimulatedTime is identical to MissionTime. This time can be used for
+	/// subsystems that need a steadily updating time, which does not need to have a
+	/// specific time reference/start time.
+	/// \brief Simulated Time.
+	///
+	double SimulatedTime;
+
+	///
 	/// The current Mission Elapsed Time. This is the main variable used for timing
 	/// automated events during the mission, giving the time in seconds from launch
 	/// (negative for the pre-launch countdown).
+	/// It can be changed during pre-launch to enact a launch delay, but should not
+	/// be modified after launch.
 	/// \brief Mission Elapsed Time.
 	///
 	double MissionTime;
@@ -1545,6 +1649,49 @@ protected:
 	int hatchPanel600EnabledLeft;
 	int hatchPanel600EnabledRight;
 	int panel382Enabled;
+
+	/// VC animations
+
+	/// Waste Disposal
+	MGROUP_ROTATE *wasteDisposalKnob;
+	UINT wasteDisposalAnim;
+	AnimState wasteDisposalState;
+
+	/// Panel 382 Cover
+	UINT panel382CoverAnim;
+	AnimState panel382CoverState;
+
+	/// Altimeter Cover
+	UINT altimeterCoverAnim;
+	AnimState altimeterCoverState;
+
+	/// Ordeal
+	UINT ordealMeshAnim;
+	AnimState ordealState;
+
+	/// DSKY_Glareshade
+	UINT DSKY_GlareshadeAnim;
+	AnimState DSKY_GlareshadeState;
+
+	/// EMSDV_Glareshade
+	UINT EMSDV_GlareshadeAnim;
+	AnimState EMSDV_GlareshadeState;
+
+	/// AccelerometerCover
+	UINT AccelerometerCoverAnim;
+	AnimState AccelerometerCoverState;
+
+	/// MissionTimer_Glareshade
+	UINT MissionTimer_GlareshadeAnim;
+	AnimState MissionTimer_GlareshadeState;
+
+	/// Sextant_Eyepiece
+	UINT Sextant_EyepieceAnim;
+	AnimState Sextant_EyepieceState;
+
+	/// Telescope_Eyepiece
+	UINT Telescope_EyepieceAnim;
+	AnimState Telescope_EyepieceState;
 
 	///
 	/// \brief Right-hand FDAI.
@@ -1814,7 +1961,7 @@ protected:
 
 	SwitchRow TelecomTBRow;
 	IndicatorSwitch PwrAmplTB;
-	DSEIndicatorSwitch DseTapeTB;
+	DSETalkback DseTapeTB;
 
 	ThreePosSwitch SBandNormalXPDRSwitch;
 	ToggleSwitch SBandNormalPwrAmpl1Switch;
@@ -1870,10 +2017,10 @@ protected:
 	//
 
 	SwitchRow SPSInjectorValveIndicatorsRow;
-	IndicatorSwitch SPSInjectorValve1Indicator;
-	IndicatorSwitch SPSInjectorValve2Indicator;
-	IndicatorSwitch SPSInjectorValve3Indicator;
-	IndicatorSwitch SPSInjectorValve4Indicator;
+	SaturnSPSInjectorValveIndicator SPSInjectorValve1Indicator;
+	SaturnSPSInjectorValveIndicator SPSInjectorValve2Indicator;
+	SaturnSPSInjectorValveIndicator SPSInjectorValve3Indicator;
+	SaturnSPSInjectorValveIndicator SPSInjectorValve4Indicator;
 
 	SwitchRow SPSTestSwitchRow;
 	ThreePosSwitch SPSTestSwitch;
@@ -1948,7 +2095,7 @@ protected:
 	ACVoltMeter CSMACVoltMeter;
 
 	SwitchRow DCVoltMeterRow;
-	DCVoltMeter CSMDCVoltMeter;
+	SaturnDCVoltMeter CSMDCVoltMeter;
 
 	SwitchRow DCAmpMeterRow;
 	SaturnDCAmpMeter DCAmpMeter;
@@ -2475,7 +2622,7 @@ protected:
 
 	SwitchRow InteriorLightsFloodSwitchesRow;
 	ToggleSwitch InteriorLightsFloodDimSwitch;
-	ToggleSwitch InteriorLightsFloodFixedSwitch;
+	TwoSourceSwitch InteriorLightsFloodFixedSwitch;
 
 	//////////////////////
 	// Panel 5 rotaries //
@@ -2567,7 +2714,7 @@ protected:
 	SwitchRow Panel100SwitchesRow;
 	ToggleSwitch UtilityPowerSwitch;
 	ToggleSwitch Panel100FloodDimSwitch;	
-	ToggleSwitch Panel100FloodFixedSwitch;
+	TwoSourceSwitch Panel100FloodFixedSwitch;
 	ToggleSwitch GNPowerOpticsSwitch;
 	GuardedToggleSwitch GNPowerIMUSwitch;
 	ThreePosSwitch Panel100RNDZXPDRSwitch;
@@ -2806,7 +2953,7 @@ protected:
 	ToggleSwitch FloodDimSwitch;
 
 	SwitchRow FloodFixedSwitchRow;
-	ThreePosSwitch FloodFixedSwitch;
+	ThreeSourceSwitch FloodFixedSwitch;
 
 	//////////////////////
 	// Panel 7 switches //
@@ -3521,6 +3668,7 @@ protected:
 	VHFRangingSystem vhfranging;
 	VHFAMTransceiver vhftransceiver;
 	RNDZXPDRSystem RRTsystem;
+	CTE cte;
 
 	//Instrumentation
 	SCE sce;
@@ -3587,12 +3735,12 @@ public:
 	CSMTankPressTransducer FCN2PressureSensor1;
 	CSMTankPressTransducer FCN2PressureSensor2;
 	CSMTankPressTransducer FCN2PressureSensor3;
-	CSMPipeFlowTransducer FCO2FlowSensor1;
-	CSMPipeFlowTransducer FCO2FlowSensor2;
-	CSMPipeFlowTransducer FCO2FlowSensor3;
-	CSMPipeFlowTransducer FCH2FlowSensor1;
-	CSMPipeFlowTransducer FCH2FlowSensor2;
-	CSMPipeFlowTransducer FCH2FlowSensor3;
+	FCO2FlowTransducer FCO2FlowSensor1;
+	FCO2FlowTransducer FCO2FlowSensor2;
+	FCO2FlowTransducer FCO2FlowSensor3;
+	FCH2FlowTransducer FCH2FlowSensor1;
+	FCH2FlowTransducer FCH2FlowSensor2;
+	FCH2FlowTransducer FCH2FlowSensor3;
 	TemperatureTransducer SPSFuelLineTempSensor;
 	TemperatureTransducer SPSOxidizerLineTempSensor;
 	TemperatureTransducer SPSFuelFeedTempSensor;
@@ -3601,6 +3749,8 @@ public:
 	CSMTankPressTransducer BatteryManifoldPressureSensor;
 	TemperatureTransducer WasteH2ODumpTempSensor;
 	TemperatureTransducer UrineDumpTempSensor;
+
+	TemperatureTransducer DockProbeTempSensor;
 
 protected:
 
@@ -3619,6 +3769,7 @@ protected:
 	// Electric Lights
 	ElectricLight* SpotLight;
 	ElectricLight* RndzLight;
+	ElectricLight* EVALight;
 
 	// O2 Tanks
 	h_Tank *O2Tanks[2];
@@ -3725,9 +3876,30 @@ protected:
 	ThreePhasePowerMerge SuitCompressor1Feeder;
 	ThreePhasePowerMerge SuitCompressor2Feeder;
 
+	// Interior Lighting
+	FloodLights LeftFloodLights;
+	FloodLights RightFloodLights;
+	FloodLights LEBFloodLights;
+
+	TunnelLights MNATunnelLights;
+	TunnelLights MNBTunnelLights;
+
+	IntegralLights LeftIntegralLights;
+	IntegralLights RightIntegralLights;
+	IntegralLights LEBIntegralLights;
+
+	NumericLights LeftNumericLights;
+	NumericLights LEBNumericLights;
+
+	// Exterior Lighting
+	ExteriorLighting ExteriorLighting;
+	PowerMerge RunEVAFeeder;
+
 	// GSE
 	Pump* GSEGlycolPump;
 	h_Radiator* GSERadiator;
+	h_Tank *GSECryoO2Dewar;
+	h_Tank *GSECryoH2Dewar;
 
 	// EPS
 	CryoPressureSwitch H2CryoPressureSwitch;
@@ -3761,6 +3933,7 @@ protected:
 	O2SMSupply O2SMSupply;
 	CrewStatus CrewStatus;
 	SaturnSideHatch SideHatch;
+	BoostProtectiveCover BPC;
 	SaturnWaterController WaterController;
 	SaturnGlycolCoolingController GlycolCoolingController;
 	SaturnLMTunnelVent LMTunnelVent;
@@ -3822,10 +3995,8 @@ protected:
 	// LM PAD
 	//
 
-	int LMPadCount;
-	unsigned int *LMPad;
-	int AEAPadCount;
-	unsigned int *AEAPad;
+	std::vector<unsigned int> LMPad;
+	std::vector<unsigned int> AEAPad;
 
 	//
 	// Do we have a crew, or is this an unmanned flight?
@@ -3884,6 +4055,7 @@ protected:
     #define SATVIEW_TUNNEL          8
     #define SATVIEW_LOWER_CENTER    9
     #define SATVIEW_UPPER_CENTER    10
+	#define SATVIEW_SIDEHATCH       11
 
 	unsigned int	viewpos;
 
@@ -3901,12 +4073,19 @@ protected:
 	int opticscoveridx;
 	int cmdocktgtidx;
 	int simbaypanelidx;
-	int vcidx;
+	UINT vcidx;
 	int seatsfoldedidx;
 	int seatsunfoldedidx;
 	int coascdridx;
 	int coascdrreticleidx;
+	int cmvccuecardsarrowsidx;
+	int hcmPointingArrowidx;
+
 	DEVMESHHANDLE vcmesh;
+	bool ViewCueCardArrows;
+	int smidx;
+
+	VCPointingArrow pointingArrow;
 
 	double DockAngle;
 
@@ -4132,10 +4311,18 @@ protected:
 	// Integral Lights
 	//
 #ifdef _OPENORBITER
-	void SetCMVCIntegralLight(UINT meshidx, DWORD *matList, MatProp EmissionMode, double state, int cnt);
+	void SetVCLighting(UINT meshidx, DWORD *matList, MatProp EmissionMode, double state, int cnt);
+	void SetVCLighting(UINT meshidx, int material, MatProp EmissionMode, double state, int cnt);
 #else
-	void SetCMVCIntegralLight(UINT meshidx, DWORD *matList, int EmissionMode, double state, int cnt);
+	void SetVCLighting(UINT meshidx, DWORD *matList, int EmissionMode, double state, int cnt);
+	void SetVCLighting(UINT meshidx, int material, int EmissionMode, double state, int cnt);
 #endif
+
+//	CAMERAHANDLE hFDAICam = NULL;
+//	SURFHANDLE srfFDAICamTexture;
+//	SURFHANDLE hFDAISurf;
+
+//	void InitFDAICustomCamera(void);
 
 	//
 	// Systems functions.
@@ -4158,6 +4345,8 @@ protected:
 	void SetAttachState(int s);
 	int GetSLAState();
 	void SetSLAState(int s);
+	int GetCrewEquipmentState();
+	void SetCrewEquipmentState(int s);
 
 	///
 	/// Get the Apollo 13 state flags as an int.
@@ -4349,6 +4538,7 @@ protected:
 	THRUSTER_HANDLE th_att_cm[12], th_att_cm_sys1[6], th_att_cm_sys2[6];    // CM RCS  
 	THRUSTER_HANDLE th_o2_vent;
 	bool th_att_cm_commanded[12];
+	double rhc_keyboard_deflection[6];	// Holds deflection values (0.0 to 1.0) for each Orbiter attitude direction
 
 	PSTREAM_HANDLE dyemarker;
 	PSTREAM_HANDLE wastewaterdump;
@@ -4391,6 +4581,12 @@ protected:
 	double LMAscentFuelMassKg;	///< Mass of fuel in ascent stage of LEM.
 	double LMDescentEmptyMassKg;
 	double LMAscentEmptyMassKg;
+
+	//
+	// Custom Payload data.
+	//
+	double customPayloadMass;
+	char customPayloadClass[256];
 
 	//
 	// Random motion.
@@ -4514,11 +4710,6 @@ protected:
 	// InitSaturn is called twice, but some things must run only once
 	bool InitSaturnCalled;
 
-	int LMPadLoadCount;
-	int LMPadValueCount;
-	int AEAPadLoadCount;
-	int AEAPadValueCount;
-
 #define SISYSTEMS_START_STRING		"SISYSTEMS_BEGIN"
 #define SISYSTEMS_END_STRING		"SISYSTEMS_END"
 
@@ -4598,6 +4789,11 @@ protected:
 	friend class AR_GCore;
 	friend class ApolloRTCCMFD;
 	friend class RTCC;
+	friend class FloodLights;
+	friend class TunnelLights;
+	friend class IntegralLights;
+	friend class NumericLights;
+	friend class ExteriorLighting;
 
 	friend void cbCSMVesim(int inputID, int eventType, int newValue, void *pdata);
 };
@@ -4630,5 +4826,7 @@ extern MESHHANDLE hcmseatsfolded;
 extern MESHHANDLE hcmseatsunfolded;
 extern MESHHANDLE hcmCOAScdr;
 extern MESHHANDLE hcmCOAScdrreticle;
+extern MESHHANDLE hcmCueCardsArrows;
+extern MESHHANDLE hcmPointingArrow;
 
 #endif // _PA_SATURN_H

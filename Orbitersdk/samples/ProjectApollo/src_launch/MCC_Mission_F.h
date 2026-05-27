@@ -141,18 +141,28 @@ See http://nassp.sourceforge.net/license/ for more details.
 #define MST_F_LUNAR_ORBIT_DOI_DAY_22	221
 // Ends at CSI update
 #define MST_F_LUNAR_ORBIT_DOI_DAY_23	222
-// Ends at APS depletion update
+// Ends at LM weight update
 #define MST_F_LUNAR_ORBIT_DOI_DAY_24	223
-// Ends at TEI-22 update
+// Ends at APS depletion update
 #define MST_F_LUNAR_ORBIT_DOI_DAY_25	224
-// Ends at APS depletion burn
+// Ends at AEAA ARM
 #define MST_F_LUNAR_ORBIT_DOI_DAY_26	225
-// Ends at state vector update
+// Ends at P42
 #define MST_F_LUNAR_ORBIT_DOI_DAY_27	226
-// Ends at rev 22 map update
+// Ends at LM DSKY Enter
 #define MST_F_LUNAR_ORBIT_DOI_DAY_28	227
-// Ends at LLS 2 photo PAD update
+// Ends at LM DSKY PRO (ENG ON)
 #define MST_F_LUNAR_ORBIT_DOI_DAY_29	228
+// Ends at AGS Switchover
+#define MST_F_LUNAR_ORBIT_DOI_DAY_30	229
+// Ends at TEI-22 update
+#define MST_F_LUNAR_ORBIT_DOI_DAY_31	230
+// Ends at rev 22 map update
+#define MST_F_LUNAR_ORBIT_DOI_DAY_32	231
+// Ends at state vector update
+#define MST_F_LUNAR_ORBIT_DOI_DAY_33	232
+// Ends at LLS2 photo PAD
+#define MST_F_LUNAR_ORBIT_DOI_DAY_34	233
 // Ends at rev 23 map update
 #define MST_F_LUNAR_ORBIT_LMK_TRACK_DAY_1	300
 // Ends at TEI-23 update
@@ -223,6 +233,8 @@ See http://nassp.sourceforge.net/license/ for more details.
 #define MST_F_LUNAR_ORBIT_LMK_TRACK_DAY_34	333
 // Ends at TEI map update
 #define MST_F_LUNAR_ORBIT_LMK_TRACK_DAY_35	334
+// Ends at TV update
+#define MST_F_LUNAR_ORBIT_LMK_TRACK_DAY_36	335
 // Ends at PTC REFSMMAT update
 #define MST_F_TRANSEARTH_1	400
 // Ends at state vector update

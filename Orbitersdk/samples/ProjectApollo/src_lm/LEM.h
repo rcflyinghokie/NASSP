@@ -71,6 +71,7 @@
 #include "checklistController.h"
 #include "payload.h"
 #include "LMMalfunctionSimulation.h"
+#include "CueCardManager.h"
 
 enum LMRCSThrusters
 {
@@ -104,9 +105,73 @@ typedef struct {
 	int crewStatus;
 	int cdrStatus;	//0 = cabin, 1 = suit, 2 = EVA, 3 = PLSS
 	int lmpStatus;
+	double UCTAStatus;
 } LEMECSStatus;
 
 // Systems things
+
+class Panel1RelayBox
+{
+public:
+	Panel1RelayBox();
+	virtual ~Panel1RelayBox();
+	void Init(LEM *l, e_object *thrust_src, e_object *cdr_xptr_src, ToggleSwitch *thrust, ToggleSwitch *rateErrMonCDR);
+	void SaveState(FILEHANDLE scn);
+	void LoadState(char *line);
+	void Timestep(double simdt);
+
+	bool Get9K28() { return K28; }; //Thrust Control Relay
+	bool Get9K32A() { return K32A; }; //CDR Rate Error Relay A
+	bool Get9K32B() { return K32B; }; //CDR Rate Error Relay B (Lighting)
+
+protected:
+	LEM *lem;
+	e_object *thrust_cb;
+	e_object *cdr_xptr_cb;
+	ToggleSwitch *thrustSw;
+	ToggleSwitch *CDRRateErrMonSw;
+
+	bool K28; //9K28 - Thrust Control Relay
+	bool K32A; //9K32A - CDR Rate Error Relay A
+	bool K32B; //9K32B - CDR Rate Error Relay B
+};
+
+class Panel2RelayBox
+{
+public:
+	Panel2RelayBox();
+	virtual ~Panel2RelayBox();
+	void Init(LEM *l, e_object *cdr_xptr_src, e_object *lmp_xptr_src, e_object *lmp_fdai_src, ToggleSwitch *rateErrMonLMP, ThreePosSwitch *ModeSel);
+	void SaveState(FILEHANDLE scn);
+	void LoadState(char *line);
+	void Timestep(double simdt);
+
+	bool Get9K29A() { return K29A; }; //Mode Select Landing Radar Relay A
+	bool Get9K29B() { return K29B; }; //Mode Select Landing Radar Relay B
+	bool Get9K30A() { return K30A; }; //LMP Rate Error Relay A
+	bool Get9K30B() { return K30B; }; //LMP Rate Error Relay B (Lighting)
+	bool Get9K31A() { return K31A; }; //LMP FDAI Rate Error Relay A 
+	bool Get9K31B() { return K31B; }; //LMP FDAI Rate Error Relay B
+	bool Get9K34A() { return K34A; }; //Mode Select AGS Relay A (Lighting)
+	bool Get9K34B() { return K34B; }; //Mode Select AGS Relay B
+
+protected:
+	LEM *lem;
+	e_object *cdr_xptr_cb;
+	e_object *lmp_xptr_cb;
+	e_object *lmp_fdai_cb;
+	ToggleSwitch *LMPRateErrMonSw;
+	ThreePosSwitch *ModeSelSw;
+
+	bool K29A; //9K29A - Mode Select Landing Radar Relay A
+	bool K29B; //9K29B - Mode Select Landing Radar Relay B
+	bool K30A; //9K30A - LMP Rate Error Relay A
+	bool K30B; //9K30B - LMP Rate Error Relay B
+	bool K31A; //9K31A - LMP FDAI Rate Error Relay A
+	bool K31B; //9K31B - LMP FDAI Rate Error Relay B
+	bool K34A; //9K34A - Mode Select AGS Relay A
+	bool K34B; //9K34B - Mode Select AGS Relay B
+};
 
 class LEM_RadarTape : public e_object {
 public:
@@ -117,7 +182,7 @@ public:
 	void Timestep(double simdt);
 	void SystemTimestep(double simdt);
 	void setRange(double range) { reqRange = range; };
-	void setRate(double rate) { reqRate = rate ; }; 
+	void setRate(double rate) { reqRate = rate; };
 	void RenderRange(SURFHANDLE surf);
 	void RenderRate(SURFHANDLE surf);
 	void RenderRangeVC(SURFHANDLE surf, SURFHANDLE surf1a, SURFHANDLE surf1b, SURFHANDLE surf2, int xTexMul = 1);
@@ -126,14 +191,15 @@ public:
 	void SetLGCAltitudeRate(int val);
 	void AGSAltitudeAltitudeRate(int Data);
 
-	double GetLGCAltitude() { return lgc_alt; };
-	double GetLGCAltitudeRate() { return lgc_altrate; };
+	double GetTapeAltitude() { return reqRange * 3.2808399; };
+	double GetTapeAltitudeRate() { return reqRate * 3.2808399; };
 
 	bool PowerSignalMonOn();
 	bool PowerFailure();
 	bool SignalFailure();
 	bool TimingFailure();
 	bool IsPowered();
+
 private:
 	void TapeDrive(double &Angle, double AngleCmd, double RateLimit, double simdt);
 	LEM *lem;					// Pointer at LEM
@@ -149,6 +215,10 @@ private:
 	double desRange, desRate;
 	double LGCaltUpdateTime, LGCaltRateUpdateTime;
 	double AGSaltUpdateTime, AGSaltRateUpdateTime;
+	double GetLRAltitude();
+	double GetLRAltitudeRate();
+	double GetRRRange();
+	double GetRRRate();
 
 	const double ALTSCALEFACTOR = 0.3048 * 2.345 * pow(2.0, -3.0);
 	const double ALTRATESCALEFACTOR = 0.3048 * pow(2.0, -4.0);
@@ -159,12 +229,16 @@ class CrossPointer
 public:
 	CrossPointer();
 	virtual ~CrossPointer();
-	void Init(LEM *s, e_object *dc_src, ToggleSwitch *scaleSw, ToggleSwitch *rateErrMon);
-	void SaveState(FILEHANDLE scn);
-	void LoadState(FILEHANDLE scn);
+	void Init(LEM *s, e_object *dc_src, e_object *ltg, ToggleSwitch *scaleSw, bool ltgRly, bool dispRly);
+	void SaveState(FILEHANDLE scn, char *start_str);
+	void LoadState(char *line);
 	void Timestep(double simdt);
 	void SystemTimestep(double simdt);
 	void GetVelocities(double &vx, double &vy);
+	double GetFwdVel() { return callout_x * 10.0; };
+	double GetLatVel() { return callout_y * 10.0; };
+	void UpdateDisplayValues(double simdt);
+	void MeterMovement(double simdt, double &val, double &dis_val);
 
 	void DrawSwitchVC(int id, int event, SURFHANDLE surf);
 	void SetDirection(const VECTOR3 &xvec, const VECTOR3 &yvec);
@@ -172,14 +246,40 @@ public:
 	void DefineMeshGroup(UINT _grpX, UINT _grpY);
 
 	bool IsPowered();
+
+	bool GetElevRtLt() { return ElevRt; };
+	bool GetAzRtLt() { return AzRt; };
+	bool GetLatVelLt() { return LatVel; };
+	bool GetFwdVelLt() { return FwdVel; };
+	bool GetX01Lt() { return X01; };
+	bool GetX10Lt() { return X10; };
+
 protected:
 	LEM *lem;
 	e_object *dc_source;
+	e_object *ltg_source;
 	ToggleSwitch *scaleSwitch;
-	ToggleSwitch *rateErrMonSw;
 
 	double vel_x, vel_y;
+	double display_vel_x, display_vel_y;
 	double lgc_forward, lgc_lateral;
+	double callout_x, callout_y;
+
+	bool RateErrorLtRelay; //9K32B (CDR) 9K30B (LMP)
+	bool ModeSelAGSLtRelay; //9K34A
+
+	bool RateErrorDispRelay; //9K32A (CDR) 9K30A (LMP)
+	bool ModeSelLRDispRelay; //9K29B
+	bool ModeSelAGSDispRelay; //9K34B
+
+	bool ElevRt;
+	bool AzRt;
+	bool LatVel;
+	bool FwdVel;
+	bool X01;
+	bool X10;
+
+	double GetDimmableLightsLit();
 
 	UINT anim_xpointerx, anim_xpointery;
 	UINT grpX, grpY;
@@ -188,9 +288,8 @@ protected:
 	MGROUP_ROTATE *xtrans, *ytrans;
 };
 
-#define CROSSPOINTER_LEFT_START_STRING "CROSSPOINTER_LEFT_START"
-#define CROSSPOINTER_RIGHT_START_STRING "CROSSPOINTER_RIGHT_START"
-#define CROSSPOINTER_END_STRING "CROSSPOINTER_END"
+#define CROSSPOINTER_LEFT_STRING "CROSSPOINTER_LEFT"
+#define CROSSPOINTER_RIGHT_STRING "CROSSPOINTER_RIGHT"
 
 namespace mission
 {
@@ -477,10 +576,12 @@ public:
 	void DrogueVis();
 	void HideProbes();
 	void HideDeflectors();
+	void HideCask();
 	void ShowXPointerShades();
 	void SetTrackLight();
 	void SetDockingLights();
 	void SetCOAS();
+	void SetVCCueCardsArrows();
 	void SetWindowShades();
 	double GetMissionTime() { return MissionTime; }; // This must be here for the MFD can't use it.
 	int GetApolloNo() { return ApolloNo; }
@@ -544,6 +645,9 @@ public:
 	virtual void StartEVA();
 	void StartSeparationPyros();
 	void StopSeparationPyros();
+
+	void SetAnimations(double);
+	void UpdatePointingArrow();
 
 	//
 	// VISHANDLE
@@ -609,6 +713,8 @@ public:
 	virtual void StopEVA(bool isCDR);
 	virtual bool IsForwardHatchOpen() { return ForwardHatch.IsOpen(); }
 
+	virtual void StopSpaceEVA();
+
 	char *getOtherVesselName() { return agc.OtherVesselName;};
 	APSPropellantSource *GetAPSPropellant() { return &APSPropellant; };
 	DPSPropellantSource *GetDPSPropellant() { return &DPSPropellant; };
@@ -621,6 +727,7 @@ public:
 	PROPELLANT_HANDLE ph_RCSA,ph_RCSB;   // RCS Fuel A and B, replaces ph_rcslm0
 	PROPELLANT_HANDLE ph_Dsc, ph_Asc; // handles for propellant resources
 	THRUSTER_HANDLE th_hover[1];               // handles for orbiter main engines
+	double aca_keyboard_deflection[6];		// Deflection values (0 to 1) for the six directions the ACA can move.
 	// There are 16 RCS. 4 clusters, 4 per cluster.
 	THRUSTER_HANDLE th_rcs[16];
 	THGROUP_HANDLE thg_hover;		          // handles for thruster groups
@@ -666,6 +773,29 @@ public:
 
 	// Variables for checklists
 	char Checklist_Variable[16][32];
+
+	// Flashlight for VC
+	void MoveFlashlight();
+	void SetFlashlightOn(bool state);
+	void ToggleFlashlight();
+	SpotLight* flashlight;
+	COLOUR4 flashlightColor;
+	COLOUR4 flashlightColor2;
+	VECTOR3 flashlightPos;
+	VECTOR3 flashlightDirLocal;
+	bool flashlightOn;
+
+	// Floodlight LM Pilot
+	PointLight* floodLight_Left;
+
+	// Floodlight LM Commander
+	PointLight* floodLight_Right;
+
+	// Custom quicksave behaviour
+	void QuicksaveScenario();
+
+	// Hide or Show mesh group
+	void HideMeshGroup(int, int, bool);
 
 protected:
 
@@ -713,15 +843,24 @@ protected:
 	void JostleViewpoint(double amount);
 	void VCFreeCam(VECTOR3 dir, bool slow);
 	void AddDust();
-	void SetCompLight(int m, bool state);
+	void SetCompLight(int m, double voltage);
 	void SetContactLight(int m, bool state);
-	void SetPowerFailureLight(int m, bool state);
-	void SetStageSeqRelayLight(int m, bool state);
+	void SetPowerFailureLight(int m, double voltage);
+
+	void DoMeshAnimation(AnimState &, UINT &, double, double);
+
+	void ToggleSpaceEVA();
+
+	void UpdateSpaceEVA(void);
+
+	OBJHANDLE hSPACEEVA;
 
 #ifdef _OPENORBITER
-	void SetLMVCIntegralLight(UINT meshidx, DWORD *matList, MatProp EmissionMode, double state, int cnt);
+	void SetVCLighting(UINT meshidx, DWORD *matList, MatProp EmissionMode, double state, int cnt);
+	void SetVCLighting(UINT meshidx, int material, MatProp EmissionMode, double state, int cnt);
 #else
-	void SetLMVCIntegralLight(UINT meshidx, DWORD *matList, int EmissionMode, double state, int cnt);
+	void SetVCLighting(UINT meshidx, DWORD *matList, int EmissionMode, double state, int cnt);
+	void SetVCLighting(UINT meshidx, int material, int EmissionMode, double state, int cnt);
 #endif
 
 	void InitFDAI(UINT mesh);
@@ -755,19 +894,24 @@ protected:
 	PanelSwitches MainPanel;
 	PanelSwitchesVC MainPanelVC;
 	PanelSwitchScenarioHandler PSH;
+	CueCardManager CueCards;
 
 	SwitchRow AbortSwitchesRow;
 
 	LMAbortButton AbortSwitch;
 	LMAbortStageButton AbortStageSwitch;
-
 	
 	SwitchRow RRGyroSelSwitchRow;
 	ThreePosSwitch RRGyroSelSwitch;
+
+	SwitchRow AOTReticleSwitchRow;
+	ToggledPushSwitch AOTReticleDetent;
 	
 	/////////////////
 	// LEM panel 1 //
 	/////////////////
+
+	Panel1RelayBox Panel1RelayBox;
 
 	FDAI fdaiLeft;
 	int fdaiDisabled;
@@ -800,7 +944,7 @@ protected:
 
 	SwitchRow GuidContSwitchRow;
 	ToggleSwitch GuidContSwitch;
-	ModeSelectSwitch ModeSelSwitch;
+	ThreePosSwitch ModeSelSwitch;
 	ToggleSwitch AltRngMonSwitch;
 
 	SwitchRow LeftMasterAlarmSwitchRow;
@@ -843,6 +987,8 @@ protected:
 	/////////////////
 	// LEM panel 2 //
 	/////////////////
+
+	Panel2RelayBox Panel2RelayBox;
 
 	FDAI fdaiRight;
 
@@ -1193,6 +1339,7 @@ protected:
 	CircuitBrakerSwitch CDRInverter1CB;
 
 	bool CMPowerToCDRBusRelayA, CMPowerToCDRBusRelayB; //Relays 3K3 and 3K4
+	bool SLADockingLightPressureSwitchRelay; // Relay 16K1
 
 	/////////////////
 	// LEM Panel 5 //
@@ -1203,7 +1350,7 @@ protected:
 	LEMMissionTimerSwitch TimerSlewHours;
 	LEMMissionTimerSwitch TimerSlewMinutes;
 	LEMMissionTimerSwitch TimerSlewSeconds;
-	ToggleSwitch LtgORideAnunSwitch;
+	TwoSourceSwitch LtgORideAnunSwitch;
 	ToggleSwitch LtgORideNumSwitch;
 	ToggleSwitch LtgORideIntegralSwitch;
 	ToggleSwitch LtgSidePanelsSwitch;
@@ -1342,8 +1489,8 @@ protected:
 	SwitchRow Panel12CommSwitchRow3;
 	ThumbwheelSwitch VHFASquelch;
 	ThumbwheelSwitch VHFBSquelch;
-	IndicatorSwitch TapeRecorderTB;
 	ToggleSwitch TapeRecorderSwitch;
+	RecorderTalkback TapeRecorderTB;
 
 	SwitchRow Panel12AntTrackModeSwitchRow;
 	ThreePosSwitch Panel12AntTrackModeSwitch;
@@ -1510,7 +1657,7 @@ protected:
     PushSwitch       CO2CanisterPrimVent;
 	RotationalSwitch CO2CanisterSecValve;
     PushSwitch       CO2CanisterSecVent;
-	CircuitBrakerSwitch WaterSepSelectSwitch;
+	ToggledPushSwitch WaterSepSelectSwitch;
 
 	/////////////////////
 	// LEM Upper Hatch //
@@ -1546,6 +1693,12 @@ protected:
 
 	int LEMWindowShades;
 
+	/////////////////////
+    // LEM EVA Antenna //
+	/////////////////////
+ 
+	LEMEvaAntennaHandle EvaAntennaHandle;
+
 	///////////////////////////
 	// ORDEAL Panel switches //
 	///////////////////////////
@@ -1561,7 +1714,7 @@ protected:
 
 	LEMPanelOrdeal PanelOrdeal;		// Dummy switch/display for checklist controller
 	PowerMerge AOTLampFeeder;
-	PowerMerge NumDockCompLTGFeeder;
+	e_object DockingLightSwitchConnector; // Controlled by relay 16K1
 
 	int ordealEnabled;
 
@@ -1572,6 +1725,8 @@ protected:
 
 	int CDRinPLSS;
 	int LMPinPLSS;
+
+	int spaceeva;
 
 #define LMVIEW_CDR		 0
 #define LMVIEW_LMP		 1
@@ -1678,13 +1833,17 @@ protected:
 	UINT vcidx;
 	UINT windowshadesidx;
 	UINT xpointershadesidx;
+	UINT hLMPointingArrowidx;
+	int LMvccuecardsarrowsidx;
 
 	DEVMESHHANDLE probes;
 	DEVMESHHANDLE deflectors;
+	DEVMESHHANDLE cask;
 	DEVMESHHANDLE drogue;
 	DEVMESHHANDLE cdrmesh;
 	DEVMESHHANDLE lmpmesh;
 	DEVMESHHANDLE vcmesh;
+	bool ViewCueCardArrows;
 
 	// VC animations
 	UINT anim_fdaiR_cdr, anim_fdaiR_lmp;
@@ -1708,6 +1867,8 @@ protected:
 
 	VECTOR3 trackLightPos;
 	VECTOR3 dockingLightsPos[5];
+
+	VCPointingArrow pointingArrow;
 
 #define LMPANEL_MAIN			0
 #define LMPANEL_RIGHTWINDOW		1
@@ -1754,6 +1915,14 @@ protected:
 	double vcFreeCamz;
 	double vcFreeCamSpeed;
 	double vcFreeCamMaxOffset;
+
+	//
+	// AOT ReticleKnob
+	//
+	UINT AOT_ReticleKnobAnimTrans;
+	AnimState AOT_ReticleKnobState;
+	UINT AOT_ReticleKnobAnimRot;
+	AnimState AOT_ReticleKnobRotState;
 
 	//
 	// Failures.
@@ -1928,6 +2097,7 @@ protected:
 	LEM_SteerableAnt SBandSteerable;
 	LM_OMNI omni_fwd;
 	LM_OMNI omni_aft;
+	LM_ErectableAnt SBandErectable;
 	LM_VHF VHF;
 	LM_SBAND SBand;
 	LM_DSEA DSEA;
@@ -1941,6 +2111,7 @@ protected:
 	LEM_COASLights COASLights;
 	LEM_FloodLights FloodLights;
 	LEM_PFIRA pfira;
+	LEM_ComponentLights ComponentLights;
 
 	// ECS
 	LEM_ECS ecs;
@@ -2024,6 +2195,9 @@ protected:
 	friend class LEM_DockLights;
 	friend class LEM_FloodLights;
 
+	friend class Panel1RelayBox;
+	friend class Panel2RelayBox;
+
 	friend class LEM_ASA;
 	friend class LEM_AEA;
 	friend class LEM_DEDA;
@@ -2090,6 +2264,7 @@ protected:
 	friend class EngineStartButton;
 	friend class LEM_LCA;
 	friend class LEM_PFIRA;
+	friend class LEM_ComponentLights;
 	friend class LEMCrewStatus;
 	friend class CDRCOASPowerSwitch;
 	friend class LMMalfunctionSimulation;
@@ -2107,6 +2282,8 @@ extern MESHHANDLE hLMDescent;
 extern MESHHANDLE hLMDescentNoLeg;
 extern MESHHANDLE hLMAscent;
 extern MESHHANDLE hLMVC;
+extern MESHHANDLE hLMPointingArrow;
+extern MESHHANDLE hLMCueCardsArrows;
 
 extern void LEMLoadMeshes();
 

@@ -98,6 +98,8 @@ LM_VHF::LM_VHF():
 	receiveB = false;
 	transmitA = false;
 	transmitB = false;
+
+	anim_VHF = 0;
 }
 
 void LM_VHF::Init(LEM *vessel, h_HeatLoad *vhfh){
@@ -453,8 +455,32 @@ bool LM_PCM::TimingSignal() //Currently just looking for power from the PCM/TE c
 	return false;
 }
 
-void LM_PCM::SystemTimestep(double simdt)
+void LM_VHF::DefineAnimations(UINT idx)
 {
+	//EVA VHF Antenna Animation
+	ANIMATIONCOMPONENT_HANDLE EVA_VHF_ROTATION;
+	ANIMATIONCOMPONENT_HANDLE EVA_VHF_SCALE;
+	const VECTOR3 LM_VHF_PIVOT = { -0.35859, 1.3652, -0.89566 };    //Antenna Pivot Point
+	const VECTOR3 LM_VHF_SCALE = { -0.3588, 2.1558, -0.93309 };        //Antenna Cone Scale Point
+	static UINT meshgroup_vhf[3] = { AS_GRP_EVA_Ant, AS_GRP_EVA_AntTop, AS_GRP_EVA_AntCone };
+	static MGROUP_ROTATE EVAAnt(idx, meshgroup_vhf, 3, LM_VHF_PIVOT, _V(0, 0, 1), (float)(RAD * 84));
+	static UINT meshgroup_vhfcone = AS_GRP_EVA_AntCone;
+	static MGROUP_SCALE EVACone(idx, &meshgroup_vhfcone, 1, LM_VHF_SCALE, _V(-999, -999, -999));
+	anim_VHF = lem->CreateAnimation(1.0);
+	EVA_VHF_ROTATION = lem->AddAnimationComponent(anim_VHF, 0, 0.7, &EVAAnt);
+	EVA_VHF_SCALE = lem->AddAnimationComponent(anim_VHF, 0.7, 1, &EVACone, EVA_VHF_ROTATION);
+
+	lem->SetAnimation(anim_VHF, 1);
+
+}
+
+void LM_VHF::SetAnimation(double state)
+{
+	lem->SetAnimation(anim_VHF, state);
+}
+
+void LM_PCM::SystemTimestep(double simdt){
+
 	// PMP
 	if (lem->COMM_PMP_CB.Voltage() > 0) {
 		lem->COMM_PMP_CB.DrawPower(4.3);
@@ -1942,7 +1968,7 @@ unsigned char LM_PCM::measure(int channel, int type, int ccode){
 				case 151: // RCS PROP A QTY
 					return(scale_data(lem->RCSA.GetRCSPropellantQuantity(), 0.0, 1.0));
 				case 152: // S-BND RCVR SIG
-					return(scale_scea(lem->scera1.GetVoltage(5, 5)));
+					return(scale_scea(lem->scera1.GetVoltage(5, 4)));
 				case 153: // APS HE 1 PRESS
 					return(scale_scea(lem->scera1.GetVoltage(8, 4)));
 				case 154: // "PRI W/B H20 TEMP" = Main Sublimator Inlet Water Temp
@@ -1960,7 +1986,7 @@ unsigned char LM_PCM::measure(int channel, int type, int ccode){
 				case 160: // RCS A HE PRESS
 					return(scale_scea(lem->scera1.GetVoltage(6, 1)));
 				case 161: //S-BND RCVR SIG
-					return(scale_scea(lem->scera1.GetVoltage(5, 5)));
+					return(scale_scea(lem->scera1.GetVoltage(5, 4)));
 				case 162: // RCS PROP A QTY
 					return(scale_data(lem->RCSA.GetRCSPropellantQuantity(), 0.0, 1.0));
 				case 163: // "PRI W/B H20 TEMP" = Main Sublimator Inlet Water Temp
@@ -2453,9 +2479,13 @@ void LM_SBAND::Timestep(double simt){
 	{
 		ant = &lem->omni_aft;
 	}
-	if (lem->Panel12SBandAntSelKnob.GetState() == 2)
+	else if (lem->Panel12SBandAntSelKnob.GetState() == 2)
 	{
 		ant = &lem->SBandSteerable;
+	}
+	else
+	{
+		ant = &lem->SBandErectable;
 	}
 	
 	switch(tc_mode_1){
@@ -2675,6 +2705,7 @@ LEM_SteerableAnt::LEM_SteerableAnt()
 	pitch = 0.0;
 	yaw = 0.0;
 	moving = false;
+	driverateratio = 0.0;
 	hpbw_factor = 0.0;
 	SignalStrength = 0.0;
 
@@ -2696,12 +2727,13 @@ void LEM_SteerableAnt::Init(LEM *s, h_Radiator *an, Boiler *anheat, h_HeatLoad* 
 	antheatload = anthtld;
 	antenna->isolation = 0.000001; 
 	antenna->Area = 10783.0112; // Surface area of reflecting dish, probably good enough
-	if(lem != NULL){
+
+	if (lem != NULL) {
 		antheater->WireTo(&lem->HTR_SBD_ANT_CB);
 	}
 
-	pitch = -75.0*RAD;
-	yaw = -12.0*RAD;
+	pitch = -75.0 * RAD;
+	yaw = -12.0 * RAD;
 
 	double beamwidth = 12.5*RAD;
 	hpbw_factor = acos(sqrt(sqrt(0.5))) / (beamwidth / 2.0);
@@ -2709,6 +2741,15 @@ void LEM_SteerableAnt::Init(LEM *s, h_Radiator *an, Boiler *anheat, h_HeatLoad* 
 	LEM_SteerableAntGain = pow(10, (16.5 / 10));
 	LEM_SteerableAntFrequency = 2119; //MHz. Should this get set somewhere else?
 	LEM_SteerableAntWavelength = C0 / (LEM_SteerableAntFrequency * 1000000); //meters
+}
+
+void LEM_SteerableAnt::AngleInit(int LMNumber)
+{
+	if (LMNumber < 6)
+	{
+		pitch = 225.0 * RAD;
+		yaw = 0.0 * RAD;
+	}
 }
 
 void LEM_SteerableAnt::Timestep(double simdt){
@@ -2730,112 +2771,110 @@ void LEM_SteerableAnt::Timestep(double simdt){
 
 	moving = false;
 
-	if (!IsPowered())
+	if (IsPowered())
 	{
-		SignalStrength = 0.0;
-		return;
-	}
+		double AzimuthErrorSignal, ElevationErrorSignal;
+		double AzimuthErrorSignalNorm, ElevationErrorSignalNorm;
 
-	double AzimuthErrorSignal, ElevationErrorSignal;
-	double AzimuthErrorSignalNorm, ElevationErrorSignalNorm;
+		//actual Azimuth and Elevation error signals came from phase differences not signal strength
+		//both are be a function of tracking error though so this works
+		AzimuthErrorSignal = (HornSignalStrength[1] - HornSignalStrength[0]) * 0.25;
+		ElevationErrorSignal = (HornSignalStrength[3] - HornSignalStrength[2]) * 0.25;
 
-	//actual Azimuth and Elevation error signals came from phase differences not signal strength
-	//both are be a function of tracking error though so this works
-	AzimuthErrorSignal = (HornSignalStrength[1] - HornSignalStrength[0])*0.25;
-	ElevationErrorSignal = (HornSignalStrength[3] - HornSignalStrength[2])*0.25;
-
-	//normalize Azimuth and Elevation error signals
-	if (SignalStrength > 0.0)
-	{
-		AzimuthErrorSignalNorm = AzimuthErrorSignal / SignalStrength;
-		ElevationErrorSignalNorm = ElevationErrorSignal / SignalStrength;
-	}
-	else //prevent division by zero
-	{
-		AzimuthErrorSignalNorm = 0;
-		ElevationErrorSignalNorm = 0;
-	}
-
-	double pitchrate = 0.0;
-	double yawrate = 0.0;
-
-	double PitchSlew, YawSlew;
-
-	const double TrkngCtrlGain = 270; //arbitrary; tuned high enough maintain track during maneuvers up to slew rate, but not cause osculation.
-	const double TrkngRatelGain = 4.0; //
-	const double MaxServoRate = 20 * RAD;
-
-	//sprintf(oapiDebugString(), "AzimuthErrorSignal: %f, ElevationErrorSignal: %f", AzimuthErrorSignal, ElevationErrorSignal);
-
-	//Slew Mode
-	if (lem->Panel12AntTrackModeSwitch.GetState() == THREEPOSSWITCH_DOWN)
-	{
-		PitchSlew = (lem->Panel12AntPitchKnob.GetValue()*15.0 - 75.0)*RAD;
-		YawSlew = (lem->Panel12AntYawKnob.GetValue()*15.0 - 90.0)*RAD;
-	}
-	//Auto Tracking
-	else if (lem->Panel12AntTrackModeSwitch.GetState() == THREEPOSSWITCH_UP)
-	{
-		PitchSlew = pitch + (TrkngCtrlGain*ElevationErrorSignalNorm*exp(-simdt*10));
-		YawSlew = yaw + (TrkngCtrlGain*AzimuthErrorSignalNorm*exp(-simdt*10));
-	}
-	else
-	{
-		PitchSlew = pitch;
-		YawSlew = yaw;
-	}
-
-	
-	//sprintf(oapiDebugString(), "PitchSlew: %f, YawSlew: %f", PitchSlew*DEG, YawSlew*DEG);
-
-	//set antenna slew-rates
-	if (abs(PitchSlew - pitch) > 0.0001)
-	{
-		pitchrate = (PitchSlew - pitch)*TrkngRatelGain;
-		if (abs(pitchrate) > MaxServoRate)
+		//normalize Azimuth and Elevation error signals
+		if (SignalStrength > 0.0)
 		{
-			pitchrate = MaxServoRate *pitchrate / abs(pitchrate);
+			AzimuthErrorSignalNorm = AzimuthErrorSignal / SignalStrength;
+			ElevationErrorSignalNorm = ElevationErrorSignal / SignalStrength;
 		}
-		moving = true;
-	}
-
-	if (abs(YawSlew - yaw) > 0.0001)
-	{
-		yawrate = (YawSlew - yaw)*TrkngRatelGain;
-		if (abs(yawrate) > MaxServoRate)
+		else //prevent division by zero
 		{
-			yawrate = MaxServoRate *yawrate / abs(yawrate);
+			AzimuthErrorSignalNorm = 0;
+			ElevationErrorSignalNorm = 0;
 		}
-		moving = true;
+
+		double pitchrate = 0.0;
+		double yawrate = 0.0;
+
+		double PitchSlew, YawSlew;
+
+		const double TrkngCtrlGain = 270; //arbitrary; tuned high enough maintain track during maneuvers up to slew rate, but not cause osculation.
+		const double TrkngRatelGain = 4.0; //
+		const double MaxServoRate = 20 * RAD;
+
+		//sprintf(oapiDebugString(), "AzimuthErrorSignal: %f, ElevationErrorSignal: %f", AzimuthErrorSignal, ElevationErrorSignal);
+
+		//Slew Mode
+		if (lem->Panel12AntTrackModeSwitch.GetState() == THREEPOSSWITCH_DOWN)
+		{
+			PitchSlew = (lem->Panel12AntPitchKnob.GetValue() * 15.0 - 75.0) * RAD;
+			YawSlew = (lem->Panel12AntYawKnob.GetValue() * 15.0 - 90.0) * RAD;
+		}
+		//Auto Tracking
+		else if (lem->Panel12AntTrackModeSwitch.GetState() == THREEPOSSWITCH_UP)
+		{
+			PitchSlew = pitch + (TrkngCtrlGain * ElevationErrorSignalNorm * exp(-simdt * 10));
+			YawSlew = yaw + (TrkngCtrlGain * AzimuthErrorSignalNorm * exp(-simdt * 10));
+		}
+		else
+		{
+			PitchSlew = pitch;
+			YawSlew = yaw;
+		}
+
+
+		//sprintf(oapiDebugString(), "PitchSlew: %f, YawSlew: %f", PitchSlew*DEG, YawSlew*DEG);
+
+		//set antenna slew-rates
+		if (abs(PitchSlew - pitch) > 0.0001)
+		{
+			pitchrate = (PitchSlew - pitch) * TrkngRatelGain;
+			if (abs(pitchrate) > MaxServoRate)
+			{
+				pitchrate = MaxServoRate * pitchrate / abs(pitchrate);
+			}
+			moving = true;
+		}
+
+		if (abs(YawSlew - yaw) > 0.0001)
+		{
+			yawrate = (YawSlew - yaw) * TrkngRatelGain;
+			if (abs(yawrate) > MaxServoRate)
+			{
+				yawrate = MaxServoRate * yawrate / abs(yawrate);
+			}
+			moving = true;
+		}
+
+		driverateratio = ((abs(pitchrate) / MaxServoRate) + (abs(yawrate) / MaxServoRate)) / 2.0;  //allows power draw based on drive rates
+
+		//sprintf(oapiDebugString(), "pitchrate: %f deg/sec, yawrate: %f deg/sec", pitchrate*DEG, yawrate*DEG);
+
+		//Drive Antenna
+		pitch += pitchrate * simdt;
+		yaw += yawrate * simdt;
+
+		//sprintf(oapiDebugString(), "pitch: %f pitchrate %f, yaw: %f yawrate %f %d", pitch*DEG, pitchrate*DEG, yaw*DEG, yawrate*DEG, moving);
+
+		//Antenna Limits
+		if (pitch > 255.0 * RAD)
+		{
+			pitch = 255.0 * RAD;
+		}
+		else if (pitch < -75.0 * RAD)
+		{
+			pitch = -75.0 * RAD;
+		}
+
+		if (yaw > 87.0 * RAD)
+		{
+			yaw = 87.0 * RAD;
+		}
+		else if (yaw < -87.0 * RAD)
+		{
+			yaw = -87.0 * RAD;
+		}
 	}
-
-	//sprintf(oapiDebugString(), "pitchrate: %f deg/sec, yawrate: %f deg/sec", pitchrate*DEG, yawrate*DEG);
-
-	//Drive Antenna
-	pitch += pitchrate*simdt;
-	yaw += yawrate*simdt;
-
-	//sprintf(oapiDebugString(), "pitch: %f pitchrate %f, yaw: %f yawrate %f %d", pitch*DEG, pitchrate*DEG, yaw*DEG, yawrate*DEG, moving);
-
-	//Antenna Limits
-	if (pitch > 255.0*RAD)
-	{
-		pitch = 255.0*RAD;
-	}
-	else if (pitch < -75.0*RAD)
-	{
-		pitch = -75.0*RAD;
-	}
-
-	if (yaw > 87.0*RAD)
-	{
-		yaw = 87.0*RAD;
-	}
-	else if (yaw < -87.0*RAD)
-	{
-		yaw = -87.0*RAD;
-	}
-
 	//Signal Strength
 
 	double relang[4];
@@ -2902,20 +2941,21 @@ void LEM_SteerableAnt::Timestep(double simdt){
 void LEM_SteerableAnt::SystemTimestep(double simdt)
 {
 	// Do we have power?
-	if (IsPowered()) {
-
-		lem->SBD_ANT_AC_CB.DrawPower(4); 	
+	if (IsPowered())
+	{
+		lem->SBD_ANT_AC_CB.DrawPower(4);
 		lem->COMM_SBAND_ANT_CB.DrawPower(0.83);
 		antheatload->GenerateHeat(4 + 0.83);
-
 	}
 
 	if (moving)
 	{
-		lem->SBD_ANT_AC_CB.DrawPower(27.9); 	//Need a source on this moving draw
-		lem->COMM_SBAND_ANT_CB.DrawPower(7.6);  //Need a source on this moving draw
-		//antheatload->GenerateHeat(0);		//Will add this once loads above are checked and sourced
+		lem->SBD_ANT_AC_CB.DrawPower(27.9 * driverateratio); 			//Need a source on this moving draw (currently AOH performance summary)
+		lem->COMM_SBAND_ANT_CB.DrawPower(7.6 * driverateratio);			//Need a source on this moving draw (currently AOH performance summary)
+		antheatload->GenerateHeat((27.9 + 7.6) * driverateratio);
 	}
+
+	//sprintf(oapiDebugString(),"Drive Rate Ratio %.01f", driverateratio);
 }
 
 bool LEM_SteerableAnt::IsPowered()
@@ -3069,13 +3109,67 @@ void LM_OMNI::Timestep()
 	}
 }
 
-LM_DSEA::LM_DSEA() :
-	tapeSpeedInchesPerSecond(0.0),
-	desiredTapeSpeed(0.0),
-	tapeMotion(0.0),
-	state(STOPPED)
+LM_ErectableAnt::LM_ErectableAnt()
 {
-	lastEventTime = 0;
+	lem = NULL;
+	AntGain = pow(10, (33.2 / 10));
+	double AntFrequency = 2119.0;
+	AntWavelength = C0 / (AntFrequency * 1000000.0); //meters
+}
+
+void LM_ErectableAnt::Init(LEM *vessel)
+{
+	lem = vessel;
+}
+
+void LM_ErectableAnt::Timestep()
+{
+	//Default to 0 signal strength
+	SignalStrength = 0.0;
+
+	//Try to find vessel
+	OBJHANDLE Ant = oapiGetVesselByName("S-Band");
+	if (Ant == NULL) return;
+
+	//Use stage condition to see if the antenna can still be connected
+	if (lem->GetStage() > 1) return;
+
+	//Get pointer to MCC
+	OBJHANDLE MCCV = oapiGetVesselByName("MCC");
+	if (MCCV == NULL) return;
+
+	VECTOR3 pos;
+	double EarthSignalDist, RecvdOMNIPower, RecvdOMNIPower_dBm;
+
+	//Global position of the spacecraft
+	lem->GetGlobalPos(pos);
+
+	//Get properties
+	VESSEL4* MCCVessel = (VESSEL4*)oapiGetVesselInterface(MCCV);
+	GroundTransmitterRFProperties.GlobalPosition = _V(0, 0, 0);
+	MCCVessel->clbkGeneric(paCBGmessageID::messageID::RF_PROPERTIES, paCBGmessageID::parameterID::GetLM, &GroundTransmitterRFProperties);
+
+	//Distance from active ground station
+	EarthSignalDist = length(pos - GroundTransmitterRFProperties.GlobalPosition);
+
+	//Signal strength
+	RecvdOMNIPower = GroundTransmitterRFProperties.Power * GroundTransmitterRFProperties.Gain * AntGain * pow(AntWavelength / (4.0 * PI*EarthSignalDist), 2); //maximum received power in watts
+	RecvdOMNIPower_dBm = RFCALC_W2dBm(RecvdOMNIPower);
+	SignalStrength = LM_SBandAntenna::dBm2SignalStrength(RecvdOMNIPower_dBm);
+}
+
+LM_DSEA::LM_DSEA() //0.6 inches per second, 2.5 hours of record time per track, 5,400 inches of tape, 4 tracks giving 10 hours total
+{
+	lem = NULL;
+	DSEHeat = NULL;
+	tapeSpeed = 0.0;
+	tapePosition = 0.0;
+	desiredTapeSpeed = 0.0;
+	motorDirection = 0.0;
+	trackNumber = 1;
+
+	FWD = false;
+	REV = false;
 }
 
 LM_DSEA::~LM_DSEA()
@@ -3089,90 +3183,6 @@ void LM_DSEA::Init(LEM *l, h_HeatLoad *dseht)
 	DSEHeat = dseht;
 }
 
-bool LM_DSEA::TapeMotion()
-{
-	switch (state)
-	{
-	case STOPPED:
-	case STARTING_RECORD:
-		return false;
-
-	default:
-		return true;
-	}
-}
-
-void LM_DSEA::Stop()
-{
-	if (state != STOPPED || desiredTapeSpeed > 0.0)
-	{
-		desiredTapeSpeed = 0.0;
-		state = STOPPING;
-	}
-	else
-		state = STOPPED;
-}
-
-void LM_DSEA::Record()
-	//Records constantly if powered, tape recorder on, and in ICS/PTT.  
-	//Will also record if in VOX if voice activates or in PTT when PTT switch depressed with recorder power and switch on
-	//PCM/TE power required for PCM timestamp recording and for for TB functionality
-	//SE Audio power required for switch to function
-{
-	double tapeSpeed = 0.6;  // 0.6 inches per second from LM AOH
-	if (state != RECORDING || tapeSpeedInchesPerSecond != tapeSpeed)
-	{
-		desiredTapeSpeed = tapeSpeed;
-
-		if (desiredTapeSpeed > tapeSpeedInchesPerSecond)
-		{
-			state = STARTING_RECORD;
-		}
-		else if (desiredTapeSpeed < tapeSpeedInchesPerSecond)
-		{
-			state = SLOWING_RECORD;
-		}
-		else
-		{
-			state = RECORDING;
-		}
-	}
-	else
-		state = RECORDING;
-}
-
-bool LM_DSEA::RecordLogic()
-{
-	if (IsACPowered() == true && lem->TapeRecorderSwitch.IsUp() && IsSWPowered() == true)
-	{
-		if (ICSPTT() == true || (VOXPTT() == true && VoiceXmit() == true))
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
-const double tapeAccel = 1.2; //No idea if this is right, CSM used 2x the tape speed so we will here
-
-bool LM_DSEA::IsSWPowered()
-{
-	if(lem->COMM_SE_AUDIO_CB.Voltage() > SP_MIN_DCVOLTAGE)
-	{
-		return true;
-	}
-	return false;
-}
-
-bool LM_DSEA::IsPCMPowered() //Allows PCM to timestamp tape
-{
-	if (lem->INST_PCMTEA_CB.Voltage() > SP_MIN_DCVOLTAGE)
-	{
-		return true;
-	}
-	return false;
-}
-
 bool LM_DSEA::IsACPowered()
 {
 	if (lem->TAPE_RCDR_AC_CB.Voltage() > SP_MIN_ACVOLTAGE)
@@ -3182,143 +3192,286 @@ bool LM_DSEA::IsACPowered()
 	return false;
 }
 
-//Voice Transmit
+//PCM Timing, written onto tape (not simulated yet)
+bool LM_DSEA::TimingSignal()
+{
+	return lem->PCM.TimingSignal();
+}
+
+//Voice Transmit/PTT
 //VOX and PTT modes will record if transmitting or keying mic while recorder powered/switch on
 //ICS/PTT mode will always record if recorder powered/switch on, but only have voice track if voice present
+bool LM_DSEA::CDRVoiceXmit()
+{
+	return false;
+	//Use for CDR Voice Transmission (not simulated yet)
+}
+
 bool LM_DSEA::LMPVoiceXmit()
 {
-	/*
-	//This logic will be necessary along with a signal that voice is being transmitted, commented out for now as voice is not simulated.
-	if ((lem->LMPAudVOXSwitch.IsCenter() && lem->COMM_SE_AUDIO_CB.Voltage() > SP_MIN_DCVOLTAGE))  //ICS/PTT
-	{
-		return true;
-	}
-	*/
 	return false;
-	//voice not simulated yet
+	//Use for LMP Voice Transmission (not simulated yet)
 }
 
-bool LM_DSEA::CDRVoiceXmit() 
+bool LM_DSEA::CDRPTT()
 {
-	/*
-	//This logic will be necessary along with a signal that voice is being transmitted, commented out for now as voice is not simulated.
-	if ((lem->CDRAudVOXSwitch.IsCenter() && lem->COMM_CDR_AUDIO_CB.Voltage() > SP_MIN_DCVOLTAGE))  //ICS/PTT
-	{
-		return true;
-	}
-	*/
-
 	return false;
-	//voice not simulated yet
+	//Use for CDR PTT (not simulated yet)
 }
 
-bool LM_DSEA::VoiceXmit()
+bool LM_DSEA::LMPPTT()
 {
-	//if (lem->Panel12UpdataLinkSwitch.IsUp()) //Switch for debugging voice transmit
-	if (CDRVoiceXmit() == true || LMPVoiceXmit() == true)
+	return false;
+	//Use for LMP PTT (not simulated yet)
+}
+
+//CDR Audio Center
+bool LM_DSEA::CDRAudioRec()	
+{
+	bool CDRsupply, CDRDSEAKey;
+	if (lem->COMM_CDR_AUDIO_CB.IsPowered())
+	{
+		if (lem->TapeRecorderSwitch.IsUp())
+		{
+			CDRsupply = true;
+		}
+		else
+		{
+			CDRsupply = false;
+		}
+
+		if (lem->CDRAudICSSwitch.IsUp())
+		{
+			if ((lem->CDRAudVOXSwitch.IsUp() && CDRVoiceXmit()) || lem->CDRAudVOXSwitch.IsDown() && CDRPTT())
+			{
+				CDRDSEAKey = true;
+			}
+			else if (lem->CDRAudVOXSwitch.IsCenter())
+			{
+				CDRDSEAKey = true;
+			}
+			else
+			{
+				CDRDSEAKey = false;
+			}
+		}
+		else
+		{
+			CDRDSEAKey = false;
+		}
+	}
+	else
+	{
+		CDRsupply = false;
+		CDRDSEAKey = false;
+	}
+
+	if (CDRsupply && CDRDSEAKey)
+	{
+		return true; //Recording
+	}
+	else
+	{
+		return false; //Stopped
+	}
+}
+
+//LMP Audio Center
+bool LM_DSEA::LMPAudioRec() 	
+{
+	bool LMPsupply, LMPDSEAKey;
+	if (lem->COMM_SE_AUDIO_CB.IsPowered())
+	{
+		if (lem->TapeRecorderSwitch.IsUp())
+		{
+			LMPsupply = true;
+		}
+		else
+		{
+			LMPsupply = false;
+		}
+
+		if (lem->LMPAudICSSwitch.IsUp())
+		{
+			if ((lem->LMPAudVOXSwitch.IsUp() && LMPVoiceXmit()) || lem->LMPAudVOXSwitch.IsDown() && LMPPTT())
+			{
+				LMPDSEAKey = true;
+			}
+			else if (lem->LMPAudVOXSwitch.IsCenter())
+			{
+				LMPDSEAKey = true;
+			}
+			else
+			{
+				LMPDSEAKey = false;
+			}
+		}
+		else
+		{
+			LMPDSEAKey = false;
+		}
+	}
+	else
+	{
+		LMPsupply = false;
+		LMPDSEAKey = false;
+	}
+
+	if (LMPsupply && LMPDSEAKey)
+	{
+		return true; //Recording
+	}
+	else
+	{
+		return false; //Stopped
+	}
+}
+
+const double tapeLength = 5400.0; //inches (450 ft)
+const double tapeAccel = 10.0; //arbitrary number to allow speed up/slow down
+const double commandedSpeed = 0.6; //0.6 inches per second
+
+bool LM_DSEA::TapeMotion()
+{
+	if (tapeSpeed != 0.0)
 	{
 		return true;
 	}
 	return false;
 }
 
-bool LM_DSEA::ICSPTT()
+//Tape track recording and switching
+void LM_DSEA::tapeTrack()
 {
-	if ((lem->LMPAudVOXSwitch.IsCenter() && lem->COMM_SE_AUDIO_CB.Voltage() > SP_MIN_DCVOLTAGE) || (lem->CDRAudVOXSwitch.IsCenter() && lem->COMM_CDR_AUDIO_CB.Voltage() > SP_MIN_DCVOLTAGE))  //ICS/PTT
+	if (trackNumber > 4)
 	{
-		return true;
+		trackNumber = 4;
+		FWD = false;
+		REV = false;
+		return;
 	}
-	return false;
+
+	if (CDRAudioRec() || LMPAudioRec())
+	{
+		if (trackNumber == 1 || trackNumber == 3)
+		{
+			FWD = true;
+			REV = false;
+		}
+		else if (trackNumber == 2 || trackNumber == 4)
+		{
+			FWD = false;
+			REV = true;
+		}
+		else
+		{
+			FWD = false;
+			REV = false;
+		}
+	}
+	else
+	{
+		FWD = false;
+		REV = false;
+	}
+
+	if (FWD && tapePosition >= tapeLength)
+	{
+		trackNumber++;
+		FWD = false;
+	}
+	else if (REV && tapePosition <= 0.0)
+	{
+		trackNumber++;
+		REV = false;
+	}
 }
 
-bool LM_DSEA::VOXPTT()
+void LM_DSEA::Timestep(double simdt)
 {
-	if ((lem->COMM_SE_AUDIO_CB.Voltage() > SP_MIN_DCVOLTAGE && (lem->LMPAudVOXSwitch.IsUp() || lem->LMPAudVOXSwitch.IsDown())) || (lem->COMM_CDR_AUDIO_CB.Voltage() > SP_MIN_DCVOLTAGE && (lem->CDRAudVOXSwitch.IsUp() || lem->CDRAudVOXSwitch.IsDown())))  //VOX or PTT
+	//Tape track logic
+	tapeTrack();
+
+	//Tape motion logic
+	if (IsACPowered())
 	{
-		return true;
+		if (FWD)
+		{
+			motorDirection = 1.0;
+		}
+		else if (REV)
+		{
+			motorDirection = -1.0;
+		}
+		else
+		{
+			motorDirection = 0.0;
+		}
 	}
-	return false;
+	else
+	{
+		motorDirection = 0.0;
+	}
+
+	//Tape speed logic
+	double cmd, pos;
+
+	desiredTapeSpeed = commandedSpeed * motorDirection;
+
+	//Tape acceleration logic
+	cmd = desiredTapeSpeed - tapeSpeed;
+	if (abs(cmd) > tapeAccel * simdt)
+	{
+		pos = sign(desiredTapeSpeed - tapeSpeed) * tapeAccel * simdt;
+	}
+	else
+	{
+		pos = cmd;
+	}
+
+	tapeSpeed += pos;
+
+	tapePosition += tapeSpeed * simdt;
+
+	if (tapePosition <= 0.0)
+	{
+		tapePosition = 0.0;
+	}
+	else if (tapePosition >= tapeLength)
+	{
+		tapePosition = tapeLength;
+	}
+
+	//sprintf(oapiDebugString(), "tapeSpeed %lf desired %lf position %lf motor %lf tapeMotion %i track %d FWD %i REV %i CDR %i LMP %i", tapeSpeed, desiredTapeSpeed, tapePosition, motorDirection, TapeMotion(), trackNumber, FWD, REV, CDRAudioRec(), LMPAudioRec());
 }
 
 void LM_DSEA::SystemTimestep(double simdt)
 {
-	if (state != STOPPED)
+	if (IsACPowered() && tapeSpeed != 0.0)
 	{
 		lem->TAPE_RCDR_AC_CB.DrawPower(2.7);
 		DSEHeat->GenerateHeat(2.7);
 	}
-}
 
-void LM_DSEA::Timestep(double simt, double simdt)
-{
-	if (state == RECORDING && VoiceXmit() == true)
-	{ 
-		lem->TapeRecorderTB.SetState(1);
-	}
-
-	else 
-	{ 
-		lem->TapeRecorderTB.SetState(0);
-	}
-
-	switch (state)
+	if (CDRAudioRec())
 	{
-	case STOPPED:
-		if (RecordLogic())
-		{
-			Record();
-		}
-		break;
-
-	case RECORDING:
-		if (!RecordLogic())
-		{
-			Stop();
-		}
-		break;
-
-	case STARTING_RECORD:
-		tapeSpeedInchesPerSecond += tapeAccel * simdt;
-		if (tapeSpeedInchesPerSecond >= desiredTapeSpeed)
-		{
-			tapeSpeedInchesPerSecond = desiredTapeSpeed;
-			state = RECORDING;
-		}
-		break;
-
-	case SLOWING_RECORD:
-		tapeSpeedInchesPerSecond -= tapeAccel * simdt;
-		if (tapeSpeedInchesPerSecond <= desiredTapeSpeed)
-		{
-			tapeSpeedInchesPerSecond = desiredTapeSpeed;
-			state = RECORDING;
-		}
-		break;
-
-	case STOPPING:
-		tapeSpeedInchesPerSecond -= tapeAccel * simdt;
-		if (tapeSpeedInchesPerSecond <= 0.0)
-		{
-			tapeSpeedInchesPerSecond = 0.0;
-			state = STOPPED;
-		}
-		break;
-
-	default:
-		break;
+		lem->COMM_CDR_AUDIO_CB.DrawPower(7.2); //Momentary draw when recording per AOH
 	}
-	lastEventTime = simt;
-	//sprintf(oapiDebugString(), "DSE tapeSpeedips %lf desired %lf tapeMotion %lf state %i", tapeSpeedInchesPerSecond, desiredTapeSpeed, tapeMotion, state);
+
+	if (LMPAudioRec())
+	{
+		lem->COMM_SE_AUDIO_CB.DrawPower(7.2); //Momentary draw when recording per AOH
+	}
 }
 
 void LM_DSEA::LoadState(char *line) {
 
-	sscanf(line + 12, "%lf %lf %lf %i %lf", &tapeSpeedInchesPerSecond, &desiredTapeSpeed, &tapeMotion, &state, &lastEventTime);
+	sscanf(line + 12, "%lf %lf %d", &tapeSpeed, &tapePosition, &trackNumber);
 }
 
 void LM_DSEA::SaveState(FILEHANDLE scn) {
 	char buffer[256];
 
-	sprintf(buffer, "%lf %lf %lf %i %lf", tapeSpeedInchesPerSecond, desiredTapeSpeed, tapeMotion, state, lastEventTime);
+	sprintf(buffer, "%lf %lf %d", tapeSpeed, tapePosition, trackNumber);
 	oapiWriteScenario_string(scn, "DATARECORDER", buffer);
 }

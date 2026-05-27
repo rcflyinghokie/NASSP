@@ -51,3 +51,108 @@ protected:
 	double lowpress;
 	double highpress;
 };
+
+/// This class simulates flood lighting behavior in the CSM
+class FloodLights
+{
+public:
+	FloodLights();
+	virtual ~FloodLights();
+	void FloodLights::Init(Saturn *s, e_object *flood_rty_src, e_object *fixed, ToggleSwitch *dim, ContinuousRotationalSwitch *rty);
+	double GetPrimVoltage();
+	double GetSecVoltage();
+	double GetPrimOutput();
+	double GetSecOutput();
+	double GetCombinedOutput();
+	void SystemTimestep(double simdt);
+
+protected:
+	Saturn *saturn;
+	e_object *FloodRtycb;
+	e_object *FIXEDsw;
+	ToggleSwitch *DIMsw;
+	ContinuousRotationalSwitch *Rotary;
+};
+
+/// This class simulates tunnel lighting behavior in the CSM
+class TunnelLights
+{
+public:
+	TunnelLights();
+	virtual ~TunnelLights();
+	void TunnelLights::Init(Saturn *s, e_object *cb, ToggleSwitch *lt_sw);
+	double GetOutput();
+	void SystemTimestep(double simdt);
+
+protected:
+	Saturn *saturn;
+	e_object *MNcb;
+	ToggleSwitch *TunnelLtsw;
+};
+
+/// This class simulates integral lighting behavior in the CSM
+class IntegralLights
+{
+public:
+	IntegralLights(PanelSDK& p, double watts);
+	virtual ~IntegralLights();
+	void IntegralLights::Init(Saturn *s, e_object *cb, ContinuousRotationalSwitch *rty);
+	double GetOutput();
+	void SystemTimestep(double simdt);
+
+	// Variable 0-115VAC integral transformer
+	RotVariableVoltageTransformer Variable_0_115VAC_Int_Output;
+
+protected:
+	Saturn *saturn;
+	e_object *Integralcb;
+	ContinuousRotationalSwitch *Rotary;
+	double powerdraw;
+};
+
+/// This class simulates numeric lighting behavior in the CSM
+class NumericLights
+{
+public:
+	NumericLights(PanelSDK& p);
+	virtual ~NumericLights();
+	void NumericLights::Init(Saturn *s, e_object *cb, ContinuousRotationalSwitch *rty);
+	double GetOutput();
+	void SystemTimestep(double simdt);
+
+	// Variable 115-5VAC output to DSKY
+	RotVariableVoltageTransformer Variable_115_5VAC_Output;
+
+	// Variable 0-115VAC numerics transformer
+	RotVariableVoltageTransformer Variable_0_115VAC_Num_Output;
+
+protected:
+	Saturn *saturn;
+	e_object *Numericscb;
+	ContinuousRotationalSwitch *Rotary;
+};
+
+/// This class simulates exterior lighting behavior in the CSM
+class ExteriorLighting
+{
+public:
+	ExteriorLighting();
+	virtual ~ExteriorLighting();
+	void Init(Saturn *s, CircuitBrakerSwitch *RDVMNB, ThreeSourceTwoDestSwitch *RDZSPOT, PowerMerge *AC, ToggleSwitch *RUNEVA, ElectricLight *EVALT);
+	void SystemTimestep(double simdt);
+	void SaveState(FILEHANDLE scn, char *name_str);
+	void LoadState(char *line, int strlen);
+	bool IsRunEVAOn();
+	void DefineAnimations(UINT idx);
+
+protected:
+	Saturn *saturn;
+	CircuitBrakerSwitch *RNDZSPOTMNBcb;
+	ThreeSourceTwoDestSwitch *RDZSPOTsw;
+	PowerMerge *ACPower;
+	ToggleSwitch *RUNEVAsw;
+	ElectricLight *EVALight;
+	bool SpotDeployed;
+	bool EVALtDeployed;
+	UINT anim_EVALt;
+};

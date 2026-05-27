@@ -47,6 +47,7 @@
 
 #include "connector.h"
 #include "nassputils.h"
+#include "LM_VC_Resource.h"
 
 using namespace nassp;
 
@@ -183,8 +184,7 @@ void cbLMVesim(int inputID, int eventType, int newValue, void *pdata) {
 			break;
 		case LM_BUTTON_ENG_START:
 			//Engine Start Button
-			pLM->ManualEngineStart.Push();
-			pLM->ButtonClick();
+			pLM->ManualEngineStart.SetState(PUSHBUTTON_PUSHED);
 			break;
 		case LM_BUTTON_ENG_STOP:
 			//Engine Stop Button
@@ -380,7 +380,7 @@ LEM::LEM(OBJHANDLE hObj, int fmodel) : Payload (hObj, fmodel),
 	ED28VBusB("ED-28V-BusB", NULL),
 	ACBusA("AC-Bus-A",NULL),
 	ACBusB("AC-Bus-B",NULL),
-	dsky(soundlib, agc, 015),
+	dsky(soundlib, agc, Panelsdk, 015),
 	LandingGearPyros("Landing-Gear-Pyros", Panelsdk),
 	LandingGearPyrosFeeder("Landing-Gear-Pyros-Feeder", Panelsdk),
 	StagingBoltsPyros("Staging-Bolts-Pyros", Panelsdk),
@@ -452,14 +452,16 @@ LEM::LEM(OBJHANDLE hObj, int fmodel) : Payload (hObj, fmodel),
 	lm_vhf_to_csm_csm_connector(this, &VHF),
 	cdi(this),
 	AOTLampFeeder("AOT-Lamp-Feeder", Panelsdk),
-	NumDockCompLTGFeeder("Num-Dock-Comp-LTG-Feeder", Panelsdk),
 	DescentECAMainFeeder("Descent-ECA-Main-Feeder", Panelsdk),
 	DescentECAContFeeder("Descent-ECA-Cont-Feeder", Panelsdk),
 	AscentECAMainFeeder("Ascent-ECA-Main-Feeder", Panelsdk),
 	AscentECAContFeeder("Ascent-ECA-Cont-Feeder", Panelsdk),
 	vesim(&cbLMVesim, this),
-	Failures(this)
+	lca(Panelsdk),
+	ComponentLights(Panelsdk),
 
+	Failures(this),
+	CueCards(vcidx, this, 25)
 {
 	dllhandle = g_Param.hDLL; // DS20060413 Save for later
 	InitLEMCalled = false;
@@ -534,8 +536,11 @@ void LEM::Init()
 	CDRinPLSS = 0;
 	LMPinPLSS = 0;
 
+	spaceeva = false;
+
 	CMPowerToCDRBusRelayA = false;
 	CMPowerToCDRBusRelayB = false;
+	SLADockingLightPressureSwitchRelay = false;
 
 	InVC = false;
 	InPanel = false;
@@ -590,6 +595,20 @@ void LEM::Init()
 	vcFreeCamSpeed = 0.2;
 	vcFreeCamMaxOffset = 0.5;
 
+	// Flashlight
+	flashlight = 0;
+	flashlightColor = { 1,1,1,0 };
+	flashlightColor2 = { 0,0,0,0 };
+	flashlightPos = { 0,0,0 };
+	flashlightDirLocal = { 0,0,1 };
+	flashlightOn = 0;
+
+	//
+	// FloodLights
+	//
+	floodLight_Right = 0;
+	floodLight_Left = 0;
+
 	DPSPropellant.SetVessel(this);
 	APSPropellant.SetVessel(this);
 	RCSA.SetVessel(this);
@@ -609,10 +628,13 @@ void LEM::Init()
 	vcidx = -1;
 	windowshadesidx = -1;
 	xpointershadesidx = -1;
+	hLMPointingArrowidx = -1;
+	LMvccuecardsarrowsidx = -1;
 
 	drogue = NULL;
 	probes = NULL;
 	deflectors = NULL;
+	cask = NULL;
 	cdrmesh = NULL;
 	lmpmesh = NULL;
 	vcmesh = NULL;
@@ -624,6 +646,7 @@ void LEM::Init()
 	aeaa = NULL;
 
 	COASreticlevisible = 0;
+	ViewCueCardArrows = false;
 
 	trackLightPos = _V(0, 0, 0);
 	for (int i = 0;i < 5;i++)
@@ -676,6 +699,11 @@ void LEM::Init()
 	RegisterConnector(VIRTUAL_CONNECTOR_PORT, &lm_rr_to_csm_connector);
 	RegisterConnector(VIRTUAL_CONNECTOR_PORT, &lm_vhf_to_csm_csm_connector);
 
+	// New keyboard control values
+	for (auto i = 0; i < 6; ++i) {
+		aca_keyboard_deflection[i] = 0.0;
+	}
+
 	// Do this stuff only once
 	if(!InitLEMCalled){
 		SystemsInit();
@@ -685,6 +713,7 @@ void LEM::Init()
 		fdaiSmooth = false;
 
 		InitVCAnimations();
+		pointingArrow.Init(this);
 
 		PanelId = LMPANEL_MAIN;	// default panel
 		InitSwitches();
@@ -828,17 +857,69 @@ int LEM::clbkConsumeDirectKey(char* kstate)
 		}
 	}
 
+	// Override attitude controls, but only if that wouldn't interfere with our DSKY/DEDA shortcuts.
+	// I'm using the Orbiter thruster group enum for this but the attitude thruster group
+	// starts at a non-zero value. So I subtract the first enum from each entry
+	// to get a zero-based index.
+	// Only override these keys if the user is holding no modifier keys, Alt only, or Ctrl + Alt.
+	if (GetAttitudeMode() == ATTITUDEMODE::ATTMODE_ROT && !(KEYMOD_CONTROL(kstate) && !KEYMOD_ALT(kstate)) && !KEYMOD_SHIFT(kstate)) {
+		// Possible deflection amounts are:
+		// No key modifiers: 11.5° (max proportional rate, but not hardover)
+		// Alt: 13° (full deflection, triggering hardover switches)
+		// Ctrl + Alt: 0.75° (triggering out-of-detent switches, but not commanding thrust)
+		double deflectionDegrees = KEYMOD_ALT(kstate) ? KEYMOD_CONTROL(kstate) ? 0.75 : 13.0 : 11.5;
+		double deflectionPercent = deflectionDegrees / 13.0;
+
+		aca_keyboard_deflection[THGROUP_ATT_PITCHUP - THGROUP_ATT_PITCHUP] = 
+			KEYDOWN(kstate, OAPI_KEY_NUMPAD2) ? deflectionPercent : 0.0;
+		aca_keyboard_deflection[THGROUP_ATT_PITCHDOWN - THGROUP_ATT_PITCHUP] =
+			KEYDOWN(kstate, OAPI_KEY_NUMPAD8) ? deflectionPercent : 0.0;
+		aca_keyboard_deflection[THGROUP_ATT_BANKLEFT - THGROUP_ATT_PITCHUP] = 
+			KEYDOWN(kstate, OAPI_KEY_NUMPAD4) ? deflectionPercent : 0.0;
+		aca_keyboard_deflection[THGROUP_ATT_BANKRIGHT - THGROUP_ATT_PITCHUP] = 
+			KEYDOWN(kstate, OAPI_KEY_NUMPAD6) ? deflectionPercent : 0.0;
+		aca_keyboard_deflection[THGROUP_ATT_YAWLEFT - THGROUP_ATT_PITCHUP] = 
+			KEYDOWN(kstate, OAPI_KEY_NUMPAD1) ? deflectionPercent : 0.0;
+		aca_keyboard_deflection[THGROUP_ATT_YAWRIGHT - THGROUP_ATT_PITCHUP] =
+			KEYDOWN(kstate, OAPI_KEY_NUMPAD3) ? deflectionPercent : 0.0;
+
+		// Prevent Orbiter from acting upon the attitude control keys
+		RESETKEY(kstate, OAPI_KEY_NUMPAD2);
+		RESETKEY(kstate, OAPI_KEY_NUMPAD8);
+		RESETKEY(kstate, OAPI_KEY_NUMPAD4);
+		RESETKEY(kstate, OAPI_KEY_NUMPAD6);
+		RESETKEY(kstate, OAPI_KEY_NUMPAD1);
+		RESETKEY(kstate, OAPI_KEY_NUMPAD3);
+	}
+
 	return 0;
 }
 
 int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 
-	// rewrote to get key events rather than monitor key state - LazyD
-
 	if (enableVESIM) vesim.clbkConsumeBufferedKey(key, down, keystate);
 
+	// Help key for CueCard Arrows
+	if (KEYMOD_LCONTROL(keystate)) {
+		if (down) {
+			switch (key) {
+			case OAPI_KEY_H:
+				if (InVC && oapiCameraInternal())
+				{
+					if (ViewCueCardArrows == true) {
+						ViewCueCardArrows = false;
+					}
+					else {
+						ViewCueCardArrows = true;
+					}
+					return 1;
+				}
+			}
+		}
+	}
+
 	// DS20060404 Allow keys to control DSKY like in the CM
-	if (KEYMOD_SHIFT(keystate)) {
+	if (KEYMOD_SHIFT(keystate) && !KEYMOD_CONTROL(keystate) && !KEYMOD_ALT(keystate)) {
 		// Do DSKY stuff
 		DSKYPushSwitch* dskyKeyChanged = nullptr;
 		switch (key) {
@@ -908,13 +989,6 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 				dskyKeyChanged->SetHeld(true);
 				dskyKeyChanged->SetState(PUSHBUTTON_PUSHED);
 			}
-
-			switch (key) {
-			case OAPI_KEY_K:
-				//kill rotation
-				SetAngularVel(_V(0, 0, 0));
-				break;
-			}
 		} else {
 			// KEY UP
 			if (dskyKeyChanged != nullptr) {
@@ -925,7 +999,8 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 		}
 		return 0;
 	}
-	else if (KEYMOD_CONTROL(keystate)) {
+
+	if (KEYMOD_CONTROL(keystate) && !KEYMOD_ALT(keystate) && !KEYMOD_SHIFT(keystate)) {
 		// Do DEDA stuff
 		DEDAPushSwitch* dedaKeyChanged = nullptr;
 		switch (key) {
@@ -1001,6 +1076,39 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 		return 0;
 	}
 
+	if (!KEYMOD_SHIFT(keystate) && KEYMOD_CONTROL(keystate) && KEYMOD_ALT(keystate))
+	{
+		if (down) {
+			switch (key) {
+			case OAPI_KEY_S:
+				QuicksaveScenario();
+				break;
+			}
+		}
+		return 0;
+	}
+
+	if (!KEYMOD_SHIFT(keystate) && !KEYMOD_CONTROL(keystate) && KEYMOD_ALT(keystate))
+	{
+		if (down) {
+			switch (key) {
+			case OAPI_KEY_O:
+				ORDEALSlewSwitch.SwitchTo(THREEPOSSWITCH_UP, true);
+				break;
+			case OAPI_KEY_L:
+				ORDEALSlewSwitch.SwitchTo(THREEPOSSWITCH_DOWN, true);
+				break;
+			}
+		} else {
+			switch (key) {
+			case OAPI_KEY_O:
+			case OAPI_KEY_L:
+				ORDEALSlewSwitch.SwitchTo(THREEPOSSWITCH_CENTER, true);
+				break;
+			}
+		}
+	}
+
 	if (down){
 		switch(key){
 			// Valid shaft positions should be:
@@ -1036,20 +1144,27 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 				break;
 
 			case OAPI_KEY_W:
-				optics.ReticleMoved = 0.52;  //Fast Rate (about 30 deg/sec)
+				if (AOTReticleDetent.GetState() == 0)
+				{
+					optics.ReticleMoved = 0.52;  //Fast Rate (about 30 deg/sec)
 
-				if (KEYMOD_ALT(keystate)) {
-					optics.ReticleMoved = 0.01;  //Slow Rate (about 0.5 deg/sec)
+					if (KEYMOD_ALT(keystate)) {
+						optics.ReticleMoved = 0.01;  //Slow Rate (about 0.5 deg/sec)
+					}
 				}
 				break;
 
 			case OAPI_KEY_S:
-				optics.ReticleMoved = -0.52;  //Fast Rate (about 30 deg/sec)
+				if (AOTReticleDetent.GetState() == 0)
+				{
+					optics.ReticleMoved = -0.52;  //Fast Rate (about 30 deg/sec)
 
-				if (KEYMOD_ALT(keystate)) {
-					optics.ReticleMoved = -0.01;  //Slow Rate (about 0.5 deg/sec)
+					if (KEYMOD_ALT(keystate)) {
+						optics.ReticleMoved = -0.01;  //Slow Rate (about 0.5 deg/sec)
+					}
 				}
 				break;
+
 			case OAPI_KEY_Q:
 				agc.SetInputChannelBit(016, MarkX, 1);  // Mark X
 				break;
@@ -1132,8 +1247,34 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 
 	}
 
-	if (KEYMOD_SHIFT(keystate) || KEYMOD_CONTROL(keystate) || !down) {
+	if ((down) && (key == OAPI_KEY_F)) {
+		ToggleFlashlight();
+	}
+	//No Shift or Ctrl processing below here
+	if (KEYMOD_SHIFT(keystate) || KEYMOD_CONTROL(keystate)) {
 		return 0; 
+	}
+	//Engine Start Button
+	if (key == OAPI_KEY_ADD)
+	{
+		if (down)
+		{
+			ManualEngineStart.SetHeld(true);
+			ManualEngineStart.SetState(PUSHBUTTON_PUSHED);
+		}
+		else
+		{
+			// Doing SwitchTo instead of SetState prevents a second click on key up.
+			ManualEngineStart.SetHeld(false);
+			ManualEngineStart.SwitchTo(PUSHBUTTON_UNPUSHED);
+		}
+		return 1;
+	}
+
+	//No key releases below here
+	if (!down)
+	{
+		return 0;
 	}
 
 	// MCC CAPCOM interface key handling                                                                                                
@@ -1208,11 +1349,6 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 	// Engine start and stop
 	//
 
-	case OAPI_KEY_ADD:
-		//Engine Start Button
-		ManualEngineStart.Push();
-		ButtonClick();
-		return 1;
 	case OAPI_KEY_SUBTRACT:
 		//Engine Stop Button
 		CDRManualEngineStop.Push();
@@ -1223,11 +1359,32 @@ int LEM::clbkConsumeBufferedKey(DWORD key, bool down, char *keystate) {
 	return 0;
 }
 
+void LEM::DoMeshAnimation(AnimState &state, UINT &anim, double speed, double simdt)
+{
+	if (state.Moving()) {
+		state.Move(simdt / speed);
+		SetAnimation(anim, state.pos);
+	}
+}
+
+void LEM::SetAnimations(double simdt) {
+	//
+	//EVA Antenna
+	//
+	VHF.SetAnimation(EvaAntennaHandle.GetAnimState());
+
+	if (AOTReticleDetent.GetState() == 0) AOT_ReticleKnobState.action = AnimState::CLOSING;
+	else AOT_ReticleKnobState.action = AnimState::OPENING;
+	DoMeshAnimation(AOT_ReticleKnobState, AOT_ReticleKnobAnimTrans, 0.1, simdt);
+}
+
 //
 // Timestep code.
 //
 
 void LEM::clbkPreStep (double simt, double simdt, double mjd) {
+
+	SetAnimations(simdt);
 
 	if (CheckPanelIdInTimestep) {
 		oapiSetPanel(PanelId);
@@ -1306,25 +1463,51 @@ void LEM::clbkPreStep (double simt, double simdt, double mjd) {
 	// Debug string for displaying descent flight info from VC view
 	if (VcInfoEnabled && !Landed && GetAltitude(ALTMODE_GROUND) < 10000.0 && EngineArmSwitch.GetState() == 0 && oapiCockpitMode() == COCKPIT_VIRTUAL && viewpos == LMVIEW_LPD) {
 
-		char pgnssw[256];
-		char thrsw[256];
+		char pgnssw[32];
+		char thrsw[32];
+		char fwddir[32];
+		char latdir[32];
 
 		if (ModeControlPGNSSwitch.GetState() == 2) {
 			sprintf(pgnssw, "AUTO");
-		} else if (ModeControlPGNSSwitch.GetState() == 1) {
+		}
+		else if (ModeControlPGNSSwitch.GetState() == 1) {
 			sprintf(pgnssw, "ATT HOLD");
-		} else {
+		}
+		else {
 			sprintf(pgnssw, "OFF");
 		}
 
 		if (THRContSwitch.GetState() == 1) {
 			sprintf(thrsw, "AUTO");
-		} else {
+		}
+		else {
 			sprintf(thrsw, "MAN");
 		}
 
-		sprintf(oapiDebugString(), "PROG %s | V%s N%s | R1 %s | R2 %s | R3 %s | Alt: %.0lf ft | Alt Rate: %.1lf ft/s | PGNS Mode Control: %s | Throttle: %s | Fuel: %.0lf %% |", dsky.GetProg(),
-			dsky.GetVerb(), dsky.GetNoun(), dsky.GetR1(), dsky.GetR2(), dsky.GetR3(), RadarTape.GetLGCAltitude() * 3.2808399, RadarTape.GetLGCAltitudeRate() * 3.2808399,
+		if (crossPointerLeft.GetFwdVel() > 0) {
+			sprintf(fwddir, "FWD");
+		}
+		else if (crossPointerLeft.GetFwdVel() < 0) {
+			sprintf(fwddir, "AFT");
+		}
+		else {
+			sprintf(fwddir, "");
+		}
+
+		if (crossPointerLeft.GetLatVel() > 0) {
+			sprintf(latdir, "R");
+		}
+		else if (crossPointerLeft.GetFwdVel() < 0) {
+			sprintf(latdir, "L");
+		}
+		else {
+			sprintf(latdir, "");
+		}
+
+		sprintf(oapiDebugString(), "PROG %s | V%s N%s | R1 %s | R2 %s | R3 %s | Alt: %.0lf ft | Alt Rt: %.1lf ft/s | Fwd Vel: %.1lf ft/s %s | Lat Vel: %.1lf ft/s %s | PGNS Mode Cont: %s | Throt: %s | Fuel: %.0lf %% |", dsky.GetProg(),
+			dsky.GetVerb(), dsky.GetNoun(), dsky.GetR1(), dsky.GetR2(), dsky.GetR3(), RadarTape.GetTapeAltitude(), RadarTape.GetTapeAltitudeRate(),
+			crossPointerLeft.GetFwdVel(), fwddir, crossPointerLeft.GetLatVel(), latdir,
 			pgnssw, thrsw, DPSFuelPercentMeter.QueryValue() * 100);
 		if (!VcInfoActive) VcInfoActive = true;
 
@@ -1338,6 +1521,13 @@ void LEM::clbkPreStep (double simt, double simdt, double mjd) {
 	if (oapiGetFocusObject() == GetHandle()) {
 		dsky.SendNetworkPacketDSKY();
 	}
+
+	if ((oapiGetFocusObject() == GetHandle()) && (oapiCockpitMode() == COCKPIT_VIRTUAL) && (oapiCameraMode() == CAM_COCKPIT)) {
+		//We have focus on this vessel, and are in the VC
+		MoveFlashlight();
+	}
+
+	if (spaceeva)UpdateSpaceEVA(); //if lmp eva active (vessel created), enables EVA Timestep
 }
 
 
@@ -1363,10 +1553,7 @@ void LEM::clbkPostStep(double simt, double simdt, double mjd)
 	inertialData.Timestep(simdt);
 
 	// Update VC animations
-	if (oapiCameraInternal() && oapiCockpitMode() == COCKPIT_VIRTUAL)
-	{
-		MainPanelVC.OnPostStep(simt, simdt, mjd);
-	}
+	MainPanelVC.OnPostStep(simt, simdt, mjd);
 
 	//
 	// Camera jostle.
@@ -1533,24 +1720,9 @@ void LEM::PostLoadSetup(bool define_anims)
 	// Realism Mode Settings
 	//
 
-	// Enable Orbiter's attitude control for unmanned missions
-	// as long as they rely on Orbiter's navmodes (killrot etc.)
-
-	if (!Crewed) {
-		checkControl.autoExecute(true);
-		checkControl.autoExecuteSlow(false);
-		checkControl.autoExecuteAllItemsAutomatic(true);
-	}
-
-	// Disable it and do some other settings when not in
-	// Quickstart mode
-
-	else {
-		checkControl.autoExecute(VAGCChecklistAutoEnabled);
-		checkControl.autoExecuteSlow(VAGCChecklistAutoSlow);
-		checkControl.autoExecuteAllItemsAutomatic(false);
-
-	}
+	checkControl.autoExecute(VAGCChecklistAutoEnabled);
+	checkControl.autoExecuteSlow(VAGCChecklistAutoSlow);
+	checkControl.autoExecuteAllItemsAutomatic(false);
 
 	// Also cause the AC busses to wire up
 	switch (EPSInverterSwitch.GetState()) {
@@ -1564,6 +1736,15 @@ void LEM::PostLoadSetup(bool define_anims)
 		break;
 	case THREEPOSSWITCH_DOWN:    // OFF	
 		break;                   // Handled later
+	}
+	// Lighting wiring
+	if (SLADockingLightPressureSwitchRelay)
+	{
+		DockingLightSwitchConnector.WireTo(&CDR_LTG_ANUN_DOCK_COMPNT_CB);
+	}
+	else
+	{
+		DockingLightSwitchConnector.WireTo(NULL);
 	}
 
 	HRESULT         hr;
@@ -1608,7 +1789,7 @@ void LEM::PostLoadSetup(bool define_anims)
 void LEM::GetScenarioState(FILEHANDLE scn, void *vs)
 {
 	char *line;
-	int	SwitchState;
+	int	SwitchState, i;
 	float ftcp;
 
 	while (oapiReadScenario_nextline(scn, line)) {
@@ -1763,6 +1944,11 @@ void LEM::GetScenarioState(FILEHANDLE scn, void *vs)
 			sscanf(line + 21, "%d", &i);
 			CMPowerToCDRBusRelayB = (i == 1);
 		}
+		else if (!strnicmp(line, "SLADockingLightPressureSwitchRelay", 34)) {
+			int i;
+			sscanf(line + 34, "%d", &i);
+			SLADockingLightPressureSwitchRelay = (i == 1);
+			}
 		else if (!strnicmp(line, "UNIFIEDSBAND", 12)) {
 			SBand.LoadState(line);
 		}
@@ -1772,8 +1958,8 @@ void LEM::GetScenarioState(FILEHANDLE scn, void *vs)
 		else if (!strnicmp(line, "VHFTRANSCEIVER", 14)) {
 			VHF.LoadState(line);
 		}
-		else if (!strnicmp(line, "LCA_START", sizeof("LCA_START"))) {
-			lca.LoadState(scn,"LCA_END");
+		else if (!strnicmp(line, "DATARECORDER", 12)) {
+			DSEA.LoadState(line);
 		}
 		else if (!strnicmp(line, CWEA_START_STRING, sizeof(CWEA_START_STRING))) {
 			CWEA.LoadState(scn, CWEA_END_STRING);
@@ -1817,8 +2003,20 @@ void LEM::GetScenarioState(FILEHANDLE scn, void *vs)
 		else if (!strnicmp(line, "LEM_LR_START", sizeof("LEM_LR_START"))) {
 			LR.LoadState(scn, "LEM_LR_END");
 		}
+		else if (!strnicmp(line, "PANEL1RELAYBOX", 14)) {
+		Panel1RelayBox.LoadState(line);
+		}
+		else if (!strnicmp(line, "PANEL2RELAYBOX", 14)) {
+		Panel2RelayBox.LoadState(line);
+		}
 		else if (!strnicmp(line, "RADARTAPE_START", sizeof("RADARTAPE_START"))) {
 			RadarTape.LoadState(scn, "RADARTAPE_END");
+		}
+		else if (!strnicmp(line, CROSSPOINTER_LEFT_STRING, 17)) {
+			crossPointerLeft.LoadState(line);
+		}
+		else if (!strnicmp(line, CROSSPOINTER_RIGHT_STRING, 17)) {
+			crossPointerRight.LoadState(line);
 		}
 		else if (!strnicmp(line, LMOPTICS_START_STRING, sizeof(LMOPTICS_START_STRING))) {
 			optics.LoadState(scn);
@@ -1904,8 +2102,16 @@ void LEM::GetScenarioState(FILEHANDLE scn, void *vs)
 		else if (!strnicmp(line, "EVENTTIMER_START", sizeof("EVENTTIMER_START"))) {
 			EventTimerDisplay.LoadState(scn, EVENTTIMER_END_STRING);
 		}
+		else if (!strnicmp(line, CUECARDS_START_STRING, sizeof(CUECARDS_START_STRING))) {
+			CueCards.LoadState(scn);
+		}
 		else if (!strnicmp(line, "<INTERNALS>", 11)) { //INTERNALS signals the PanelSDK part of the scenario
 			Panelsdk.Load(scn);			//send the loading to the Panelsdk
+		}
+		else if (!strnicmp(line, "SPACEEVA", 8)) {
+			//Load EVA State from scn file
+			sscanf(line + 8, "%d", &i);
+			spaceeva = i;
 		}
 		else if (!strnicmp(line, ChecklistControllerStartString, strlen(ChecklistControllerStartString)))
 		{
@@ -1968,6 +2174,9 @@ void LEM::clbkPostCreation()
 	soundlib.InitSoundLib(this, SOUND_DIRECTORY);
 	LoadDefaultSounds();
 	this->CWEA.LoadSounds();
+
+	// Switches
+	MainPanelVC.OnPostCreation();
 }
 
 void LEM::clbkVisualCreated(VISHANDLE vis, int refcount)
@@ -1984,13 +2193,31 @@ void LEM::clbkVisualCreated(VISHANDLE vis, int refcount)
 	if (dscidx != -1 && pMission->LMHasLegs()) {
 		probes = GetDevMesh(vis, dscidx);
 		deflectors = GetDevMesh(vis, dscidx);
+		cask = GetDevMesh(vis, dscidx);
 		HideProbes();
 		HideDeflectors();
+		HideCask();
 	}
 
 	if (vcidx != -1) {
 		vcmesh = GetDevMesh(vis, vcidx);
 		SetCOAS();
+	}
+
+	// This is Mission Specific code to change for now only the Panel 14 DC FEEDER text.
+	// First hide all the texts
+	HideMeshGroup(vcidx, VC_GRP_Panel12_16_DC_FEEDER_FAULT, true);
+	HideMeshGroup(vcidx, VC_GRP_Panel12_16_DC_FEEDER_FAULT_2, true);
+	HideMeshGroup(vcidx, VC_GRP_Panel12_16_DC_BUS_FAULT, true);
+
+	if (pMission->GetLMNumber() < 6) {												// up to Apollo 11
+		HideMeshGroup(vcidx, VC_GRP_Panel12_16_DC_BUS_FAULT, false);
+	}
+	else if (pMission->GetLMNumber() > 5 && (pMission->GetLMNumber() < 9)) {		// Apollo 12 to 14
+		HideMeshGroup(vcidx, VC_GRP_Panel12_16_DC_FEEDER_FAULT, false);
+	}
+	else {
+		HideMeshGroup(vcidx, VC_GRP_Panel12_16_DC_FEEDER_FAULT_2, false);			// Apollo 15 to 17
 	}
 }
 
@@ -2075,12 +2302,14 @@ void LEM::DefineAnimations()
 {
 	// Call Animation Definitions where required
 	RR.DefineAnimations(ascidx);
+	VHF.DefineAnimations(ascidx);
 	SBandSteerable.DefineAnimations(ascidx);
 	OverheadHatch.DefineAnimations(ascidx);
 	ForwardHatch.DefineAnimations(ascidx);
 	OverheadHatch.DefineAnimationsVC(vcidx);
 	ForwardHatch.DefineAnimationsVC(vcidx);
 	if (stage < 2) DPS.DefineAnimations(dscidx);
+	if (stage < 2) LR.DefineAnimations(dscidx);
 	if (stage < 1 && pMission->LMHasLegs()) eds.DefineAnimations(dscidx);
 	DefineVCAnimations();
 }
@@ -2234,6 +2463,8 @@ void LEM::clbkSaveState (FILEHANDLE scn)
 	oapiWriteScenario_float(scn, "DSCEMPTYMASS", DescentEmptyMassKg);
 	oapiWriteScenario_float(scn, "ASCEMPTYMASS", AscentEmptyMassKg);
 
+	oapiWriteScenario_int(scn, "SPACEEVA", spaceeva);
+
 	if (!Crewed) {
 		oapiWriteScenario_int (scn, "UNMANNED", 1);
 	}
@@ -2259,6 +2490,7 @@ void LEM::clbkSaveState (FILEHANDLE scn)
 		aea.SaveState(scn, "AEA_START", "AEA_END");
 		asa.SaveState(scn, "ASA_START", "ASA_END");
 	}
+	CueCards.SaveState(scn);
 
 	//
 	// Save the Panel SDK state.
@@ -2284,14 +2516,17 @@ void LEM::clbkSaveState (FILEHANDLE scn)
 	drb.SaveState(scn);
 	papiWriteScenario_bool(scn, "CMPowerToCDRBusRelayA", CMPowerToCDRBusRelayA);
 	papiWriteScenario_bool(scn, "CMPowerToCDRBusRelayB", CMPowerToCDRBusRelayB);
+	papiWriteScenario_bool(scn, "SLADockingLightPressureSwitchRelay", SLADockingLightPressureSwitchRelay);
+
+	// Save Relay Boxes
+	Panel1RelayBox.SaveState(scn);
+	Panel2RelayBox.SaveState(scn);
 
 	// Save COMM
 	SBand.SaveState(scn);
 	SBandSteerable.SaveState(scn);
 	VHF.SaveState(scn);
-
-	// Save Lighting
-	lca.SaveState(scn, "LCA_START", "LCA_END");
+	DSEA.SaveState(scn);
 
 	// Save CWEA
 	CWEA.SaveState(scn, CWEA_START_STRING, CWEA_END_STRING);
@@ -2310,6 +2545,8 @@ void LEM::clbkSaveState (FILEHANDLE scn)
 	RR.SaveState(scn,"LEM_RR_START","LEM_RR_END");
 	LR.SaveState(scn, "LEM_LR_START", "LEM_LR_END");
 	RadarTape.SaveState(scn, "RADARTAPE_START", "RADARTAPE_END");
+	crossPointerLeft.SaveState(scn, CROSSPOINTER_LEFT_STRING);
+	crossPointerRight.SaveState(scn, CROSSPOINTER_RIGHT_STRING);
 
 	//Save Optics
 	optics.SaveState(scn);
@@ -2349,6 +2586,38 @@ void LEM::clbkSaveState (FILEHANDLE scn)
 	MissionTimerDisplay.SaveState(scn, "MISSIONTIMER_START", MISSIONTIMER_END_STRING, false);
 	EventTimerDisplay.SaveState(scn, "EVENTTIMER_START", EVENTTIMER_END_STRING, true);
 	checkControl.save(scn);
+}
+
+void LEM::QuicksaveScenario()
+{
+	double time = MissionTime;
+	VECTOR3 hhhmmss = _V(0, 0, 0);
+	char timeSign = '+';
+
+	if (time < 0) {
+		time = abs(time);
+		timeSign = '-';
+	}
+
+	time = round(time / 0.01) * 0.01;
+
+	hhhmmss.x = (int)trunc(time / 3600.0);
+	hhhmmss.y = (int)trunc((time - 3600.0 * hhhmmss.x) / 60.0);
+	hhhmmss.z = time - (double)(3600 * hhhmmss.x + 60 * hhhmmss.y);
+
+	char scnPath[64] = "";
+	char scnMission[128] = "";
+	char scnTime[64] = "";
+	strcpy(scnPath, "/Quicksave/");
+	strcpy(scnMission, pMission->GetMissionName().c_str());
+	sprintf(scnTime, " %c%03dh %02dm %05.2fs", timeSign, (int)hhhmmss.x, (int)hhhmmss.y, hhhmmss.z);
+
+	char scnName[256] = "";
+	strcat(scnName, scnPath);
+	strcat(scnName, scnMission);
+	strcat(scnName, scnTime);
+
+	oapiSaveScenario(scnName, "");
 }
 
 bool LEM::clbkLoadGenericCockpit ()

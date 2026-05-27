@@ -30,6 +30,7 @@ See http://nassp.sourceforge.net/license/ for more details.
 #include "papi.h"
 #include "LEM.h"
 #include "lm_lr.h"
+#include <LM_DescentStageResource.h>
 
 // Landing Radar
 LEM_LR::LEM_LR()
@@ -37,6 +38,14 @@ LEM_LR::LEM_LR()
 	lem = NULL;
 	lrheat = 0;
 	antennaAngle = 24; // Position 1
+
+	//LM-5 Defaults
+	rangetest = 8287;
+	ratetest[0] = -494;
+	ratetest[1] = 1861;
+	ratetest[2] = 1331;
+	altxmtr = 3.5;
+	velxmtr = 3.6;
 }
 
 void LEM_LR::Init(LEM *s, e_object *dc_src, h_Radiator *ant, Boiler *anheat, h_HeatLoad *hl) {
@@ -60,6 +69,9 @@ void LEM_LR::Init(LEM *s, e_object *dc_src, h_Radiator *ant, Boiler *anheat, h_H
 	rate[0] = rate[1] = rate[2] = 0;
 	rangeGood = 0;
 	velocityGood = 0;
+	anim_LR = 0;
+	lr_proc = 0;
+	lr_proc_last = 0;
 }
 
 // Are we on?
@@ -123,7 +135,7 @@ double LEM_LR::GetAltTransmitterPower()
 		return 0;
 	}
 
-	return 3.0;
+	return altxmtr;
 }
 
 double LEM_LR::GetVelTransmitterPower()
@@ -133,11 +145,19 @@ double LEM_LR::GetVelTransmitterPower()
 		return 0;
 	}
 
-	return 3.0;
+	return velxmtr;
 }
 
 void LEM_LR::Timestep(double simdt) {
+
 	if (lem == NULL) { return; }
+	//LR Mesh Animation
+	if (lem->stage < 2) {
+		lr_proc = abs(antennaAngle - 24) / 24;
+		if (lr_proc - lr_proc_last != 0.0) lem->SetAnimation(anim_LR, lr_proc);
+		lr_proc_last = lr_proc;
+		//sprintf(oapiDebugString(), "Angle: %.1f   Proc: %lf   Last: %lf", antennaAngle, lr_proc, lr_proc_last);
+	};
 	// char debugmsg[256];
 	ChannelValue val12;
 	ChannelValue val33;
@@ -183,6 +203,7 @@ void LEM_LR::Timestep(double simdt) {
 			antennaAngle -= (2.4*simdt);
 			if (antennaAngle < 0) { antennaAngle = 0; }
 			dc_source->DrawPower(140);
+			lrheat->GenerateHeat(15); //heat from moving antenna
 			// sprintf(oapiDebugString(),"LR CPos %d Pos %0.1f",val12.Bits.LRPositionCommand,antennaAngle);
 		}
 		else {
@@ -196,6 +217,7 @@ void LEM_LR::Timestep(double simdt) {
 			antennaAngle += (2.4*simdt);
 			if (antennaAngle > 24) { antennaAngle = 24; }
 			dc_source->DrawPower(140);
+			lrheat->GenerateHeat(15); //heat from moving antenna
 			// sprintf(oapiDebugString(),"LR CPos %d Pos %0.1f",val12.Bits.LRPositionCommand,antennaAngle);
 		}
 		else {
@@ -237,35 +259,14 @@ void LEM_LR::Timestep(double simdt) {
 	}
 
 	// Data Determination
-	if (lem->RadarTestSwitch.GetState() == THREEPOSSWITCH_DOWN) {
-		if (antennaAngle == 0) {
-			// Test Mode POS 2
-			// Drive to:
-			//
-			//
-			//
-			//
-			range = 8000;
-			rate[0] = -494;
-			rate[1] = 1861;
-			rate[2] = 1331;
-			rangeGood = 1;
-			velocityGood = 1;
-		}
-		else {
-			// Test Mode
-			// Drive to:
-			// Alt 8287 ft
-			// Vel -494,1861,1331 ft/sec
-			// on the LGC
-			// For some reason this should show up as 8000 ft and -480 fps on the alt/alt-rate monitor?
-			range = 8287;
-			rate[0] = -494;
-			rate[1] = 1861;
-			rate[2] = 1331;
-			rangeGood = 1;
-			velocityGood = 1;
-		}
+	if (lem->RadarTestSwitch.GetState() == THREEPOSSWITCH_DOWN)
+	{
+		range = rangetest;
+		rate[0] = ratetest[0];
+		rate[1] = ratetest[1];
+		rate[2] = ratetest[2];
+		rangeGood = 1;
+		velocityGood = 1;
 	}
 	else {
 		// Operate Mode
@@ -385,8 +386,87 @@ void LEM_LR::SystemTimestep(double simdt)
 {
 	if (IsPowered())
 	{
-		lrheat->GenerateHeat(118);
+		lrheat->GenerateHeat(118.0 / 3.0); // 118W breaker heat load divided by 3 as this power is shared between the antenna assembly and the electronics assembly, with temperature sensor only on the antenna assembly
 	}
+	//sprintf(oapiDebugString(), "LRT %lf", GetAntennaTempF());
+}
+
+void LEM_LR::SelfTest(int LMNumber)
+{
+	switch (LMNumber)
+	{
+	case 1: //LM-1
+	case 2: //LM-2
+	case 3: //LM-3
+	{
+		rangetest = 8287;
+		ratetest[0] = -247;
+		ratetest[1] = 930;
+		ratetest[2] = 666;
+		altxmtr = 3.6;
+		velxmtr = 3.8;
+	}
+	break;
+	case 4: //LM-4
+	{
+		rangetest = 8276;
+		ratetest[0] = -247;
+		ratetest[1] = -929;
+		ratetest[2] = 665;
+		altxmtr = 3.6;
+		velxmtr = 3.6;
+	}
+	break;
+	case 5: //LM-5
+	{
+		rangetest = 8275;
+		ratetest[0] = -494;
+		ratetest[1] = 1858;
+		ratetest[2] = 1329;
+		altxmtr = 3.5;
+		velxmtr = 3.6;
+	}
+	break;
+	case 10: //LM-10
+	{
+		rangetest = 8287;
+		ratetest[0] = -495;
+		ratetest[1] = 1862;
+		ratetest[2] = 1331;
+		altxmtr = 3.5;
+		velxmtr = 3.6;
+	}
+	break;
+	default: //LM-6, 7, 8, "9", 11, 12, and other "future" LM's
+	{
+		rangetest = 8286;
+		ratetest[0] = -495;
+		ratetest[1] = 1862;
+		ratetest[2] = 1331;
+		altxmtr = 3.5;
+		velxmtr = 3.6;
+	}
+	break;
+	}
+}
+
+void LEM_LR::DefineAnimations(UINT idx) {
+
+	//LR Mode Animation
+	ANIMATIONCOMPONENT_HANDLE LR_Rotate;
+	const VECTOR3 LM_LR_PIVOT = { -1.4501, -1.0404, -1.372 }; //Pivot Point
+	static UINT meshgroup_LR[3] = { DS_GRP_LRAntenna, DS_GRP_LRAntennaBlack, DS_GRP_LRAntennaMount };
+	static MGROUP_ROTATE LRAnt(idx, meshgroup_LR, 3, LM_LR_PIVOT, _V(-1, 0, 0), (float)(RAD * 24));
+	anim_LR = lem->CreateAnimation(0.0);
+	LR_Rotate = lem->AddAnimationComponent(anim_LR, 0, 1, &LRAnt);
+	lr_proc = abs(antennaAngle - 24) / 24;
+	lem->SetAnimation(anim_LR, lr_proc);
+
+}
+
+void LEM_LR::DeleteAnimations() {
+	if (anim_LR != -1) lem->DelAnimation(anim_LR);
+	anim_LR = -1;
 }
 
 void LEM_LR::SaveState(FILEHANDLE scn, char *start_str, char *end_str) {

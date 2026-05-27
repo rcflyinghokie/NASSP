@@ -392,6 +392,7 @@ static inline void CSMToOrbiterCoordinates(VECTOR3 &vec)
 #define PAYLOAD_LTA2R				6	///< Payload is LTA-2R (Apollo 6).
 #define PAYLOAD_EMPTY				7	///< Payload is empty (i.e. no payload).
 #define PAYLOAD_DOCKING_ADAPTER		8	///< Payload is SIVB docking adapter (i.e. Apollo to Venus).
+#define PAYLOAD_CUSTOM				9   ///< Payload is a vessel specified by the user.
 
 //
 // Saturn types.
@@ -414,9 +415,9 @@ static inline void CSMToOrbiterCoordinates(VECTOR3 &vec)
 
 //#define LM_DES_H2O_CAPACITY 151046.2592		///< in g, 333 lb		//Quantity or 100% measurement of the h2o tanks needs to be adjusted based on pad fill
 //#define LM_ASC_H2O_CAPACITY 19277.67573		///< in g, 42.5 lb		//Quantity or 100% measurement of the h2o tanks needs to be adjusted based on pad fill
-#define LM_DES_H2O_CAPACITY 114795.157			//Pad fill 76%
-//#define LM_DES_H2O_CAPACITY 229590.3			//Pad fill 76% for J-Mission Conversion
-#define LM_ASC_H2O_CAPACITY 14651.03355			//Pad fill 76%
+#define LM_DES_H2O_CAPACITY 122379.2			//Pad Fill 269.8 lb (Average of non J Mission flights)
+//#define LM_DES_H2O_CAPACITY 183160.6			//J-Mission Conversion Pad Fill 403.8 lb (Average of J Mission flights)
+#define LM_ASC_H2O_CAPACITY 19232.3				//Pad Fill	42.4 lb (Average of all flights)
 
 //
 // Texture Size (1 = Old ProjectApollo 2K Textures, 2 = New 4K Textures, 4 = New 8K Textures)
@@ -427,10 +428,10 @@ static inline void CSMToOrbiterCoordinates(VECTOR3 &vec)
 
 const int TexMul = TEXTURES_4K;
 
+#define VC_MAT_NONE 0xffff
+
 #ifdef OAPI_MSGTYPE
 #define _OPENORBITER
 #endif
-
-//#define _OPENORBITER
 
 #endif

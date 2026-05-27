@@ -23,6 +23,7 @@
   **************************************************************************/
 
 #include "Esystems.h"
+#include "nasspdefs.h"
 #include <math.h>
 #include <stdio.h>
 
@@ -570,6 +571,32 @@ void FCell::Clogging(double dt)
 	cloggVoltageDrop = (25 * (O2_clogging / O2_max_impurities) + (H2_clogging / H2_max_impurities)) / 26.0;
 
 	cloggVoltageDrop *= cloggVoltageReduction;
+}
+
+double FCell::GetCondTempVoltage() //Returns scaled voltage for SCE/TM
+{
+	double condenserTempF = KelvinToFahrenheit(condenserTemp);
+	if (!IsEnabled()) //Returns 0V when SM Jettisoned (FC Disabled)
+	{
+		return 0.0;
+	}
+	else
+
+		return -0.000001384126984 * pow(condenserTempF, 3) + 0.000730539682546 * pow(condenserTempF, 2) - 0.075160317461531 * condenserTempF - 0.24166666659273;
+
+	// While values should stay in range, this eventually needs a check to fix an upper and lower limit to prevent the power function from returning our of range voltage
+}
+
+double FCell::GetSkinTempVoltage() //Returns scaled voltage for SCE/TM
+{
+	double skinTempF = KelvinToFahrenheit(Temp);
+	if (!IsEnabled()) //Returns 0V when SM Jettisoned (FC Disabled)
+	{
+		return 0.0;
+	}
+	else
+
+		return (0.0106382979 * skinTempF) - 0.8510638298;
 }
 
 void FCell::Load(char* line)
@@ -1740,7 +1767,7 @@ ElectricLight::ElectricLight(char* lightname, e_object* i_src, const bool flashi
 	lampBeacon.active = false;
 	lampBeacon.tofs = 0.0;
 	lampBeacon.falloff = 1.;
-	lampBeacon.size = 0.2;
+	lampBeacon.size = 0.05;
 	lampBeaconColor = _V(diffuse.r, diffuse.g, diffuse.b);
 	lampBeacon.col = &lampBeaconColor;
 	thisVessel->AddBeacon(&lampBeacon);
@@ -1787,4 +1814,120 @@ void ElectricLight::UpdatePosition(VECTOR3 offset)
 {
 	BeaconPosition -= offset;
 	lamp->SetPosition(BeaconPosition);
+}
+
+void ElectricLight::Load(char* line)
+{
+	int inttemp;
+
+	sscanf(line, "    <LIGHT> %s %d", name, &inttemp);
+
+	enabled = (inttemp != 0);
+}
+
+void ElectricLight::Save(FILEHANDLE scn) {
+
+	char cbuf[1000];
+
+	sprintf(cbuf, "%s %d", name, enabled);
+	oapiWriteScenario_string(scn, "    <LIGHT> ", cbuf);
+}
+
+e_object_extended::e_object_extended(char* i_name)
+{
+	strcpy(name, i_name);
+	last_power_load = 0.0;
+}
+
+void e_object_extended::DrawPower(double watts)
+{
+	// Keep track of power load (as opposed to e_object class)
+	power_load += watts;
+	if (SRC)
+		SRC->DrawPower(watts);
+}
+
+void e_object_extended::UpdateFlow(double dt)
+{
+	last_power_load = power_load;
+
+	e_object::UpdateFlow(dt);
+}
+
+double e_object_extended::GetLastPowerLoad()
+{
+	if (IsEnabled())
+		return last_power_load;
+
+	return 0.0;
+}
+
+VoltageTransformer::VoltageTransformer(char* i_name) : e_object_extended(i_name)
+{
+
+}
+
+double VoltageTransformer::Voltage()
+{
+	if (IsEnabled())
+	{
+		return Volts;
+	}
+
+	return 0.0;
+}
+
+FixedVoltageTransformer::FixedVoltageTransformer(char* i_name, double out_voltage) : VoltageTransformer(i_name)
+{
+	output_voltage = out_voltage;
+}
+
+void FixedVoltageTransformer::UpdateFlow(double dt)
+{
+	if (SRC)
+	{
+		Volts = min(SRC->Voltage(), output_voltage);
+	}
+	else
+	{
+		Volts = 0.0;
+	}
+
+	if (Volts > 0.0) {
+		Amperes = (power_load / Volts);
+	}
+
+	last_power_load = power_load;
+	power_load = 0.0;
+}
+
+VariableVoltageTransformer::VariableVoltageTransformer(char* i_name, double MinVolt, double MaxVolt, bool DCAC) : VoltageTransformer(i_name)
+{
+	min_output_voltage = MinVolt;
+	max_output_voltage = MaxVolt;
+	DCtoAC = DCAC;
+}
+
+void VariableVoltageTransformer::UpdateFlow(double dt)
+{
+	double DesVolts = min_output_voltage + (max_output_voltage - min_output_voltage) * GetValue();
+	if (SRC && !DCtoAC)
+	{
+		Volts = min(SRC->Voltage(), DesVolts);
+	}
+	else if (SRC && DCtoAC && SRC->Voltage() > SP_MIN_DCVOLTAGE)
+	{
+		Volts = DesVolts;
+	}
+	else
+	{
+		Volts = 0.0;
+	}
+
+	if (Volts > 0.0) {
+		Amperes = (power_load / Volts);
+	}
+
+	last_power_load = power_load;
+	power_load = 0.0;
 }

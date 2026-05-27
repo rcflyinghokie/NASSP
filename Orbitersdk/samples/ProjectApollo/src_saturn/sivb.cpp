@@ -67,6 +67,11 @@ static MESHHANDLE hsat5stg31;
 static MESHHANDLE hsat5stg32;
 static MESHHANDLE hsat5stg33;
 static MESHHANDLE hsat5stg34;
+static MESHHANDLE hsat5stg3wide;
+static MESHHANDLE hsat5stg31wide;
+static MESHHANDLE hsat5stg32wide;
+static MESHHANDLE hsat5stg33wide;
+static MESHHANDLE hsat5stg34wide;
 static MESHHANDLE hsat5stg3low;
 static MESHHANDLE hsat5stg31low;
 static MESHHANDLE hsat5stg32low;
@@ -124,6 +129,12 @@ void SIVbLoadMeshes()
 	hsat5stg32 = oapiLoadMeshGlobal ("ProjectApollo/sat5stg32");
 	hsat5stg33 = oapiLoadMeshGlobal ("ProjectApollo/sat5stg33");
 	hsat5stg34 = oapiLoadMeshGlobal ("ProjectApollo/sat5stg34");
+
+	hsat5stg3wide = oapiLoadMeshGlobal("ProjectApollo/sat5stg3wide");
+	hsat5stg31wide = oapiLoadMeshGlobal("ProjectApollo/sat5stg31wide");
+	hsat5stg32wide = oapiLoadMeshGlobal("ProjectApollo/sat5stg32wide");
+	hsat5stg33wide = oapiLoadMeshGlobal("ProjectApollo/sat5stg33wide");
+	hsat5stg34wide = oapiLoadMeshGlobal("ProjectApollo/sat5stg34wide");
 
 	hsat5stg3low = oapiLoadMeshGlobal ("ProjectApollo/LowRes/sat5stg3");
 	hsat5stg31low = oapiLoadMeshGlobal ("ProjectApollo/LowRes/sat5stg31");
@@ -208,18 +219,6 @@ SIVB::~SIVB()
 		delete sivbsys;
 		sivbsys = 0;
 	}
-
-	//
-	// Delete LM PAD data.
-	//
-	if (LMPad) {
-		delete[] LMPad;
-		LMPad = 0;
-	}
-	if (AEAPad) {
-		delete[] AEAPad;
-		AEAPad = 0;
-	}
 }
 
 void SIVB::InitS4b()
@@ -235,6 +234,8 @@ void SIVB::InitS4b()
 	PayloadType = PAYLOAD_EMPTY;
 	PanelsHinged = false;
 	PanelsOpened = false;
+	UseWideSLA = false;
+	SLAHasBeacons = false;
 	LowRes = false;
 	IUSCContPermanentEnabled = true;
 	PayloadCreated = false;
@@ -276,10 +277,14 @@ void SIVB::InitS4b()
 	panelProc = 0;
 	panelProcPlusX = 0;
 	panelTimestepCount = 0;
-    panelMesh1SaturnV = -1;
-	panelMesh2SaturnV  = -1;
-	panelMesh3SaturnV  = -1;
-	panelMesh4SaturnV  = -1;
+	panelMesh1SaturnV = -1;
+	panelMesh2SaturnV = -1;
+	panelMesh3SaturnV = -1;
+	panelMesh4SaturnV = -1;
+	panelMesh1SaturnVWide = -1;
+	panelMesh2SaturnVWide = -1;
+	panelMesh3SaturnVWide = -1;
+	panelMesh4SaturnVWide = -1;
     panelMesh1SaturnVLow = -1;
 	panelMesh2SaturnVLow  = -1;
 	panelMesh3SaturnVLow  = -1;
@@ -293,6 +298,7 @@ void SIVB::InitS4b()
 
 	meshSivbSaturnV = -1;
 	meshSivbSaturnVLow = -1;
+	meshSivbSaturnVWide = -1;
 	meshSivbSaturn1b = -1;
 	meshSivbSaturn1bLow = -1;
 	meshASTP_A = -1;
@@ -320,20 +326,6 @@ void SIVB::InitS4b()
 	//
 
 	payloadSettings.checklistFile[0] = 0;
-
-	//
-	// LM PAD data.
-	//
-
-	LMPadCount = 0;
-	LMPad = 0;
-	LMPadLoadCount = 0;
-	LMPadValueCount = 0;
-
-	AEAPadCount = 0;
-	AEAPad = 0;
-	AEAPadLoadCount = 0;
-	AEAPadValueCount = 0;
 
 	//
 	// Set up the connections.
@@ -441,6 +433,7 @@ void SIVB::SetS4b()
     ClearExhaustRefs();
     ClearAttExhaustRefs();
 	HideAllMeshes();
+	CreateStrobes();
 
 	double TCPS4B = -11;
 
@@ -480,6 +473,9 @@ void SIVB::SetS4b()
 		if (LowRes) {
 			SetMeshVisibilityMode(meshSivbSaturnVLow, MESHVIS_EXTERNAL);
 		}
+		else if (UseWideSLA) {
+			SetMeshVisibilityMode(meshSivbSaturnVWide, MESHVIS_EXTERNAL);
+		}
 		else {
 			SetMeshVisibilityMode(meshSivbSaturnV, MESHVIS_EXTERNAL);
 		}
@@ -493,10 +489,18 @@ void SIVB::SetS4b()
 				SetMeshVisibilityMode(panelMesh4SaturnVLow, MESHVIS_EXTERNAL);
 			}
 			else {
-				SetMeshVisibilityMode(panelMesh1SaturnV, MESHVIS_EXTERNAL);
-				SetMeshVisibilityMode(panelMesh2SaturnV, MESHVIS_EXTERNAL);
-				SetMeshVisibilityMode(panelMesh3SaturnV, MESHVIS_EXTERNAL);
-				SetMeshVisibilityMode(panelMesh4SaturnV, MESHVIS_EXTERNAL);
+				if (!UseWideSLA) {
+					SetMeshVisibilityMode(panelMesh1SaturnV, MESHVIS_EXTERNAL);
+					SetMeshVisibilityMode(panelMesh2SaturnV, MESHVIS_EXTERNAL);
+					SetMeshVisibilityMode(panelMesh3SaturnV, MESHVIS_EXTERNAL);
+					SetMeshVisibilityMode(panelMesh4SaturnV, MESHVIS_EXTERNAL);
+				}
+				else {
+					SetMeshVisibilityMode(panelMesh1SaturnVWide, MESHVIS_EXTERNAL);
+					SetMeshVisibilityMode(panelMesh2SaturnVWide, MESHVIS_EXTERNAL);
+					SetMeshVisibilityMode(panelMesh3SaturnVWide, MESHVIS_EXTERNAL);
+					SetMeshVisibilityMode(panelMesh4SaturnVWide, MESHVIS_EXTERNAL);
+				}
 			}
 		}
 	}
@@ -580,6 +584,14 @@ void SIVB::SetS4b()
 		CreatePayload();
 		i++;
 		break;
+	case PAYLOAD_CUSTOM:
+		dockpos = { 0, 0, 9.0 };
+		SetDockParams(dockpos, dockdir, dockrot);
+		hDock = GetDockHandle(0);
+		RegisterConnector(i, &payloadSeparationConnector);
+		CreatePayload();
+		i++;
+		break;
 	}
 
 	//Docking port for the connection to the lower stage (S-IB or S-II)
@@ -591,6 +603,7 @@ void SIVB::SetS4b()
 	SetEmptyMass(mass);
 	SetAnimation(panelAnim, panelProc);
 	SetAnimation(panelAnimPlusX, panelProcPlusX);
+	MoveStrobes();
 
 	AddRCS_S4B();
 
@@ -612,6 +625,11 @@ void SIVB::SetS4b()
 	{
 		sivbsys->SetVehicleNumber(VehicleNo);
 		sivbsys->CreateParticleEffects(1400.0*0.0254); //CG location
+	}
+
+	if ((PanelsHinged || PanelsOpened) && SLAHasBeacons && MissionTime > (23.5 * 3600.0))
+	{
+		ActivateStrobes();
 	}
 }
 
@@ -664,6 +682,7 @@ void SIVB::clbkPreStep(double simt, double simdt, double mjd)
 					panelProcPlusX = min(RotationLimit, panelProcPlusX + simdt / 40.0);
 					SetAnimation(panelAnimPlusX, panelProcPlusX);
 				}
+				MoveStrobes();
 			}
 			else if (!PanelsOpened) {
 				if (panelProc < RotationLimit) {
@@ -770,14 +789,26 @@ void SIVB::clbkPreStep(double simt, double simdt, double mjd)
 						vs5.vrot.y = 0.1;
 						vs5.vrot.z = 0.0;
 
-						GetApolloName(VName); strcat(VName, "-S4B1");
-						hs4b1 = oapiCreateVessel(VName, "ProjectApollo/sat5stg31", vs2);
-						GetApolloName(VName); strcat(VName, "-S4B2");
-						hs4b2 = oapiCreateVessel(VName, "ProjectApollo/sat5stg32", vs3);
-						GetApolloName(VName); strcat(VName, "-S4B3");
-						hs4b3 = oapiCreateVessel(VName, "ProjectApollo/sat5stg33", vs4);
-						GetApolloName(VName); strcat(VName, "-S4B4");
-						hs4b4 = oapiCreateVessel(VName, "ProjectApollo/sat5stg34", vs5);
+						if (!UseWideSLA) {
+							GetApolloName(VName); strcat(VName, "-S4B1");
+							hs4b1 = oapiCreateVessel(VName, "ProjectApollo/sat5stg31", vs2);
+							GetApolloName(VName); strcat(VName, "-S4B2");
+							hs4b2 = oapiCreateVessel(VName, "ProjectApollo/sat5stg32", vs3);
+							GetApolloName(VName); strcat(VName, "-S4B3");
+							hs4b3 = oapiCreateVessel(VName, "ProjectApollo/sat5stg33", vs4);
+							GetApolloName(VName); strcat(VName, "-S4B4");
+							hs4b4 = oapiCreateVessel(VName, "ProjectApollo/sat5stg34", vs5);
+						}
+						else {
+							GetApolloName(VName); strcat(VName, "-S4B1");
+							hs4b1 = oapiCreateVessel(VName, "ProjectApollo/sat5stg31wide", vs2);
+							GetApolloName(VName); strcat(VName, "-S4B2");
+							hs4b2 = oapiCreateVessel(VName, "ProjectApollo/sat5stg32wide", vs3);
+							GetApolloName(VName); strcat(VName, "-S4B3");
+							hs4b3 = oapiCreateVessel(VName, "ProjectApollo/sat5stg33wide", vs4);
+							GetApolloName(VName); strcat(VName, "-S4B4");
+							hs4b4 = oapiCreateVessel(VName, "ProjectApollo/sat5stg34wide", vs5);
+						}
 
 						MATRIX3 rv, rx, ry, rz, rnx, rny, rnz;
 						GetRotationMatrix(rv);
@@ -802,6 +833,10 @@ void SIVB::clbkPreStep(double simt, double simdt, double mjd)
 						SetMeshVisibilityMode(panelMesh2SaturnV, MESHVIS_NEVER);
 						SetMeshVisibilityMode(panelMesh3SaturnV, MESHVIS_NEVER);
 						SetMeshVisibilityMode(panelMesh4SaturnV, MESHVIS_NEVER);
+						SetMeshVisibilityMode(panelMesh1SaturnVWide, MESHVIS_NEVER);
+						SetMeshVisibilityMode(panelMesh2SaturnVWide, MESHVIS_NEVER);
+						SetMeshVisibilityMode(panelMesh3SaturnVWide, MESHVIS_NEVER);
+						SetMeshVisibilityMode(panelMesh4SaturnVWide, MESHVIS_NEVER);
 						SetMeshVisibilityMode(panelMesh1SaturnVLow, MESHVIS_NEVER);
 						SetMeshVisibilityMode(panelMesh2SaturnVLow, MESHVIS_NEVER);
 						SetMeshVisibilityMode(panelMesh3SaturnVLow, MESHVIS_NEVER);
@@ -872,7 +907,7 @@ void SIVB::clbkPreStep(double simt, double simdt, double mjd)
 
 	sivbsys->Timestep(simdt);
 	iu->Timestep(simt, simdt, mjd);
-	Panelsdk.Timestep(MissionTime);
+	Panelsdk.Timestep(simt);
 }
 
 void SIVB::clbkPostStep(double simt, double simdt, double mjd)
@@ -893,6 +928,8 @@ void SIVB::clbkSaveState (FILEHANDLE scn)
 	VESSEL2::clbkSaveState (scn);
 
 	oapiWriteScenario_int (scn, "S4PL", PayloadType);
+	oapiWriteScenario_int (scn, "WIDESLA", UseWideSLA);
+	oapiWriteScenario_int (scn, "SLABEACONS", SLAHasBeacons);
 	oapiWriteScenario_int (scn, "MAINSTATE", GetMainState());
 	oapiWriteScenario_int (scn, "VECHNO", VehicleNo);
 	oapiWriteScenario_float (scn, "EMASS", EmptyMass);
@@ -924,19 +961,17 @@ void SIVB::clbkSaveState (FILEHANDLE scn)
 		oapiWriteScenario_float (scn, "LMASCFUEL", payloadSettings.AscentFuelKg);
 		oapiWriteScenario_float(scn, "LMDSCEMPTY", payloadSettings.DescentEmptyKg);
 		oapiWriteScenario_float(scn, "LMASCEMPTY", payloadSettings.AscentEmptyKg);
-		if (LMPadCount > 0 && LMPad) {
-			oapiWriteScenario_int (scn, "LMPADCNT", LMPadCount);
+		if (LMPad.size() > 0) {
 			char str[64];
-			for (int i = 0; i < LMPadCount; i++) {
+			for (unsigned i = 0; i < LMPad.size() / 2; i++) {
 				sprintf(str, "%04o %05o", LMPad[i * 2], LMPad[i * 2 + 1]);
-				oapiWriteScenario_string (scn, "LMPAD", str);
+				oapiWriteScenario_string(scn, "LMPAD", str);
 			}
 		}
-		if (AEAPadCount > 0 && AEAPad) {
-			oapiWriteScenario_int(scn, "AEAPADCNT", AEAPadCount);
+		if (AEAPad.size() > 0) {
 			char str[64];
-			for (int i = 0; i < AEAPadCount; i++) {
-				sprintf(str, "%04o %05o", AEAPad[i * 2], AEAPad[i * 2 + 1]);
+			for (unsigned i = 0; i < AEAPad.size() / 2; i++) {
+				sprintf(str, "%04o %06o", AEAPad[i * 2], AEAPad[i * 2 + 1]);
 				oapiWriteScenario_string(scn, "AEAPAD", str);
 			}
 		}
@@ -1190,6 +1225,18 @@ void SIVB::clbkLoadStateEx (FILEHANDLE scn, void *vstatus)
 		{
 			sscanf(line + 4, "%d", &PayloadType);
 		}
+		else if (!strnicmp(line, "WIDESLA", 7))
+		{
+			int i;
+			sscanf(line + 7, "%d", &i);
+			UseWideSLA = (i != 0);
+		}
+		else if (!strnicmp(line, "SLABEACONS", 10))
+		{
+			int i;
+			sscanf(line + 10, "%d", &i);
+			SLAHasBeacons = (i != 0);
+		}
 		else if (!strnicmp (line, "MAINSTATE", 9))
 		{
             int MainState = 0;;
@@ -1308,38 +1355,22 @@ void SIVB::clbkLoadStateEx (FILEHANDLE scn, void *vstatus)
 			payloadSettings.AscentEmptyKg = flt;
 		}
 		else if (!strnicmp (line, "LMPADCNT", 8)) {
-			if (!LMPad) {
-				sscanf (line+8, "%d", &LMPadCount);
-				if (LMPadCount > 0) {
-					LMPad = new unsigned int[LMPadCount * 2];
-				}
-			}
+			//For backwards compatibilty to not overload LMPAD
 		}
-		else if (!strnicmp (line, "LMPAD", 5)) {
+		else if (!strnicmp(line, "LMPAD", 5)) {
 			unsigned int addr, val;
-			sscanf (line+5, "%o %o", &addr, &val);
-			LMPadValueCount++;
-			if (LMPad && LMPadLoadCount < (LMPadCount * 2)) {
-				LMPad[LMPadLoadCount++] = addr;
-				LMPad[LMPadLoadCount++] = val;
-			}
+			sscanf(line + 5, "%o %o", &addr, &val);
+			LMPad.push_back(addr);
+			LMPad.push_back(val);
 		}
 		else if (!strnicmp(line, "AEAPADCNT", 9)) {
-			if (!AEAPad) {
-				sscanf(line + 9, "%d", &AEAPadCount);
-				if (AEAPadCount > 0) {
-					AEAPad = new unsigned int[AEAPadCount * 2];
-				}
-			}
+			//For backwards compatibilty to not overload AEAPAD
 		}
 		else if (!strnicmp(line, "AEAPAD", 6)) {
 			unsigned int addr, val;
 			sscanf(line + 6, "%o %o", &addr, &val);
-			AEAPadValueCount++;
-			if (AEAPad && AEAPadLoadCount < (AEAPadCount * 2)) {
-				AEAPad[AEAPadLoadCount++] = addr;
-				AEAPad[AEAPadLoadCount++] = val;
-			}
+			AEAPad.push_back(addr);
+			AEAPad.push_back(val);
 		}
 		else if (!strnicmp(line, SIVBSYSTEMS_START_STRING, sizeof(SIVBSYSTEMS_START_STRING))) {
 			sivbsys->LoadState(scn);
@@ -1380,21 +1411,29 @@ void SIVB::clbkSetClassCaps (FILEHANDLE cfg)
     // SaturnV panel animations
 	VECTOR3 mesh_dir = _V(-1.48, -1.48, 12.55);
 	panelMesh1SaturnV = AddMesh(hsat5stg31, &mesh_dir);
+	panelMesh1SaturnVWide = AddMesh(hsat5stg31wide, &mesh_dir);
 	panelMesh1SaturnVLow = AddMesh(hsat5stg31low, &mesh_dir);
 	mesh_dir = _V(1.48, -1.48, 12.55);
 	panelMesh2SaturnV = AddMesh(hsat5stg32, &mesh_dir);
+	panelMesh2SaturnVWide = AddMesh(hsat5stg32wide, &mesh_dir);
 	panelMesh2SaturnVLow = AddMesh(hsat5stg32low, &mesh_dir);
 	mesh_dir = _V(1.48, 1.48, 12.55);
 	panelMesh3SaturnV = AddMesh(hsat5stg33, &mesh_dir);
+	panelMesh3SaturnVWide = AddMesh(hsat5stg33wide, &mesh_dir);
 	panelMesh3SaturnVLow = AddMesh(hsat5stg33low, &mesh_dir);
 	mesh_dir = _V(-1.48, 1.48, 12.55);
 	panelMesh4SaturnV  = AddMesh(hsat5stg34, &mesh_dir);
+	panelMesh4SaturnVWide = AddMesh(hsat5stg34wide, &mesh_dir);
 	panelMesh4SaturnVLow  = AddMesh(hsat5stg34low, &mesh_dir);
 
-	static MGROUP_ROTATE panel1SaturnV(panelMesh1SaturnV, NULL, 0, _V(-0.6, -0.6, -3.2), _V(  1, -1, 0) / length(_V(  1, -1, 0)), (float)(1.0 * PI));
-	static MGROUP_ROTATE panel2SaturnV(panelMesh2SaturnV, NULL, 0, _V( 0.6, -0.6, -3.2), _V(  1,  1, 0) / length(_V(  1,  1, 0)), (float)(1.0 * PI));
-	static MGROUP_ROTATE panel3SaturnV(panelMesh3SaturnV, NULL, 0, _V( 0.6,  0.6, -3.2), _V( -1,  1, 0) / length(_V( -1,  1, 0)), (float)(1.0 * PI));
-	static MGROUP_ROTATE panel4SaturnV(panelMesh4SaturnV, NULL, 0, _V(-0.6,  0.6, -3.2), _V( -1, -1, 0) / length(_V( -1, -1, 0)), (float)(1.0 * PI));
+	static MGROUP_ROTATE panel1SaturnV(panelMesh1SaturnV, NULL, 0, _V(-0.6, -0.6, -3.2), _V(1, -1, 0) / length(_V(1, -1, 0)), (float)(1.0 * PI));
+	static MGROUP_ROTATE panel2SaturnV(panelMesh2SaturnV, NULL, 0, _V(0.6, -0.6, -3.2), _V(1, 1, 0) / length(_V(1, 1, 0)), (float)(1.0 * PI));
+	static MGROUP_ROTATE panel3SaturnV(panelMesh3SaturnV, NULL, 0, _V(0.6, 0.6, -3.2), _V(-1, 1, 0) / length(_V(-1, 1, 0)), (float)(1.0 * PI));
+	static MGROUP_ROTATE panel4SaturnV(panelMesh4SaturnV, NULL, 0, _V(-0.6, 0.6, -3.2), _V(-1, -1, 0) / length(_V(-1, -1, 0)), (float)(1.0 * PI));
+	static MGROUP_ROTATE panel1SaturnVWide(panelMesh1SaturnVWide, NULL, 0, _V(-0.6, -0.6, -3.2), _V(1, -1, 0) / length(_V(1, -1, 0)), (float)(1.0 * PI));
+	static MGROUP_ROTATE panel2SaturnVWide(panelMesh2SaturnVWide, NULL, 0, _V(0.6, -0.6, -3.2), _V(1, 1, 0) / length(_V(1, 1, 0)), (float)(1.0 * PI));
+	static MGROUP_ROTATE panel3SaturnVWide(panelMesh3SaturnVWide, NULL, 0, _V(0.6, 0.6, -3.2), _V(-1, 1, 0) / length(_V(-1, 1, 0)), (float)(1.0 * PI));
+	static MGROUP_ROTATE panel4SaturnVWide(panelMesh4SaturnVWide, NULL, 0, _V(-0.6, 0.6, -3.2), _V(-1, -1, 0) / length(_V(-1, -1, 0)), (float)(1.0 * PI));
 	static MGROUP_ROTATE panel1SaturnVLow(panelMesh1SaturnVLow, NULL, 0, _V(-0.6, -0.6, -3.2), _V(  1, -1, 0) / length(_V(  1, -1, 0)), (float)(1.0 * PI));
 	static MGROUP_ROTATE panel2SaturnVLow(panelMesh2SaturnVLow, NULL, 0, _V( 0.6, -0.6, -3.2), _V(  1,  1, 0) / length(_V(  1,  1, 0)), (float)(1.0 * PI));
 	static MGROUP_ROTATE panel3SaturnVLow(panelMesh3SaturnVLow, NULL, 0, _V( 0.6,  0.6, -3.2), _V( -1,  1, 0) / length(_V( -1,  1, 0)), (float)(1.0 * PI));
@@ -1404,6 +1443,10 @@ void SIVB::clbkSetClassCaps (FILEHANDLE cfg)
 	AddAnimationComponent(panelAnim, 0, 1, &panel2SaturnV);
 	AddAnimationComponent(panelAnim, 0, 1, &panel3SaturnV);
 	AddAnimationComponent(panelAnim, 0, 1, &panel4SaturnV);
+	AddAnimationComponent(panelAnim, 0, 1, &panel1SaturnVWide);
+	AddAnimationComponent(panelAnim, 0, 1, &panel2SaturnVWide);
+	AddAnimationComponent(panelAnim, 0, 1, &panel3SaturnVWide);
+	AddAnimationComponent(panelAnim, 0, 1, &panel4SaturnVWide);
 	AddAnimationComponent(panelAnim, 0, 1, &panel1SaturnVLow);
 	AddAnimationComponent(panelAnim, 0, 1, &panel2SaturnVLow);
 	AddAnimationComponent(panelAnim, 0, 1, &panel3SaturnVLow);
@@ -1436,6 +1479,7 @@ void SIVB::clbkSetClassCaps (FILEHANDLE cfg)
 	// for both.
 	//
 	mesh_dir = _V(0, 0, 0);
+	meshSivbSaturnVWide = AddMesh(hsat5stg3wide, &mesh_dir);
 	meshSivbSaturnVLow = AddMesh(hsat5stg3low, &mesh_dir);
 	meshSivbSaturnV = AddMesh(hsat5stg3, &mesh_dir);
 	meshSivbSaturn1bLow = AddMesh(hSat1stg2low, &mesh_dir);
@@ -1551,6 +1595,11 @@ void SIVB::SetState(SIVBSettings &state)
 			strcpy(PayloadName, state.PayloadName);
 		}
 
+		if (state.customPayloadClass[0])
+		{
+			strcpy(customPayloadClass, state.customPayloadClass);
+		}
+
 		if (state.LEMCheck[0]) {
 			strcpy(payloadSettings.checklistFile, state.LEMCheck);
 		}
@@ -1563,27 +1612,8 @@ void SIVB::SetState(SIVBSettings &state)
 		//
 		// Copy LM PAD data across.
 		//
-		LMPadCount = state.LMPadCount;
-
-		if (LMPadCount > 0) {
-			int i;
-			LMPad = new unsigned int[LMPadCount * 2];
-			for (i = 0; i < (LMPadCount * 2); i++)
-			{
-				LMPad[i] = state.LMPad[i];
-			}
-		}
-
-		AEAPadCount = state.AEAPadCount;
-
-		if (AEAPadCount > 0) {
-			int i;
-			AEAPad = new unsigned int[AEAPadCount * 2];
-			for (i = 0; i < (AEAPadCount * 2); i++)
-			{
-				AEAPad[i] = state.AEAPad[i];
-			}
-		}
+		LMPad = *state.LMPad;
+		AEAPad = *state.AEAPad;
 	}
 
 	if (state.SettingsType.SIVB_SETTINGS_GENERAL)
@@ -1591,6 +1621,8 @@ void SIVB::SetState(SIVBSettings &state)
 		MissionTime = state.MissionTime;
 		SaturnVStage = state.SaturnVStage;
 		PanelsHinged = state.PanelsHinged;
+		UseWideSLA = state.UseWideSLA;
+		SLAHasBeacons = state.SLAHasBeacons;
 		VehicleNo = state.VehicleNo;
 		LowRes = state.LowRes;
 		IUSCContPermanentEnabled = state.IUSCContPermanentEnabled;
@@ -1616,6 +1648,7 @@ void SIVB::SetState(SIVBSettings &state)
 		{
 			panelProc = panelProcPlusX = state.PanelProcess;
 			SetAnimation(panelAnim, panelProc);
+			MoveStrobes();
 		}
 
 		if (SaturnVStage)
@@ -1671,6 +1704,24 @@ int SIVB::GetVehicleNo()
 	return VehicleNo;
 }
 
+double SIVB::GetMissionTime()
+{
+	return MissionTime;
+}
+
+void SIVB::UpdateLaunchTime(double dt)
+{
+	//Don't allow earlier launch
+	if (dt < 0.0)
+		return;
+	//Don't allow during terminal countdown
+	if (MissionTime >= -186.0)
+		return;
+
+	//Update time
+	MissionTime -= dt;
+}
+
 void SIVB::SetSIVBThrusterDir(double yaw, double pitch)
 {
 	sivbsys->SetThrusterDir(yaw, pitch);
@@ -1710,6 +1761,7 @@ bool SIVB::PayloadIsDetachable()
 	case PAYLOAD_LEM:
 	case PAYLOAD_ASTP:
 	case PAYLOAD_LM1:
+	case PAYLOAD_CUSTOM:
 		return true;
 
 	default:
@@ -1735,6 +1787,10 @@ void SIVB::CreatePayload() {
 		break;
 	case PAYLOAD_ASTP:
 		plName = "ProjectApollo/ASTP";
+		break;
+	case PAYLOAD_CUSTOM:
+		if (strcmp(customPayloadClass, "") == 0) { strcpy(customPayloadClass, "ProjectApollo/ASTP"); } //Avoid weird stuff in case the user doesn't load a vessel class
+		plName = customPayloadClass;
 		break;
 
 	default:
@@ -1780,7 +1836,7 @@ void SIVB::CreatePayload() {
 	//
 
 	payloadvessel = static_cast<Payload *> (oapiGetVesselInterface(hPayload));
-	payloadvessel->SetupPayload(payloadSettings);
+	if (PayloadType != PAYLOAD_CUSTOM) { payloadvessel->SetupPayload(payloadSettings); }
 	Payloaddatatransfer = true;
 
 	GetStatusEx(&vslm2);
@@ -1810,20 +1866,22 @@ void SIVB::CreatePayload() {
 
 		LEM *lmvessel = static_cast<LEM *> (payloadvessel);
 
-		if (LMPad && LMPadCount > 0)
+		if (LMPad.size() > 0)
 		{
-			int i;
-			for (i = 0; i < LMPadCount; i++) {
+			unsigned i;
+			for (i = 0; i < LMPad.size() / 2; i++) {
 				lmvessel->PadLoad(LMPad[i * 2], LMPad[i * 2 + 1]);
 			}
+			LMPad.clear();
 		}
 
-		if (AEAPad && AEAPadCount > 0)
+		if (AEAPad.size() > 0)
 		{
-			int i;
-			for (i = 0; i < AEAPadCount; i++) {
+			unsigned i;
+			for (i = 0; i < AEAPad.size() / 2; i++) {
 				lmvessel->AEAPadLoad(AEAPad[i * 2], AEAPad[i * 2 + 1]);
 			}
+			AEAPad.clear();
 		}
 	}
 	break;
@@ -1897,6 +1955,66 @@ double SIVB::GetPayloadMass()
 	return PayloadMass;
 }
 
+void SIVB::CreateStrobes()
+{
+	static VECTOR3 beaconCol = _V(1, 1, 1);
+	trackLightPos[0] = _V(2.25, 0, 14.25);
+	trackLightPos[1] = _V(0, 2.25, 14.25);
+	trackLightPos[2] = _V(0, -2.25, 14.25);
+	trackLightPos[3] = _V(-2.25, 0, 14.25);
+	for (int i = 0; i < 4; i++) {
+		trackLight[i].shape = BEACONSHAPE_STAR;
+		trackLight[i].pos = trackLightPos + i;
+		trackLight[i].col = &beaconCol;
+		trackLight[i].size = 0.25;
+		trackLight[i].falloff = 0.25;
+		trackLight[i].period = 1;
+		trackLight[i].duration = 0.1;
+		trackLight[i].tofs = 0;
+		trackLight[i].active = false;
+		AddBeacon(&trackLight[i]);
+	}
+}
+
+void SIVB::ActivateStrobes()
+{
+	for (int i = 0; i < 4; i++) {
+		trackLight[i].active = true;
+	}
+}
+
+void SIVB::MoveStrobes()
+{
+	double vOfs = 5.1;
+	double sOfs = -0.6;
+	VECTOR3 pos[4] = { //Beacon position relative to SLA panel hinge
+		_V(sOfs, 0, vOfs),
+		_V(0, sOfs, vOfs),
+		_V(0, -sOfs, vOfs),
+		_V(-sOfs, 0, vOfs)
+	};
+	VECTOR3 hinge[4] = { //SLA panel hinge position in vessel coordinates
+		_V(2.82, 0, 9.35),
+		_V(0, 2.82, 9.35),
+		_V(0, -2.82, 9.35),
+		_V(-2.82, 0, 9.35)
+	};
+	double theta = panelProc * PI;
+	double thetaPlusX = panelProcPlusX * PI;
+
+	trackLightPos[0].x = ((pos[0].x * cos(-thetaPlusX)) - (pos[0].z * sin(-thetaPlusX))) + hinge[0].x;
+	trackLightPos[0].z = ((pos[0].x * sin(-thetaPlusX)) + (pos[0].z * cos(-thetaPlusX))) + hinge[0].z;
+
+	trackLightPos[1].y = ((pos[1].y * cos(-theta)) - (pos[1].z * sin(-theta))) + hinge[1].y;
+	trackLightPos[1].z = ((pos[1].y * sin(-theta)) + (pos[1].z * cos(-theta))) + hinge[1].z;
+
+	trackLightPos[2].y = ((pos[2].y * cos(theta)) - (pos[2].z * sin(theta))) + hinge[2].y;
+	trackLightPos[2].z = ((pos[2].y * sin(theta)) + (pos[2].z * cos(theta))) + hinge[2].z;
+
+	trackLightPos[3].x = ((pos[3].x * cos(theta)) - (pos[3].z * sin(theta))) + hinge[3].x;
+	trackLightPos[3].z = ((pos[3].x * sin(theta)) + (pos[3].z * cos(theta))) + hinge[3].z;
+}
+
 void SIVB::SISwitchSelector(int channel)
 {
 	sivbSIConnector.SISwitchSelector(channel);
@@ -1924,6 +2042,10 @@ void SIVB::HideAllMeshes()
 	SetMeshVisibilityMode(panelMesh2SaturnV, MESHVIS_NEVER);
 	SetMeshVisibilityMode(panelMesh3SaturnV, MESHVIS_NEVER);
 	SetMeshVisibilityMode(panelMesh4SaturnV, MESHVIS_NEVER);
+	SetMeshVisibilityMode(panelMesh1SaturnVWide, MESHVIS_NEVER);
+	SetMeshVisibilityMode(panelMesh2SaturnVWide, MESHVIS_NEVER);
+	SetMeshVisibilityMode(panelMesh3SaturnVWide, MESHVIS_NEVER);
+	SetMeshVisibilityMode(panelMesh4SaturnVWide, MESHVIS_NEVER);
 	SetMeshVisibilityMode(panelMesh1SaturnVLow, MESHVIS_NEVER);
 	SetMeshVisibilityMode(panelMesh2SaturnVLow, MESHVIS_NEVER);
 	SetMeshVisibilityMode(panelMesh3SaturnVLow, MESHVIS_NEVER);
@@ -1933,6 +2055,7 @@ void SIVB::HideAllMeshes()
 	SetMeshVisibilityMode(panelMesh3Saturn1b, MESHVIS_NEVER);
 	SetMeshVisibilityMode(panelMesh4Saturn1b, MESHVIS_NEVER);
 	SetMeshVisibilityMode(meshSivbSaturnV, MESHVIS_NEVER);
+	SetMeshVisibilityMode(meshSivbSaturnVWide, MESHVIS_NEVER);
 	SetMeshVisibilityMode(meshSivbSaturnVLow, MESHVIS_NEVER);
 	SetMeshVisibilityMode(meshSivbSaturn1b, MESHVIS_NEVER);
 	SetMeshVisibilityMode(meshSivbSaturn1bLow, MESHVIS_NEVER);

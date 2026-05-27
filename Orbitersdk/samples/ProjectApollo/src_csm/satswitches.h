@@ -84,14 +84,13 @@ public:
 	void Init(int i, SURFHANDLE surf, SwitchRow &row, Saturn *s, ToggleSwitch *o2PressIndSwitch);
 	double QueryValue();
 	void DoDrawSwitch(double v, SURFHANDLE drawSurface);
+	virtual void OnPostStep(double SimT, double DeltaT, double MJD);
 
 protected:
 	int Index;
 	SURFHANDLE NeedleSurface;
 	Saturn *Sat;
-	ToggleSwitch *O2PressIndSwitch;	
-
-	void DoDrawSwitch(SURFHANDLE surf, SURFHANDLE needle, double value, int xOffset, int xNeedle);
+	ToggleSwitch *O2PressIndSwitch;
 };
 
 class SaturnCryoQuantityMeter : public CurvedMeter {
@@ -258,6 +257,7 @@ class SaturnPartPressCO2Meter : public SaturnCabinMeter {
 public:
 	double QueryValue();
 	void DoDrawSwitch(double v, SURFHANDLE drawSurface);
+	virtual void OnPostStep(double SimT, double DeltaT, double MJD);
 };
 
 class SaturnRoundMeter : public RoundMeter {
@@ -439,6 +439,19 @@ public:
 	double QueryValue();
 	void DoDrawSwitch(double v, SURFHANDLE drawSurface);
 	void DrawNeedle (SURFHANDLE surf, int x, int y, double rad, double angle);
+};
+
+class SaturnDCVoltMeter : public ElectricMeter
+{
+public:
+	SaturnDCVoltMeter(double minVal, double maxVal, double vMin = 219.6, double vMax = (-39.6));
+
+	void Init(oapi::Pen *p0, oapi::Pen *p1, SwitchRow &row, Saturn *s, PowerStateRotationalSwitch *dcindicatorswitch);
+
+	double QueryValue();
+
+protected:
+	PowerStateRotationalSwitch *DCIndicatorSwitch;
 };
 
 ///
@@ -877,7 +890,7 @@ public:
 	virtual bool CheckMouseClick(int event, int mx, int my);
 };
 
-class DSEIndicatorSwitch : public IndicatorSwitch
+class DSETalkback : public IndicatorSwitch
 {
 public:
 	void Init(int xp, int yp, int w, int h, SURFHANDLE surf, SwitchRow &row, DSE *d, bool failopen = false);
@@ -997,4 +1010,16 @@ protected:
 	SURFHANDLE surface2;
 
 	UINT animNeedle;
+};
+
+class SaturnSPSInjectorValveIndicator : public SaturnRoundMeter
+{
+public:
+	SaturnSPSInjectorValveIndicator();
+	void Init(oapi::Pen *p0, oapi::Pen *p1, SwitchRow &row, Saturn *s, int index);
+
+	double QueryValue();
+	void DoDrawSwitch(double v, SURFHANDLE drawSurface);
+protected:
+	int Index;
 };

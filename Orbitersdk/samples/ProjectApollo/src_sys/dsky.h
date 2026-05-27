@@ -41,18 +41,19 @@ class DSKY : public e_object
 {
 public:
 
-	DSKY(SoundLib &s, ApolloGuidance &computer, int IOChannel = 015);
+	DSKY(SoundLib &s, ApolloGuidance &computer, PanelSDK& p, int IOChannel = 015);
 	virtual ~DSKY();
 
 	void Init(
-		e_object *statuslightpower, 
-		e_object *segmentlightpower, 
-		ContinuousRotationalSwitch *dimmer, 
-		ContinuousRotationalSwitch *integralDimmer,
-		ToggleSwitch *anunOverride,
-		ToggleSwitch *integralOverride
+		e_object *statuslightpower,
+		e_object *segmentlightpower,
+		ContinuousRotationalSwitch *dimmer,
+		e_object *integralsource
 	);
 	void Reset();
+
+	// Variable 0-250VAC DSKY transformer
+	RotVariableVoltageTransformer Variable_250VAC_Output;
 
 	//
 	// Light status.
@@ -163,6 +164,9 @@ public:
 	void ProcessChannel11Bit(int bit, bool val);
 	void ProcessChannel11(ChannelValue val);
 	void ProcessChannel163(ChannelValue val);
+
+	bool GetStatusLtPower();
+	bool GetDSKYPower();
 
 	void SaveState(FILEHANDLE scn, char *start_str, char *end_str);
 	void LoadState(FILEHANDLE scn, char *end_str);
@@ -289,10 +293,8 @@ protected:
 	bool FirstTimeStep;
 	e_object *StatusPower;
 	e_object *SegmentPower;
-	ToggleSwitch *LtgORideAnunSwitch;
-	ToggleSwitch *LtgORideIntegralSwitch;
 	ContinuousRotationalSwitch *DimmerRotationalSwitch;
-	ContinuousRotationalSwitch *IntegralRotationalSwitch;
+	e_object *IntegralPower;
 
 	//
 	//DSKY output stuff

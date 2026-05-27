@@ -566,7 +566,6 @@
 #define IDB_CSM_MAIN_LEFT_PANEL                             851
 #define IDB_CSM_MAIN_RIGHT_PANEL                            852
 #define IDB_CSM_MAIN_MIDDLE_PANEL                           853
-#define IDB_SPS_INJ_VLV                                     854
 #define IDB_TELESCOPE_WIDE                                  855
 #define IDB_SEXTANT_WIDE                                    856
 #define IDB_THUMBWHEEL_GPI_PITCH                            857
@@ -902,6 +901,24 @@
 #define AID_VC_Cab_Press_Rel_Handle1    3210
 #define AID_VC_Cab_Press_Rel_Handle2    3211
 #define AID_VC_Prim_Gly_Handle          3212
+#define AID_VC_Altimeter_Cover          3213
+#define AID_VC_Ordeal_Stowed			3214
+#define AID_VC_Waste_Disposal			3215
+#define AID_VC_Panel382_Cover			3216
+#define AID_VC_DSKY_Glareshade			3217
+#define AID_VC_EMSDV_Glareshade			3218
+#define AID_VC_AccelerometerCover		3219
+#define AID_VC_MissionTimer_Glareshade	3220
+#define AID_VC_Sextant_Eyepiece			3221
+#define AID_VC_Telescope_Eyepiece		3222
+
+// VC Active Areas (Panel 300/301/302/303/305)
+#define AID_VC_Panel300_SuitFlowValve_Handle	3223
+#define AID_VC_Panel301_SuitFlowValve_Handle 	3224
+#define AID_VC_Panel302_SuitFlowValve_Handle 	3225
+#define AID_VC_Rot_Panel303 					3226
+#define AID_VC_Panel305_FootPrepWater_Lever02	3227
+#define AID_VC_Panel305_FootPrepWater_Lever01	3228
 
 // VC Active Areas (Panel 2)
 #define AID_VC_PANEL_2			((id >= 4800) && (id <= 4999))
@@ -1123,7 +1140,6 @@
 #define AID_VC_SPS_OXID_PCT     3388
 #define AID_VC_SPS_FUEL_PCT     3389
 #define AID_VC_SPSOXIDFLOWIND   3390
-#define AID_VC_SPS_INJ_VLV      3391
 
 // VC Active Areas (Panel 4)
 #define AID_VC_PANEL_4			((id >= 3400) && (id <= 3499))
@@ -1664,24 +1680,23 @@
 #define AID_VC_CUE_CARD_LOCATION_9	7008
 #define AID_VC_CUE_CARD_LOCATION_10	7009
 #define AID_VC_CUE_CARD_LOCATION_11	7010
-#define AID_VC_CUE_CARD_LOCATION_4B	7011
+#define AID_VC_CUE_CARD_LOCATION_12	7011
+#define AID_VC_CUE_CARD_LOCATION_13	7012
+#define AID_VC_CUE_CARD_LOCATION_14	7013
+#define AID_VC_CUE_CARD_LOCATION_15	7014
+#define AID_VC_CUE_CARD_LOCATION_16	7015
+#define AID_VC_CUE_CARD_LOCATION_17	7016
+#define AID_VC_CUE_CARD_LOCATION_4B	7017
 
-// Integral Lights Panel 8
-#define AID_VC_INTEGRAL_LIGHT_P8  7012
-#define AID_VC_FLOOD_LIGHT_P8     7013
-#define AID_VC_NUMERICS_LIGHT_P8  7014
-
-// Integral Lights Panel 5
-#define AID_VC_INTEGRAL_LIGHT_P5  7015
-#define AID_VC_FLOOD_LIGHT_P5     7016
-
-// Integral Lights LEB
-#define AID_VC_INTEGRAL_LIGHT_P100  7017
-#define AID_VC_FLOOD_LIGHT_P100     7018
-#define AID_VC_NUMERICS_LIGHT_P100  7019
+// CMVC Lighting
+#define AID_CMVC_LIGHTING 7019
 
 // Integral Lights Cue Card
 #define AID_VC_CUE_CARDS_LIGHTING  7020
+
+// Pointing arrow
+#define AID_CMVC_POINTINGARROW 7021
+
 
 // Next default values for new objects
 //

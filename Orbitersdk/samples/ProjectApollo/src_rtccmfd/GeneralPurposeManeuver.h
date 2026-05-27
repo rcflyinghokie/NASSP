@@ -95,11 +95,11 @@ See http://nassp.sourceforge.net/license/ for more details.
 
 struct GMPOpt
 {
+	GMPOpt();
+
 	int ManeuverCode;
-	EphemerisData sv_in;		//State vector as input or without
-	double Area = 0.0;
-	double Weight = 1.0;
-	double KFactor = 1.0;
+	VehicleDataBlock sv_in;		//State vector as input or without
+	std::string StationID;
 
 	//maneuver parameters
 
@@ -116,6 +116,7 @@ struct GMPOpt
 	double Yaw;		//Input yaw of the maneuver
 	double dLOA;	//Line-of-apsides shift
 	int N;			//Number of revolutions
+	bool OptApsid;	//true = Use optimum solution in function ApsidesChange, false = use other solution
 };
 
 class RTCCGeneralPurposeManeuverProcessor : public RTCCModule
@@ -198,7 +199,8 @@ protected:
 	VECTOR3 DV_Vector;
 	double Pitch_Man, Yaw_Man, Node_Ang, Del_G, DV, H_man, lat_man, lng_man;
 	//0 = good maneuver, 1 = Maneuver cannot be performed in this orbit, 2 = Maneuver cannot be performed at this point in the orbit, 3 = AEG failed to converge, 4 = Unrecoverable AEG error
-	//5 = Unable to obtain libration matrix, 6 = Unable to advance to selenographic argument of latitude, 7 = PMMAPD error for current apo/peri, 8 = PMMAPD error for resultant apo/peri
+	//5 = Unable to obtain libration matrix, 6 = Unable to advance to selenographic argument of latitude, 7 = PMMAPD error for current apo/peri, 8 = PMMAPD error for resultant apo/peri, 
+	//9 = Resultant orbit non-elliptical
 	int ErrorIndicator;
 
 	//CONSTANTS
