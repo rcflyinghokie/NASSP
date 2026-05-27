@@ -2005,10 +2005,10 @@ void LEM::GetScenarioState(FILEHANDLE scn, void *vs)
 		}
 		else if (!strnicmp(line, "PANEL1RELAYBOX", 14)) {
 		Panel1RelayBox.LoadState(line);
-			}
+		}
 		else if (!strnicmp(line, "PANEL2RELAYBOX", 14)) {
 		Panel2RelayBox.LoadState(line);
-				}
+		}
 		else if (!strnicmp(line, "RADARTAPE_START", sizeof("RADARTAPE_START"))) {
 			RadarTape.LoadState(scn, "RADARTAPE_END");
 		}
