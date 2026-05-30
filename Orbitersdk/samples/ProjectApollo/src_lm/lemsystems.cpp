@@ -1738,8 +1738,8 @@ void LEM::SystemsTimestep(double simt, double simdt)
 
 	//Lighting Debug Lines
 	//sprintf(oapiDebugString(), "DSKY VAC: %lf ANUN: %lf NUM %lf", dsky.Variable_250VAC_Output.Voltage(), LtgORideAnunSwitch.Voltage(), lca.Num_Override_20_110VAC_Output.Voltage());
-	//sprintf(oapiDebugString(), "9K28 %d 9K32A %d 9K32B %d 9K29A %d 9K29B %d 9K30A %d 9K30B %d 9K31A %d 9K31B %d 9K34A %d 9K34B %d", Panel1RelayBox.Get9K28(), Panel1RelayBox.Get9K32A(), Panel1RelayBox.Get9K32B(),Panel2RelayBox.Get9K29A(),
-		//Panel2RelayBox.Get9K29B(), Panel2RelayBox.Get9K30A(), Panel2RelayBox.Get9K30B(), Panel2RelayBox.Get9K31A(), Panel2RelayBox.Get9K31B(), Panel2RelayBox.Get9K34A(), Panel2RelayBox.Get9K34B());
+	//sprintf(oapiDebugString(), "9K28 %d 9K32A %d 9K32B %d 9K29A %d 9K29B %d 9K30A %d 9K30B %d 9K31A %d 9K31B %d 9K34A %d 9K34B %d", *Panel1RelayBox.Get9K28(), *Panel1RelayBox.Get9K32A(), *Panel1RelayBox.Get9K32B(),*Panel2RelayBox.Get9K29A(),
+		//*Panel2RelayBox.Get9K29B(), *Panel2RelayBox.Get9K30A(), *Panel2RelayBox.Get9K30B(), *Panel2RelayBox.Get9K31A(), *Panel2RelayBox.Get9K31B(), *Panel2RelayBox.Get9K34A(), *Panel2RelayBox.Get9K34B());
 
 	//ECS Debug Lines//
 	//sprintf(oapiDebugString(), "CDRinPLSS %i CDRsuited %i LMPinPLSS %i LMPsuited %i CrewInCabin %i", CDRinPLSS, CDRSuited->number, LMPinPLSS, LMPSuited->number, CrewInCabin->number);
@@ -2863,14 +2863,14 @@ bool LEM_RadarTape::SignalFailure() //TODO: Light needs to flash progressively f
 		}
 	}
 	else {
-		if (lem->Panel2RelayBox.Get9K29A()) // LR
+		if (*lem->Panel2RelayBox.Get9K29A()) // LR
 		{
 			if (lem->LR.IsRangeDataGood() == false || lem->LR.IsVelocityDataGood() == false || lem->LR.GetAltitude() == 0.0 || abs(lem->LR.GetAltitudeRate()) < 1.524) //5 ft/s = 1.524 m/s
 			{
 				return true; //Needs to check landing radar rate and range signals and return true if not present
 			}
 		}
-		else if (lem->Panel2RelayBox.Get9K34A()) //AGS
+		else if (*lem->Panel2RelayBox.Get9K34A()) //AGS
 		{
 			if ((AGSaltUpdateTime + 1.0) < oapiGetSimTime() || (AGSaltRateUpdateTime + 1.0) < oapiGetSimTime() || ags_alt == 0.0 || abs(ags_altrate) < 1.524) //5 ft/s = 1.524 m/s
 			{
@@ -2940,7 +2940,7 @@ void LEM_RadarTape::Timestep(double simdt) {
 	}
 	else
 	{
-		if (lem->Panel2RelayBox.Get9K29A()) //LR
+		if (*lem->Panel2RelayBox.Get9K29A()) //LR
 		{
 			if (lem->LR.IsRangeDataGood())
 			{
@@ -2962,7 +2962,7 @@ void LEM_RadarTape::Timestep(double simdt) {
 				}
 			}
 		}
-		else if (lem->Panel2RelayBox.Get9K34A()) //AGS
+		else if (*lem->Panel2RelayBox.Get9K34A()) //AGS
 		{
 			setRange(ags_alt);
 			setRate(ags_altrate);
@@ -3233,12 +3233,12 @@ CrossPointer::CrossPointer()
 	grpY = 0;
 	xtrans = ytrans = NULL;
 
-	RateErrorLtRelay = false;
-	ModeSelAGSLtRelay = false;
+	RateErrorLtRelay = NULL;
+	ModeSelAGSLtRelay = NULL;
 
-	RateErrorDispRelay = false;
-	ModeSelLRDispRelay = false;
-	ModeSelAGSDispRelay = false;
+	RateErrorDispRelay = NULL;
+	ModeSelLRDispRelay = NULL;
+	ModeSelAGSDispRelay = NULL;
 
 	ElevRt = false;
 	AzRt = false;
@@ -3254,7 +3254,7 @@ CrossPointer::~CrossPointer()
 	if (ytrans) delete ytrans;
 }
 
-void CrossPointer::Init(LEM *s, e_object *dc_src, e_object *ltg, ToggleSwitch *scaleSw, bool ltgRly, bool dispRly)
+void CrossPointer::Init(LEM *s, e_object *dc_src, e_object *ltg, ToggleSwitch *scaleSw, bool *ltgRly, bool *dispRly)
 {
 
 	lem = s;
