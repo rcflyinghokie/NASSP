@@ -3256,7 +3256,6 @@ CrossPointer::~CrossPointer()
 
 void CrossPointer::Init(LEM *s, e_object *dc_src, e_object *ltg, ToggleSwitch *scaleSw, bool *ltgRly, bool *dispRly)
 {
-
 	lem = s;
 	dc_source = dc_src;
 	ltg_source = ltg;
@@ -3302,7 +3301,7 @@ void CrossPointer::Timestep(double simdt)
 		return;
 	}
 
-	if (RateErrorDispRelay) //Rendezvous Radar
+	if (!(*RateErrorDispRelay)) //Rendezvous Radar
 	{
 		if (lem->RR.IsPowered())
 		{
@@ -3319,7 +3318,7 @@ void CrossPointer::Timestep(double simdt)
 	{
 		double vx = 0, vy = 0;
 
-		if (ModeSelLRDispRelay) //Landing Radar
+		if (*ModeSelLRDispRelay) //Landing Radar
 		{
 			if (lem->LR.IsVelocityDataGood())
 			{
@@ -3338,7 +3337,7 @@ void CrossPointer::Timestep(double simdt)
 				vy = 0;
 			}
 		}
-		else if (ModeSelAGSDispRelay) //AGS
+		else if (*ModeSelAGSDispRelay) //AGS
 		{
 			vx = 0;
 			vy = lem->aea.GetLateralVelocity() * 0.3048;
@@ -3372,7 +3371,7 @@ void CrossPointer::Timestep(double simdt)
 	//The output scaling is 20 for full deflection.
 	UpdateDisplayValues(simdt);
 
-	if (!RateErrorLtRelay)
+	if (!(*RateErrorLtRelay))
 	{
 		ElevRt = true;
 		AzRt = true;
@@ -3396,7 +3395,7 @@ void CrossPointer::Timestep(double simdt)
 		AzRt = false;
 		LatVel = true;
 
-		if (!ModeSelAGSLtRelay)
+		if (!(*ModeSelAGSLtRelay))
 		{
 			FwdVel = true;
 		}
@@ -3416,6 +3415,7 @@ void CrossPointer::Timestep(double simdt)
 			X10 = false;
 		}
 	}
+	//sprintf(oapiDebugString(), "9K32B/9K30B: %d 9K34A: %d 9K32A/9K30A: %d 9K29B %d 9K34B %d", *RateErrorLtRelay, *ModeSelAGSLtRelay, *RateErrorDispRelay, *ModeSelLRDispRelay, *ModeSelAGSDispRelay);
 }
 
 void CrossPointer::SystemTimestep(double simdt)
