@@ -52,6 +52,8 @@
 #include "iu.h"
 #include "Mission.h"
 
+#include "eva.h"
+
 #include <crtdbg.h>
 
 extern "C" {
@@ -361,8 +363,8 @@ BOOL CALLBACK EnumAxesCallback( const DIDEVICEOBJECTINSTANCE* pdidoi, VOID* pSat
 Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj, fmodel), 
 	inertialData(this),
 	agc(soundlib, dsky, dsky2, imu, scdu, tcdu, Panelsdk),
-	dsky(soundlib, agc, 015),
-	dsky2(soundlib, agc, 016),
+	dsky(soundlib, agc, Panelsdk, 015),
+	dsky2(soundlib, agc, Panelsdk, 016),
 	CMCDCBusFeeder("CMC-DCBus-Feeder", Panelsdk),
 	imu(agc, Panelsdk, inertialData),
 	scdu(agc, RegOPTX, 0140, 2),
@@ -370,6 +372,11 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	mechanicalAccelerometer(inertialData),
 	cws(SMasterAlarm, Bclick, Panelsdk),
 	dockingprobe(0, SDockingCapture, SDockingLatch, SDockingExtend, SUndock, CrashBumpS, Panelsdk),
+	LeftIntegralLights(Panelsdk, 11.0), //LH Integral Power (watts)
+	RightIntegralLights(Panelsdk, 13.1), //RH Integral Power (watts)
+	LEBIntegralLights(Panelsdk, 7.1), //LEB Integral Power (watts)
+	LeftNumericLights(Panelsdk),
+	LEBNumericLights(Panelsdk),
 	MissionTimerDisplay(Panelsdk),
 	MissionTimer306Display(Panelsdk),
 	EventTimerDisplay(Panelsdk),
@@ -444,6 +451,7 @@ Saturn::Saturn(OBJHANDLE hObj, int fmodel) : ProjectApolloConnectorVessel (hObj,
 	SuitCompressor2Switch(Panelsdk),
 	SuitCompressor1Feeder("Suit-Compressor-1-Feeder", Panelsdk),
 	SuitCompressor2Feeder("Suit-Compressor-2-Feeder", Panelsdk),
+	RunEVAFeeder("Run-EVA-Feeder", Panelsdk),
 	BatteryCharger("BatteryCharger", Panelsdk),
 	timedSounds(soundlib),
 	iuCommandConnector(agc, this),
@@ -635,6 +643,9 @@ Saturn::~Saturn()
 	}
 	delete[] ReticlePoint;
 
+	// Waste Disposal animation
+	if (wasteDisposalKnob) delete wasteDisposalKnob;
+
 	//fclose(PanelsdkLogFile);
 }
 
@@ -665,6 +676,8 @@ void Saturn::initSaturn()
 
 	TLISoundsLoaded = false;
 	IUSCContPermanentEnabled = true;
+
+	cmpeva = false;
 
 	//
 	// Do we have the Skylab-type SM and CM?
@@ -779,8 +792,8 @@ void Saturn::initSaturn()
 
 	agc.ControlVessel(this);
 	imu.SetVessel(this, false);
-	dsky.Init(&LightingNumIntLMDCCB, &CMCDCBusFeeder, &NumericRotarySwitch, &IntegralRotarySwitch, NULL, NULL);
-	dsky2.Init(&LightingNumIntLEBCB, &CMCDCBusFeeder, &Panel100NumericRotarySwitch, &Panel100IntegralRotarySwitch, NULL, NULL);
+	dsky.Init(&LeftNumericLights.Variable_115_5VAC_Output, &CMCDCBusFeeder, &NumericRotarySwitch, &LeftIntegralLights.Variable_0_115VAC_Int_Output);
+	dsky2.Init(&LEBNumericLights.Variable_115_5VAC_Output, &CMCDCBusFeeder, &Panel100NumericRotarySwitch, &LEBIntegralLights.Variable_0_115VAC_Int_Output);
 
 	//
 	// Configure SECS.
@@ -792,10 +805,11 @@ void Saturn::initSaturn()
 	//
 	// Wire up timers.
 	//
-	MissionTimerDisplay.Init(&TimersMnACircuitBraker, &TimersMnBCircuitBraker, &NumericRotarySwitch, &LightingNumIntLMDCCB, NULL, &cte);
-	MissionTimer306Display.Init(&TimersMnACircuitBraker, &TimersMnBCircuitBraker, &Panel100NumericRotarySwitch, &LightingNumIntLEBCB, NULL, &cte);
-	EventTimerDisplay.Init(&TimersMnACircuitBraker, &TimersMnBCircuitBraker, &NumericRotarySwitch, &LightingNumIntLEBCB, NULL);
-	EventTimer306Display.Init(&TimersMnACircuitBraker, &TimersMnBCircuitBraker, &Panel100NumericRotarySwitch, &LightingNumIntLEBCB, NULL);
+	MissionTimerDisplay.Init(&TimersMnACircuitBraker, &TimersMnBCircuitBraker, &LeftNumericLights.Variable_0_115VAC_Num_Output, &cte);
+	MissionTimer306Display.Init(&TimersMnACircuitBraker, &TimersMnBCircuitBraker, &LEBNumericLights.Variable_0_115VAC_Num_Output, &cte);
+
+	EventTimerDisplay.Init(&TimersMnACircuitBraker, &TimersMnBCircuitBraker, NULL);
+	EventTimer306Display.Init(&TimersMnACircuitBraker, &TimersMnBCircuitBraker, NULL);
 
 	//
 	// Configure connectors.
@@ -1144,6 +1158,9 @@ void Saturn::initSaturn()
 	seatsunfoldedidx = -1;
 	coascdridx = -1;
 	coascdrreticleidx = -1;
+	smidx = -1;
+	cmvccuecardsarrowsidx = -1;
+	hcmPointingArrowidx = -1;
 
 	vcmesh = NULL;
 	vis = NULL;
@@ -1192,6 +1209,7 @@ void Saturn::initSaturn()
 	VCSeatsfolded = false;
 
 	COASreticlevisible = false;
+	ViewCueCardArrows = false;
 
 	CurrentFuelWeight = 0;
 	LastFuelWeight = numeric_limits<double>::infinity(); // Ensure update at first opportunity
@@ -1206,13 +1224,15 @@ void Saturn::initSaturn()
 	wasteDisposalState.Set(AnimState::CLOSING, 0.0);
 	panel382CoverState.Set(AnimState::CLOSING, 0.0);
 	altimeterCoverState.Set(AnimState::OPENING, 1.0);
-	ordealState.Set(AnimState::CLOSING, 0.0);	//In reality the ORDEAL should be stowed for launch
+	ordealState.Set(AnimState::OPENING, 1.0);
 	DSKY_GlareshadeState.Set(AnimState::OPENING, 1.0);
 	EMSDV_GlareshadeState.Set(AnimState::OPENING, 1.0);
 	AccelerometerCoverState.Set(AnimState::OPENING, 1.0);
 	MissionTimer_GlareshadeState.Set(AnimState::OPENING, 1.0);
 	Sextant_EyepieceState.Set(AnimState::OPENING, 1.0);
 	Telescope_EyepieceState.Set(AnimState::OPENING, 1.0);
+
+	wasteDisposalKnob = NULL;
 
 	// call only once 
 	if (!InitSaturnCalled) {
@@ -1225,6 +1245,7 @@ void Saturn::initSaturn()
 
 		InitVCAnimations();
 		InitReticle();
+		pointingArrow.Init(this);
 
 		// Initialize the panel
 		fdaiDisabled = false;
@@ -1241,6 +1262,12 @@ void Saturn::initSaturn()
 		// Switch to compatible dock mode 
 		SetDockMode(0);
 	}
+
+	for (int i = 0;i < 8;i++)
+	{
+		runningLightsPos[i] = _V(0, 0, 0);
+	}
+
 	InitSaturnCalled = true;
 }
 
@@ -1261,6 +1288,9 @@ void Saturn::clbkPostCreation()
 	//Set Animation States
 	hga.clbkPostCreation();
 	SPSEngine.clbkPostCreation();
+
+	//Set up systems
+	imu.clbkPostCreation();
 
 	// Connect to the Checklist controller.
 	checkControl.linktoVessel(this);
@@ -1531,11 +1561,10 @@ void Saturn::SetAnimations(double simdt)
 {
 	// By Jordan
 	// ANIMATED MESHES
-
 	DoMeshAnimation(panel382CoverState, panel382CoverAnim, 0.5, simdt);
 	DoMeshAnimation(altimeterCoverState, altimeterCoverAnim, 2.0, simdt);
 	DoMeshAnimation(wasteDisposalState, wasteDisposalAnim, 1.0, simdt);
-	DoMeshAnimation(ordealState, ordealAnim, 3.0, simdt);
+	DoMeshAnimation(ordealState, ordealMeshAnim, 3.0, simdt);
 	DoMeshAnimation(DSKY_GlareshadeState, DSKY_GlareshadeAnim, 2.0, simdt);
 	DoMeshAnimation(EMSDV_GlareshadeState, EMSDV_GlareshadeAnim, 2.0, simdt);
 	DoMeshAnimation(AccelerometerCoverState, AccelerometerCoverAnim, 2.0, simdt);
@@ -1554,6 +1583,8 @@ void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 	TRACE(buffer);
 
 	SetAnimations(simdt);
+//	UpdatePointingArrow();
+//	InitFDAICustomCamera();
 
 	//
 	// We die horribly if you set 100x or higher acceleration during launch.
@@ -1616,6 +1647,8 @@ void Saturn::clbkPreStep(double simt, double simdt, double mjd)
 		//We have focus on this vessel, and are in the VC
 		MoveFlashlight();
 	}
+
+	if (cmpeva)UpdateEVA(); //if cmp eva active (vessel created), enables EVA Timestep
 
 	sprintf(buffer, "End time(0) %lld", time(0)); 
 	TRACE(buffer);
@@ -1975,6 +2008,11 @@ void Saturn::clbkSaveState(FILEHANDLE scn)
 
 	checkControl.save(scn);
 	eventControl.save(scn);
+
+	//Save EVA State in scn file
+	char buffer[100];
+	sprintf(buffer, "%d", cmpeva);
+	oapiWriteScenario_string(scn, "CMPEVA", buffer);
 }
 
 void Saturn::QuicksaveScenario()
@@ -2531,6 +2569,11 @@ bool Saturn::ProcessConfigFileLine(FILEHANDLE scn, char *line)
 	}
 	else if (!strnicmp(line, "PAYN", 4)) {
 		strncpy (PayloadName, line + 5, 64);
+	}
+	else if (!strnicmp(line, "CMPEVA", 6)) {
+		//Load EVA State from scn file
+		sscanf(line + 6, "%d", &i);
+		cmpeva = i;
 	}
 	else if (!strnicmp(line, FAILURES_START_STRING, sizeof(FAILURES_START_STRING))) {
 		Failures.LoadState(scn);
@@ -3670,6 +3713,25 @@ int Saturn::clbkConsumeBufferedKey(DWORD key, bool down, char *kstate) {
 	if (FirstTimestep) return 0;
 
 	if (enableVESIM) vesim.clbkConsumeBufferedKey(key, down, kstate);
+
+	// Help key for CueCard Arrows
+	if (KEYMOD_LCONTROL(kstate)) {
+		if (down) {
+			switch (key) {
+			case OAPI_KEY_H:
+				if (InVC && oapiCameraInternal())
+				{
+					if (ViewCueCardArrows == true) {
+						ViewCueCardArrows = false;
+					}
+					else {
+						ViewCueCardArrows = true;
+					}
+					return 1;
+				}
+			}
+		}
+	}
 
 	if (KEYMOD_SHIFT(kstate) && !KEYMOD_CONTROL(kstate) && !KEYMOD_ALT(kstate)){
 		// Do DSKY stuff
@@ -5223,6 +5285,13 @@ void Saturn::UpdateMassAndCoG()
 		//lights
 		SpotLight->UpdatePosition(CoGShift);
 		RndzLight->UpdatePosition(CoGShift);
+		EVALight->UpdatePosition(CoGShift);
+
+		//Running Lights
+		for (int i = 0;i < 8;i++)
+		{
+			runningLightsPos[i] -= CoGShift;
+		}
 
 		// All done!
 		LastFuelWeight = CurrentFuelWeight;

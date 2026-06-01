@@ -139,11 +139,35 @@ void Saturn::SystemsInit() {
 	FuelCellN2Blanket[2] = (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:N2FUELCELL3BLANKET");
 
 	//
-	// Electric Lights
+	// Exterior Lights
 	//
 
 	SpotLight = (ElectricLight *)Panelsdk.GetPointerByString("ELECTRIC:SPOTLIGHT");
 	RndzLight = (ElectricLight *)Panelsdk.GetPointerByString("ELECTRIC:RNDZLIGHT");
+	EVALight = (ElectricLight*)Panelsdk.GetPointerByString("ELECTRIC:EVALIGHT");
+
+	RunEVAFeeder.WireToBuses(&RunEVATRGTAC1CB, &RunEVATRGTAC2CB);
+	EVALight->WireTo(&RunEVAFeeder);
+
+	ExteriorLighting.Init(this, &LightingRndzMNBCB, &RndzLightSwitch, &RunEVAFeeder, &RunEVALightSwitch, EVALight);
+
+	//
+	// Interior Lights
+	//
+
+	LeftFloodLights.Init(this, &LightingFloodMNACB, &FloodFixedSwitch, &FloodDimSwitch, &FloodRotarySwitch);
+	RightFloodLights.Init(this, &LightingFloodMNBCB, &InteriorLightsFloodFixedSwitch, &InteriorLightsFloodDimSwitch, &RightFloodRotarySwitch);
+	LEBFloodLights.Init(this, &LightingFloodMNACB, &Panel100FloodFixedSwitch, &Panel100FloodDimSwitch, &Panel100FloodRotarySwitch);
+
+	MNATunnelLights.Init(this, &LightingRndzMNACB, &TunnelLightSwitch);
+	MNBTunnelLights.Init(this, &LightingRndzMNBCB, &TunnelLightSwitch);
+
+	LeftIntegralLights.Init(this, &LightingNumIntLMDCCB, &IntegralRotarySwitch);
+	RightIntegralLights.Init(this, &LightingNumIntRMDCCB, &RightIntegralRotarySwitch);
+	LEBIntegralLights.Init(this, &LightingNumIntLEBCB, &Panel100IntegralRotarySwitch);
+
+	LeftNumericLights.Init(this, &LightingNumIntLMDCCB, &NumericRotarySwitch);
+	LEBNumericLights.Init(this, &LightingNumIntLEBCB, &Panel100NumericRotarySwitch);
 
 	//
 	// EPS/Cryo devices
@@ -312,6 +336,9 @@ void Saturn::SystemsInit() {
 	EntryBatteryA->WireTo(&BatteryChargerBatACircuitBraker);
 	EntryBatteryB->WireTo(&BatteryChargerBatBCircuitBraker);
 
+	BatCPWRCircuitBraker.WireTo(DiodeBatC);
+	BatCCHRGCircuitBraker.WireTo(&BatCPWRCircuitBraker);
+
 	//
 	// SCS Logic Buses
 	//
@@ -329,6 +356,10 @@ void Saturn::SystemsInit() {
 
 	LogicPowerSwitch.WireSourcesToBuses(1, &SCSLogicBus2Feeder, &SCSLogicBus2);
 	LogicPowerSwitch.WireSourcesToBuses(2, &SCSLogicBus3Feeder, &SCSLogicBus3);
+
+	// Lighting
+	Panelsdk.AddElectrical(&dsky.Variable_250VAC_Output, false);
+	Panelsdk.AddElectrical(&dsky2.Variable_250VAC_Output, false);
 
 	//
 	// Generic power source for switches, tied to both Bus A and
@@ -475,7 +506,7 @@ void Saturn::SystemsInit() {
 	omnib.Init(this);
 	omnic.Init(this);
 	omnid.Init(this);
-	dataRecorder.Init(this);
+	dataRecorder.Init(this, &SBandFMXMTRGroup1CB, &SBandFMXMTRFLTBusCB);
 	pcm.Init(this);
 	udl.Init(this);
 	vhfranging.Init(this, &VHFStationAudioRCB, &VHFRangingSwitch, &VHFRNGSwitch, &vhftransceiver);
@@ -682,6 +713,7 @@ void Saturn::SystemsInit() {
 	CMRCSHeat[11] = (h_HeatLoad *)Panelsdk.GetPointerByString("HYDRAULIC:CMRCSROLL12COIL");
 
 	SideHatch.Init(this, &HatchGearBoxSelector, &HatchActuatorHandleSelector, &HatchActuatorHandleSelectorOpen, &HatchVentValveRotary);
+	BPC.Init(this, &SideHatch);
 	ForwardHatch.Init(this, (h_Pipe *)Panelsdk.GetPointerByString("HYDRAULIC:FORWARDHATCHPIPE"), &PressEqualValve);
 
 	WaterController.Init(this, (h_Tank *)Panelsdk.GetPointerByString("HYDRAULIC:POTABLEH2OTANK"),
@@ -842,6 +874,7 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 		CMRCS1.Timestep(simt, simdt);	// Must be after JoystickTimestep
 		CMRCS2.Timestep(simt, simdt);
 		SideHatch.Timestep(simdt);
+		BPC.Timestep(simdt);
 		ForwardHatch.Timestep(simdt);
 
 		//Telecom update is last so telemetry reflects the current state
@@ -856,7 +889,7 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 		if (pMission->CSMHasVHFRanging()) vhfranging.TimeStep(simdt);
 		vhftransceiver.Timestep();
 		sce.Timestep();
-		dataRecorder.TimeStep( SimulatedTime, simdt );
+		dataRecorder.TimeStep(simdt);
 		RRTsystem.TimeStep(simdt);
 
 		//
@@ -1044,12 +1077,6 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 					MainBusAController.SetGSEState(0);
 					MainBusBController.SetGSEState(0);
 
-					// Disable GSE SM RCS heaters
-					*(int*) Panelsdk.GetPointerByString("ELECTRIC:GSESMRCSQUADAHEATER:PUMP") = SP_PUMP_OFF;
-					*(int*) Panelsdk.GetPointerByString("ELECTRIC:GSESMRCSQUADBHEATER:PUMP") = SP_PUMP_OFF;
-					*(int*) Panelsdk.GetPointerByString("ELECTRIC:GSESMRCSQUADCHEATER:PUMP") = SP_PUMP_OFF;
-					*(int*) Panelsdk.GetPointerByString("ELECTRIC:GSESMRCSQUADDHEATER:PUMP") = SP_PUMP_OFF;
-
 					// Next state
 					systemsState = SATSYSTEMS_GSECONNECTED_2;
 					lastSystemsMissionTime = MissionTime; 
@@ -1100,6 +1127,12 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 					PrimEcsRadiatorExchanger2->SetLength(10.0);
 					SecEcsRadiatorExchanger1->SetLength(10.0);
 					SecEcsRadiatorExchanger2->SetLength(10.0);
+
+					// Disable Dummy GSE SM RCS heaters
+					*(int*)Panelsdk.GetPointerByString("ELECTRIC:GSESMRCSQUADAHEATER:PUMP") = SP_PUMP_OFF;
+					*(int*)Panelsdk.GetPointerByString("ELECTRIC:GSESMRCSQUADBHEATER:PUMP") = SP_PUMP_OFF;
+					*(int*)Panelsdk.GetPointerByString("ELECTRIC:GSESMRCSQUADCHEATER:PUMP") = SP_PUMP_OFF;
+					*(int*)Panelsdk.GetPointerByString("ELECTRIC:GSESMRCSQUADDHEATER:PUMP") = SP_PUMP_OFF;
 
 					// Next state
 					systemsState = SATSYSTEMS_CABINVENTING;
@@ -1162,6 +1195,22 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 //------------------------------------------------------------------------------------
 // Various debug prints
 //------------------------------------------------------------------------------------
+
+//Lighting Debug Lines   
+	/*
+	//sprintf(oapiDebugString(), "LH Prim %.2f LH Sec %.2f RH Prim %.2f RH Sec %.2f LEB Prim %.2f LEB Sec %.2f", LeftFloodLights.GetPrimOutput(), LeftFloodLights.GetSecOutput(),
+		//RightFloodLights.GetPrimOutput(), RightFloodLights.GetSecOutput(), LEBFloodLights.GetPrimOutput(), LEBFloodLights.GetSecOutput());
+
+	//sprintf(oapiDebugString(), "LH Prim %.2f LH Sec %.2f RH Prim %.2f RH Sec %.2f LEB Prim %.2f LEB Sec %.2f", LeftFloodLights.GetPrimVoltage(), LeftFloodLights.GetSecVoltage(),
+		//RightFloodLights.GetPrimVoltage(), RightFloodLights.GetSecVoltage(), LEBFloodLights.GetPrimVoltage(), LEBFloodLights.GetSecVoltage());
+
+	//sprintf(oapiDebugString(), "LH %.2f RH %.2f LEB %.2f", LeftFloodLights.GetCombinedOutput(), RightFloodLights.GetCombinedOutput(), LEBFloodLights.GetCombinedOutput());
+	//sprintf(oapiDebugString(), "LH %.2f RH %.2f LEB %.2f PWR: LH %.2f RH %.2f LEB %.2f", LeftIntegralLights.GetOutput(), RightIntegralLights.GetOutput(), LEBIntegralLights.GetOutput(), LightingNumIntLMDCCB.PowerLoad(), LightingNumIntRMDCCB.PowerLoad(), LightingNumIntLEBCB.PowerLoad());
+	//sprintf(oapiDebugString(), "LH %.2f LEB %.2f PWR: LH %.2f LEB %.2f", LeftNumericLights.GetOutput(), LEBNumericLights.GetOutput(), LightingNumIntLMDCCB.PowerLoad(), LightingNumIntLEBCB.PowerLoad());
+
+	//sprintf(oapiDebugString(), "DSKY1 VAC: %lf NUM: %lf DSKY2 VAC %lf", dsky.Variable_250VAC_Output.Voltage(), LeftNumericLights.GetOutput(), dsky2.Variable_250VAC_Output.Voltage());
+	*/
+
 //Scaling Debug Lines
 	/*
 	//double *pressCO2 = (double *)Panelsdk.GetPointerByString("HYDRAULIC:SUIT:CO2_PPRESS");
@@ -1171,7 +1220,7 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 	//sprintf(oapiDebugString(), "Pixel %.2f MeterValue: %.2f XducerV %.2f", (129 - (O2Pressure1Meter.QueryValue()) * 20.6), O2Pressure1Meter.QueryValue(), O2Tank1PressSensor.Voltage());
 	*/
 
-	// Structure Temperature Debug Lines
+// Structure Temperature Debug Lines
 	/*
 	h_Radiator *DockProbe = (h_Radiator *)Panelsdk.GetPointerByString("HYDRAULIC:DOCKPROBE");
 	double *DockProbeTemp = (double *)Panelsdk.GetPointerByString("HYDRAULIC:DOCKPROBE:TEMP");
@@ -1840,6 +1889,7 @@ void Saturn::SystemsInternalTimestep(double simdt)
 		tvsa.SystemTimestep(tFactor);
 		optics.SystemTimestep(tFactor);
 		pcm.SystemTimestep(tFactor);
+		dataRecorder.SystemTimestep(tFactor);
 		pmp.SystemTimestep(tFactor);
 		usb.SystemTimestep(tFactor);
 		hga.SystemTimestep(tFactor);
@@ -1876,6 +1926,17 @@ void Saturn::SystemsInternalTimestep(double simdt)
 		EventTimer306Display.SystemTimestep(tFactor);
 		H2CryoPressureSwitch.SystemTimestep(tFactor);
 		O2CryoPressureSwitch.SystemTimestep(tFactor);
+		LeftFloodLights.SystemTimestep(tFactor);
+		RightFloodLights.SystemTimestep(tFactor);
+		LEBFloodLights.SystemTimestep(tFactor);
+		MNATunnelLights.SystemTimestep(tFactor);
+		MNBTunnelLights.SystemTimestep(tFactor);
+		LeftIntegralLights.SystemTimestep(tFactor);
+		RightIntegralLights.SystemTimestep(tFactor);
+		LEBIntegralLights.SystemTimestep(tFactor);
+		LeftNumericLights.SystemTimestep(tFactor);
+		LEBNumericLights.SystemTimestep(tFactor);
+		ExteriorLighting.SystemTimestep(tFactor);
 
 		simdt -= tFactor;
 		tFactor = __min(mintFactor, simdt);
@@ -2929,8 +2990,9 @@ void Saturn::CheckSMSystemsState()
 		}
 
 		// Disconnect Exterior SM lights
-		RndzLight->WireTo(NULL);
-		SpotLight->WireTo(NULL);
+		RndzLight->Disable();
+		SpotLight->Disable();
+		EVALight->Disable();
 	}
 }
 
@@ -4134,5 +4196,13 @@ void Saturn::EnginesSoundTimestep() {
 	else
 	{
 		EngineS.stop();
+	}
+}
+
+void Saturn::StartCMPEVA()
+{
+	if (SideHatch.IsOpen() && !cmpeva)
+	{
+		ToggleCMPEVA();
 	}
 }

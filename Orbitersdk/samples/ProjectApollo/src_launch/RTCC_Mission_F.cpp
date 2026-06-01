@@ -192,7 +192,7 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		entopt.vessel = calcParams.src;
 		entopt.RV_MCC = sv1;
 
-		EntryTargeting(&entopt, &res); //Target load for uplink
+		EntryTargeting(entopt, res);
 
 		opt.TIG = res.P30TIG;
 		opt.dV_LVLH = res.dV_LVLH;
@@ -2172,7 +2172,7 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		entopt.type = 3; //Unspecified area
 
 		//Calculate corridor control burn
-		EntryTargeting(&entopt, &res);
+		EntryTargeting(entopt, res);
 
 		//If time to EI is more than 24 hours and the splashdown longitude is not within 2° of desired, then perform a longitude control burn
 		if (MCCtime < calcParams.EI - 24.0*3600.0 && abs(res.longitude - entopt.lng) > 2.0*RAD)
@@ -2180,7 +2180,7 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 			entopt.type = 1;
 			entopt.t_Z = res.GET400K;
 
-			EntryTargeting(&entopt, &res);
+			EntryTargeting(entopt, res);
 		}
 
 		//Apollo 10 Mission Rules
@@ -2219,7 +2219,7 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		if (scrubbed)
 		{
 			//Entry prediction without maneuver
-			EntryUpdateCalc(sv, PZREAP.RRBIAS, true, &res);
+			EntryUpdateCalc(ConvertSVtoEphemData(sv), PZREAP.RRBIAS, true, res);
 
 			res.dV_LVLH = _V(0, 0, 0);
 			res.P30TIG = entopt.TIGguess;
@@ -2591,7 +2591,7 @@ bool RTCC::CalculationMTP_F(int fcn, LPVOID &pad, char * upString, char * upDesc
 		OrbMech::format_time_HHMMSS(buffer3, T2);
 		OrbMech::format_time_HHMMSS(buffer4, T3);
 
-		sprintf(form->paddata, "VERTICAL STERO  T0 %s Camera start  T1 %s (Sub-solar pt)  T2 %s (65°E)  T3 %s (34°E)", buffer1, buffer2, buffer3, buffer4);
+		sprintf(form->paddata, "VERTICAL STEREO  T0 %s Camera start  T1 %s (Sub-solar pt)  T2 %s (65°E)  T3 %s (34°E)", buffer1, buffer2, buffer3, buffer4);
 	}
 	break;
 	case 203: //Strip Photo Update (rev 31)

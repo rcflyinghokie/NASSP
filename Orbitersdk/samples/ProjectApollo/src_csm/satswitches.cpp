@@ -2337,13 +2337,13 @@ bool MinImpulseHandcontrollerSwitch::CheckMouseClick(int event, int mx, int my)
 	return false;
 }
 
-void DSEIndicatorSwitch::Init(int xp, int yp, int w, int h, SURFHANDLE surf, SwitchRow &row, DSE *d, bool failopen)
+void DSETalkback::Init(int xp, int yp, int w, int h, SURFHANDLE surf, SwitchRow &row, DSE *d, bool failopen)
 {
 	dse = d;
 	IndicatorSwitch::Init(xp, yp, w, h, surf, row, failopen);
 }
 
-int DSEIndicatorSwitch::GetState()
+int DSETalkback::GetState()
 {
 	return dse->TapeMotion() ? 1 : 0;
 }
@@ -2875,4 +2875,25 @@ void SaturnAltimeter::DefineVCAnimations(UINT vc_idx)
 	animNeedle = Sat->CreateAnimation(0.0);
 	ach_needleAnim = Sat->AddAnimationComponent(animNeedle, 0.0f, 1.0f, &mgt_needleAnim);
 	Sat->SetAnimation(animNeedle, 0.0);
+}
+
+SaturnSPSInjectorValveIndicator::SaturnSPSInjectorValveIndicator()
+{
+	Index = 1;
+}
+
+void SaturnSPSInjectorValveIndicator::Init(oapi::Pen *p0, oapi::Pen *p1, SwitchRow &row, Saturn *s, int index)
+{
+	SaturnRoundMeter::Init(p0, p1, row, s);
+	Index = index;
+}
+
+double SaturnSPSInjectorValveIndicator::QueryValue()
+{
+	return Sat->GetSPSEngine()->GetInjectorValvePosition(Index);
+}
+
+void SaturnSPSInjectorValveIndicator::DoDrawSwitch(double v, SURFHANDLE drawSurface)
+{
+	DrawNeedle2(drawSurface, 48 * (Index - 1) + 17, 17, 8.0, 12.0, -(v + 45.0) * RAD);
 }
