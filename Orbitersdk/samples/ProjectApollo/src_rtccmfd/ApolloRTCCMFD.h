@@ -63,8 +63,6 @@ public:
 	bool Update (oapi::Sketchpad *skp);
 	bool ConsumeButton(int bt, int event);
 	bool ConsumeKeyBuffered(DWORD key);
-	void WriteStatus(FILEHANDLE scn) const;
-	void ReadStatus(FILEHANDLE scn);
 	void RecallStatus(void);
 
 	void Text_Double(oapi::Sketchpad *skp, int x, int y, char *format, double val);
@@ -843,6 +841,11 @@ public:
 	void menuRTCCTimesInput();
 	void menuSetStarSightingTablePage();
 	void menuSetSpacecraftPointingDisplayPage();
+	void menuSetExpendablesTable(int subpage);
+	void menuExpendablesTableAdd();
+	void menuExpendablesTableReplace();
+	void menuExpendablesTableDelete();
+	bool set_ExpendablesTabeEntry(int type, char* str);
 
 	void SetMEDInputPageM75();
 	void SetMEDInputPageP13();
@@ -904,6 +907,7 @@ private:
 
 	UINT ID;
 	ARCore* G;
+	AR_GlobalData* GD;
 	AR_GCore* GC;
 	ApolloRTCCMFDButtons coreButtons;
 
