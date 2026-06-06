@@ -940,7 +940,11 @@ bool Saturn::clbkLoadVC (int id)
 		oapiVCSetNeighbours(SATVIEW_OPTICS_SXT, -1, SATVIEW_GNPANEL, -1);
 		SetCameraMovement(_V(0.0, -0.2, 0.0), 0, 0, _V(-0.4, -0.2, 0.0), 0, 0, _V(0.4, -0.2, 0.0), 0, 0);
 		if (!FovSaveVCOptics) FovSaveVCOptics = oapiCameraAperture(); // Save FOV for going back from Sextant to LEB
-		oapiCameraSetAperture(39.5*RAD); // Telescope FOV 79°
+		oapiCameraSetAperture(39.7132281 * RAD); // Telescope FOV 79°
+		SetCameraDefaultDirection(_V(0.0, -OPTICS_BASE_COS, OPTICS_BASE_SIN));
+		oapiCameraSetCockpitDir(0, 0);
+		SetCameraCatchAngle(0.0);
+		SetCameraRotationRange(PI / 2., PI / 2., PI / 2., PI / 2.);
 		SetView(true);
 
 		RegisterActiveAreas();
@@ -962,7 +966,11 @@ bool Saturn::clbkLoadVC (int id)
 		SetCameraRotationRange(0.8 * PI, 0.8 * PI, 0.8 * PI, 0.4 * PI);
 		oapiVCSetNeighbours(-1, SATVIEW_OPTICS_SCT, SATVIEW_GNPANEL, -1);
 		SetCameraMovement(_V(0.0, -0.2, 0.0), 0, 0, _V(-0.4, -0.2, 0.0), 0, 0, _V(0.4, -0.2, 0.0), 0, 0);
-		oapiCameraSetAperture(1.5*RAD); // Sextant FOV 3°
+		oapiCameraSetAperture(1.29476537 * RAD); // Sextant FOV 3°
+		SetCameraDefaultDirection(_V(0.0, -OPTICS_BASE_COS, OPTICS_BASE_SIN));
+		oapiCameraSetCockpitDir(0, 0);
+		SetCameraCatchAngle(0.0);
+		SetCameraRotationRange(PI / 2., PI / 2., PI / 2., PI / 2.);
 		SetView(true);
 		RegisterActiveAreas();
 
@@ -6785,6 +6793,9 @@ void Saturn::UpdateCMVCOptics() {
 	static GROUPEDITSPEC ges;
 	double aperture;
 	SetCameraDefaultDirection(_V(0.0, -OPTICS_BASE_COS, OPTICS_BASE_SIN));
+	oapiCameraSetCockpitDir(0, 0);
+	SetCameraCatchAngle(0.0);
+	SetCameraRotationRange(PI / 2., PI / 2., PI / 2., PI / 2.);
 			
 	if (viewpos == SATVIEW_OPTICS_SXT) { // Sextant
 		if (!OpticsVCDualView){

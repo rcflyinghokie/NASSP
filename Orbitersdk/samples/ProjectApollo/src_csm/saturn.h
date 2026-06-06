@@ -4184,6 +4184,11 @@ protected:
 	#define SATVIEW_OPTICS_SCT		12
 	#define SATVIEW_OPTICS_SXT		13
 
+	// CSM Optics base direction, as given in the Colossus code CSM_GEOMETRY.agc
+	// All flown Colossus versions use these values
+	#define OPTICS_BASE_COS  0.8431756920
+	#define OPTICS_BASE_SIN  0.5376381241
+
 	unsigned int	viewpos;
 
 	// Mesh indexes
