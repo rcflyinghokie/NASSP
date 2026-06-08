@@ -940,11 +940,11 @@ bool Saturn::clbkLoadVC (int id)
 		oapiVCSetNeighbours(SATVIEW_OPTICS_SXT, -1, SATVIEW_GNPANEL, -1);
 		SetCameraMovement(_V(0.0, -0.2, 0.0), 0, 0, _V(-0.4, -0.2, 0.0), 0, 0, _V(0.4, -0.2, 0.0), 0, 0);
 		if (!FovSaveVCOptics) FovSaveVCOptics = oapiCameraAperture(); // Save FOV for going back from Sextant to LEB
-		oapiCameraSetAperture(39.7132281 * RAD); // Telescope FOV 79°
+		oapiCameraSetAperture(39.7132281*RAD); // Telescope FOV 79°
 		SetCameraDefaultDirection(_V(0.0, -OPTICS_BASE_COS, OPTICS_BASE_SIN));
-		oapiCameraSetCockpitDir(0, 0);
+		oapiCameraSetCockpitDir(0,0);
 		SetCameraCatchAngle(0.0);
-		SetCameraRotationRange(PI / 2., PI / 2., PI / 2., PI / 2.);
+		SetCameraRotationRange( PI/2., PI/2., PI/2., PI/2.);
 		SetView(true);
 
 		RegisterActiveAreas();
@@ -966,11 +966,11 @@ bool Saturn::clbkLoadVC (int id)
 		SetCameraRotationRange(0.8 * PI, 0.8 * PI, 0.8 * PI, 0.4 * PI);
 		oapiVCSetNeighbours(-1, SATVIEW_OPTICS_SCT, SATVIEW_GNPANEL, -1);
 		SetCameraMovement(_V(0.0, -0.2, 0.0), 0, 0, _V(-0.4, -0.2, 0.0), 0, 0, _V(0.4, -0.2, 0.0), 0, 0);
-		oapiCameraSetAperture(1.29476537 * RAD); // Sextant FOV 3°
+		oapiCameraSetAperture(1.29476537*RAD); // Sextant FOV 3°
 		SetCameraDefaultDirection(_V(0.0, -OPTICS_BASE_COS, OPTICS_BASE_SIN));
-		oapiCameraSetCockpitDir(0, 0);
+		oapiCameraSetCockpitDir(0,0);
 		SetCameraCatchAngle(0.0);
-		SetCameraRotationRange(PI / 2., PI / 2., PI / 2., PI / 2.);
+		SetCameraRotationRange( PI/2., PI/2., PI/2., PI/2.);
 		SetView(true);
 		RegisterActiveAreas();
 
@@ -1824,7 +1824,7 @@ void Saturn::RegisterActiveAreas() {
 	// For hiding the Optics Panel 122 and DSKY
 	oapiVCRegisterArea(AID_VC_OPTICS_HIDEPANELS, PANEL_REDRAW_NEVER, PANEL_MOUSE_DOWN);
 
-	oapiVCRegisterArea(AID_VC_OPTICS_DUALVIEW, PANEL_REDRAW_NEVER, PANEL_MOUSE_DOWN);
+	oapiVCRegisterArea(AID_VC_OPTICS_DUALVIEW_FLASHING, PANEL_REDRAW_NEVER, PANEL_MOUSE_DOWN);
 	oapiVCRegisterArea(AID_VC_OPTICS_RETICLE_PLUS, PANEL_REDRAW_NEVER, PANEL_MOUSE_LBPRESSED);
 	oapiVCRegisterArea(AID_VC_OPTICS_RETICLE_MINUS, PANEL_REDRAW_NEVER, PANEL_MOUSE_LBPRESSED);
 }
@@ -2082,16 +2082,24 @@ bool Saturn::clbkVCMouseEvent (int id, int event, VECTOR3 &p)
 		}
 		return true;
 
-	case AID_VC_OPTICS_DUALVIEW:
-		OpticsVCDualView = !OpticsVCDualView;
+	case AID_VC_OPTICS_DUALVIEW_FLASHING:
+		OpticsVCDualViewFlashing = !OpticsVCDualViewFlashing;
 		return true;
 
 	case AID_VC_OPTICS_RETICLE_PLUS:
+#ifdef _OPENORBITER
 		VCOpticsRetAlpha = (std::clamp((int)(VCOpticsRetAlpha >> 24) + 1, 1, 255) << 24) | 0xFFFFFF;
+#else
+		VCOpticsRetAlpha = ((std::max)(1, (std::min)((int)(VCOpticsRetAlpha >> 24) + 1, 255)) << 24) | 0xFFFFFF;
+#endif
 		return true;
 
 	case AID_VC_OPTICS_RETICLE_MINUS:
+#ifdef _OPENORBITER
 		VCOpticsRetAlpha = (std::clamp((int)(VCOpticsRetAlpha >> 24) - 1, 1, 255) << 24) | 0xFFFFFF;
+#else
+		VCOpticsRetAlpha = ((std::max)(1, (std::min)((int)(VCOpticsRetAlpha >> 24) - 1, 255)) << 24) | 0xFFFFFF;
+#endif
 		return true;
 	}
 
@@ -6477,7 +6485,8 @@ void Saturn::UpdateOpticsCustomCam(VECTOR3 camPos, VECTOR3 camDir, VECTOR3 camUp
 	gcCore* pCore = gcGetCoreInterface();
 	if (pCore) {
 		// (1.073 * RAD) This should be normaly (1.5 * RAD) but it's not working
-		hOpticsCustomCam = pCore->SetupCustomCamera(hOpticsCustomCam, oapiCameraTarget(), camPos, camDir, camUp, 1.073 * RAD, srfOpticsCustomCam, CUSTOMCAM_DEFAULTS);
+//		hOpticsCustomCam = pCore->SetupCustomCamera(hOpticsCustomCam, oapiCameraTarget(), camPos, camDir, camUp, 1.073 * RAD, srfOpticsCustomCam, CUSTOMCAM_DEFAULTS);
+		hOpticsCustomCam = pCore->SetupCustomCamera(hOpticsCustomCam, oapiCameraTarget(), camPos, camDir, camUp, 0.9 * RAD, srfOpticsCustomCam, CUSTOMCAM_DEFAULTS);
 		static bool CustomCam = true;
 		if (CustomCam) {
 			pCore->CustomCameraOnOff(hOpticsCustomCam, true);
@@ -6496,7 +6505,8 @@ void Saturn::SetVCLighting(UINT meshidx, DWORD *matList, int EmissionMode, doubl
 	if (vis == NULL || meshidx == -1) return;
 	DEVMESHHANDLE hMesh = GetDevMesh(vis, meshidx);
 
-	if (!hMesh) return;
+    if (!hMesh)
+        return;
 
 	for (int i = 0; i < cnt; i++)
 	{
@@ -6528,7 +6538,8 @@ void Saturn::SetVCLighting(UINT meshidx, int material, int EmissionMode, double 
 	if (vis == NULL || meshidx == -1) return;
 	DEVMESHHANDLE hMesh = GetDevMesh(vis, meshidx);
 
-	if (!hMesh) return;
+    if (!hMesh)
+        return;
 
 	gcCore *pCore = gcGetCoreInterface();
 	if (pCore) {
@@ -6687,149 +6698,130 @@ void Saturn::updateOrdealMshGrp(int tgtGrpIdx, int srcGrpIdx, VECTOR3 axis, VECT
 	// Safety check
 	if (!hMesh || !vcmesh || !hTempl) return;
 
-	MESHGROUP* srcGroup = oapiMeshGroup(hTempl, srcGrpIdx);
-	MESHGROUP* tgtGroup = oapiMeshGroup(hTempl, tgtGrpIdx);
+    MESHGROUP* srcGroup = oapiMeshGroup(hTempl, srcGrpIdx);
+    MESHGROUP* tgtGroup = oapiMeshGroup(hTempl, tgtGrpIdx);
 	if (!srcGroup || !tgtGroup) return;
 
 	DWORD vertexCnt = srcGroup->nVtx;
 	
-	// 2. Prepare Transformation Matrices using Orbiter SDK helpers
-	double rad = deg * RAD;
-	VECTOR3 nAxis = unit(axis); 
+    // 2. Prepare Transformation Matrices using Orbiter SDK helpers
+    double rad = deg * RAD;
+    VECTOR3 nAxis = unit(axis); 
 
 	// Use SDK internal rotm for 3x3 rotation (Rodrigues equivalent)
-	MATRIX3 R3 = rotm(nAxis, rad);
+    MATRIX3 R3 = rotm(nAxis, rad);
 
-	// Embed 3x3 rotation into a 4x4 MATRIX4 using the _M macro
-	MATRIX4 R = _M(R3.m11, R3.m12, R3.m13, 0,
+    // Embed 3x3 rotation into a 4x4 MATRIX4 using the _M macro
+    MATRIX4 R = _M(R3.m11, R3.m12, R3.m13, 0,
                    R3.m21, R3.m22, R3.m23, 0,
                    R3.m31, R3.m32, R3.m33, 0,
                    0,      0,      0,      1);
 
-	// Define Translation matrices for the Pivot point
-	MATRIX4 T1 = _M(1, 0, 0, -pivot.x,
+    // Define Translation matrices for the Pivot point
+    MATRIX4 T1 = _M(1, 0, 0, -pivot.x,
                     0, 1, 0, -pivot.y,
                     0, 0, 1, -pivot.z,
                     0, 0, 0, 1);
 
-	MATRIX4 T2 = _M(1, 0, 0, pivot.x,
+    MATRIX4 T2 = _M(1, 0, 0, pivot.x,
                     0, 1, 0, pivot.y,
                     0, 0, 1, pivot.z,
                     0, 0, 0, 1);
 
-	// Combine: Total Matrix M = T2 * R * T1
-	MATRIX4 M = mul(T2, mul(R, T1));
+    // Combine: Total Matrix M = T2 * R * T1
+    MATRIX4 M = mul(T2, mul(R, T1));
 
 	// 3. Setup Mesh-Update structure (GROUPEDITSPEC)
 	GROUPEDITSPEC ges;
-	ges.flags  = GRPEDIT_VTXCRD | GRPEDIT_VTXNML;	// Flags for Vertex Coordinate and Normal manipulation
-	ges.nVtx   = vertexCnt;							// Vertex Count
-	ges.vIdx   = 0;									// We change all Vertices
+    ges.flags  = GRPEDIT_VTXCRD | GRPEDIT_VTXNML;	// Flags for Vertex Coordinate and Normal manipulation
+    ges.nVtx   = vertexCnt;							// Vertex Count
+    ges.vIdx   = 0;									// We change all Vertices
 	ges.Vtx    = new NTVERTEX[ges.nVtx];
 
 	// 4. Transform Vertices (Positions and Normals)
-	for (DWORD i = 0; i < vertexCnt; i++) {
+    for (DWORD i = 0; i < vertexCnt; i++) {
 
-		// Position: Full transform (Rotation around Pivot)
-		ges.Vtx[i].x = (float)(M.m11 * srcGroup->Vtx[i].x + M.m12 * srcGroup->Vtx[i].y + M.m13 * srcGroup->Vtx[i].z + M.m14);
-		ges.Vtx[i].y = (float)(M.m21 * srcGroup->Vtx[i].x + M.m22 * srcGroup->Vtx[i].y + M.m23 * srcGroup->Vtx[i].z + M.m24);
-		ges.Vtx[i].z = (float)(M.m31 * srcGroup->Vtx[i].x + M.m32 * srcGroup->Vtx[i].y + M.m33 * srcGroup->Vtx[i].z + M.m34);
+        // Position: Full transform (Rotation around Pivot)
+        ges.Vtx[i].x = (float)(M.m11 * srcGroup->Vtx[i].x + M.m12 * srcGroup->Vtx[i].y + M.m13 * srcGroup->Vtx[i].z + M.m14);
+        ges.Vtx[i].y = (float)(M.m21 * srcGroup->Vtx[i].x + M.m22 * srcGroup->Vtx[i].y + M.m23 * srcGroup->Vtx[i].z + M.m24);
+        ges.Vtx[i].z = (float)(M.m31 * srcGroup->Vtx[i].x + M.m32 * srcGroup->Vtx[i].y + M.m33 * srcGroup->Vtx[i].z + M.m34);
 
-		// Normals: Rotation only (for correct lighting/shading)
-		ges.Vtx[i].nx = (float)(R.m11 * srcGroup->Vtx[i].nx + R.m12 * srcGroup->Vtx[i].ny + R.m13 * srcGroup->Vtx[i].nz);
-		ges.Vtx[i].ny = (float)(R.m21 * srcGroup->Vtx[i].nx + R.m22 * srcGroup->Vtx[i].ny + R.m23 * srcGroup->Vtx[i].nz);
-		ges.Vtx[i].nz = (float)(R.m31 * srcGroup->Vtx[i].nx + R.m32 * srcGroup->Vtx[i].ny + R.m33 * srcGroup->Vtx[i].nz);
-	}
+        // Normals: Rotation only (for correct lighting/shading)
+        ges.Vtx[i].nx = (float)(R.m11 * srcGroup->Vtx[i].nx + R.m12 * srcGroup->Vtx[i].ny + R.m13 * srcGroup->Vtx[i].nz);
+        ges.Vtx[i].ny = (float)(R.m21 * srcGroup->Vtx[i].nx + R.m22 * srcGroup->Vtx[i].ny + R.m23 * srcGroup->Vtx[i].nz);
+        ges.Vtx[i].nz = (float)(R.m31 * srcGroup->Vtx[i].nx + R.m32 * srcGroup->Vtx[i].ny + R.m33 * srcGroup->Vtx[i].nz);
+    }
 
-	// 5. Tell D3D9Client to Update the GPU-Buffer
-	oapiEditMeshGroup(hMesh, tgtGrpIdx, &ges);
+    // 5. Tell D3D9Client to Update the GPU-Buffer
+    oapiEditMeshGroup(hMesh, tgtGrpIdx, &ges);
 
-	// 6. Cleanup allocated memory
+    // 6. Cleanup allocated memory
 	if(ges.Vtx) delete [] ges.Vtx;
 }
 
-void setVCCameraLOS(double shaft, double trunnion) {
-	double cosShaft = cos(shaft), sinShaft = sin(shaft);
-	double cosTrun = cos(trunnion), sinTrun = sin(trunnion);
-	double uzx = cosShaft*sinTrun, uzy = sinShaft*sinTrun, uzz = cosTrun;
-	double azimuth = 0.5*PI - acos(uzx), polar =-atan2(uzy, uzz);
-	oapiCameraSetCockpitDir(polar, azimuth, false);
-}
-
 //
-// This is the CMVC Optics stuff.
+// This is the VC Optics stuff.
 //
 void Saturn::UpdateCMVCOptics() {
+	auto setVCCameraLOS = [](double shaft, double trunnion) noexcept {
+		const double cosShaft = cos(shaft), sinShaft = sin(shaft);
+		const double cosTrun = cos(trunnion), sinTrun = sin(trunnion);
+		const double uzx = cosShaft * sinTrun, uzy = sinShaft * sinTrun, uzz = cosTrun;
+		const double azimuth = asin(uzx), polar = -atan2(uzy, uzz);
+		oapiCameraSetCockpitDir(polar, azimuth, false);
+	};
+
 	// If we are not in Optics view, Sextant or Teleskop, hide the VC Optics mesh
 	if (viewpos != SATVIEW_OPTICS_SCT && viewpos != SATVIEW_OPTICS_SXT) {
 		SetMeshVisibilityMode(hCMVCOpticsidx, MESHVIS_NEVER);
 		return;
 	}
 
-	// If we are not in VC return
-	if (!vcmesh) return;
-	if (oapiGetFocusInterface() != this) return;
-
-#define OPTICS_BASE_COS  0.8431756920
-#define OPTICS_BASE_SIN  0.5376381241
-
 	// struct for storing the original vertices from the mesh
 	// We do this to avoid rounding errors in every calculation.
 	// For this, we use the original vertices from the mesh.
-	typedef struct OpticsMeshGroup{
+	struct OpticsMeshGroup {
 		std::vector<VECTOR3> data;
 		std::vector<VECTOR3> datanew;		// This is for storing the transformed vertices, not the original ones.
 		std::vector<NTVERTEX> vertexdata;	// This is for sending the transformad vertices to D3D9 client
 		int vtxcnt;
-		MESHGROUP *mshgrp;
-		GROUPREQUESTSPEC grp;
+		MESHGROUP* mshgrp;
+		GROUPREQUESTSPEC grp{0};
 		int ordernr;
-	} OpticsMeshGroup;
+	};
 
-	static bool initVCOptics = true;
-	static VECTOR3  camPosGlobal, camPos, camDir, globVesselPos, camPointing, ofs, opticsPos, final_vertex;
-	static double cos_a, sin_a;
-	static DEVMESHHANDLE hOpticsMesh;
-	static GROUPEDITSPEC ges;
-	double aperture;
+	// If we are not in VC return
+	if (!vcmesh) return;
+	if (oapiGetFocusInterface() != this) return;
+
+	VECTOR3 camPosGlobal, camPos, camDir, camPointing, opticsPos, final_vertex;
+	double aperture = 0.0;
+
 	SetCameraDefaultDirection(_V(0.0, -OPTICS_BASE_COS, OPTICS_BASE_SIN));
-	oapiCameraSetCockpitDir(0, 0);
+	oapiCameraSetCockpitDir(0,0);
 	SetCameraCatchAngle(0.0);
-	SetCameraRotationRange(PI / 2., PI / 2., PI / 2., PI / 2.);
-			
-	if (viewpos == SATVIEW_OPTICS_SXT) { // Sextant
-		if (!OpticsVCDualView){
-			if (optics.SextDualView){
-				setVCCameraLOS(optics.SextShaft, optics.SextTrunion);
-				HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_CUSTOM_CAM, false);
-			}
-			else
-			{
-				setVCCameraLOS(optics.SextShaft, optics.SextTrunion);
-				HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_CUSTOM_CAM, true);
-			}
-			aperture = oapiCameraAperture() * 1.2605;
-	//		aperture = 0.03191;
+	SetCameraRotationRange( PI/2., PI/2., PI/2., PI/2.);
+	bool isSextant = (viewpos == SATVIEW_OPTICS_SXT);
+
+	if (isSextant) { // Sextant
+		bool isFlashing = OpticsVCDualViewFlashing;
+		bool dualView = optics.SextDualView;
+		bool dvLOSTog = optics.SextDVLOSTog;
+
+		if (isFlashing && dualView && dvLOSTog) {
+			setVCCameraLOS(optics.SextShaft, 0.0);
+			HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_CUSTOM_CAM, true);
 		} else {
-			if (optics.SextDualView && optics.SextDVLOSTog){
-				setVCCameraLOS(optics.SextShaft, 0.0);
-				HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_CUSTOM_CAM, true);
-			}
-			else
-			{
-				setVCCameraLOS(optics.SextShaft, optics.SextTrunion);
-				HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_CUSTOM_CAM, true);
-			}
-			aperture = oapiCameraAperture() * 1.2605;
-	//		aperture = 0.03191;
-
+			setVCCameraLOS(optics.SextShaft, optics.SextTrunion);
+			HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_CUSTOM_CAM, isFlashing || !dualView);
 		}
-	}
-
-	if (viewpos == SATVIEW_OPTICS_SCT) { // Telescope
+//		aperture = oapiCameraAperture() * multiplicator; // 1.2282;
+		aperture = oapiCameraAperture() * 1.230;
+	} else { // Telescope
 		setVCCameraLOS(optics.TeleShaft, optics.TeleTrunion);
-		aperture = oapiCameraAperture() * 1.5;
-//		aperture = 1;	
+//		aperture = oapiCameraAperture() * multiplicator2; //1.4637;
+		aperture = oapiCameraAperture() * 1.467;
+		// aperture = 1;	
 	}
 
 	// Get global camera position and direction. Is set in SATVIEW_OPTICS_SCT and SATVIEW_OPTICS_SXT
@@ -6844,30 +6836,30 @@ void Saturn::UpdateCMVCOptics() {
 	// Transformation into the local ship system
 	Global2Local(camPosGlobal, camPos);
 
-	VECTOR3 lCamDir, lCamUp, lCamRight;
-
 	// Local viewing direction
 	VECTOR3 gTarget = camPosGlobal + camDir;
 	VECTOR3 lTarget;
 	Global2Local(gTarget, lTarget);
-	lCamDir = lTarget - camPos;
+	VECTOR3 lCamDir = lTarget - camPos;
 	normalise(lCamDir);
 
 	// Local Up Vector
 	VECTOR3 gUpPos = camPosGlobal + gCamUp;
 	VECTOR3 lUpPos;
 	Global2Local(gUpPos, lUpPos);
-	lCamUp = lUpPos - camPos;
+	VECTOR3 lCamUp = lUpPos - camPos;
 	normalise(lCamUp);
 
 	// Local Right Vector
-	lCamRight = crossp(lCamUp, lCamDir);
+	VECTOR3 lCamRight = crossp(lCamUp, lCamDir);
 	normalise(lCamRight);
 
+	VECTOR3 ofs;
 	GetMeshOffset(vcidx, ofs);
-	hOpticsMesh = GetDevMesh(vis, hCMVCOpticsidx);
+	DEVMESHHANDLE hOpticsMesh = GetDevMesh(vis, hCMVCOpticsidx);
 
-	static std::vector<OpticsMeshGroup> cmvcOptics(NUM_MSHGRPS + NUM_RTCL);	// 8 meshgroups from mesh + 3 extra for the reticles
+	static std::vector<OpticsMeshGroup> cmvcOptics(NUM_MSHGRPS + NUM_RTCL); // 8 meshgroups from mesh + 3 extra for the reticles
+	static bool initVCOptics = true;
 
 	if (optics.SextDualView) {
 		// local custom camera direction
@@ -6903,62 +6895,55 @@ void Saturn::UpdateCMVCOptics() {
 
 	// Make copies of the mesh Vertices 
 	if (initVCOptics) {
-		MESHHANDLE hCVOptics = GetMeshTemplate(hCMVCOpticsidx);		// handle for VC Optics Mesh
+		MESHHANDLE hCVOptics = GetMeshTemplate(hCMVCOpticsidx); // handle for VC Optics Mesh
 
 		// Order of mesh groups. This must be the same in the mesh
 		// 0=Telescope eyepiece, 1=Sextant eyepiece, 2=dsky, 3=CMVCOptics_Panel_122, 4=Optics Clickpoints
 		// 5=Custom Camera, 6=Telescope reticle,  7=Sextant reticle
-		for (int i = FIRSTMSHGRP; i < NUM_MSHGRPS; i++){
+		for (int i = FIRSTMSHGRP; i < NUM_MSHGRPS; i++) {
 			cmvcOptics[i].mshgrp = oapiMeshGroup(hCVOptics, i);
 			cmvcOptics[i].vtxcnt = cmvcOptics[i].mshgrp->nVtx;
 			cmvcOptics[i].data.resize(cmvcOptics[i].vtxcnt);
 			cmvcOptics[i].datanew.resize(cmvcOptics[i].vtxcnt);
-			if (i > LASTMSHGRP ) cmvcOptics[i + NUM_RTCL].data.resize(cmvcOptics[i].vtxcnt);
+			if (i > LASTMSHGRP) cmvcOptics[i + NUM_RTCL].data.resize(cmvcOptics[i].vtxcnt);
 
 			for (int j = 0; j < cmvcOptics[i].vtxcnt; j++) {
-				cmvcOptics[i].data[j] = _V(cmvcOptics[i].mshgrp->Vtx[j].x, cmvcOptics[i].mshgrp->Vtx[j].y, cmvcOptics[i].mshgrp->Vtx[j].z);
+				VECTOR3 vtx = _V(cmvcOptics[i].mshgrp->Vtx[j].x, cmvcOptics[i].mshgrp->Vtx[j].y, cmvcOptics[i].mshgrp->Vtx[j].z);
+				cmvcOptics[i].data[j] = vtx;
 
 				// We copy all the original mesh reticle vertices from the positions 6/7 of the mesh array to positions 8/9
 				// This is needed for the rotation of the reticles. We need only the vertices. 
-				if (i > LASTMSHGRP ) cmvcOptics[i + NUM_RTCL].data[j] = _V(cmvcOptics[i].mshgrp->Vtx[j].x, cmvcOptics[i].mshgrp->Vtx[j].y, cmvcOptics[i].mshgrp->Vtx[j].z);
+				if (i > LASTMSHGRP) cmvcOptics[i + NUM_RTCL].data[j] = vtx;
 			}
 			cmvcOptics[i].vertexdata.resize(cmvcOptics[i].vtxcnt);
 			cmvcOptics[i].grp.Vtx = cmvcOptics[i].vertexdata.data();
 			cmvcOptics[i].grp.nVtx = cmvcOptics[i].vtxcnt;
 		}
 
-		if (viewpos == SATVIEW_OPTICS_SXT) { // Sextant
-			HideMeshGroup(hCMVCOpticsidx, CMVC_SCT_EYEPIECE,	true);
-			HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_EYEPIECE,	false);
-			HideMeshGroup(hCMVCOpticsidx, CMVC_OPTICS_DSKY,		!ViewOpticsPanels);
-			HideMeshGroup(hCMVCOpticsidx, CMVC_OPTICS_P122,		!ViewOpticsPanels);
-			HideMeshGroup(hCMVCOpticsidx, CMVC_SCT_RETICLE,		true);
-			HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_RETICLE,		false);
-
-		} else if (viewpos == SATVIEW_OPTICS_SCT) { // Telescope
-			HideMeshGroup(hCMVCOpticsidx, CMVC_SCT_EYEPIECE,	false);
-			HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_EYEPIECE,	true);
-			HideMeshGroup(hCMVCOpticsidx, CMVC_OPTICS_DSKY,		!ViewOpticsPanels);
-			HideMeshGroup(hCMVCOpticsidx, CMVC_OPTICS_P122,		!ViewOpticsPanels);
-			HideMeshGroup(hCMVCOpticsidx, CMVC_SCT_RETICLE,		false);
-			HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_RETICLE,		true);
-		}
-		HideMeshGroup(hCMVCOpticsidx, CMVC_OPTICS_CLKPNTS, true);
-		HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_CUSTOM_CAM, true);
-		FovSaveVCOptics = 30*RAD;
+		HideMeshGroup(hCMVCOpticsidx, CMVC_SCT_EYEPIECE,	isSextant);
+		HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_EYEPIECE,	!isSextant);
+		HideMeshGroup(hCMVCOpticsidx, CMVC_OPTICS_DSKY,		!ViewOpticsPanels);
+		HideMeshGroup(hCMVCOpticsidx, CMVC_OPTICS_P122,		!ViewOpticsPanels);
+		HideMeshGroup(hCMVCOpticsidx, CMVC_SCT_RETICLE,		isSextant);
+		HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_RETICLE,		!isSextant);
+		HideMeshGroup(hCMVCOpticsidx, CMVC_OPTICS_CLKPNTS,	true);
+		HideMeshGroup(hCMVCOpticsidx, CMVC_SXT_CUSTOM_CAM,	true);
+		FovSaveVCOptics = 30 * RAD;
 
 		initVCOptics = false;
-		CMVCOpticsInitP122Switches();	// Sync Panel 122 switches with the VC.
+		CMVCOpticsInitP122Switches(); // Sync Panel 122 switches with the VC.
 	}
 
 	// Rotate Reticle
-	if (!oapiGetPause()) {			// *** oapiGetPause() maybe unnecessary ***
-		cos_a = std::cos(-optics.TeleShaft);
-		sin_a = std::sin(-optics.TeleShaft);
-		for (int i = FIRSTRTCL; i < NUM_MSHGRPS; i++){		// If we wand also to rotate the reticle for the Custom camera we need to change i<7 to i<8
+	if (!oapiGetPause()) { // *** oapiGetPause() maybe unnecessary ***
+		double cos_a = std::cos(-optics.TeleShaft);
+		double sin_a = std::sin(-optics.TeleShaft);
+		for (int i = FIRSTRTCL; i < NUM_MSHGRPS; i++) { // If we wand also to rotate the reticle for the Custom camera we need to change i<7 to i<8
 			for (int j = 0; j < cmvcOptics[i].vtxcnt; j++) {
-				cmvcOptics[i].data[j].x = cmvcOptics[i + NUM_RTCL].data[j].x * cos_a - cmvcOptics[i + NUM_RTCL].data[j].y * sin_a;
-				cmvcOptics[i].data[j].y = cmvcOptics[i + NUM_RTCL].data[j].x * sin_a + cmvcOptics[i + NUM_RTCL].data[j].y * cos_a;
+				double rx = cmvcOptics[i + NUM_RTCL].data[j].x;
+				double ry = cmvcOptics[i + NUM_RTCL].data[j].y;
+				cmvcOptics[i].data[j].x = rx * cos_a - ry * sin_a;
+				cmvcOptics[i].data[j].y = rx * sin_a + ry * cos_a;
 				cmvcOptics[i].data[j].z = cmvcOptics[i + NUM_RTCL].data[j].z;
 			}
 		}
@@ -6967,15 +6952,22 @@ void Saturn::UpdateCMVCOptics() {
 	// Position the Opticsmesh 15cm in front of the camera
 	opticsPos = camPos - ofs + (lCamDir * 0.15);
 
+	GROUPEDITSPEC ges;
 	ges.flags = GRPEDIT_VTXCRD;
 	ges.vIdx = 0;
 
-	// Transform Vertices
-	for (int i = FIRSTMSHGRP; i < NUM_MSHGRPS; i++){
-		for (int j = 0; j < cmvcOptics[i].vtxcnt; j++) {
-			VECTOR3 vScaled = cmvcOptics[i].data[j] * aperture;	// Multiply by the aperture to compensate for the field of view
+	// OPTIMIZATION: Multiply direction vectors once per frame by aperture to accelerate the loop
+	VECTOR3 rScaled = lCamRight * aperture;
+	VECTOR3 uScaled = lCamUp    * aperture;
+	VECTOR3 dScaled = lCamDir   * aperture;
 
-			final_vertex = lCamRight * vScaled.x + lCamUp * vScaled.y + lCamDir * vScaled.z;
+	// Transform Vertices
+	for (int i = FIRSTMSHGRP; i < NUM_MSHGRPS; i++) {
+		for (int j = 0; j < cmvcOptics[i].vtxcnt; j++) {
+			VECTOR3 vtx = cmvcOptics[i].data[j];
+
+			// Linear combination using pre-scaled vectors saves explicit vector multiplications
+			final_vertex = rScaled * vtx.x + uScaled * vtx.y + dScaled * vtx.z;
 			final_vertex += opticsPos;
 			cmvcOptics[i].datanew[j] = final_vertex;
 
@@ -6991,20 +6983,21 @@ void Saturn::UpdateCMVCOptics() {
 	}
 
 	// UPDATE CLICKPOINTS
-	double ClkArea = 0.0015 * aperture;			// Smaller CLickarea for the Switches
-	double ClkAreaDSKY = 0.005 * aperture;		// Bigger for the DSKY
+	double ClkArea = 0.0015 * aperture;     // Smaller CLickarea for the Switches
+	double ClkAreaDSKY = 0.005 * aperture;  // Bigger for the DSKY
 
-	for (int i = AID_VC_OPTICS_DSKY_VERB; i < AID_VC_OPTICS_DSKY_RESET + 1; i++) {
-		oapiVCSetAreaClickmode_Spherical(i, cmvcOptics[CMVC_OPTICS_CLKPNTS].datanew[i-AID_VC_OPTICS_DSKY_VERB] + ofs, ClkAreaDSKY);
+	for (int i = AID_VC_OPTICS_DSKY_VERB; i <= AID_VC_OPTICS_DSKY_RESET; i++) {
+		oapiVCSetAreaClickmode_Spherical(i, cmvcOptics[CMVC_OPTICS_CLKPNTS].datanew[i - AID_VC_OPTICS_DSKY_VERB] + ofs, ClkAreaDSKY);
 	}
 
-	for (int i = AID_VC_OPTICS_ZERO_UP; i < AID_VC_OPTICS_REJECT_BUTTON + 1; i++) {
-		oapiVCSetAreaClickmode_Spherical(i, cmvcOptics[CMVC_OPTICS_CLKPNTS].datanew[i-AID_VC_OPTICS_DSKY_VERB] + ofs, ClkArea);
+	for (int i = AID_VC_OPTICS_ZERO_UP; i <= AID_VC_OPTICS_REJECT_BUTTON; i++) {
+		oapiVCSetAreaClickmode_Spherical(i, cmvcOptics[CMVC_OPTICS_CLKPNTS].datanew[i - AID_VC_OPTICS_DSKY_VERB] + ofs, ClkArea);
 	}
-	oapiVCSetAreaClickmode_Spherical(AID_VC_OPTICS_HIDEPANELS, cmvcOptics[CMVC_OPTICS_CLKPNTS].datanew[AID_VC_OPTICS_HIDEPANELS-AID_VC_OPTICS_DSKY_VERB] + ofs, 0.015*aperture);
-	oapiVCSetAreaClickmode_Spherical(AID_VC_OPTICS_DUALVIEW, cmvcOptics[CMVC_OPTICS_CLKPNTS].datanew[AID_VC_OPTICS_DUALVIEW-AID_VC_OPTICS_DSKY_VERB] + ofs, 0.015*aperture);
-	oapiVCSetAreaClickmode_Spherical(AID_VC_OPTICS_RETICLE_PLUS, cmvcOptics[CMVC_OPTICS_CLKPNTS].datanew[AID_VC_OPTICS_RETICLE_PLUS-AID_VC_OPTICS_DSKY_VERB] + ofs, ClkArea);
-	oapiVCSetAreaClickmode_Spherical(AID_VC_OPTICS_RETICLE_MINUS, cmvcOptics[CMVC_OPTICS_CLKPNTS].datanew[AID_VC_OPTICS_RETICLE_MINUS-AID_VC_OPTICS_DSKY_VERB] + ofs, ClkArea);
+    
+	oapiVCSetAreaClickmode_Spherical(AID_VC_OPTICS_HIDEPANELS, cmvcOptics[CMVC_OPTICS_CLKPNTS].datanew[AID_VC_OPTICS_HIDEPANELS - AID_VC_OPTICS_DSKY_VERB] + ofs, 0.015 * aperture);
+	oapiVCSetAreaClickmode_Spherical(AID_VC_OPTICS_DUALVIEW_FLASHING, cmvcOptics[CMVC_OPTICS_CLKPNTS].datanew[AID_VC_OPTICS_DUALVIEW_FLASHING - AID_VC_OPTICS_DSKY_VERB] + ofs, 0.015 * aperture);
+	oapiVCSetAreaClickmode_Spherical(AID_VC_OPTICS_RETICLE_PLUS, cmvcOptics[CMVC_OPTICS_CLKPNTS].datanew[AID_VC_OPTICS_RETICLE_PLUS - AID_VC_OPTICS_DSKY_VERB] + ofs, ClkArea);
+	oapiVCSetAreaClickmode_Spherical(AID_VC_OPTICS_RETICLE_MINUS, cmvcOptics[CMVC_OPTICS_CLKPNTS].datanew[AID_VC_OPTICS_RETICLE_MINUS - AID_VC_OPTICS_DSKY_VERB] + ofs, ClkArea);
 
 	// Update the DSKY. Instead of blitting every light and digits we simply blit the whole DSKY
 	// from the other texture which all the lights and digits are already blittet.
@@ -7014,33 +7007,37 @@ void Saturn::UpdateCMVCOptics() {
 	SetMeshVisibilityMode(hCMVCOpticsidx, MESHVIS_VC);
 }
 
-void Saturn::CMVCOpticsInitP122Switches(){
-	if (OpticsZeroSwitch.IsUp())
-		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 120, 120, 0, 1408, 144, 240);
-	else
-		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 120, 120, 144, 1408, 144, 240);
+void Saturn::CMVCOpticsInitP122Switches() {
+	// Lambda helper function: Does NOT require a declaration in the header!
+	// Automatically calculates the source Y-coordinate based on the switch index.
+	auto BlitSwitchByIndex = [this](int destX, int destY, int textureIndex) {
+		const int SRC_X_POS  = 1408; // Fixed X-position from the texture
+		const int SWITCH_W   = 144;
+		const int SWITCH_H   = 240;
+		const int STEP_Y     = 144;;  // Distance the Y-coordinate jumps per step
 
-	if (ControllerTelescopeTrunnionSwitch.IsUp())
-		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 442, 120, 288, 1408, 144, 240);
-	else if (ControllerTelescopeTrunnionSwitch.IsCenter())
-		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 442, 120, 432, 1408, 144, 240);
-	else
-		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 442, 120, 576, 1408, 144, 240);
+		int srcY = textureIndex * STEP_Y;
 
-	if (ControllerCouplingSwitch.IsUp())
-		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 708, 122, 720, 1408, 144, 240);
-	else
-		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 708, 122, 864, 1408, 144, 240);
+		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 
+				destX, destY, srcY, SRC_X_POS, SWITCH_W, SWITCH_H);
+	};
 
-	if (OpticsModeSwitch.IsUp())
-		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 450, 462, 1008, 1408, 144, 240);
-	else
-		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 450, 462, 1152, 1408, 144, 240);
+	// 1. OpticsZeroSwitch (Uses Y-entries: 0 and 144 -> Index 0 and 1)
+	BlitSwitchByIndex(120, 120, OpticsZeroSwitch.IsUp() ? 0 : 1);
 
-	if (ControllerSpeedSwitch.IsUp())
-		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 716, 462, 1296, 1408, 144, 240);
-	else if (ControllerSpeedSwitch.IsCenter())
-		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 716, 462, 1440, 1408, 144, 240);
-	else
-		oapiBlt(srf[SRF_VC_OPTICS_P122], srf[SRF_VC_OPTICS_P122], 716, 462, 1584, 1408, 144, 240);
+	// 2. ControllerTelescopeTrunnionSwitch (Uses Y-entries: 288, 432 and 576 -> Index 2, 3 and 4)
+	int trunnionIdx = ControllerTelescopeTrunnionSwitch.IsUp() ? 2 :
+						(ControllerTelescopeTrunnionSwitch.IsCenter() ? 3 : 4);
+	BlitSwitchByIndex(442, 120, trunnionIdx);
+
+	// 3. ControllerCouplingSwitch (Uses Y-entries: 720 and 864 -> Index 5 and 6)
+	BlitSwitchByIndex(708, 122, ControllerCouplingSwitch.IsUp() ? 5 : 6);
+
+	// 4. OpticsModeSwitch (Uses Y-entries: 1008 and 1152 -> Index 7 and 8)
+	BlitSwitchByIndex(450, 462, OpticsModeSwitch.IsUp() ? 7 : 8);
+
+	// 5. ControllerSpeedSwitch (Uses Y-entries: 1296, 1440 and 1584 -> Index 9, 10 and 11)
+	int speedIdx = ControllerSpeedSwitch.IsUp() ? 9 :
+					(ControllerSpeedSwitch.IsCenter() ? 10 : 11);
+	BlitSwitchByIndex(716, 462, speedIdx);
 }
