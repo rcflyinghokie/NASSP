@@ -222,5 +222,5 @@ MATERIAL LMVC_Optics_Reticle
 1.000 1.000 1.000 1.000 0.000
 0.700 0.700 0.700 1.000
 TEXTURES 2
-ProjectApollo\VC\LMVC_Optics_EyePiece.dds
+ProjectApollo\VC\CMVC_Optics_SCT_EyePiece.dds
 ProjectApollo\VC\LMVC_Optics_Reticle.dds

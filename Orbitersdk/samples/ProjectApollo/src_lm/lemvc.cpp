@@ -4065,43 +4065,40 @@ void LEM::HideMeshGroup(int meshidx, int meshgrp, bool hide){
 }
 
 //
-// This is the CMVC Optics stuff.
+// This is the VC Optics stuff.
 //
 void LEM::UpdateLMVCOptics() {
-	// If we are not in Optics view, Sextant or Teleskop, hide the VC Optics mesh
+	// If we are not in Optics view hide the VC Optics mesh
 	if (viewpos != LMVIEW_OPTICS) {
 		SetMeshVisibilityMode(hLMVCOpticsidx, MESHVIS_NEVER);
 		SetMeshVisibilityMode(ascidx, MESHVIS_EXTERNAL);
 		return;
 	}
 
-	// If we are not in VC return
-	if (!vcmesh) return;
-	if (oapiGetFocusInterface() != this) return;
-
 	// struct for storing the original vertices from the mesh
 	// We do this to avoid rounding errors in every calculation.
 	// For this, we use the original vertices from the mesh.
-	typedef struct OpticsMeshGroup{
+	struct OpticsMeshGroup {
 		std::vector<VECTOR3> data;
 		std::vector<VECTOR3> datanew;		// This is for storing the transformed vertices, not the original ones.
 		std::vector<NTVERTEX> vertexdata;	// This is for sending the transformad vertices to D3D9 client
 		int vtxcnt;
-		MESHGROUP *mshgrp;
-		GROUPREQUESTSPEC grp;
+		MESHGROUP* mshgrp;
+		GROUPREQUESTSPEC grp{0};
 		int ordernr;
-	} OpticsMeshGroup;
+	};
 
-	static bool initVCOptics = true;
-	static VECTOR3  camPosGlobal, camPos, camDir, globVesselPos, camPointing, ofs, opticsPos, final_vertex;
-	static double cos_a, sin_a;
-	static DEVMESHHANDLE hOpticsMesh;
-	static GROUPEDITSPEC ges;
+	// If we are not in VC return
+	if (!vcmesh) return;
+	if (oapiGetFocusInterface() != this) return;
+
+	VECTOR3 camPosGlobal, camPos, camDir, camPointing, opticsPos, final_vertex;
 	double aperture = 1.0;
+
 	SetCameraDefaultDirection(_V(cos(45.0*RAD)*sin(optics.OpticsShaft*PI / 3.0), sin(45.0*RAD), cos(45.0*RAD)*cos(optics.OpticsShaft*PI / 3.0)), optics.OpticsShaft*PI / 3.0);
-	oapiCameraSetCockpitDir(0, 0);
-			
-	// Get global camera position and direction
+	oapiCameraSetCockpitDir(0,0);
+
+	// Get global camera position and direction.
 	oapiCameraGlobalPos(&camPosGlobal);
 	oapiCameraGlobalDir(&camDir);
 
@@ -4113,30 +4110,30 @@ void LEM::UpdateLMVCOptics() {
 	// Transformation into the local ship system
 	Global2Local(camPosGlobal, camPos);
 
-	VECTOR3 lCamDir, lCamUp, lCamRight;
-
 	// Local viewing direction
 	VECTOR3 gTarget = camPosGlobal + camDir;
 	VECTOR3 lTarget;
 	Global2Local(gTarget, lTarget);
-	lCamDir = lTarget - camPos;
+	VECTOR3 lCamDir = lTarget - camPos;
 	normalise(lCamDir);
 
 	// Local Up Vector
 	VECTOR3 gUpPos = camPosGlobal + gCamUp;
 	VECTOR3 lUpPos;
 	Global2Local(gUpPos, lUpPos);
-	lCamUp = lUpPos - camPos;
+	VECTOR3 lCamUp = lUpPos - camPos;
 	normalise(lCamUp);
 
 	// Local Right Vector
-	lCamRight = crossp(lCamUp, lCamDir);
+	VECTOR3 lCamRight = crossp(lCamUp, lCamDir);
 	normalise(lCamRight);
 
+	VECTOR3 ofs;
 	GetMeshOffset(vcidx, ofs);
-	hOpticsMesh = GetDevMesh(vis, hLMVCOpticsidx);
+	DEVMESHHANDLE hOpticsMesh = GetDevMesh(vis, hLMVCOpticsidx);
 
 	static std::vector<OpticsMeshGroup> lmvcOptics(3);	// 2 meshgroups from mesh + 1 extra for the reticles
+	static bool initVCOptics = true;
 
 	// Make copies of the mesh Vertices 
 	if (initVCOptics) {
@@ -4164,17 +4161,18 @@ void LEM::UpdateLMVCOptics() {
 		}
 
 //		FovSaveVCOptics = 30*RAD;
-
 		initVCOptics = false;
 	}
-
+	
 	// Rotate Reticle
-	if (!oapiGetPause()) {				// *** oapiGetPause() maybe unnecessary ***
-		cos_a = std::cos(optics.OpticsReticle);
-		sin_a = std::sin(optics.OpticsReticle);
+	if (!oapiGetPause()) { // *** oapiGetPause() maybe unnecessary ***
+		double cos_a = std::cos(optics.OpticsReticle);
+		double sin_a = std::sin(optics.OpticsReticle);
 		for (int i = 0; i < lmvcOptics[1].vtxcnt; i++) {
-			lmvcOptics[1].data[i].x = lmvcOptics[1+1].data[i].x * cos_a - lmvcOptics[1+1].data[i].y * sin_a;
-			lmvcOptics[1].data[i].y = lmvcOptics[1+1].data[i].x * sin_a + lmvcOptics[1+1].data[i].y * cos_a;
+			double rx = lmvcOptics[1 + 1].data[i].x;
+			double ry = lmvcOptics[1 + 1].data[i].y;
+			lmvcOptics[1].data[i].x = rx * cos_a - ry * sin_a;
+			lmvcOptics[1].data[i].y = rx * sin_a + ry * cos_a;
 			lmvcOptics[1].data[i].z = lmvcOptics[1+1].data[i].z;
 		}
 	}
@@ -4182,15 +4180,22 @@ void LEM::UpdateLMVCOptics() {
 	// Position the Opticsmesh 15cm in front of the camera
 	opticsPos = camPos - ofs + (lCamDir * 0.15);
 
+	GROUPEDITSPEC ges;
 	ges.flags = GRPEDIT_VTXCRD;
 	ges.vIdx = 0;
+
+	// OPTIMIZATION: Multiply direction vectors once per frame by aperture to accelerate the loop
+	VECTOR3 rScaled = lCamRight * aperture;
+	VECTOR3 uScaled = lCamUp    * aperture;
+	VECTOR3 dScaled = lCamDir   * aperture;
 
 	// Transform Vertices
 	for (int i = 0; i < 2; i++){
 		for (int j = 0; j < lmvcOptics[i].vtxcnt; j++) {
-			VECTOR3 vScaled = lmvcOptics[i].data[j] * aperture;	// Multiply by the aperture to compensate for the field of view
+			VECTOR3 vtx = lmvcOptics[i].data[j];
 
-			final_vertex = lCamRight * vScaled.x + lCamUp * vScaled.y + lCamDir * vScaled.z;
+			// Linear combination using pre-scaled vectors saves explicit vector multiplications
+			final_vertex = rScaled * vtx.x + uScaled * vtx.y + dScaled * vtx.z;
 			final_vertex += opticsPos;
 			lmvcOptics[i].datanew[j] = final_vertex;
 
