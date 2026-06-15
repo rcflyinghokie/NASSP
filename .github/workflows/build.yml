@@ -7,6 +7,8 @@ on:
     branches: [ "CMake-Alpha" ]
 
 env:
+  run: FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true
+  
   GH_TOKEN: ${{github.token}}
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: RelWithDebInfo
@@ -21,10 +23,10 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     
     - name: Check dependency cache for Orbiter 2024 x64
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       id: cache
       with:
         path: ${{github.workspace}}/Orbiter2024-x64.zip
