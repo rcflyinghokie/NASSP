@@ -14,7 +14,6 @@ env:
   BUILD_TYPE: RelWithDebInfo
   BUILD_NAME: NASSP-V9.0-Orbiter2024-${{github.run_number}}
 
-
 jobs:
   build:
     
@@ -24,10 +23,10 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     
     - name: Check dependency cache for Orbiter 2024 x64
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       id: cache
       with:
         path: ${{github.workspace}}/Orbiter2024-x64.zip
