@@ -5688,8 +5688,13 @@ void RTCC::TLI_PAD(const TLIPADOpt &opt, TLIPAD &pad)
 	M = OrbMech::CALCSMSC(_V(PI - opt.SeparationAttitude.x, opt.SeparationAttitude.y, opt.SeparationAttitude.z));
 	M_RTM = mul(M, M_R);
 
+	// Separation attitude
 	SepATT = OrbMech::CALCGAR(opt.REFSMMAT, M_RTM);
+
+	// Extraction attitude
 	ExtATT = _V(300.0*RAD - SepATT.x, SepATT.y + PI, PI2 - SepATT.z);
+	// Wraparound pitch angle
+	if (ExtATT.y >= PI2) ExtATT.y -= PI2;
 
 	pad.BurnTime = AuxTableIndicator.DT_B;
 	pad.dVC = AuxTableIndicator.DV_C / 0.3048;
@@ -14978,7 +14983,11 @@ void RTCC::EMDGPING()
 
 	//Process instrument ID
 	SCPointingInstrument inst;
-	bool found = false;
+	bool found;
+
+	found = false;
+	InstrVessel = 0;
+
 	strtemp.assign(EZGSTMED.G40_InstrID);
 	for (int i = 0; i < 12; i++)
 	{
@@ -14991,24 +15000,27 @@ void RTCC::EMDGPING()
 		}
 	}
 
-	if (found == false)
+	if (found == false || strtemp.size() < 3U)
 	{
 		error |= 1;
-	}
-	//Check if CSM or LEM
-	strtemp = strtemp.substr(strtemp.size() - 3U, 3);
-	//Orbiting object
-	if (strtemp == "CSM")
-	{
-		InstrVessel = RTCC_MPT_CSM;
-	}
-	else if (strtemp == "LEM")
-	{
-		InstrVessel = RTCC_MPT_LM;
 	}
 	else
 	{
-		error |= 1;
+		//Check if CSM or LEM
+		strtemp = strtemp.substr(strtemp.size() - 3U, 3);
+		//Orbiting object
+		if (strtemp == "CSM")
+		{
+			InstrVessel = RTCC_MPT_CSM;
+		}
+		else if (strtemp == "LEM")
+		{
+			InstrVessel = RTCC_MPT_LM;
+		}
+		else
+		{
+			error |= 1;
+		}
 	}
 
 	//Process target ID
@@ -15016,7 +15028,11 @@ void RTCC::EMDGPING()
 	if (EZGSTMED.G40_Mode == 1)
 	{
 		//Ground. Last character is E or M
-		if (strtemp.back() == 'E')
+		if (strtemp.size() == 0)
+		{
+			error |= 2;
+		}
+		else if (strtemp.back() == 'E')
 		{
 			RBI = BODY_EARTH;
 		}

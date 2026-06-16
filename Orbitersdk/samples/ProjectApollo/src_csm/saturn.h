@@ -92,6 +92,11 @@ namespace mission
 	class Mission;
 };
 
+// This is moved here from saturnpanel.cpp for using it in also in saturnvc.cpp
+// CSM Optics base direction, as given in the Colossus code CSM_GEOMETRY.agc
+// All flown Colossus versions use these values
+#define OPTICS_BASE_COS  0.8431756920
+#define OPTICS_BASE_SIN  0.5376381241
 
 #define RCS_SM_QUAD_A		0
 #define RCS_SM_QUAD_B		1
@@ -949,7 +954,7 @@ public:
 
 	// For hiding the Optics Panel122 and DSKY
 	bool ViewOpticsPanels;
-	bool OpticsVCDualView = false;
+	bool OpticsVCDualViewFlashing = false;
 	DWORD VCOpticsRetAlpha = 0x80FFFFFF; // Semitransparent CustomCamera
 
 	//
