@@ -49,10 +49,11 @@
 
 extern GDIParams g_Param;
 
+// This is moved in saturn.h for using it in also in saturnvc.cpp
 // CSM Optics base direction, as given in the Colossus code CSM_GEOMETRY.agc
 // All flown Colossus versions use these values
-#define OPTICS_BASE_COS  0.8431756920
-#define OPTICS_BASE_SIN  0.5376381241
+//#define OPTICS_BASE_COS  0.8431756920
+//#define OPTICS_BASE_SIN  0.5376381241
 
 void BaseInit() 
 
