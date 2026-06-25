@@ -198,6 +198,7 @@ AR_GCore::AR_GCore(AR_GlobalData* GD, VESSEL* v)
 
 	LmkLat = 0;
 	LmkLng = 0;
+	LmkAlt = 0;
 	LmkTime = 0;
 	LmkElevation = 35.0*RAD;
 	landmarkpad.T1[0] = 0;
@@ -325,6 +326,51 @@ AR_GCore::AR_GCore(AR_GlobalData* GD, VESSEL* v)
 	else
 	{
 		REFSMMAT_PTC_MJD = oapiGetSimMJD(); //Near current time usually gives a good PTC REFSMMAT, too
+	}
+
+	// Powered Descent Abort Program
+	PDAPOptions.dt_stage = 999999.9; // Staging when DPS runs out of propellant
+	if (mission == 11)
+	{
+		PDAPVersion = 0;
+		PDAPOptions.dt_CAN = 0.0;
+		PDAPOptions.DV_CAN = _V(0, 0, 0) * 0.3048;
+		PDAPOptions.dt_CSI = 50.0 * 60.0;
+	}
+	else if (mission == 12)
+	{
+		PDAPVersion = 1;
+		PDAPOptions.K4 = false;
+		PDAPOptions.dt_CAN = 0.0;
+		PDAPOptions.DV_CAN = _V(0, 0, 0) * 0.3048;
+		PDAPOptions.dt_CSI = 50.0 * 60.0;
+		PDAPOptions.dt_2CAN = 50.0 * 60.0;
+		PDAPOptions.DV_2CAN = _V(10, 0, 0) * 0.3048;
+		PDAPOptions.dt_2CSI = 110.0 * 60.0;
+	}
+	else if (mission <= 15)
+	{
+		PDAPVersion = 2;
+		PDAPOptions.K4 = true;
+		PDAPOptions.theta_TARG = -13.5 * RAD;
+		PDAPOptions.dt_CAN = 60.0 * 60.0;
+		PDAPOptions.DV_CAN = _V(10, 0, 0) * 0.3048;
+		PDAPOptions.dt_CSI = 120.0 * 60.0;
+		PDAPOptions.dt_2CAN = 0.0;
+		PDAPOptions.DV_2CAN = _V(0, 0, 0) * 0.3048;
+		PDAPOptions.dt_2CSI = 55.0 * 60.0;
+	}
+	else if (mission <= 17)
+	{
+		PDAPVersion = 2;
+		PDAPOptions.K4 = true;
+		PDAPOptions.theta_TARG = 16.0 * RAD;
+		PDAPOptions.dt_CAN = 0.0;
+		PDAPOptions.DV_CAN = _V(0, 0, 0) * 0.3048;
+		PDAPOptions.dt_CSI = 55.0 * 60.0;
+		PDAPOptions.dt_2CAN = 50.0 * 60.0;
+		PDAPOptions.DV_2CAN = _V(10, 0, 0) * 0.3048;
+		PDAPOptions.dt_2CSI = 110.0 * 60.0;
 	}
 
 	//Get a pointer to the RTCC. If the MCC vessel doesn't exist yet, create it
@@ -1134,11 +1180,6 @@ void ARCore::TransferPoweredAscentToMPT()
 void ARCore::TransferGPMToMPT()
 {
 	startSubthread(45);
-}
-
-void ARCore::MPTTLIDirectInput()
-{
-	startSubthread(46);
 }
 
 void ARCore::AbortScanTableCalc()
@@ -4442,9 +4483,10 @@ int ARCore::subThread()
 			sv0 = GC->rtcc->StateVectorCalcEphem(v);
 		}
 
-		opt.lat[0] = GC->LmkLat;
 		opt.LmkTime[0] = get;
+		opt.lat[0] = GC->LmkLat;
 		opt.lng[0] = GC->LmkLng;
+		opt.alt[0] = GC->LmkAlt;
 		opt.sv0 = sv0;
 		opt.Elevation = GC->LmkElevation;
 		opt.entries = 1;
@@ -4937,19 +4979,8 @@ int ARCore::subThread()
 		Result = DONE;
 	}
 	break;
-	case 46: //TLI Direct Input
+	case 46: //Spare
 	{
-		if (!GD->MissionPlanningActive)
-		{
-			Result = DONE;
-			break;
-		}
-
-		//UpdateTLITargetTable();
-
-		//MED string was previously saved
-		GC->rtcc->GMGMED(GC->rtcc->RTCCMEDBUFFER);
-
 		Result = DONE;
 	}
 	break;

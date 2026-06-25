@@ -107,7 +107,7 @@ public:
 
 	//LANDMARK TRACKING PAGE
 	AP11LMARKTRKPAD landmarkpad;
-	double LmkLat, LmkLng;
+	double LmkLat, LmkLng, LmkAlt;
 	double LmkTime;
 	double LmkElevation;
 
@@ -199,7 +199,6 @@ public:
 	void TransferPoweredAscentToMPT();
 	void TransferGPMToMPT();
 	void MPTDirectInputCalc();
-	void MPTTLIDirectInput();
 	void AbortScanTableCalc();
 	void TransferLOIorMCCtoMPT();
 	void TransferRTEToMPT();
