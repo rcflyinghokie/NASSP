@@ -425,7 +425,7 @@ const VECTOR3 UtilityLights_LMPLocation = { 0.1030, 1.0318, 0.8908 };
 
 // AOT
 const VECTOR3 Sw_RRGyroLocation = { -0.1557, 0.7949, 1.3874 };
-const VECTOR3 AOT_ShaftSelectorLocation = { 0.0640, 0.8800, 1.4792 };
+const VECTOR3 AOT_ShaftSelectorLocation = { 0.064288, 0.88006, 1.47924 };
 
 // Flood lights
 const VECTOR3 floodLightPos_Right = { 0.238, 0.89, 1.2 };
@@ -737,6 +737,10 @@ bool LEM::clbkLoadVC (int id)
 	// Calling InitPanel(LMPANEL_MAIN) also works, since that function calls SetSwitches() as well.
 	SetSwitches(LMPANEL_MAIN);	// Use main panel as a placeholder, it doesn't actually matter
 
+	// Change LM Optics Shaft Selector Texture with Numbers for mission A15 and above
+	if (pMission->GetLMNumber() >9)
+		oapiBlt(srf[SRF_LMVC2_TEXTURE], srf[SRF_LMVC2_TEXTURE], 363*TexMul, 1712*TexMul, 363*TexMul, 1621*TexMul, 372*TexMul, 90*TexMul, SURF_PREDEF_CK);
+
 	//Reset VC free camera to default
 	vcFreeCamx = 0;
 	vcFreeCamy = 0;
@@ -989,6 +993,7 @@ void LEM::InitPanelVC() {
 	srf[SRF_DEDA_LIGHTSVC] = oapiLoadTexture("ProjectApollo/VC/ags_lights.dds");
 	srf[SRF_AOTFONT_VC] = oapiLoadTexture("ProjectApollo/VC/aot_font.dds");
 	srf[SRF_ENGSTARTSTOP_VC] = oapiLoadTexture("ProjectApollo/VC/LMEngStartStop.dds");
+	srf[SRF_LMVC2_TEXTURE] = oapiGetTextureHandle(GetMeshTemplate(vcidx), VC_TEX_LMVC_2_dds);
 
 	oapiSetSurfaceColourKey(srf[SRF_VC_DIGITALDISP], ck);
 	oapiSetSurfaceColourKey(srf[SRF_VC_DIGITALDISP2], ck);
@@ -1068,6 +1073,15 @@ void LEM::RegisterActiveAreas()
 	const VECTOR3 AOTReticleDetentLocationRotBottom ={ 0.072334, 0.717842, 1.38451 };
 	oapiVCRegisterArea(AID_VC_AOT_ReticleKnobRotBottom, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_PRESSED|PANEL_MOUSE_UP);
 	oapiVCSetAreaClickmode_Spherical(AID_VC_AOT_ReticleKnobRotBottom, AOTReticleDetentLocationRotBottom + ofs, 0.01);
+
+	// AOT Detent
+	const VECTOR3 AOT_ShaftSelectorLocationTop ={ 0.07355, 0.8965, 1.47925 };
+	oapiVCRegisterArea(AID_VC_AOT_ShaftSelectorTop, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_LBDOWN);
+	oapiVCSetAreaClickmode_Spherical(AID_VC_AOT_ShaftSelectorTop, AOT_ShaftSelectorLocationTop + ofs, 0.01);
+
+	const VECTOR3 AOT_ShaftSelectorLocationBottom ={ 0.07355, 0.8636, 1.47925 };
+	oapiVCRegisterArea(AID_VC_AOT_ShaftSelectorBottom, PANEL_REDRAW_ALWAYS, PANEL_MOUSE_LBDOWN);
+	oapiVCSetAreaClickmode_Spherical(AID_VC_AOT_ShaftSelectorBottom, AOT_ShaftSelectorLocationBottom + ofs, 0.01);
 
 	// LMVC Lighting
 	oapiVCRegisterArea(AID_LMVC_LIGHTING,  PANEL_REDRAW_ALWAYS, PANEL_MOUSE_IGNORE);
@@ -1687,6 +1701,16 @@ bool LEM::clbkVCMouseEvent(int id, int event, VECTOR3 &p)
 			}
 			return true;
 
+		case AID_VC_AOT_ShaftSelectorTop:
+			optics.OpticsShaft = (optics.OpticsShaft + 1) % 6;
+			AOT_ShaftSelectorRotState.action = AnimState::OPENING;
+			return ButtonClick(), true;
+
+		case AID_VC_AOT_ShaftSelectorBottom:
+			optics.OpticsShaft = (optics.OpticsShaft + 5) % 6;
+			AOT_ShaftSelectorRotState.action = AnimState::CLOSING;
+			return ButtonClick(), true;
+
 		case AID_VC_OVERHEADHATCH:
 			OverheadHatch.Toggle();
 			return true;
@@ -1828,20 +1852,23 @@ bool LEM::clbkVCRedrawEvent(int id, int event, SURFHANDLE surf)
 		SetVCLighting(vcidx, IntegralLights_LMVC, MAT_EMISSION, lca.GetIntegralOutput() + floodRotaryValue, NUM_ELEMENTS(IntegralLights_LMVC));
 		SetVCLighting(vcidx, IntegralLights_LMVC_NoTex, MAT_LIGHT, lca.GetIntegralOutput() + floodRotaryValue, NUM_ELEMENTS(IntegralLights_LMVC_NoTex));
 
+		// Switches uses radioluminescant so they are allways lit
+		SetVCLighting(vcidx, VC_MAT_LMVC_Switches_t, MAT_EMISSION, 1, 1);
+
 		if (LtgSidePanelsSwitch.GetState() == TOGGLESWITCH_UP){	// Panel 8, 11
 			SetVCLighting(vcidx, VC_MAT_LMVC_2_Panel_8_11, MAT_EMISSION, lca.GetIntegralOutput() + floodRotaryValue, 1);
-			SetVCLighting(vcidx, VC_MAT_LMVC_Switches_Panel_8, MAT_EMISSION, lca.GetIntegralOutput() + floodRotaryValue, 1);
+//			SetVCLighting(vcidx, VC_MAT_LMVC_Switches_Panel_8, MAT_EMISSION, lca.GetIntegralOutput() + floodRotaryValue, 1);
 		}else{
 			SetVCLighting(vcidx, VC_MAT_LMVC_2_Panel_8_11, MAT_EMISSION, 0, 1);
-			SetVCLighting(vcidx, VC_MAT_LMVC_Switches_Panel_8, MAT_EMISSION, 0, 1);
+//			SetVCLighting(vcidx, VC_MAT_LMVC_Switches_Panel_8, MAT_EMISSION, 0, 1);
 		}
 		if (SidePanelsSwitch.GetState() == TOGGLESWITCH_UP){ // Panel 12, 14, 16
 			SetVCLighting(vcidx, VC_MAT_LMVC_2_Panel_12_14_16, MAT_EMISSION, lca.GetIntegralOutput() + floodRotaryValue, 1);
-			SetVCLighting(vcidx, VC_MAT_LMVC_Switches_Panel_12_14, MAT_EMISSION, lca.GetIntegralOutput() + floodRotaryValue, 1);
+//			SetVCLighting(vcidx, VC_MAT_LMVC_Switches_Panel_12_14, MAT_EMISSION, lca.GetIntegralOutput() + floodRotaryValue, 1);
 			SetVCLighting(vcidx, VC_MAT_Rotary_LM_Panel_12_14, MAT_EMISSION, lca.GetIntegralOutput() + floodRotaryValue, 1);
 		}else{
 			SetVCLighting(vcidx, VC_MAT_LMVC_2_Panel_12_14_16, MAT_EMISSION, 0, 1);
-			SetVCLighting(vcidx, VC_MAT_LMVC_Switches_Panel_12_14, MAT_EMISSION, 0, 1);
+//			SetVCLighting(vcidx, VC_MAT_LMVC_Switches_Panel_12_14, MAT_EMISSION, 0, 1);
 			SetVCLighting(vcidx, VC_MAT_Rotary_LM_Panel_12_14, MAT_EMISSION, 0, 1);
 		}
 
@@ -2399,6 +2426,12 @@ void LEM::DefineVCAnimations()
 	static MGROUP_ROTATE AOT_ReticleKnobMeshRot(vcidx, AOT_ReticleKnob, 1, AOTReticleDetentLocation, _V(-1, 0, 0), (float)(-360.0 * RAD));
 	AOT_ReticleKnobAnimRot = CreateAnimation(1.0);
 	AddAnimationComponent(AOT_ReticleKnobAnimRot, 0.0,  1.0, &AOT_ReticleKnobMeshRot);
+
+	// AOT_ShaftSelector Rotation
+	static UINT AOT_ShaftSelectorKnob[1] = { VC_GRP_AOT_ShaftSelector };
+	static MGROUP_ROTATE AOT_ShaftSelectorMeshRot(vcidx, AOT_ShaftSelectorKnob, 1, AOT_ShaftSelectorLocation, _V(-1, 0, 0), (float)(-360.0 * RAD));
+	AOT_ShaftSelectorAnimRot = CreateAnimation(1.0);
+	AddAnimationComponent(AOT_ShaftSelectorAnimRot, 0.0,  1.0, &AOT_ShaftSelectorMeshRot);
 
 	//Panel 1
 
@@ -3059,7 +3092,7 @@ void LEM::DefineVCAnimations()
 	LtgIntegralKnob.SetInitialAnimState(0.5);
 
 	MainPanelVC.AddSwitch(&ManualEngineStart, AID_VC_START_BUTTON);
-	ManualEngineStart.SetDirection(_V(0.00, -0.004*cos(P5_TILT - (90.0 * RAD)), -0.004*sin(P5_TILT - (90.0 * RAD))));
+	ManualEngineStart.SetReference(_V(-0.644982, 0.074371, 1.48255), _V(0.00, -0.004*cos(P5_TILT - (90.0 * RAD)), -0.004*sin(P5_TILT - (90.0 * RAD))));
 	ManualEngineStart.DefineMeshGroup(VC_GRP_StartButton);
 
 	MainPanelVC.AddSwitch(&CDRManualEngineStop, AID_VC_STOP_BUTTON_CDR);
