@@ -6276,7 +6276,7 @@ void Saturn::InitSwitches() {
 	StabContSystemAc1CircuitBraker.Register(PSH, "StabContSystemAc1CircuitBraker", 1);
 	StabContSystemAc2CircuitBraker.Register(PSH, "StabContSystemAc2CircuitBraker", 1);
 
-	ECATVCAc2CircuitBraker.Register(PSH, "StabContSystemTVCAc1CircuitBraker", 1);
+	ECATVCAc2CircuitBraker.Register(PSH, "ECATVCAc2CircuitBraker", 1);
 	DirectUllMnACircuitBraker.Register(PSH, "DirectUllMnACircuitBraker", 1);
 	DirectUllMnBCircuitBraker.Register(PSH, "DirectUllMnBCircuitBraker", 1);
 	ContrDirectMnA1CircuitBraker.Register(PSH, "ContrDirectMnA1CircuitBraker", 1);
