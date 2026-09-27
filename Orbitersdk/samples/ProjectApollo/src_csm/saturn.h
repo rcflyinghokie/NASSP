@@ -316,15 +316,16 @@ typedef struct {
 #define CMVC_OPTICS_P122	3
 #define CMVC_OPTICS_CLKPNTS	4
 #define CMVC_SXT_CUSTOM_CAM	5
-#define CMVC_SCT_RETICLE	6
-#define CMVC_SXT_RETICLE	7
+#define CMVC_OPTICS_COVER	6
+#define CMVC_SCT_RETICLE	7
+#define CMVC_SXT_RETICLE	8
 
-#define NUM_MSHGRPS	8
+#define NUM_MSHGRPS	9
 #define NUM_RTCL	2
 #define FIRSTMSHGRP	0
-#define LASTMSHGRP	5
-#define FIRSTRTCL	6
-#define LASTRTCL	7
+#define LASTMSHGRP	6
+#define FIRSTRTCL	7
+#define LASTRTCL	8
 
 // Vesim input IDs
 #define CSM_AXIS_INPUT_RHC_R        1
@@ -1457,6 +1458,7 @@ protected:
 	void JettisonDockingProbe();
 
 	void JettisonOpticsCover();
+	void HideVCOpticsCoverMesh();
 
 	void JettisonSIMBayPanel();
 
