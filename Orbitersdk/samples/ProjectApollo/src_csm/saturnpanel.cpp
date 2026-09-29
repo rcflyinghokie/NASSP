@@ -1783,8 +1783,10 @@ void Saturn::SetSwitches(int panel) {
 	// VC-only push meshes (OurVessel via SwitchRow); logic stays in CWS mouse handler
 	MasterAlarmButton.Init(0, 0, 1, 1, NULL, NULL, MasterAlarmSwitchRow);
 	MasterAlarmButton2.Init(0, 0, 1, 1, NULL, NULL, MasterAlarmSwitchRow);
+	MasterAlarmButton3.Init(0, 0, 1, 1, NULL, NULL, MasterAlarmSwitchRow);
 	MasterAlarmButton.SetVisible(false);
 	MasterAlarmButton2.SetVisible(false);
+	MasterAlarmButton3.SetVisible(false);
 
 	AccelGMeterRow.Init(AID_GMETER, MainPanel);
 	AccelGMeter.Init(g_Param.pen[4], g_Param.pen[4], AccelGMeterRow, this);
@@ -4039,7 +4041,7 @@ void Saturn::PanelIndicatorSwitchStateRequested(IndicatorSwitch *s) {
 	} else if (s == &FuelCellRadTempIndicator) {
 		FuelCellStatus fc;
 		GetFuelCellStatus(FuelCellIndicatorsSwitch.GetState() + 1, fc);
-		if (fc.CoolingTempF < -30.0 || stage > CSM_LEM_STAGE)	// indication if temperature below -30ï¿½F
+		if (fc.CoolingTempF < -30.0 || stage > CSM_LEM_STAGE)	// indication if temperature below -30°F
 			FuelCellRadTempIndicator.SetState(0);
 		else
 			FuelCellRadTempIndicator.SetState(1);

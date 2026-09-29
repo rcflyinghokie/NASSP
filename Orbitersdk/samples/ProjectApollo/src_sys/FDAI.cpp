@@ -215,7 +215,7 @@ void FDAI::RotateBall(double simdt) {
 
 	double delta, deltamax;
 
-	deltamax = 0.87*simdt; //About 50°/s
+	deltamax = 0.87*simdt; //About 50�/s
 
 	delta = target.z - now.z;
 	if (delta > deltamax) {
@@ -689,7 +689,7 @@ void FDAI::AdvanceNeedles()
 	// multiple redraws share one sim step (sim-time dt would be 0).
 	//
 	// Prior 0.08s MeterSwitch-style LPF with GAUGE_LPF_SCALAR was ineffective:
-	//   a = 1.5 * dt * 5 / 0.08 ≈ 93.75*dt  →  at 60 Hz a≈1.56 → clamp 1.0
+	//   a = 1.5 * dt * 5 / 0.08 ~= 93.75*dt  ->  at 60 Hz a~=1.56 -> clamp 1.0
 	// so needles still snapped to the quantized command every frame.
 	// Explicit exp(-dt/tau) never saturates to 1 at normal frame rates.
 	static const double FDAI_NEEDLE_TAU = 0.06; // ~0.30s to ~99% (5*tau)
@@ -776,6 +776,7 @@ void FDAI::AnimateFDAI(VECTOR3 rates, VECTOR3 errors, UINT animR, UINT animP, UI
 //
 // Scenario state functions.
 //
+
 
 void FDAI::SaveState(FILEHANDLE scn, char *start_str, char *end_str)
 

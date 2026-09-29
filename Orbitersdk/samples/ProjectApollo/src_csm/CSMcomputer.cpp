@@ -690,6 +690,7 @@ bool CMOptics::PaintDisplay(SURFHANDLE surf, SURFHANDLE digits, double value, in
 	oapiColourFill(surf, oapiGetColour(255, 255, 255), 29*TexMul, 5*TexMul, 1*TexMul, 2*TexMul);
 	return true;
 }
+
 void CMOptics::OpticsSwitchToggled()
 {
 	if (sat->OpticsZeroSwitch.IsUp())

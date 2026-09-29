@@ -44,6 +44,8 @@
 
 #include "tracer.h"
 
+#include <set>
+
 //
 // Generic panel switch item.
 //
@@ -2567,9 +2569,9 @@ ContinuousSwitch::~ContinuousSwitch()
 
 void ContinuousSwitch::Register(PanelSwitchScenarioHandler &scnh, char *n, double defaultVal, double minVal, double maxVal)
 {
-	//defaultValue: default display value (e.g. 0ï¿½)
-	//minValue: minimum displayed value (e.g. -4ï¿½)
-	//maxValue: maximum displayed value (e.g. +4ï¿½)
+	//defaultValue: default display value (e.g. 0°)
+	//minValue: minimum displayed value (e.g. -4°)
+	//maxValue: maximum displayed value (e.g. +4°)
 	//maxState: maximum number of bitmap positions
 
 	minValue = minVal;
@@ -2941,7 +2943,7 @@ void ContinuousRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface)
 	{
 		srcx -= maxState;
 	}
-	//Default bitmap has alternating 15ï¿½ positions up and down
+	//Default bitmap has alternating 15° positions up and down
 	int srcx2, srcy;
 	if (maxState > 12)
 	{
@@ -3037,6 +3039,27 @@ void ContinuousRotationalSwitch::ChangeSwitchState(double px)
 //
 // Rotational Switch
 //
+
+// Rotational switches whose VC mesh turns directly between detent angles
+// (see RotationalSwitch::SetVCDirectTurn). Kept outside the class so that
+// RotationalSwitch's memory layout stays the same.
+static std::set<const RotationalSwitch*> &VCDirectTurnSwitches()
+{
+	// Intentionally never freed: switch destructors may run late at DLL unload.
+	static std::set<const RotationalSwitch*> *s = new std::set<const RotationalSwitch*>;
+	return *s;
+}
+
+void RotationalSwitch::SetVCDirectTurn(bool on)
+{
+	if (on) VCDirectTurnSwitches().insert(this);
+	else VCDirectTurnSwitches().erase(this);
+}
+
+bool RotationalSwitch::IsVCDirectTurn()
+{
+	return VCDirectTurnSwitches().count(this) != 0;
+}
 
 RotationalSwitch::RotationalSwitch() {
 
@@ -3164,6 +3187,7 @@ RotationalSwitch::RotationalSwitch() {
 }
 
 RotationalSwitch::~RotationalSwitch() {
+	VCDirectTurnSwitches().erase(this);
 	if (pswitchrot)
 		delete pswitchrot;
 	DeletePositions();
@@ -3431,12 +3455,16 @@ void RotationalSwitch::UpdateRotaryAnimation(double /*dt*/)
 
 	// New detent requested: reverse or restart from current visual (shortest path).
 	if (want != rotAnimTarget) {
-		double cur = NormRotAnim01(rotAnimState);
+		const bool direct = IsVCDirectTurn();
+		// Direct-turn knobs stay within their detent angle range, so no wrapping.
+		double cur = direct ? rotAnimState : NormRotAnim01(rotAnimState);
 		double dest = 0.0;
 		if (position) dest = position->GetAngle() / 360.0;
 		double diff = dest - cur;
-		if (diff > 0.5) diff -= 1.0;
-		if (diff < -0.5) diff += 1.0;
+		if (!direct) {
+			if (diff > 0.5) diff -= 1.0;
+			if (diff < -0.5) diff += 1.0;
+		}
 		rotAnimFrom = cur;
 		rotAnimDest = cur + diff;
 		rotAnimState = cur;
@@ -3604,7 +3632,7 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 
 		switch (rotstate)
 		{
-		case 0: //-120ï¿½
+		case 0: //-120°
 			rt.left = 29 + x;
 			rt.top = 24 + y;
 			rt.right = 60 + x;
@@ -3612,7 +3640,7 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 			skp->Rectangle(rt.left, rt.top, rt.right, rt.bottom);
 			skp->Text(44 + x, 28 + y, label, strlen(label));
 			break;
-		case 1: //-90ï¿½
+		case 1: //-90°
 			rt.left = 35 + x;
 			rt.top = 30 + y;
 			rt.right = 59 + x;
@@ -3620,7 +3648,7 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 			skp->Rectangle(rt.left, rt.top, rt.right, rt.bottom);
 			skp->Text(49 + x, 31 + y, label, strlen(label));
 			break;
-		case 2: //-60ï¿½
+		case 2: //-60°
 			rt.left = 32 + x;
 			rt.top = 29 + y;
 			rt.right = 63 + x;
@@ -3628,7 +3656,7 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 			skp->Rectangle(rt.left, rt.top, rt.right, rt.bottom);
 			skp->Text(47 + x, 34 + y, label, strlen(label));
 			break;
-		case 3: //-30ï¿½
+		case 3: //-30°
 			rt.left = 29 + x;
 			rt.top = 29 + y;
 			rt.right = 60 + x;
@@ -3636,7 +3664,7 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 			skp->Rectangle(rt.left, rt.top, rt.right, rt.bottom);
 			skp->Text(44 + x, 34 + y, label, strlen(label));
 			break;
-		case 4: //0ï¿½
+		case 4: //0°
 			rt.left = 29 + x;
 			rt.top = 35 + y;
 			rt.right = 57 + x;
@@ -3644,8 +3672,8 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 			skp->Rectangle(rt.left, rt.top, rt.right, rt.bottom);
 			skp->Text(42 + x, 36 + y, label, strlen(label));
 			break;
-		case 5: //30ï¿½
-		case 6: //60ï¿½
+		case 5: //30°
+		case 6: //60°
 			rt.left = 28 + x;
 			rt.top = 30 + y;
 			rt.right = 54 + x;
@@ -3653,11 +3681,11 @@ void OrdealRotationalSwitch::DrawSwitch(SURFHANDLE drawSurface) {
 			skp->Rectangle(rt.left, rt.top, rt.right, rt.bottom);
 			skp->Text(37 + x, 34 + y, label, strlen(label));
 			break;
-		case 7: //90ï¿½
+		case 7: //90°
 			skp->Text(32 + x, 31 + y, label, strlen(label));
 			break;
-		case 8: //120ï¿½
-		case 9: //150ï¿½
+		case 8: //120°
+		case 9: //150°
 			rt.left = 25 + x;
 			rt.top = 24 + y;
 			rt.right = 55 + x;
@@ -6113,7 +6141,7 @@ void VCPointingArrow::Timestep(int PointingArrowidx, DEVMESHHANDLE hArrowMesh, c
 	}
 
 	if (!oapiGetPause()) {
-		rotationangle += oapiGetSimStep() / oapiGetTimeAcceleration() * -90;  // Rotate 360ï¿½ every 4 Second
+		rotationangle += oapiGetSimStep() / oapiGetTimeAcceleration() * -90;  // Rotate 360° every 4 Second
 		if (rotationangle > 360) rotationangle = 0;
 		rad = rotationangle * PI / 180.0;
 		cos_a = std::cos(rad);

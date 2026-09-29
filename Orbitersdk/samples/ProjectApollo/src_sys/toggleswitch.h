@@ -396,7 +396,7 @@ protected:
 	bool Active;
 	bool SwitchToggled;
 	bool Held;
-	//0 = not sideways, 1 = sideways rotated 90ï¿½ clockwise, 2 = sideways rotated 90ï¿½ counterclockwise
+	//0 = not sideways, 1 = sideways rotated 90° clockwise, 2 = sideways rotated 90° counterclockwise
 	int Sideways;
 
 	double delayTime;
@@ -1371,6 +1371,13 @@ public:
 	void DrawSwitchVC(int id, int event, SURFHANDLE drawSurface);
 	bool CheckMouseClickVC(int event, VECTOR3 &p);
 	void OnPostStep(double SimT, double DeltaT, double MJD);
+
+	// VC only: turn the knob mesh straight between the logical detent angles
+	// (e.g. 0 -> 210 deg goes +210) instead of the shortest way round (-150).
+	// Needed for knobs whose detents are more than 180 deg apart.
+	// Non-virtual and no new data members, so the class layout is unchanged.
+	void SetVCDirectTurn(bool on);
+	bool IsVCDirectTurn();
 
 protected:
 	int	x;

@@ -1757,10 +1757,12 @@ protected:
 	PanelGroup pgPanels200;
 
 	SwitchRow MasterAlarmSwitchRow;
-	MasterAlarmSwitch MasterAlarmSwitch;
+	MasterAlarmSwitch MasterAlarmSwitch; 
 	// VC mesh push-in/out for left (P1 / PB_P1_12) and right (P2 / PB_P3_01) Master Alarm
 	PushSwitch MasterAlarmButton;
 	PushSwitch MasterAlarmButton2;
+	PushSwitch MasterAlarmButton3;	// Lower Equipment Bay (MasterAlarm_LEB lamp face)
+
 	// EMS
 	SwitchRow EMSFunctionSwitchRow;
 	RotationalSwitch EMSFunctionSwitch;
