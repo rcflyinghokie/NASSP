@@ -23,6 +23,8 @@
 
   **************************************************************************/
 
+// VC animation changes by Zed, made with help from Grok (xAI).
+
 // To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
@@ -940,7 +942,7 @@ bool Saturn::clbkLoadVC (int id)
 		oapiVCSetNeighbours(SATVIEW_OPTICS_SXT, -1, SATVIEW_GNPANEL, -1);
 		SetCameraMovement(_V(0.0, -0.2, 0.0), 0, 0, _V(-0.4, -0.2, 0.0), 0, 0, _V(0.4, -0.2, 0.0), 0, 0);
 		if (!FovSaveVCOptics) FovSaveVCOptics = oapiCameraAperture(); // Save FOV for going back from Sextant to LEB
-		oapiCameraSetAperture(39.7132281*RAD); // Telescope FOV 79°
+		oapiCameraSetAperture(39.7132281*RAD); // Telescope FOV 79ï¿½
 		SetCameraDefaultDirection(_V(0.0, -OPTICS_BASE_COS, OPTICS_BASE_SIN));
 		oapiCameraSetCockpitDir(0,0);
 		SetCameraCatchAngle(0.0);
@@ -966,7 +968,7 @@ bool Saturn::clbkLoadVC (int id)
 		SetCameraRotationRange(0.8 * PI, 0.8 * PI, 0.8 * PI, 0.4 * PI);
 		oapiVCSetNeighbours(-1, SATVIEW_OPTICS_SCT, SATVIEW_GNPANEL, -1);
 		SetCameraMovement(_V(0.0, -0.2, 0.0), 0, 0, _V(-0.4, -0.2, 0.0), 0, 0, _V(0.4, -0.2, 0.0), 0, 0);
-		oapiCameraSetAperture(1.29476537*RAD); // Sextant FOV 3°
+		oapiCameraSetAperture(1.29476537*RAD); // Sextant FOV 3ï¿½
 		SetCameraDefaultDirection(_V(0.0, -OPTICS_BASE_COS, OPTICS_BASE_SIN));
 		oapiCameraSetCockpitDir(0,0);
 		SetCameraCatchAngle(0.0);
@@ -1852,9 +1854,17 @@ bool Saturn::clbkVCMouseEvent (int id, int event, VECTOR3 &p)
 	switch (id) {
 
 	case AID_VC_MASTER_ALARM:
-	case AID_VC_MASTER_ALARM2:
-	case AID_VC_MASTER_ALARM3:
+		// Same press/release as GDC Align PushSwitch; CWS keeps alarm logic + click sound
+		if (event & PANEL_MOUSE_LBDOWN) MasterAlarmButton.SwitchTo(1, true);
+		else if (event & PANEL_MOUSE_LBUP) MasterAlarmButton.SwitchTo(0, true);
+		return cws.CheckMasterAlarmMouseClick(event);
 
+	case AID_VC_MASTER_ALARM2:
+		if (event & PANEL_MOUSE_LBDOWN) MasterAlarmButton2.SwitchTo(1, true);
+		else if (event & PANEL_MOUSE_LBUP) MasterAlarmButton2.SwitchTo(0, true);
+		return cws.CheckMasterAlarmMouseClick(event);
+
+	case AID_VC_MASTER_ALARM3:
 		return cws.CheckMasterAlarmMouseClick(event);
 
 	case AID_VC_EMS_DVSET:
@@ -4044,8 +4054,17 @@ void Saturn::DefineVCAnimations()
 	EMSFunctionSwitch.SetReference(P1_ROT_POS[0], P1_3_ROT_AXIS);
 	EMSFunctionSwitch.DefineMeshGroup(VC_GRP_Rot_P1_01);
 
-	MainPanelVC.AddSwitch(&MasterAlarmSwitch);
-	MasterAlarmSwitch.SetReference(_V(-0.775435, 0.709185, 0.361746));
+	// Left Master Alarm (PB_P1_12 / MAT MASTERALARM_PANEL1) â€” GDC Align push pattern
+	MainPanelVC.AddSwitch(&MasterAlarmButton, AID_VC_MASTER_ALARM);
+	MasterAlarmButton.SetReference(_V(-0.775435, 0.709185, 0.361746));
+	MasterAlarmButton.SetDirection(P1_3_PB_VECT);
+	MasterAlarmButton.DefineMeshGroup(VC_GRP_PB_P1_12);
+
+	// Right Master Alarm (PB_P3_01 / MAT MASTERALARM_PANEL2)
+	MainPanelVC.AddSwitch(&MasterAlarmButton2, AID_VC_MASTER_ALARM2);
+	MasterAlarmButton2.SetReference(_V(0.720346, 0.621423, 0.332349));
+	MasterAlarmButton2.SetDirection(P1_3_PB_VECT);
+	MasterAlarmButton2.DefineMeshGroup(VC_GRP_PB_P3_01);
 
 	VECTOR3 NEEDLE_POS = { -0.640937, 0.4098, 0.355623 };
 
@@ -5776,7 +5795,7 @@ void Saturn::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&ORDEALAltSetRotary, AID_VC_ORDEAL_ROT);
 	ORDEALAltSetRotary.SetReference(ORDEAL_RotLocation, P13_ROT_AXIS);
 	ORDEALAltSetRotary.DefineMeshGroup(VC_GRP_ORDEAL_Rot);
-	ORDEALAltSetRotary.SetInitialAnimState(133.0 / 285.0); //133° from 10 NM to 150 NM, 285° total range
+	ORDEALAltSetRotary.SetInitialAnimState(133.0 / 285.0); //133ï¿½ from 10 NM to 150 NM, 285ï¿½ total range
 
 	// Panel 15
 
@@ -6935,12 +6954,29 @@ void Saturn::UpdateCMVCOptics() {
 	// Make copies of the mesh Vertices 
 	if (initVCOptics) {
 		MESHHANDLE hCVOptics = GetMeshTemplate(hCMVCOpticsidx); // handle for VC Optics Mesh
+	if (!hCVOptics || hCMVCOpticsidx < 0) {
+		oapiWriteLog("NASSP: UpdateCMVCOptics abort â€” missing CMVC_Optics template/mesh idx");
+		return;
+	}
+	const DWORD nGrpTpl = oapiMeshGroupCount(hCVOptics);
+	if (nGrpTpl < (DWORD)NUM_MSHGRPS) {
+		char buf[160];
+		sprintf_s(buf, "NASSP: UpdateCMVCOptics abort â€” CMVC_Optics has %u groups, need %d (deploy matching mesh)", nGrpTpl, NUM_MSHGRPS);
+		oapiWriteLog(buf);
+		return;
+	}
 
 		// Order of mesh groups. This must be the same in the mesh
 		// 0=Telescope eyepiece, 1=Sextant eyepiece, 2=dsky, 3=CMVCOptics_Panel_122, 4=Optics Clickpoints
 		// 5=Custom Camera, 6=Optics Cover, 7=Telescope reticle, 8=Sextant reticle
 		for (int i = FIRSTMSHGRP; i < NUM_MSHGRPS; i++) {
 			cmvcOptics[i].mshgrp = oapiMeshGroup(hCVOptics, i);
+			if (!cmvcOptics[i].mshgrp) {
+				char buf[128];
+				sprintf_s(buf, "NASSP: UpdateCMVCOptics abort â€” oapiMeshGroup(%d) NULL", i);
+				oapiWriteLog(buf);
+				return;
+			}
 			cmvcOptics[i].vtxcnt = cmvcOptics[i].mshgrp->nVtx;
 			cmvcOptics[i].data.resize(cmvcOptics[i].vtxcnt);
 			cmvcOptics[i].datanew.resize(cmvcOptics[i].vtxcnt);

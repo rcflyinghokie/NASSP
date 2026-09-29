@@ -22,6 +22,8 @@
 
   **************************************************************************/
 
+// VC animation changes by Zed, made with help from Grok (xAI).
+
 #if !defined(_PA_CSMCOMPUTER_H)
 #define _PA_CSMCOMPUTER_H
 
@@ -202,7 +204,7 @@ public:
 	double SextDVTimer;												// Governing timer to prevent view switching at greater than 15 frames per sim second
 	bool OpticsCovered;												// Are optics covers in place?
 protected:
-	bool PaintDisplay(SURFHANDLE surf, SURFHANDLE digits, int value, int xTexMul = 1);
+	bool PaintDisplay(SURFHANDLE surf, SURFHANDLE digits, double value, int xTexMul = 1);
 	void TelescopeServoDrive(double dt, double sxt_angle, double &sct_angle, double &sct_rate);
 };
 

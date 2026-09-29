@@ -22,6 +22,8 @@
 
   **************************** Revision History ****************************/
 
+// VC animation changes by Zed, made with help from Grok (xAI).
+
 // To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
@@ -823,7 +825,7 @@ void CrewStatus::Timestep(double simdt) {
 		suitPressureHighTime = 3600;
 	}
 
-	// Suit temperature above about 45°C or below about 0°C for 12 hours
+	// Suit temperature above about 45ï¿½C or below about 0ï¿½C for 12 hours
 	if (atm.SuitTempK > 320 || atm.SuitTempK < 270) {
 		if (suitTemperatureTime <= 0) {
 			status = ECS_CREWSTATUS_DEAD;
@@ -881,6 +883,10 @@ SaturnSideHatch::SaturnSideHatch(Sound &opensound, Sound &closesound) :
 	anim_gearboxsel = -1;
 	anim_actuatorsel = -1;
 	anim_ventvalve = -1;
+
+	gearboxAnimState = 0.0; gearboxAnimFrom = 0.0; gearboxAnimStartT = 0.0; gearboxAnimTarget = -1;
+	actuatorAnimState = 0.0; actuatorAnimFrom = 0.0; actuatorAnimStartT = 0.0; actuatorAnimTarget = -1;
+	ventAnimState = 0.0; ventAnimFrom = 0.0; ventAnimStartT = 0.0; ventAnimTarget = -1;
 }
 
 SaturnSideHatch::~SaturnSideHatch() {
@@ -935,36 +941,79 @@ void SaturnSideHatch::Timestep(double simdt) {
 		saturn->SetAnimation(anim_SideHatchVC, sidehatch_state.State());
 	}
 
+	UpdateHandleAnims();
+}
+
+// Duration of side-hatch gearbox / actuator / vent detent turns (seconds).
+static const double SIDEHATCH_HANDLE_ANIM_SEC = 0.20;
+
+static void LerpDetentAnim(Saturn *saturn, UINT anim,
+	double &state, double &from, double &startT, int &target,
+	int want, double dest)
+{
+	if (!saturn || anim == (UINT)-1) return;
+	const double now = oapiGetSimTime();
+
+	if (target < 0) {
+		state = dest;
+		from = dest;
+		startT = 0.0;
+		target = want;
+		saturn->SetAnimation(anim, state);
+		return;
+	}
+
+	if (want != target) {
+		from = state;
+		target = want;
+		startT = now;
+	}
+
+	if (state == dest && from == dest) {
+		saturn->SetAnimation(anim, state);
+		return;
+	}
+
+	double p = (now - startT) / SIDEHATCH_HANDLE_ANIM_SEC;
+	if (p >= 1.0) {
+		p = 1.0;
+		from = dest;
+		state = dest;
+	} else {
+		if (p < 0.0) p = 0.0;
+		const double s = p * p * (3.0 - 2.0 * p);
+		state = from + (dest - from) * s;
+	}
+	saturn->SetAnimation(anim, state);
+}
+
+void SaturnSideHatch::SyncHandleAnims()
+{
+	gearboxAnimTarget = -1;
+	actuatorAnimTarget = -1;
+	ventAnimTarget = -1;
+	UpdateHandleAnims();
+}
+
+void SaturnSideHatch::UpdateHandleAnims()
+{
 	int act_state = 0;
-	double vent_state = (double)ventValveRotary->GetState();
+	int vent_state = ventValveRotary ? ventValveRotary->GetState() : 0;
+	int gear_state = gearBoxSelector ? gearBoxSelector->GetState() : 0;
 
 	if (!open) {
-		act_state = actuatorHandleSelector->GetState();
+		act_state = actuatorHandleSelector ? actuatorHandleSelector->GetState() : 0;
 	} else {
-		act_state = actuatorHandleSelectorOpen->GetState();
+		act_state = actuatorHandleSelectorOpen ? actuatorHandleSelectorOpen->GetState() : 0;
 	}
 
-	if (gearBoxSelector->GetState() == 2) {
-		saturn->SetAnimation(anim_gearboxsel, 1.0);
+	double gear_dest = (gear_state == 2) ? 1.0 : (gear_state == 1) ? 0.5 : 0.0;
+	double act_dest = (act_state == 2) ? 1.0 : (act_state == 1) ? 0.5 : 0.0;
+	double vent_dest = (double)vent_state / 7.0;
 
-	} else if (gearBoxSelector->GetState() == 1) {
-		saturn->SetAnimation(anim_gearboxsel, 0.5);
-
-	} else {
-		saturn->SetAnimation(anim_gearboxsel, 0.0);
-	}
-
-	if (act_state == 2) {
-		saturn->SetAnimation(anim_actuatorsel, 1.0);
-
-	} else if (act_state == 1) {
-		saturn->SetAnimation(anim_actuatorsel, 0.5);
-
-	} else {
-		saturn->SetAnimation(anim_actuatorsel, 0.0);
-	}
-
-	saturn->SetAnimation(anim_ventvalve, vent_state / 7);
+	LerpDetentAnim(saturn, anim_gearboxsel, gearboxAnimState, gearboxAnimFrom, gearboxAnimStartT, gearboxAnimTarget, gear_state, gear_dest);
+	LerpDetentAnim(saturn, anim_actuatorsel, actuatorAnimState, actuatorAnimFrom, actuatorAnimStartT, actuatorAnimTarget, act_state, act_dest);
+	LerpDetentAnim(saturn, anim_ventvalve, ventAnimState, ventAnimFrom, ventAnimStartT, ventAnimTarget, vent_state, vent_dest);
 }
 
 void SaturnSideHatch::SwitchToggled(PanelSwitchItem *s) {
@@ -979,6 +1028,9 @@ void SaturnSideHatch::LoadState(char *line) {
 	sscanf(line + 9, "%d %d %lf %lf", &i1, &toggle, &a, &b);
 	open = (i1 != 0);
 	sidehatch_state.SetState(a, b);
+	gearboxAnimTarget = -1;
+	actuatorAnimTarget = -1;
+	ventAnimTarget = -1;
 }
 
 void SaturnSideHatch::SaveState(FILEHANDLE scn) {
@@ -1435,8 +1487,12 @@ SaturnForwardHatch::SaturnForwardHatch(Sound &opensound, Sound &closesound) :
 	pipe = NULL;
 	saturn = NULL;
 
+	fwdhatch_state.SetState(0.0, 0.0);
+	fwdhatch_state.SetOperatingSpeed(0.2);
 	anim_FwdHatchVC = -1;
 	anim_pressequalvlv = -1;
+
+	peqAnimState = 0.0; peqAnimFrom = 0.0; peqAnimStartT = 0.0; peqAnimTarget = -1;
 }
 
 SaturnForwardHatch::~SaturnForwardHatch()
@@ -1464,7 +1520,7 @@ void SaturnForwardHatch::Toggle()
 				open = true;
 				toggle = 2;
 				OpenSound.play();
-				saturn->SetAnimation(anim_FwdHatchVC, 1.0);
+				fwdhatch_state.Open();
 				saturn->SetFwdHatchMesh();
 				saturn->SetDockingProbeMesh(); // Hide docking probe mesh when CM forward hatch is open
 			}
@@ -1477,7 +1533,7 @@ void SaturnForwardHatch::Toggle()
 			open = false;
 			toggle = 2;
 			CloseSound.play();
-			saturn->SetAnimation(anim_FwdHatchVC, 0.0);
+			fwdhatch_state.Close();
 			saturn->SetFwdHatchMesh();
 			saturn->SetDockingProbeMesh(); // Show docking probe mesh when CM forward hatch is closed
 		}
@@ -1498,8 +1554,61 @@ void SaturnForwardHatch::Timestep(double simdt) {
 		}
 	}
 
-	double equalvalve_state = (double)pressureequalvalve->GetState();
-	saturn->SetAnimation(anim_pressequalvlv, equalvalve_state / 3);
+	if (fwdhatch_state.Process(simdt)) {
+		saturn->SetAnimation(anim_FwdHatchVC, fwdhatch_state.State());
+	}
+
+	UpdatePeqAnim();
+}
+
+// Duration of forward-hatch pressure-equal rotary detent (seconds).
+static const double FWDHATCH_PEQ_ANIM_SEC = 0.20;
+
+void SaturnForwardHatch::SyncPeqAnim()
+{
+	peqAnimTarget = -1;
+	UpdatePeqAnim();
+}
+
+void SaturnForwardHatch::UpdatePeqAnim()
+{
+	if (!saturn || !pressureequalvalve || anim_pressequalvlv == (UINT)-1) return;
+
+	const int want = pressureequalvalve->GetState();
+	const double dest = (double)want / 3.0;
+	const double now = oapiGetSimTime();
+
+	if (peqAnimTarget < 0) {
+		peqAnimState = dest;
+		peqAnimFrom = dest;
+		peqAnimStartT = 0.0;
+		peqAnimTarget = want;
+		saturn->SetAnimation(anim_pressequalvlv, peqAnimState);
+		return;
+	}
+
+	if (want != peqAnimTarget) {
+		peqAnimFrom = peqAnimState;
+		peqAnimTarget = want;
+		peqAnimStartT = now;
+	}
+
+	if (peqAnimState == dest && peqAnimFrom == dest) {
+		saturn->SetAnimation(anim_pressequalvlv, peqAnimState);
+		return;
+	}
+
+	double p = (now - peqAnimStartT) / FWDHATCH_PEQ_ANIM_SEC;
+	if (p >= 1.0) {
+		p = 1.0;
+		peqAnimFrom = dest;
+		peqAnimState = dest;
+	} else {
+		if (p < 0.0) p = 0.0;
+		const double s = p * p * (3.0 - 2.0 * p);
+		peqAnimState = peqAnimFrom + (dest - peqAnimFrom) * s;
+	}
+	saturn->SetAnimation(anim_pressequalvlv, peqAnimState);
 }
 
 void SaturnForwardHatch::DoFirstTimeStep()
@@ -1513,12 +1622,21 @@ void SaturnForwardHatch::DoFirstTimeStep()
 void SaturnForwardHatch::LoadState(char *line) {
 
 	int i1, i2;
+	double a = 0.0, b = 0.0;
 
 	i2 = 0;
 
-	sscanf(line + 12, "%d %d %d", &i1, &toggle, &i2);
+	int n = sscanf(line + 12, "%d %d %d %lf %lf", &i1, &toggle, &i2, &a, &b);
 	open = (i1 != 0);
 	isHoseConnected = (i2 != 0);
+	if (n >= 5) {
+		fwdhatch_state.SetState(a, b);
+	} else if (open) {
+		fwdhatch_state.SetOpened();
+	} else {
+		fwdhatch_state.SetClosed();
+	}
+	peqAnimTarget = -1;
 }
 
 void SaturnForwardHatch::SaveState(FILEHANDLE scn) {
@@ -1535,7 +1653,8 @@ void SaturnForwardHatch::SaveState(FILEHANDLE scn) {
 		hose = false;
 	}
 
-	sprintf(buffer, "%i %i %i", (open ? 1 : 0), toggle, (hose ? 1 : 0));
+	sprintf(buffer, "%i %i %i %lf %lf", (open ? 1 : 0), toggle, (hose ? 1 : 0),
+		fwdhatch_state.State(), fwdhatch_state.Speed());
 	oapiWriteScenario_string(scn, "FORWARDHATCH", buffer);
 }
 
@@ -1557,8 +1676,9 @@ void SaturnForwardHatch::DefineAnimationsVC(UINT idx)
 	ach_FwdHatchVC = saturn->AddAnimationComponent(anim_FwdHatchVC, 0.0f, 1.0f, &mgt_fwdhatch);
 	ach_pressequalvlv = saturn->AddAnimationComponent(anim_pressequalvlv, 0.0f, 1.0f, &mgt_pressequalvalve, ach_FwdHatchVC);
 
-	saturn->SetAnimation(anim_FwdHatchVC, open);
+	saturn->SetAnimation(anim_FwdHatchVC, fwdhatch_state.State());
 	saturn->SetAnimation(anim_pressequalvlv, 0.5);
+	peqAnimTarget = -1;
 }
 
 SaturnPressureEqualizationValve::SaturnPressureEqualizationValve()

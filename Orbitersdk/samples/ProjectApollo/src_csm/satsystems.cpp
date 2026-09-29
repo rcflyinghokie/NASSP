@@ -23,6 +23,8 @@
 
   **************************************************************************/
 
+// VC animation changes by Zed, made with help from Grok (xAI).
+
 // To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
@@ -868,8 +870,10 @@ void Saturn::SystemsTimestep(double simt, double simdt, double mjd) {
 		EventTimerDisplay.Timestep(simt, simdt, true);
 		EventTimer306Display.Timestep(simt, simdt, true);
 		fdaiLeft.SetAttitude(eda.GetFDAI1Attitude());
+		fdaiLeft.SetNeedles(eda.GetFDAI1AttitudeRate(), eda.GetFDAI1AttitudeError());
 		fdaiLeft.Timestep(simt, simdt);
 		fdaiRight.SetAttitude(eda.GetFDAI2Attitude());
+		fdaiRight.SetNeedles(eda.GetFDAI2AttitudeRate(), eda.GetFDAI2AttitudeError());
 		fdaiRight.Timestep(simt, simdt);
 		SPSPropellant.Timestep(simt, simdt);
 		JoystickTimestep();
