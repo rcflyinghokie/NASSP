@@ -23,6 +23,8 @@
 
   **************************************************************************/
 
+// VC animation changes by Zed, made with help from Grok (xAI).
+
 #if !defined(_PA_SATURN_H)
 #define _PA_SATURN_H
 
@@ -1755,8 +1757,10 @@ protected:
 	PanelGroup pgPanels200;
 
 	SwitchRow MasterAlarmSwitchRow;
-	MasterAlarmSwitch MasterAlarmSwitch; 
-
+	MasterAlarmSwitch MasterAlarmSwitch;
+	// VC mesh push-in/out for left (P1 / PB_P1_12) and right (P2 / PB_P3_01) Master Alarm
+	PushSwitch MasterAlarmButton;
+	PushSwitch MasterAlarmButton2;
 	// EMS
 	SwitchRow EMSFunctionSwitchRow;
 	RotationalSwitch EMSFunctionSwitch;

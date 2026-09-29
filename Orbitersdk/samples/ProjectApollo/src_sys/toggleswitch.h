@@ -22,6 +22,8 @@
 
   **************************************************************************/
 
+// VC animation changes by Zed, made with help from Grok (xAI).
+
 #pragma once
 
 #include "Orbitersdk.h"
@@ -356,6 +358,7 @@ public:
 	virtual bool SwitchTo(int newState, bool dontspring = false);
 	virtual void DrawSwitch(SURFHANDLE DrawSurface);
 	virtual void DrawSwitchVC(int id, int event, SURFHANDLE surf);
+	virtual void OnPostStep(double SimT, double DeltaT, double MJD);
 	virtual bool CheckMouseClick(int event, int mx, int my);
 	virtual bool CheckMouseClickVC(int event, VECTOR3 &p);
 	virtual void VesimSwitchTo(int newState);
@@ -367,6 +370,13 @@ public:
 	virtual void DefineMeshGroup(UINT _grpIndex);
 
 protected:
+	/// Map logical switch state to VC mesh animation 0..1 (2-pos: down=0 up=1).
+	virtual double SwitchStateToAnim() const;
+	/// Snap visual toggle to logical state (scenario load / first paint).
+	void SyncToggleAnimation();
+	/// Smoothly advance VC toggle mesh toward logical state.
+	void UpdateToggleAnimation(double /*dt*/);
+
 	virtual void InitSound(SoundLib *s);
 	virtual void DoDrawSwitch(SURFHANDLE DrawSurface);
 	bool DoCheckMouseClick(int event, int mx, int my);
@@ -386,7 +396,7 @@ protected:
 	bool Active;
 	bool SwitchToggled;
 	bool Held;
-	//0 = not sideways, 1 = sideways rotated 90° clockwise, 2 = sideways rotated 90° counterclockwise
+	//0 = not sideways, 1 = sideways rotated 90ï¿½ clockwise, 2 = sideways rotated 90ï¿½ counterclockwise
 	int Sideways;
 
 	double delayTime;
@@ -402,6 +412,12 @@ protected:
 	//VC Stuff
 	UINT grpIndex;
 	UINT anim_switch;
+
+	// VC mesh smooth flip (visual only; logical state stays instant)
+	double togAnimState;   // current visual 0..1
+	double togAnimFrom;    // value when current transition began
+	double togAnimStartT;  // sim time when transition began
+	int togAnimTarget;     // -1 uninit/snap; else logical state animating toward
 
 	///
 	/// Flags structure for saving state to scenario file.
@@ -495,6 +511,7 @@ public:
 	bool IsUp() { return (GetState() == THREEPOSSWITCH_UP); };
 
 	bool CheckMouseClickVC(int event, VECTOR3 &p);
+	virtual double SwitchStateToAnim() const;
 };
 
 ///
@@ -949,12 +966,22 @@ protected:
 	const VECTOR3& GetCoverReference() const;
 	const VECTOR3& GetCoverDirection() const;
 
+	/// Smoothly advance VC cover mesh toward open (1) or closed (0).
+	void UpdateCoverAnimation(VESSEL *vessel, int guardOpen, double dt);
+	/// Snap visual cover state to logical guard (scenario load / first paint).
+	void SyncCoverAnimation(VESSEL *vessel, int guardOpen);
+
 	UINT guardAnim;
 	MGROUP_ROTATE* pcoverrot;
 	UINT coverGrpIndex;
 	VECTOR3 coverreference;
 	VECTOR3 coverdir;
 	double coverrotation;
+
+	double coverAnimState;   // current visual 0=closed .. 1=open
+	double coverAnimFrom;    // value when current transition began
+	double coverAnimStartT;  // sim time when transition began
+	int coverAnimTarget;     // -1 uninit, 0 closed, 1 open
 };
 
 class GuardedToggleSwitch: public ToggleSwitch, public SwitchCover {
@@ -983,6 +1010,7 @@ public:
 	void DefineVCAnimations(UINT vc_idx);
 	void DefineMeshGroup(UINT _grpIndex, UINT _coverGrpIndex);
 	void SetReference(const VECTOR3& ref, const VECTOR3& coverref, const VECTOR3& dir, const VECTOR3& coverdir);
+	void OnPostStep(double SimT, double DeltaT, double MJD);
 
 protected:
 	int	guardX;
@@ -1119,6 +1147,7 @@ public:
 	void DefineVCAnimations(UINT vc_idx);
 	void SetReference(const VECTOR3& _dir, const VECTOR3& coverref, const VECTOR3& ref, const VECTOR3& _coverdir);
 	void DefineMeshGroup(UINT _grpIndex, UINT _coverGrpIndex);
+	void OnPostStep(double SimT, double DeltaT, double MJD);
 
 protected:
 	int	guardX;
@@ -1167,6 +1196,7 @@ public:
 	void DefineVCAnimations(UINT vc_idx);
 	void SetReference(const VECTOR3& ref, const VECTOR3& coverref, const VECTOR3& dir, const VECTOR3& coverdir);
 	void DefineMeshGroup(UINT _grpIndex, UINT _coverGrpIndex);
+	void OnPostStep(double SimT, double DeltaT, double MJD);
 
 protected:
 	int	guardX;
@@ -1340,6 +1370,7 @@ public:
 	void DefineMeshGroup(UINT _grpIndex);
 	void DrawSwitchVC(int id, int event, SURFHANDLE drawSurface);
 	bool CheckMouseClickVC(int event, VECTOR3 &p);
+	void OnPostStep(double SimT, double DeltaT, double MJD);
 
 protected:
 	int	x;
@@ -1364,9 +1395,19 @@ protected:
 	RotationalSwitchBitmap bitmaps[RotationalSwitchBitmapCount];
 	SwitchRow *switchRow;
 
+	// VC mesh smooth turn (visual only; logical state stays instant)
+	double rotAnimState;   // current visual 0..1 (may be unwrapped mid-turn)
+	double rotAnimFrom;    // value when current transition began
+	double rotAnimDest;    // unwrapped destination (shortest-path)
+	double rotAnimStartT;  // sim time when transition began
+	int rotAnimTarget;     // -1 uninit/snap; else logical GetState() animating toward
+
 	void SetValue(int newValue);
 	double AngleDiff(double a1, double a2);
 	void DeletePositions();
+	void SyncRotaryAnimation();
+	void UpdateRotaryAnimation(double /*dt*/);
+	static double NormRotAnim01(double s);
 };
 
 class PowerStateRotationalSwitch: public RotationalSwitch {
@@ -1521,6 +1562,7 @@ public:
 	void DefineVCAnimations(UINT vc_idx);
 	void DefineMeshGroup(UINT _grpIndex);
 	void SetRotationRange(const double range);
+	void OnPostStep(double SimT, double DeltaT, double MJD);
 
 protected:
 	int	x;
@@ -1541,6 +1583,16 @@ protected:
 	UINT grpIndex;
 	UINT anim_switch;
 	double RotationRange;
+
+	// VC mesh smooth detent turn (visual only; logical state stays instant)
+	double twAnimState;   // current visual 0..1
+	double twAnimFrom;    // value when current transition began
+	double twAnimStartT;  // sim time when transition began
+	int twAnimTarget;     // -1 uninit/snap; else logical state animating toward
+
+	void SyncThumbwheelAnimation();
+	void UpdateThumbwheelAnimation(double /*dt*/);
+	double StateToAnim01() const;
 };
 
 class HandcontrollerSwitch: public PanelSwitchItem {
