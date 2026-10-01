@@ -9,7 +9,8 @@
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
-      "inheritEnvironments": [ "msvc_x64_x64" ]
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": []
     },
     {
       "name": "x64-Release",
@@ -21,18 +22,7 @@
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x64_x64" ],
-      "variables": [
-        {
-          "name": "FINAL_INSTALL_DIR",
-          "value": "C:\\Users\\James\\Desktop\\Games\\Orbiter 2024 x64",
-          "type": "STRING"
-        },
-        {
-          "name": "ORBITER_INSTALL_DIR",
-          "value": "C:\\Users\\James\\Desktop\\Games\\Orbiter 2024 x64",
-          "type": "STRING"
-        }
-      ]
+      "variables": []
     },
     {
       "name": "x86-Debug",
@@ -43,7 +33,8 @@
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
-      "inheritEnvironments": [ "msvc_x86" ]
+      "inheritEnvironments": [ "msvc_x86" ],
+      "variables": []
     },
     {
       "name": "x86-Release",
@@ -54,7 +45,8 @@
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
-      "inheritEnvironments": [ "msvc_x86" ]
+      "inheritEnvironments": [ "msvc_x86" ],
+      "variables": []
     }
   ]
 }
