@@ -1546,6 +1546,9 @@ void LEM::clbkPreStep (double simt, double simdt, double mjd) {
 	NASSPAutosave::Update(GetHandle(), GetName(), pMission->GetMissionName().c_str(), MissionTime);
 
 	if (spaceeva)UpdateSpaceEVA(); //if lmp eva active (vessel created), enables EVA Timestep
+
+	// Autosave (checks focus internally, reads config from file)
+	NASSPAutosave::Update(GetHandle(), GetName(), pMission->GetMissionName().c_str(), MissionTime);
 }
 
 
