@@ -73,6 +73,3 @@ jobs:
 
     - name: Create QSG asset
       run: gh release upload ${{env.BUILD_NAME}} '${{github.workspace}}/Doc/Project Apollo - NASSP/NASSP Quick Start Guide.pdf'
-      
-    - name: Create Autosave asset
-      run: gh release upload ${{env.BUILD_NAME}} '${{github.workspace}}/Doc/Project Apollo - NASSP/Autosave.txt'
