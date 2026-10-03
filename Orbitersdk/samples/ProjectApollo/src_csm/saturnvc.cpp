@@ -23,6 +23,8 @@
 
   **************************************************************************/
 
+// VC animation changes by Zed, made with help from Grok (xAI).
+
 // To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
@@ -1854,9 +1856,19 @@ bool Saturn::clbkVCMouseEvent (int id, int event, VECTOR3 &p)
 	switch (id) {
 
 	case AID_VC_MASTER_ALARM:
-	case AID_VC_MASTER_ALARM2:
-	case AID_VC_MASTER_ALARM3:
+		// Same press/release as GDC Align PushSwitch; CWS keeps alarm logic + click sound
+		if (event & PANEL_MOUSE_LBDOWN) MasterAlarmButton.SwitchTo(1, true);
+		else if (event & PANEL_MOUSE_LBUP) MasterAlarmButton.SwitchTo(0, true);
+		return cws.CheckMasterAlarmMouseClick(event);
 
+	case AID_VC_MASTER_ALARM2:
+		if (event & PANEL_MOUSE_LBDOWN) MasterAlarmButton2.SwitchTo(1, true);
+		else if (event & PANEL_MOUSE_LBUP) MasterAlarmButton2.SwitchTo(0, true);
+		return cws.CheckMasterAlarmMouseClick(event);
+
+	case AID_VC_MASTER_ALARM3:
+		if (event & PANEL_MOUSE_LBDOWN) MasterAlarmButton3.SwitchTo(1, true);
+		else if (event & PANEL_MOUSE_LBUP) MasterAlarmButton3.SwitchTo(0, true);
 		return cws.CheckMasterAlarmMouseClick(event);
 
 	case AID_VC_EMS_DVSET:
@@ -4046,8 +4058,23 @@ void Saturn::DefineVCAnimations()
 	EMSFunctionSwitch.SetReference(P1_ROT_POS[0], P1_3_ROT_AXIS);
 	EMSFunctionSwitch.DefineMeshGroup(VC_GRP_Rot_P1_01);
 
-	MainPanelVC.AddSwitch(&MasterAlarmSwitch);
-	MasterAlarmSwitch.SetReference(_V(-0.775435, 0.709185, 0.361746));
+	// Left Master Alarm (PB_P1_12 / MAT MASTERALARM_PANEL1) - GDC Align push pattern
+	MainPanelVC.AddSwitch(&MasterAlarmButton, AID_VC_MASTER_ALARM);
+	MasterAlarmButton.SetReference(_V(-0.775435, 0.709185, 0.361746));
+	MasterAlarmButton.SetDirection(P1_3_PB_VECT);
+	MasterAlarmButton.DefineMeshGroup(VC_GRP_PB_P1_12);
+
+	// Right Master Alarm (PB_P3_01 / MAT MASTERALARM_PANEL2)
+	MainPanelVC.AddSwitch(&MasterAlarmButton2, AID_VC_MASTER_ALARM2);
+	MasterAlarmButton2.SetReference(_V(0.720346, 0.621423, 0.332349));
+	MasterAlarmButton2.SetDirection(P1_3_PB_VECT);
+	MasterAlarmButton2.DefineMeshGroup(VC_GRP_PB_P3_01);
+
+	// LEB Master Alarm (MasterAlarm_LEB lamp face, panel normal +Y): push 1 mm into its bezel well
+	MainPanelVC.AddSwitch(&MasterAlarmButton3, AID_VC_MASTER_ALARM3);
+	MasterAlarmButton3.SetReference(_V(0.103894, -0.69915, 0.029394));
+	MasterAlarmButton3.SetDirection(_V(0.0, -0.001, 0.0));
+	MasterAlarmButton3.DefineMeshGroup(VC_GRP_MasterAlarm_LEB);
 
 	VECTOR3 NEEDLE_POS = { -0.640937, 0.4098, 0.355623 };
 
@@ -6937,12 +6964,29 @@ void Saturn::UpdateCMVCOptics() {
 	// Make copies of the mesh Vertices 
 	if (initVCOptics) {
 		MESHHANDLE hCVOptics = GetMeshTemplate(hCMVCOpticsidx); // handle for VC Optics Mesh
+	if (!hCVOptics || hCMVCOpticsidx < 0) {
+		oapiWriteLog("NASSP: UpdateCMVCOptics abort - missing CMVC_Optics template/mesh idx");
+		return;
+	}
+	const DWORD nGrpTpl = oapiMeshGroupCount(hCVOptics);
+	if (nGrpTpl < (DWORD)NUM_MSHGRPS) {
+		char buf[160];
+		sprintf_s(buf, "NASSP: UpdateCMVCOptics abort - CMVC_Optics has %u groups, need %d (deploy matching mesh)", nGrpTpl, NUM_MSHGRPS);
+		oapiWriteLog(buf);
+		return;
+	}
 
 		// Order of mesh groups. This must be the same in the mesh
 		// 0=Telescope eyepiece, 1=Sextant eyepiece, 2=dsky, 3=CMVCOptics_Panel_122, 4=Optics Clickpoints
 		// 5=Custom Camera, 6=Optics Cover, 7=Telescope reticle, 8=Sextant reticle
 		for (int i = FIRSTMSHGRP; i < NUM_MSHGRPS; i++) {
 			cmvcOptics[i].mshgrp = oapiMeshGroup(hCVOptics, i);
+			if (!cmvcOptics[i].mshgrp) {
+				char buf[128];
+				sprintf_s(buf, "NASSP: UpdateCMVCOptics abort - oapiMeshGroup(%d) NULL", i);
+				oapiWriteLog(buf);
+				return;
+			}
 			cmvcOptics[i].vtxcnt = cmvcOptics[i].mshgrp->nVtx;
 			cmvcOptics[i].data.resize(cmvcOptics[i].vtxcnt);
 			cmvcOptics[i].datanew.resize(cmvcOptics[i].vtxcnt);
