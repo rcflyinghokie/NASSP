@@ -69,7 +69,7 @@ jobs:
       run: Compress-Archive -Path ${{github.workspace}}/install/* -DestinationPath ${{github.workspace}}/${{env.BUILD_NAME}}-x64.zip -Force
       
     - name: Create GitHub release and tag
-      run: gh release create ${{env.BUILD_NAME}} ${{github.workspace}}/${{env.BUILD_NAME}}-x64.zip --target CMake
+      run: gh release create ${{env.BUILD_NAME}} ${{github.workspace}}/${{env.BUILD_NAME}}-x64.zip --target CMake-J-Mission-Alpha
 
     - name: Create QSG asset
       run: gh release upload ${{env.BUILD_NAME}} '${{github.workspace}}/Doc/Project Apollo - NASSP/NASSP Quick Start Guide.pdf'
