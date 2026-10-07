@@ -23,6 +23,8 @@
 
   **************************************************************************/
 
+// VC animation changes by Zed, made with help from Grok (xAI).
+
 // To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
@@ -1778,6 +1780,13 @@ void Saturn::SetSwitches(int panel) {
 	MasterAlarmSwitchRow.Init(0, MainPanel);
 	MasterAlarmSwitch.Init(&cws);
 	MasterAlarmSwitchRow.AddSwitch(&MasterAlarmSwitch);
+	// VC-only push meshes (OurVessel via SwitchRow); logic stays in CWS mouse handler
+	MasterAlarmButton.Init(0, 0, 1, 1, NULL, NULL, MasterAlarmSwitchRow);
+	MasterAlarmButton2.Init(0, 0, 1, 1, NULL, NULL, MasterAlarmSwitchRow);
+	MasterAlarmButton3.Init(0, 0, 1, 1, NULL, NULL, MasterAlarmSwitchRow);
+	MasterAlarmButton.SetVisible(false);
+	MasterAlarmButton2.SetVisible(false);
+	MasterAlarmButton3.SetVisible(false);
 
 	AccelGMeterRow.Init(AID_GMETER, MainPanel);
 	AccelGMeter.Init(g_Param.pen[4], g_Param.pen[4], AccelGMeterRow, this);

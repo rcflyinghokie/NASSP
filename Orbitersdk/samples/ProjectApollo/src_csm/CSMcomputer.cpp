@@ -22,6 +22,8 @@
 
   **************************************************************************/
 
+// VC animation changes by Zed, made with help from Grok (xAI).
+
 // To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
@@ -607,49 +609,83 @@ void CMOptics::SystemTimestep(double simdt) {
 
 // Paint counters. The documentation is not clear if the displayed number is supposed to be decimal degrees or CDU counts.
 // The counters are mechanically connected to the telescope, so it is assumed to be decimal degrees.
+//
+// Mechanical odometer rendering (CM optics drum pass, 2026-09-29):
+// The counter value is kept continuous (0.01 deg units). The least-significant
+// wheel rolls with the fractional part of the value, and every higher wheel
+// rolls over together with it during the last 0.01 deg of a carry (odometer
+// style). It is a pure function of the angle, so both directions, the
+// 359.99 <-> 000.00 wrap and negative trunnion angles animate correctly with
+// no per-frame state.
+
+static const int OPTICS_COUNTER_MODULUS = 36000; // 360.00 deg in 0.01 deg counts
+
+static double OpticsCounterValue(double angleRad)
+{
+	double v = fmod(angleRad * DEG * 100.0, (double)OPTICS_COUNTER_MODULUS);
+	if (v < 0.0) v += (double)OPTICS_COUNTER_MODULUS;
+	if (!(v >= 0.0) || v >= (double)OPTICS_COUNTER_MODULUS) v = 0.0;
+	return v;
+}
 
 bool CMOptics::PaintShaftDisplay(SURFHANDLE surf, SURFHANDLE digits, int TexMul){
-	int value = (int)(TeleShaft*100.0*DEG);
-	if (value < 0) { value += 36000; }
-	return PaintDisplay(surf, digits, value, TexMul);
+	return PaintDisplay(surf, digits, OpticsCounterValue(TeleShaft), TexMul);
 }
 
 bool CMOptics::PaintTrunnionDisplay(SURFHANDLE surf, SURFHANDLE digits, int TexMul){
-	int value = (int)(TeleTrunion*100.0*DEG);
-	if (value < 0) { value += 36000; }
-	return PaintDisplay(surf, digits, value, TexMul);
+	return PaintDisplay(surf, digits, OpticsCounterValue(TeleTrunion), TexMul);
 }
 
-bool CMOptics::PaintDisplay(SURFHANDLE surf, SURFHANDLE digits, int value, int TexMul){
-	int srx, sry, digit[5];
-	int x=value;
-	digit[0] = (x%10);
-	digit[1] = (x%100)/10;
-	digit[2] = (x%1000)/100;
-	digit[3] = (x%10000)/1000;
-	digit[4] = x/10000;
+// One 9x12 (x TexMul) counter wheel. Faces on thumbwheel_large_fonts_inv are at
+// x = 8 + 25*d; y = 33 is the digit row, y = 22 the blank drum face used for
+// leading-zero suppression. f = roll progress from 'from' face to 'to' face
+// (value increasing: old face exits upward, next face enters from below).
+static void BltOpticsWheel(SURFHANDLE surf, SURFHANDLE digits, int dx,
+	int fromD, bool fromBlank, int toD, bool toBlank, double f, int TexMul)
+{
+	const int W = 9 * TexMul;
+	const int H = 12 * TexMul;
+	const int fx = (8 + 25 * fromD) * TexMul;
+	const int fy = (fromBlank ? 22 : 33) * TexMul;
+	const int tx = (8 + 25 * toD) * TexMul;
+	const int ty = (toBlank ? 22 : 33) * TexMul;
 
-	srx = 8 + (digit[4] * 25);
-	if (digit[4])
-		sry = 33;
-	else
-		sry = 22;
-	oapiBlt(surf, digits, 0, 0, srx*TexMul, sry*TexMul, 9*TexMul, 12*TexMul, SURF_PREDEF_CK);
+	int off = (int)(H * f + 0.5);
+	if ((fromD == toD && fromBlank == toBlank) || off <= 0) {
+		oapiBlt(surf, digits, dx, 0, fx, fy, W, H, SURF_PREDEF_CK);
+		return;
+	}
+	if (off >= H) {
+		oapiBlt(surf, digits, dx, 0, tx, ty, W, H, SURF_PREDEF_CK);
+		return;
+	}
+	oapiBlt(surf, digits, dx, 0, fx, fy + off, W, H - off, SURF_PREDEF_CK);
+	oapiBlt(surf, digits, dx, H - off, tx, ty, W, off, SURF_PREDEF_CK);
+}
 
-	srx = 8 + (digit[3] * 25);
-	if (digit[4] || digit[3])
-		sry = 33;
-	else
-		sry = 22;
-	oapiBlt(surf, digits, 10*TexMul, 0, srx*TexMul, sry*TexMul, 9*TexMul, 12*TexMul, SURF_PREDEF_CK);
+bool CMOptics::PaintDisplay(SURFHANDLE surf, SURFHANDLE digits, double value, int TexMul){
+	static const int kPow10[5] = { 1, 10, 100, 1000, 10000 };
 
-	srx = 8 + (digit[2] * 25);
-	oapiBlt(surf, digits, 20*TexMul, 0, srx*TexMul, 33*TexMul, 9*TexMul, 12*TexMul, SURF_PREDEF_CK);
-	srx = 8 + (digit[1] * 25);
-	oapiBlt(surf, digits, 30*TexMul, 0, srx*TexMul, 33*TexMul, 9*TexMul, 12*TexMul, SURF_PREDEF_CK);
-	srx = 8 + (digit[0] * 25);
-	sry = (int)(digit[0] * 1.2);
-	oapiBlt(surf, digits, 40*TexMul, 0, srx*TexMul, 33*TexMul, 9*TexMul, 12*TexMul, SURF_PREDEF_CK);
+	int n = (int)floor(value);
+	double f = value - (double)n;
+	if (n < 0 || n >= OPTICS_COUNTER_MODULUS) { n = 0; f = 0.0; }
+	if (f < 0.0) f = 0.0;
+	if (f > 1.0) f = 1.0;
+	int n1 = n + 1;
+	if (n1 >= OPTICS_COUNTER_MODULUS) n1 = 0;
+
+	int dA[5], dB[5];
+	for (int i = 0; i < 5; i++) {
+		dA[i] = (n / kPow10[i]) % 10;
+		dB[i] = (n1 / kPow10[i]) % 10;
+	}
+	bool blankA[5] = { false, false, false, (dA[4] == 0 && dA[3] == 0), (dA[4] == 0) };
+	bool blankB[5] = { false, false, false, (dB[4] == 0 && dB[3] == 0), (dB[4] == 0) };
+
+	for (int i = 0; i < 5; i++) {
+		BltOpticsWheel(surf, digits, (40 - 10 * i) * TexMul,
+			dA[i], blankA[i], dB[i], blankB[i], f, TexMul);
+	}
 
 	oapiColourFill(surf, oapiGetColour(255, 255, 255), 29*TexMul, 5*TexMul, 1*TexMul, 2*TexMul);
 	return true;

@@ -2586,6 +2586,9 @@ void LEM::DefineVCAnimations()
 
 	MainPanelVC.AddSwitch(&LeftMasterAlarmSwitch, AID_VC_LEM_MA_LEFT);
 	LeftMasterAlarmSwitch.SetReference(_V(-0.4159, 0.5993, 1.7025));
+	// Push the lamp face 1 mm into its bezel well (same travel/timing as the CM Master Alarm / GDC Align)
+	LeftMasterAlarmSwitch.SetDirection(_V(0.00, 0.001*-sin(P1_TILT), 0.001*cos(P1_TILT)));
+	LeftMasterAlarmSwitch.DefineMeshGroup(VC_GRP_MasterAlarm1);
 
 	//Panel 2
 
@@ -2780,6 +2783,8 @@ void LEM::DefineVCAnimations()
 
 	MainPanelVC.AddSwitch(&RightMasterAlarmSwitch, AID_VC_LEM_MA_RIGHT);
 	RightMasterAlarmSwitch.SetReference(_V(0.41475, 0.5989, 1.7025));
+	RightMasterAlarmSwitch.SetDirection(_V(0.00, 0.001*-sin(P2_TILT), 0.001*cos(P2_TILT)));
+	RightMasterAlarmSwitch.DefineMeshGroup(VC_GRP_MasterAlarm2);
 
 	//Panel 3
 
@@ -3605,6 +3610,10 @@ void LEM::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&PLSSFillValve, AID_VC_ROT_PLSSFILL);
 	PLSSFillValve.SetReference(Rot_PlssFillLocation, ECSRotAxisOCM);
 	PLSSFillValve.DefineMeshGroup(VC_GRP_Rot_PlssFill);
+	// VC animation changes by Zed, made with help from Grok (xAI).
+	// PLSS fill / DES O2 / ASC O2 valves have detents 210 deg apart (0 and 210):
+	// turn the knob the full 210 deg between them, not the 150 deg shortcut.
+	PLSSFillValve.SetVCDirectTurn(true);
 
 	MainPanelVC.AddSwitch(&PressRegAValve, AID_VC_ROT_PRESSREGA);
 	PressRegAValve.SetReference(Rot_PressRegALocation, ECSRotAxisOCM);
@@ -3617,30 +3626,39 @@ void LEM::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&DESO2Valve, AID_VC_ROT_DESO2);
 	DESO2Valve.SetReference(Rot_DesO2Location, ECSRotAxisOCM);
 	DESO2Valve.DefineMeshGroup(VC_GRP_Rot_DesO2);
+	DESO2Valve.SetVCDirectTurn(true);
 
 	MainPanelVC.AddSwitch(&ASCO2Valve1, AID_VC_ROT_ASCO2_1);
 	ASCO2Valve1.SetReference(Rot_AscO2_1Location, ECSRotAxisOCM);
 	ASCO2Valve1.DefineMeshGroup(VC_GRP_Rot_AscO2_1);
+	ASCO2Valve1.SetVCDirectTurn(true);
 
 	MainPanelVC.AddSwitch(&ASCO2Valve2, AID_VC_ROT_ASCO2_2);
 	ASCO2Valve2.SetReference(Rot_AscO2_2Location, ECSRotAxisOCM);
 	ASCO2Valve2.DefineMeshGroup(VC_GRP_Rot_AscO2_2);
+	ASCO2Valve2.SetVCDirectTurn(true);
 
 	MainPanelVC.AddSwitch(&SecEvapFlowValve, AID_VC_ROT_SECEVAPFLOW);
 	SecEvapFlowValve.SetReference(Rot_SecEvapFlowLocation, ECSRotAxisWCM);
 	SecEvapFlowValve.DefineMeshGroup(VC_GRP_Rot_SecEvapFlow);
+	// Water valves (here and ASC H2O below): detents more than 180 deg apart (0/270, 15/300, 30/270, 100/340),
+	// so turn along the painted arc instead of the shortcut.
+	SecEvapFlowValve.SetVCDirectTurn(true);
 
 	MainPanelVC.AddSwitch(&PrimEvap2FlowValve, AID_VC_ROT_PRIEVAPFLOW_2);
 	PrimEvap2FlowValve.SetReference(Rot_PriEvapFlow2Location, ECSRotAxisWCM);
 	PrimEvap2FlowValve.DefineMeshGroup(VC_GRP_Rot_PriEvapFlow2);
+	PrimEvap2FlowValve.SetVCDirectTurn(true);
 
 	MainPanelVC.AddSwitch(&DESH2OValve, AID_VC_ROT_DESH2O);
 	DESH2OValve.SetReference(Rot_DesH2OLocation, ECSRotAxisWCM);
 	DESH2OValve.DefineMeshGroup(VC_GRP_Rot_DesH2O);
+	DESH2OValve.SetVCDirectTurn(true);
 
 	MainPanelVC.AddSwitch(&PrimEvap1FlowValve, AID_VC_ROT_PRIEVAPFLOW_1);
 	PrimEvap1FlowValve.SetReference(Rot_PriEvapFlow1Location, ECSRotAxisWCM);
 	PrimEvap1FlowValve.DefineMeshGroup(VC_GRP_Rot_PriEvapFlow1);
+	PrimEvap1FlowValve.SetVCDirectTurn(true);
 
 	MainPanelVC.AddSwitch(&SuitTempValve, AID_VC_ROT_SUITTEMP);
 	SuitTempValve.SetReference(Rot_SuitTempLocation, ECSRotAxisWCM);
@@ -3665,6 +3683,7 @@ void LEM::DefineVCAnimations()
 	MainPanelVC.AddSwitch(&ASCH2OValve, AID_VC_ROT_ASCH2O);
 	ASCH2OValve.SetReference(Rot_AscH2OLocation, ECSRotAxisSSA);
 	ASCH2OValve.DefineMeshGroup(VC_GRP_Rot_AscH2O);
+	ASCH2OValve.SetVCDirectTurn(true);
 
 	MainPanelVC.AddSwitch(&SuitGasDiverterSwitch, AID_VC_SUITGASDIVERTER);
 	SuitGasDiverterSwitch.SetReference(SuitGasDiverterHandleLocation, _V(0, 0, -0.005));
