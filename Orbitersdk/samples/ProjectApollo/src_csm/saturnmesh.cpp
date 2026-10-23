@@ -1143,9 +1143,6 @@ void Saturn::SetCSMStage (VECTOR3 cg_ofs)
 	// Pointing Arrow
 	hcmPointingArrowidx = AddMesh(hcmPointingArrow, &mesh_dir);
 
-	// Optics
-	hCMVCOpticsidx = AddMesh(hCMVCOptics, &mesh_dir);
-
 	// VC
 	UpdateVC(mesh_dir);
 	seatsfoldedidx = AddMesh(hcmseatsfolded, &mesh_dir);
@@ -1722,9 +1719,6 @@ void Saturn::SetReentryMeshes() {
 	// Pointing Arrow
 	hcmPointingArrowidx = AddMesh(hcmPointingArrow, &mesh_dir);
 
-	// Optics
-	hCMVCOpticsidx = AddMesh(hCMVCOptics, &mesh_dir);
-
 	// VC
 	UpdateVC(mesh_dir);
 	seatsfoldedidx = AddMesh(hcmseatsfolded, &mesh_dir);
@@ -2016,9 +2010,6 @@ void Saturn::SetRecovery()
 	// Pointing Arrow
 	hcmPointingArrowidx = AddMesh(hcmPointingArrow, &mesh_dir);
 
-	// Optics
-	hCMVCOpticsidx = AddMesh(hCMVCOptics, &mesh_dir);
-
 	// VC
 	UpdateVC(mesh_dir);
 	seatsfoldedidx = AddMesh(hcmseatsfolded, &mesh_dir);
@@ -2031,6 +2022,9 @@ void Saturn::SetRecovery()
 	//Cue Cards Arrows
 	cmvccuecardsarrowsidx = AddMesh(hcmCueCardsArrows, &mesh_dir);
 	SetVCCueCardsArrows();
+
+	//Add CM meshes. More to be added here...
+	AddCMMeshes(mesh_dir);
 
 	if (Crewed) {
 		//old values 2.7,1.8,-1.5
@@ -2440,9 +2434,13 @@ void Saturn::AddCMMeshes(const VECTOR3 &mesh_dir)
 		probeextidx = -1;
 	}
 
-	// Optics Cover
+	// External Optics Cover
 	opticscoveridx = AddMesh(hopticscover, &mesh_dir);
 	SetOpticsCoverMesh();
+
+	// VC Optics Cover
+	hCMVCOpticsidx = AddMesh(hCMVCOptics, &mesh_dir);
+	SetVCOpticsCoverMesh();
 
 	//Reload cue cards, if required
 	CueCards.ResetCueCards();
