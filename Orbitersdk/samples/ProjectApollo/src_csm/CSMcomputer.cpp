@@ -896,13 +896,61 @@ void CMOptics::UpdateCMVCOptics()
 	sat->SetMeshVisibilityMode(sat->hCMVCOpticsidx, MESHVIS_VC);
 }
 
+// Signatures for dynamic function loading
+typedef void (__cdecl *BindCoreMethodFunc)(void **ppFnc, const char *name);
+typedef void (__cdecl *SetLabelScaleFunc)(CAMERAHANDLE hCam, float scale);
+
+// Load the function SetCustomCameraSurfaceLabelScale
+static SetLabelScaleFunc GetLabelScaleFunc() {
+	// Only load function once
+	static SetLabelScaleFunc pSetLabelScale = nullptr;
+
+	// D3D9Client.dll exports one function, which can be used to obtain function pointers to API functions
+	HMODULE hD3D9Client = GetModuleHandle("D3D9Client.dll");
+	if(hD3D9Client) {
+		BindCoreMethodFunc pBindCoreMethod = (BindCoreMethodFunc)GetProcAddress(hD3D9Client, "gcBindCoreMethod");
+		if(pBindCoreMethod) {
+			// Will unfortunately log an error if unresolved
+			pBindCoreMethod((void **)&pSetLabelScale, "SetCustomCameraSurfaceLabelScale");
+		}
+	}
+
+	return pSetLabelScale;
+}
+
 // CustomCamera for Optics
 void CMOptics::UpdateOpticsCustomCam(VECTOR3 camPos, VECTOR3 camDir, VECTOR3 camUp) {
 	gcCore* pCore = gcGetCoreInterface();
 	if (pCore) {
+		// This custom camera is also supposed to show surface labels to assist in P23 on landmarks.
+		// The flag for that is fefined here to allow builds against old Orbiter versions, where this is not part of the public API.
+		// Might replace later when builds against newer Orbiter versions are common.
+		static const unsigned int SurfaceLabelFlag = 0x0100;
+
 		// Scaling factor for the Superimposing Custom Camera best match so far is 0.905
 		// This should be normaly (1.5 * RAD) but it's not working. Earlier tests was 1.073, but this was before i matched the 3D FOV to the 2D.
-		sat->hOpticsCustomCam = pCore->SetupCustomCamera(sat->hOpticsCustomCam, oapiCameraTarget(), camPos, camDir, camUp, 0.905 * RAD, sat->srfOpticsCustomCam, CUSTOMCAM_DEFAULTS);
+		sat->hOpticsCustomCam = pCore->SetupCustomCamera(sat->hOpticsCustomCam, oapiCameraTarget(), camPos, camDir, camUp, 0.905 * RAD, sat->srfOpticsCustomCam, CUSTOMCAM_DEFAULTS | SurfaceLabelFlag);
+
+		// We dynamically load the scaling function since the Orbiter installation might not have it.
+		// This way this logic is compatible to old Orbiter versions.
+		// We also avoid to rely on the API having that function, to also allow building against older versions.
+		SetLabelScaleFunc pSetLabelScale = GetLabelScaleFunc();
+
+		if(pSetLabelScale) {
+			// Only executed if Orbiter installation supports it
+
+			// The custom camera render target is 2048x2048 and independent of the actual viewport size.
+			// To avoid downscaling of labels on smaller resolutions, add a factor scaling with height.
+			DWORD viewportWidth, viewportHeight;
+			oapiGetViewportSize(&viewportWidth, &viewportHeight);
+
+			// Change this to adjust label size 
+			const float CustomFactor = 1.5f;
+			float scale = (2048.f / viewportHeight) * CustomFactor;
+
+			pSetLabelScale(sat->hOpticsCustomCam, scale);
+		}
+		
 		if (CustomCam) {
 			pCore->CustomCameraOnOff(sat->hOpticsCustomCam, true);
 			CustomCam = false;
