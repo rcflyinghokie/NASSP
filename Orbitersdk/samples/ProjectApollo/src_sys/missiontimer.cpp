@@ -22,6 +22,8 @@
 
   **************************************************************************/
 
+// VC animation changes by Zed, made with help from Grok (xAI).
+
 
 // To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
@@ -471,7 +473,13 @@ void LEMEventTimer::CountingThroughZero(double &t)
 
 EventTimer::EventTimer(PanelSDK &p) : MissionTimer(p)
 {
-
+	animFromMin = 0;
+	animFromSec = 0;
+	animToMin = -1;
+	animToSec = -1;
+	animStartSimT = 0.0;
+	animActive = false;
+	drumRollP = 1.0;
 }
 
 EventTimer::~EventTimer()
@@ -487,58 +495,194 @@ void EventTimer::Init(e_object* a, e_object* b, e_object* ltg)
 	WireTo(ltg);
 }
 
+// Duration of the mechanical drum snap/roll after each digit change (seconds).
+static const double EVENTTIMER_DRUM_ROLL_SEC = 0.20;
+
+void EventTimer::UpdateDrumAnim()
+{
+	const double now = oapiGetSimTime();
+
+	if (animToMin < 0) {
+		// First frame: snap to current value with no roll.
+		animFromMin = minutes;
+		animFromSec = seconds;
+		animToMin = minutes;
+		animToSec = seconds;
+		animActive = false;
+		drumRollP = 1.0;
+		return;
+	}
+
+	if (minutes != animToMin || seconds != animToSec) {
+		animFromMin = animToMin;
+		animFromSec = animToSec;
+		animToMin = minutes;
+		animToSec = seconds;
+		animStartSimT = now;
+		animActive = true;
+	}
+
+	if (animActive) {
+		double p = (now - animStartSimT) / EVENTTIMER_DRUM_ROLL_SEC;
+		if (p >= 1.0) {
+			p = 1.0;
+			animActive = false;
+		}
+		if (p < 0.0) {
+			p = 0.0;
+		}
+		// Smoothstep for a slightly mechanical ease-in/out.
+		drumRollP = p * p * (3.0 - 2.0 * p);
+	} else {
+		drumRollP = 1.0;
+	}
+}
+
+void EventTimer::BltDrumDigitVert(SURFHANDLE surf, SURFHANDLE digits, int dx, int dy,
+	int fromDigit, int toDigit, double p, int digitW, int digitH, int srcStepX, bool newFromBottom) const
+{
+	fromDigit %= 10;
+	toDigit %= 10;
+	if (fromDigit < 0) fromDigit += 10;
+	if (toDigit < 0) toDigit += 10;
+
+	if (fromDigit == toDigit || p <= 0.0) {
+		oapiBlt(surf, digits, dx, dy, srcStepX * fromDigit, 0, digitW, digitH);
+		return;
+	}
+	if (p >= 1.0) {
+		oapiBlt(surf, digits, dx, dy, srcStepX * toDigit, 0, digitW, digitH);
+		return;
+	}
+
+	int off = (int)(digitH * p + 0.5);
+	if (off <= 0) {
+		oapiBlt(surf, digits, dx, dy, srcStepX * fromDigit, 0, digitW, digitH);
+		return;
+	}
+	if (off >= digitH) {
+		oapiBlt(surf, digits, dx, dy, srcStepX * toDigit, 0, digitW, digitH);
+		return;
+	}
+
+	if (newFromBottom) {
+		// Count-up: old digit exits upward, new digit enters from below.
+		oapiBlt(surf, digits, dx, dy, srcStepX * fromDigit, off, digitW, digitH - off);
+		oapiBlt(surf, digits, dx, dy + (digitH - off), srcStepX * toDigit, 0, digitW, off);
+	} else {
+		// Count-down: old digit exits downward, new digit enters from above.
+		oapiBlt(surf, digits, dx, dy + off, srcStepX * fromDigit, 0, digitW, digitH - off);
+		oapiBlt(surf, digits, dx, dy, srcStepX * toDigit, digitH - off, digitW, off);
+	}
+}
+
+void EventTimer::BltDrumDigitHorz(SURFHANDLE surf, SURFHANDLE digits, int dx, int dy,
+	int fromDigit, int toDigit, double p, int digitW, int digitH, int srcStepX, bool newFromBottom) const
+{
+	// Used by Render90 where the digit's "vertical" axis is mapped to dest X.
+	fromDigit %= 10;
+	toDigit %= 10;
+	if (fromDigit < 0) fromDigit += 10;
+	if (toDigit < 0) toDigit += 10;
+
+	if (fromDigit == toDigit || p <= 0.0) {
+		oapiBlt(surf, digits, dx, dy, srcStepX * fromDigit, 0, digitW, digitH);
+		return;
+	}
+	if (p >= 1.0) {
+		oapiBlt(surf, digits, dx, dy, srcStepX * toDigit, 0, digitW, digitH);
+		return;
+	}
+
+	int off = (int)(digitW * p + 0.5);
+	if (off <= 0) {
+		oapiBlt(surf, digits, dx, dy, srcStepX * fromDigit, 0, digitW, digitH);
+		return;
+	}
+	if (off >= digitW) {
+		oapiBlt(surf, digits, dx, dy, srcStepX * toDigit, 0, digitW, digitH);
+		return;
+	}
+
+	if (newFromBottom) {
+		// old exits toward +X (panel "up"), new enters from -X side of cell
+		oapiBlt(surf, digits, dx, dy, srcStepX * fromDigit + off, 0, digitW - off, digitH);
+		oapiBlt(surf, digits, dx + (digitW - off), dy, srcStepX * toDigit, 0, off, digitH);
+	} else {
+		oapiBlt(surf, digits, dx + off, dy, srcStepX * fromDigit, 0, digitW - off, digitH);
+		oapiBlt(surf, digits, dx, dy, srcStepX * toDigit + (digitW - off), 0, off, digitH);
+	}
+}
+
 void EventTimer::Render(SURFHANDLE surf, SURFHANDLE digits, int TexMul)
 {
 	//
-	// Digits are 13x18.
+	// Digits are 13x18 on a horizontal drum strip (event_timer.dds).
+	// Animate a stepped vertical odometer-style roll on each second tick.
 	//
 
-	int Curdigit, Curdigit2;
+	UpdateDrumAnim();
 
-	// Minute display on two digit
-	Curdigit = minutes / 10;
-	Curdigit2 = minutes / 100;
-	oapiBlt(surf, digits, 0, 0, 13*TexMul * (Curdigit-(Curdigit2*10)), 0, 13*TexMul, 18*TexMul);
+	const int DW = 13 * TexMul;
+	const int DH = 18 * TexMul;
+	const int stepX = 13 * TexMul;
+	const bool newFromBottom = (CountUp != TIMER_COUNT_DOWN);
+	const double p = drumRollP;
 
-	Curdigit = minutes;
-	Curdigit2 = minutes / 10;
-	oapiBlt(surf, digits, 13*TexMul, 0, 13*TexMul * (Curdigit-(Curdigit2*10)), 0, 13*TexMul, 18*TexMul);
+	const int fromDigits[4] = {
+		(animFromMin / 10) % 10,
+		animFromMin % 10,
+		(animFromSec / 10) % 10,
+		animFromSec % 10
+	};
+	const int toDigits[4] = {
+		(animToMin / 10) % 10,
+		animToMin % 10,
+		(animToSec / 10) % 10,
+		animToSec % 10
+	};
+	const int destX[4] = { 0, 13 * TexMul, 45 * TexMul, 58 * TexMul };
 
-	// second display on two digit
-	Curdigit = seconds / 10;
-	Curdigit2 = seconds / 100;
-	oapiBlt(surf, digits, 45*TexMul, 0, 13*TexMul * (Curdigit-(Curdigit2*10)), 0, 13*TexMul, 18*TexMul);
-
-	Curdigit = seconds;
-	Curdigit2 = seconds/10;
-	oapiBlt(surf, digits, 58*TexMul, 0, 13*TexMul * (Curdigit-(Curdigit2*10)), 0, 13*TexMul, 18*TexMul);
+	for (int i = 0; i < 4; ++i) {
+		BltDrumDigitVert(surf, digits, destX[i], 0,
+			fromDigits[i], toDigits[i], p, DW, DH, stepX, newFromBottom);
+	}
 }
 
 void EventTimer::Render90(SURFHANDLE surf, SURFHANDLE digits, int TexMul)
 {
 	//
-	// Digits are 13x18.
+	// Rotated drum strip (event_timer90.dds). Digit cells are 18x13 with a
+	// 19-pixel source stride. Panel 306 mounts this tall, so drum roll is
+	// along dest X (the digit's vertical axis after rotation).
 	//
 
-	int Curdigit, Curdigit2;
+	UpdateDrumAnim();
 
-	// Minute display on two digit
-	Curdigit = minutes / 10;
-	Curdigit2 = minutes / 100;
-	oapiBlt(surf, digits, 0, 0, 19*TexMul * (Curdigit - (Curdigit2 * 10)), 0, 18*TexMul, 13*TexMul);
+	const int DW = 18 * TexMul;
+	const int DH = 13 * TexMul;
+	const int stepX = 19 * TexMul;
+	const bool newFromBottom = (CountUp != TIMER_COUNT_DOWN);
+	const double p = drumRollP;
 
-	Curdigit = minutes;
-	Curdigit2 = minutes / 10;
-	oapiBlt(surf, digits, 0, 13*TexMul, 19*TexMul * (Curdigit - (Curdigit2 * 10)), 0, 18*TexMul, 13*TexMul);
+	const int fromDigits[4] = {
+		(animFromMin / 10) % 10,
+		animFromMin % 10,
+		(animFromSec / 10) % 10,
+		animFromSec % 10
+	};
+	const int toDigits[4] = {
+		(animToMin / 10) % 10,
+		animToMin % 10,
+		(animToSec / 10) % 10,
+		animToSec % 10
+	};
+	const int destY[4] = { 0, 13 * TexMul, 45 * TexMul, 58 * TexMul };
 
-	// second display on two digit
-	Curdigit = seconds / 10;
-	Curdigit2 = seconds / 100;
-	oapiBlt(surf, digits, 0, 45*TexMul, 19*TexMul * (Curdigit - (Curdigit2 * 10)), 0, 18*TexMul, 13*TexMul);
-
-	Curdigit = seconds;
-	Curdigit2 = seconds / 10;
-	oapiBlt(surf, digits, 0, 58*TexMul, 19*TexMul * (Curdigit - (Curdigit2 * 10)), 0, 18*TexMul, 13*TexMul);
+	for (int i = 0; i < 4; ++i) {
+		BltDrumDigitHorz(surf, digits, 0, destY[i],
+			fromDigits[i], toDigits[i], p, DW, DH, stepX, newFromBottom);
+	}
 }
 
 void EventTimer::CountingThroughZero(double &t)

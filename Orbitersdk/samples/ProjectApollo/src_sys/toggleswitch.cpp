@@ -25,6 +25,8 @@
 
   **************************************************************************/
 
+// VC animation changes by Zed, made with help from Grok (xAI).
+
 // To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 
@@ -41,6 +43,8 @@
 #include "checklistController.h"
 
 #include "tracer.h"
+
+#include <set>
 
 //
 // Generic panel switch item.
@@ -197,6 +201,10 @@ TwoPositionSwitch::TwoPositionSwitch() {
 	resetTime = 0;
 
 	anim_switch = NULL;
+	togAnimState = 0.0;
+	togAnimFrom = 0.0;
+	togAnimStartT = 0.0;
+	togAnimTarget = -1;
 	grpIndex = 0;
 }
 
@@ -411,19 +419,86 @@ void TwoPositionSwitch::DrawSwitchVC(int id, int event, SURFHANDLE surf)
 {
 	if (!bHasAnimations) return;
 
-	if (state == TOGGLESWITCH_UP) {
-		OurVessel->SetAnimation(anim_switch, 1.0);
-	}
-	else
-	{
-		OurVessel->SetAnimation(anim_switch, 0.0);
+	// Keep mesh in sync on redraw; motion itself is driven in OnPostStep.
+	if (togAnimTarget < 0) {
+		SyncToggleAnimation();
+	} else {
+		OurVessel->SetAnimation(anim_switch, togAnimState);
 	}
 }
+
 
 void TwoPositionSwitch::DefineMeshGroup(UINT _grpIndex)
 {
 	bHasMeshGroup = true;
 	grpIndex = _grpIndex;
+}
+
+// Duration of VC discrete toggle flip (seconds).
+static const double TOGGLE_ANIM_SEC = 0.0975;
+
+double TwoPositionSwitch::SwitchStateToAnim() const
+{
+	return (state == TOGGLESWITCH_UP) ? 1.0 : 0.0;
+}
+
+void TwoPositionSwitch::SyncToggleAnimation()
+{
+	const double target = SwitchStateToAnim();
+	togAnimState = target;
+	togAnimFrom = target;
+	togAnimStartT = 0.0;
+	togAnimTarget = state;
+	if (OurVessel && bHasAnimations) {
+		OurVessel->SetAnimation(anim_switch, togAnimState);
+	}
+}
+
+void TwoPositionSwitch::UpdateToggleAnimation(double /*dt*/)
+{
+	if (!OurVessel || !bHasAnimations) {
+		return;
+	}
+
+	const int want = state;
+	const double dest = SwitchStateToAnim();
+	const double now = oapiGetSimTime();
+
+	// First call (or after load): snap to logical position.
+	if (togAnimTarget < 0) {
+		SyncToggleAnimation();
+		return;
+	}
+
+	// New position requested: reverse or restart from current visual.
+	if (want != togAnimTarget) {
+		togAnimFrom = togAnimState;
+		togAnimTarget = want;
+		togAnimStartT = now;
+	}
+
+	if (togAnimState == dest && togAnimFrom == dest) {
+		OurVessel->SetAnimation(anim_switch, togAnimState);
+		return;
+	}
+
+	double p = (now - togAnimStartT) / TOGGLE_ANIM_SEC;
+	if (p >= 1.0) {
+		p = 1.0;
+		togAnimFrom = dest;
+		togAnimState = dest;
+	} else {
+		if (p < 0.0) p = 0.0;
+		// Smoothstep ease-in/out between discrete positions.
+		const double s = p * p * (3.0 - 2.0 * p);
+		togAnimState = togAnimFrom + (dest - togAnimFrom) * s;
+	}
+	OurVessel->SetAnimation(anim_switch, togAnimState);
+}
+
+void TwoPositionSwitch::OnPostStep(double SimT, double DeltaT, double MJD)
+{
+	UpdateToggleAnimation(DeltaT);
 }
 
 //
@@ -464,6 +539,7 @@ void TwoPositionSwitch::LoadState(char *line)
 	sscanf(line, "%s %i %u", buffer, &st, &f);
 	if (!strnicmp(buffer, name, strlen(name))) {
 		state = st;
+		togAnimTarget = -1; // snap visual on scenario load
 		SetFlags(f);
 	}
 }
@@ -614,18 +690,21 @@ void ThreePosSwitch::DrawSwitchVC(int id, int event, SURFHANDLE surf)
 {
 	if (!bHasAnimations) return;
 
-	if (IsUp()) {
-		OurVessel->SetAnimation(anim_switch, 1.0);
-	}
-	else if (IsCenter())
-	{
-		OurVessel->SetAnimation(anim_switch, 0.5);
-	}
-	else
-	{
-		OurVessel->SetAnimation(anim_switch, 0.0);
+	// Keep mesh in sync on redraw; motion itself is driven in OnPostStep.
+	if (togAnimTarget < 0) {
+		SyncToggleAnimation();
+	} else {
+		OurVessel->SetAnimation(anim_switch, togAnimState);
 	}
 }
+
+double ThreePosSwitch::SwitchStateToAnim() const
+{
+	if (state == THREEPOSSWITCH_UP) return 1.0;
+	if (state == THREEPOSSWITCH_CENTER) return 0.5;
+	return 0.0;
+}
+
 
 bool ThreePosSwitch::SwitchTo(int newState, bool dontspring)
 
@@ -1712,6 +1791,10 @@ SwitchCover::SwitchCover()
 	coverreference = _V(0, 0, 0);
 	coverdir = _V(0, 0, 0);
 	coverrotation = 0.0;
+	coverAnimState = 0.0;
+	coverAnimFrom = 0.0;
+	coverAnimStartT = 0.0;
+	coverAnimTarget = -1;
 }
 
 SwitchCover::~SwitchCover()
@@ -1738,6 +1821,63 @@ void SwitchCover::SetCoverRotationAngle(const double rot)
 const double& SwitchCover::GetCoverRotation() const
 {
 	return coverrotation;
+}
+
+// Duration of VC switch-cover open/close animation (seconds).
+static const double SWITCHCOVER_ANIM_SEC = 0.18;
+
+void SwitchCover::SyncCoverAnimation(VESSEL *vessel, int guardOpen)
+{
+	const double target = guardOpen ? 1.0 : 0.0;
+	coverAnimState = target;
+	coverAnimFrom = target;
+	coverAnimStartT = 0.0;
+	coverAnimTarget = guardOpen ? 1 : 0;
+	if (vessel && guardAnim != (UINT)-1) {
+		vessel->SetAnimation(guardAnim, coverAnimState);
+	}
+}
+
+void SwitchCover::UpdateCoverAnimation(VESSEL *vessel, int guardOpen, double /*dt*/)
+{
+	if (!vessel || guardAnim == (UINT)-1) {
+		return;
+	}
+
+	const int want = guardOpen ? 1 : 0;
+	const double dest = want ? 1.0 : 0.0;
+	const double now = oapiGetSimTime();
+
+	// First call (or after load before any step): snap to logical state.
+	if (coverAnimTarget < 0) {
+		SyncCoverAnimation(vessel, guardOpen);
+		return;
+	}
+
+	// New open/close requested: reverse or restart from current visual position.
+	if (want != coverAnimTarget) {
+		coverAnimFrom = coverAnimState;
+		coverAnimTarget = want;
+		coverAnimStartT = now;
+	}
+
+	if (coverAnimState == dest && coverAnimFrom == dest) {
+		vessel->SetAnimation(guardAnim, coverAnimState);
+		return;
+	}
+
+	double p = (now - coverAnimStartT) / SWITCHCOVER_ANIM_SEC;
+	if (p >= 1.0) {
+		p = 1.0;
+		coverAnimFrom = dest;
+	}
+	if (p < 0.0) {
+		p = 0.0;
+	}
+	// Smoothstep ease-in/out for a slightly mechanical hinge feel.
+	const double s = p * p * (3.0 - 2.0 * p);
+	coverAnimState = coverAnimFrom + (dest - coverAnimFrom) * s;
+	vessel->SetAnimation(guardAnim, coverAnimState);
 }
 
 //
@@ -1812,13 +1952,19 @@ void GuardedToggleSwitch::DrawSwitchVC(int id, int event, SURFHANDLE surf) {
 	ToggleSwitch::DrawSwitchVC(id, event, surf);
 
 	if (guardAnim != -1) {
-		if (guardState) {
-			OurVessel->SetAnimation(guardAnim, 1.0);
-		}
-		else {
-			OurVessel->SetAnimation(guardAnim, 0.0);
+		// Keep mesh in sync on redraw; motion itself is driven in OnPostStep.
+		if (coverAnimTarget < 0) {
+			SyncCoverAnimation(OurVessel, guardState);
+		} else {
+			OurVessel->SetAnimation(guardAnim, coverAnimState);
 		}
 	}
+}
+
+void GuardedToggleSwitch::OnPostStep(double SimT, double DeltaT, double MJD)
+{
+	UpdateToggleAnimation(DeltaT);
+	UpdateCoverAnimation(OurVessel, guardState, DeltaT);
 }
 
 void GuardedToggleSwitch::DrawFlash(SURFHANDLE DrawSurface)
@@ -1948,6 +2094,8 @@ void GuardedToggleSwitch::LoadState(char *line) {
 	if (!strnicmp(buffer, name, strlen(name))) {
 		state = st;
 		guardState = gst;
+		coverAnimTarget = -1;
+		togAnimTarget = -1;
 	}
 }
 
@@ -2074,13 +2222,18 @@ void GuardedPushSwitch::DrawSwitchVC(int id, int event, SURFHANDLE surf) {
 	PushSwitch::DrawSwitchVC(id, event, surf);
 
 	if (guardAnim != -1) {
-		if (guardState) {
-			OurVessel->SetAnimation(guardAnim, 1.0);
-		}
-		else {
-			OurVessel->SetAnimation(guardAnim, 0.0);
+		if (coverAnimTarget < 0) {
+			SyncCoverAnimation(OurVessel, guardState);
+		} else {
+			OurVessel->SetAnimation(guardAnim, coverAnimState);
 		}
 	}
+}
+
+void GuardedPushSwitch::OnPostStep(double SimT, double DeltaT, double MJD)
+{
+	UpdateToggleAnimation(DeltaT);
+	UpdateCoverAnimation(OurVessel, guardState, DeltaT);
 }
 
 void GuardedPushSwitch::DrawFlash(SURFHANDLE DrawSurface)
@@ -2174,6 +2327,8 @@ void GuardedPushSwitch::LoadState(char *line) {
 	if (!strnicmp(buffer, name, strlen(name))) {
 		state = st;
 		guardState = gst;
+		coverAnimTarget = -1;
+		togAnimTarget = -1;
 		lit = (l != 0);
 	}
 }
@@ -2286,13 +2441,18 @@ void GuardedThreePosSwitch::DrawSwitchVC(int id, int event, SURFHANDLE surf) {
 	ThreePosSwitch::DrawSwitchVC(id, event, surf);
 
 	if (guardAnim != -1) {
-		if (guardState) {
-			OurVessel->SetAnimation(guardAnim, 1.0);
-		}
-		else {
-			OurVessel->SetAnimation(guardAnim, 0.0);
+		if (coverAnimTarget < 0) {
+			SyncCoverAnimation(OurVessel, guardState);
+		} else {
+			OurVessel->SetAnimation(guardAnim, coverAnimState);
 		}
 	}
+}
+
+void GuardedThreePosSwitch::OnPostStep(double SimT, double DeltaT, double MJD)
+{
+	UpdateToggleAnimation(DeltaT);
+	UpdateCoverAnimation(OurVessel, guardState, DeltaT);
 }
 
 void GuardedThreePosSwitch::Guard() {
@@ -2370,6 +2530,8 @@ void GuardedThreePosSwitch::LoadState(char *line) {
 	if (!strnicmp(buffer, name, strlen(name))) {
 		state = st;
 		guardState = gst;
+		coverAnimTarget = -1;
+		togAnimTarget = -1;
 	}
 }
 
@@ -2878,6 +3040,27 @@ void ContinuousRotationalSwitch::ChangeSwitchState(double px)
 // Rotational Switch
 //
 
+// Rotational switches whose VC mesh turns directly between detent angles
+// (see RotationalSwitch::SetVCDirectTurn). Kept outside the class so that
+// RotationalSwitch's memory layout stays the same.
+static std::set<const RotationalSwitch*> &VCDirectTurnSwitches()
+{
+	// Intentionally never freed: switch destructors may run late at DLL unload.
+	static std::set<const RotationalSwitch*> *s = new std::set<const RotationalSwitch*>;
+	return *s;
+}
+
+void RotationalSwitch::SetVCDirectTurn(bool on)
+{
+	if (on) VCDirectTurnSwitches().insert(this);
+	else VCDirectTurnSwitches().erase(this);
+}
+
+bool RotationalSwitch::IsVCDirectTurn()
+{
+	return VCDirectTurnSwitches().count(this) != 0;
+}
+
 RotationalSwitch::RotationalSwitch() {
 
 	x = 0;
@@ -2890,6 +3073,12 @@ RotationalSwitch::RotationalSwitch() {
 	soundEnabled = true;
 	maxState = -1;
 	Wraparound = false;
+
+	rotAnimState = 0.0;
+	rotAnimFrom = 0.0;
+	rotAnimDest = 0.0;
+	rotAnimStartT = 0.0;
+	rotAnimTarget = -1;
 
 	anim_switch = NULL;
 	pswitchrot = NULL;
@@ -2998,6 +3187,7 @@ RotationalSwitch::RotationalSwitch() {
 }
 
 RotationalSwitch::~RotationalSwitch() {
+	VCDirectTurnSwitches().erase(this);
 	if (pswitchrot)
 		delete pswitchrot;
 	DeletePositions();
@@ -3178,6 +3368,7 @@ void RotationalSwitch::LoadState(char *line) {
 	sscanf(line, "%s %i", buffer, &val); 
 	if (!strnicmp(buffer, name, strlen(name))) {
 		SetValue(val);
+		rotAnimTarget = -1; // snap visual on scenario load
 	}
 }
 
@@ -3215,11 +3406,94 @@ void RotationalSwitch::DrawSwitchVC(int id, int event, SURFHANDLE drawSurface)
 {
 	if (!bHasAnimations) return;
 
-	double state = 0;
+	// Keep mesh in sync on redraw; motion itself is driven in OnPostStep.
+	if (rotAnimTarget < 0) {
+		SyncRotaryAnimation();
+	} else {
+		OurVessel->SetAnimation(anim_switch, NormRotAnim01(rotAnimState));
+	}
+}
 
-	if (position) state = position->GetAngle();
+// Duration of VC rotary detent-to-detent turn (seconds).
+static const double ROTARY_ANIM_SEC = 0.20;
 
-	OurVessel->SetAnimation(anim_switch, state / 360);
+double RotationalSwitch::NormRotAnim01(double s)
+{
+	s = fmod(s, 1.0);
+	if (s < 0.0) s += 1.0;
+	return s;
+}
+
+void RotationalSwitch::SyncRotaryAnimation()
+{
+	double ang = 0.0;
+	if (position) ang = position->GetAngle();
+	rotAnimState = ang / 360.0;
+	rotAnimFrom = rotAnimState;
+	rotAnimDest = rotAnimState;
+	rotAnimStartT = 0.0;
+	rotAnimTarget = GetState();
+	if (OurVessel && bHasAnimations) {
+		OurVessel->SetAnimation(anim_switch, NormRotAnim01(rotAnimState));
+	}
+}
+
+void RotationalSwitch::UpdateRotaryAnimation(double /*dt*/)
+{
+	if (!OurVessel || !bHasAnimations) {
+		return;
+	}
+
+	const int want = GetState();
+	const double now = oapiGetSimTime();
+
+	// First call (or after load): snap to logical detent.
+	if (rotAnimTarget < 0) {
+		SyncRotaryAnimation();
+		return;
+	}
+
+	// New detent requested: reverse or restart from current visual (shortest path).
+	if (want != rotAnimTarget) {
+		const bool direct = IsVCDirectTurn();
+		// Direct-turn knobs stay within their detent angle range, so no wrapping.
+		double cur = direct ? rotAnimState : NormRotAnim01(rotAnimState);
+		double dest = 0.0;
+		if (position) dest = position->GetAngle() / 360.0;
+		double diff = dest - cur;
+		if (!direct) {
+			if (diff > 0.5) diff -= 1.0;
+			if (diff < -0.5) diff += 1.0;
+		}
+		rotAnimFrom = cur;
+		rotAnimDest = cur + diff;
+		rotAnimState = cur;
+		rotAnimTarget = want;
+		rotAnimStartT = now;
+	}
+
+	if (rotAnimState == rotAnimDest && rotAnimFrom == rotAnimDest) {
+		OurVessel->SetAnimation(anim_switch, NormRotAnim01(rotAnimState));
+		return;
+	}
+
+	double p = (now - rotAnimStartT) / ROTARY_ANIM_SEC;
+	if (p >= 1.0) {
+		p = 1.0;
+		rotAnimFrom = rotAnimDest;
+		rotAnimState = rotAnimDest;
+	} else {
+		if (p < 0.0) p = 0.0;
+		// Smoothstep ease-in/out between detents.
+		const double s = p * p * (3.0 - 2.0 * p);
+		rotAnimState = rotAnimFrom + (rotAnimDest - rotAnimFrom) * s;
+	}
+	OurVessel->SetAnimation(anim_switch, NormRotAnim01(rotAnimState));
+}
+
+void RotationalSwitch::OnPostStep(double SimT, double DeltaT, double MJD)
+{
+	UpdateRotaryAnimation(DeltaT);
 }
 
 bool RotationalSwitch::CheckMouseClickVC(int event, VECTOR3 &p) {
@@ -3448,6 +3722,11 @@ ThumbwheelSwitch::ThumbwheelSwitch() {
 	anim_switch = 0;
 
 	RotationRange = RAD * 324;
+
+	twAnimState = 0.0;
+	twAnimFrom = 0.0;
+	twAnimStartT = 0.0;
+	twAnimTarget = -1;
 }
 
 ThumbwheelSwitch::~ThumbwheelSwitch() {
@@ -3617,8 +3896,82 @@ void ThumbwheelSwitch::DrawSwitch(SURFHANDLE DrawSurface) {
 
 void ThumbwheelSwitch::DrawSwitchVC(int id, int event, SURFHANDLE drawSurface) {
 
-	double s = ((double)state) / ((double)maxState);
-	OurVessel->SetAnimation(anim_switch, s);
+	if (!bHasAnimations) return;
+
+	// Keep mesh in sync on redraw; motion itself is driven in OnPostStep.
+	if (twAnimTarget < 0) {
+		SyncThumbwheelAnimation();
+	} else {
+		OurVessel->SetAnimation(anim_switch, twAnimState);
+	}
+}
+
+// Duration of VC discrete thumbwheel detent-to-detent turn (seconds).
+static const double THUMBWHEEL_ANIM_SEC = 0.20;
+
+double ThumbwheelSwitch::StateToAnim01() const
+{
+	if (maxState <= 0) return 0.0;
+	return ((double)state) / ((double)maxState);
+}
+
+void ThumbwheelSwitch::SyncThumbwheelAnimation()
+{
+	const double target = StateToAnim01();
+	twAnimState = target;
+	twAnimFrom = target;
+	twAnimStartT = 0.0;
+	twAnimTarget = state;
+	if (OurVessel && bHasAnimations) {
+		OurVessel->SetAnimation(anim_switch, twAnimState);
+	}
+}
+
+void ThumbwheelSwitch::UpdateThumbwheelAnimation(double /*dt*/)
+{
+	if (!OurVessel || !bHasAnimations) {
+		return;
+	}
+
+	const int want = state;
+	const double dest = StateToAnim01();
+	const double now = oapiGetSimTime();
+
+	// First call (or after load): snap to logical detent.
+	if (twAnimTarget < 0) {
+		SyncThumbwheelAnimation();
+		return;
+	}
+
+	// New detent requested: reverse or restart from current visual.
+	if (want != twAnimTarget) {
+		twAnimFrom = twAnimState;
+		twAnimTarget = want;
+		twAnimStartT = now;
+	}
+
+	if (twAnimState == dest && twAnimFrom == dest) {
+		OurVessel->SetAnimation(anim_switch, twAnimState);
+		return;
+	}
+
+	double p = (now - twAnimStartT) / THUMBWHEEL_ANIM_SEC;
+	if (p >= 1.0) {
+		p = 1.0;
+		twAnimFrom = dest;
+		twAnimState = dest;
+	} else {
+		if (p < 0.0) p = 0.0;
+		// Smoothstep ease-in/out between detents.
+		const double s = p * p * (3.0 - 2.0 * p);
+		twAnimState = twAnimFrom + (dest - twAnimFrom) * s;
+	}
+	OurVessel->SetAnimation(anim_switch, twAnimState);
+}
+
+void ThumbwheelSwitch::OnPostStep(double SimT, double DeltaT, double MJD)
+{
+	UpdateThumbwheelAnimation(DeltaT);
 }
 
 void ThumbwheelSwitch::DrawFlash(SURFHANDLE DrawSurface)
@@ -3644,6 +3997,7 @@ void ThumbwheelSwitch::LoadState(char *line) {
 	sscanf(line, "%s %i", buffer, &st); 
 	if (!strnicmp(buffer, name, strlen(name))) {
 		state = st;
+		twAnimTarget = -1; // snap visual on scenario load
 	}
 }
 
