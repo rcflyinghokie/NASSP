@@ -791,7 +791,7 @@ void Saturn::initSaturn()
 	NextMissionEventTime = 0;
 
 	//
-	// No point trying to destroy things if we haven't launched.
+	// No point trying to destroy things if we haven't launched... unless we had a pad abort
 	//
 
 	NextDestroyCheckTime = 0;
@@ -3327,6 +3327,12 @@ void Saturn::SetStage(int s)
 	case CM_STAGE:
 		eventControl.CM_SM_SEPARATION_DONE = MissionTime;
 		break;
+	}
+
+	// Start doing checks if obsolete stages should be deleted in the case of a pad abort
+	if (NextDestroyCheckTime == 0.0 && stage >= CM_STAGE)
+	{
+		NextDestroyCheckTime = SimulatedTime;
 	}
 
 	//
