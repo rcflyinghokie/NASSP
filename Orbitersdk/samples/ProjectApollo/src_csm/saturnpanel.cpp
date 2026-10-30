@@ -3946,11 +3946,7 @@ void Saturn::PanelSwitchToggled(TwoPositionSwitch *s) {
 		else
 			*pump = SP_VALVE_NONE;
 
-	} else if (s == &SPSTestSwitch) {
-		SPSPropellant.SPSTestSwitchToggled();
-	}
-
-	else if (s == &SPSLineHTRSSwitch) {
+	} else if (s == &SPSLineHTRSSwitch) {
 
 	if (s->IsUp()) {
 		SPSFuelSumpTankHeaterA->SetPumpOn();
@@ -4032,7 +4028,7 @@ void Saturn::PanelIndicatorSwitchStateRequested(IndicatorSwitch *s) {
 	} else if (s == &FuelCellRadTempIndicator) {
 		FuelCellStatus fc;
 		GetFuelCellStatus(FuelCellIndicatorsSwitch.GetState() + 1, fc);
-		if (fc.CoolingTempF < -30.0 || stage > CSM_LEM_STAGE)	// indication if temperature below -30°F
+		if (fc.CoolingTempF < -30.0 || stage > CSM_LEM_STAGE)	// indication if temperature below -30ï¿½F
 			FuelCellRadTempIndicator.SetState(0);
 		else
 			FuelCellRadTempIndicator.SetState(1);
