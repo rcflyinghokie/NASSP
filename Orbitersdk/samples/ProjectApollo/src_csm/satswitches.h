@@ -22,6 +22,8 @@
 
   **************************************************************************/
 
+// VC animation changes by Zed, made with help from Grok (xAI).
+
 class Saturn;
 class DCBusController;
 class BMAG;
@@ -813,11 +815,15 @@ public:
 	void SetReference(const VECTOR3& ref);
 	void DefineMeshGroup(UINT _grp);
 	void DrawSwitchVC(int id, int event, SURFHANDLE surf);
+	void OnPostStep(double SimT, double DeltaT, double MJD);
 
 protected:
 	int position;
 
 	const VECTOR3& GetReference() const;
+	static double PositionToAnim01(int pos);
+	void SyncDvSetAnimation();
+	void UpdateDvSetAnimation(double /*dt*/);
 
 	VECTOR3 reference;
 	VECTOR3 dir;
@@ -829,6 +835,12 @@ protected:
 
 	Saturn *sat;
 	Sound &ClickSound;
+
+	// VC mesh smooth 5-pos throw (visual only; logic stays instant)
+	double dvAnimState;
+	double dvAnimFrom;
+	double dvAnimStartT;
+	int dvAnimTarget; // -1 uninit/snap; else logical position
 };
 
 class SaturnCabinPressureReliefLever : public ThumbwheelSwitch
@@ -840,7 +852,7 @@ public:
 class SaturnGuardedCabinPressureReliefLever: public SaturnCabinPressureReliefLever {
 
 public:
-	SaturnGuardedCabinPressureReliefLever() { guardState = 0; guardAnim = -1; };
+	SaturnGuardedCabinPressureReliefLever();
 	virtual ~SaturnGuardedCabinPressureReliefLever() {};
 
 	void InitGuard(SURFHANDLE surf, SoundLib *soundlib);
@@ -853,6 +865,7 @@ public:
 	void Guard();
 	void SetState(int value);
 	void DefineVCAnimations(UINT vc_idx);
+	void OnPostStep(double SimT, double DeltaT, double MJD);
 
 protected:
 	int guardState;
@@ -860,6 +873,15 @@ protected:
 
 	Sound guardClick;
 	SURFHANDLE guardSurface;
+
+	// VC guard mesh smooth open/close (visual only)
+	double guardAnimState;
+	double guardAnimFrom;
+	double guardAnimStartT;
+	int guardAnimTarget; // -1 uninit/snap; 0 closed; 1 open
+
+	void SyncGuardAnimation();
+	void UpdateGuardAnimation(double /*dt*/);
 };
 
 class OpticsHandcontrollerSwitch: public HandcontrollerSwitch {
