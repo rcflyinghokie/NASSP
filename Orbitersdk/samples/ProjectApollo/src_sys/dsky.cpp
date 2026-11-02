@@ -1567,7 +1567,7 @@ void DSKY::SendNetworkPacketDSKY()
 		char numLvl[256] = "";
 		char intLvl[256] = "";
 
-		sprintf(anunLvl, "%lf", SegmentPower->Voltage() / 5.0);
+		sprintf(anunLvl, "%lf", StatusPower->Voltage() / 5.0);
 		sprintf(numLvl, "%lf", GetSegmentOutput());
 		sprintf(intLvl, "%lf", GetIntegralOutput());
 
