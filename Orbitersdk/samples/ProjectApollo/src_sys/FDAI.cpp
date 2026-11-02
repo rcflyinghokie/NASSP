@@ -22,10 +22,13 @@
 
   **************************************************************************/
 
+// VC animation changes by Zed, made with help from Grok (xAI).
+
 // To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
 #include <stdio.h>
+#include <math.h>
 
 #include "nasspdefs.h"
 
@@ -45,8 +48,13 @@ FDAI::FDAI() {
 	lastRates = _V(0, 0, 0);
 	lastErrors = _V(0, 0, 0);
 	lastPaintAtt = _V(0, 0, 0);
+	errorNeedleTarget = _V(0, 0, 0);
+	rateNeedleTarget = _V(0, 0, 0);
+	errorNeedleDisp = _V(0, 0, 0);
+	rateNeedleDisp = _V(0, 0, 0);
 
 	lastPaintTime = -1;
+	lastNeedleSysTime = -1;
 	LM_FDAI = false;
 	DCSource = NULL;
 	ACSource = NULL;
@@ -479,6 +487,7 @@ void FDAI::PaintMe(VECTOR3 rates, VECTOR3 errors, SURFHANDLE surf, SURFHANDLE hF
 void FDAI::Timestep(double simt, double simdt)
 {
 	RotateBall(simdt);
+	AdvanceNeedles(); // same sys-time clock as VC redraw; dt~0 if already advanced
 }
 
 void FDAI::SystemTimestep(double simdt) {
@@ -667,12 +676,67 @@ void FDAI::SetLMmode()
 	LM_FDAI = true;
 }
 
+void FDAI::SetNeedles(VECTOR3 rates, VECTOR3 errors)
+{
+	rateNeedleTarget = rates;
+	errorNeedleTarget = errors;
+}
+
+void FDAI::AdvanceNeedles()
+{
+	// Match FDAI ball pattern: target held from sensors, disp eases toward it
+	// every frame. Use wall/sys time so VC redraws always advance even when
+	// multiple redraws share one sim step (sim-time dt would be 0).
+	//
+	// Prior 0.08s MeterSwitch-style LPF with GAUGE_LPF_SCALAR was ineffective:
+	//   a = 1.5 * dt * 5 / 0.08 ~= 93.75*dt  ->  at 60 Hz a~=1.56 -> clamp 1.0
+	// so needles still snapped to the quantized command every frame.
+	// Explicit exp(-dt/tau) never saturates to 1 at normal frame rates.
+	static const double FDAI_NEEDLE_TAU = 0.06; // ~0.30s to ~99% (5*tau)
+
+	if (oapiGetPause())
+		return;
+
+	double t = oapiGetSysTime();
+	if (lastNeedleSysTime < 0.0) {
+		errorNeedleDisp = errorNeedleTarget;
+		rateNeedleDisp = rateNeedleTarget;
+		lastNeedleSysTime = t;
+		return;
+	}
+
+	double dt = t - lastNeedleSysTime;
+	if (dt <= 0.0)
+		return;
+	// Cap after alt-tab / hitch so we don't jump the whole settle in one frame
+	if (dt > 0.05)
+		dt = 0.05;
+	lastNeedleSysTime = t;
+
+	double alpha = 1.0 - exp(-dt / FDAI_NEEDLE_TAU);
+	if (alpha < 0.0) alpha = 0.0;
+	if (alpha > 1.0) alpha = 1.0;
+
+	errorNeedleDisp = errorNeedleDisp + (errorNeedleTarget - errorNeedleDisp) * alpha;
+	rateNeedleDisp = rateNeedleDisp + (rateNeedleTarget - rateNeedleDisp) * alpha;
+
+	// Snap residuals so we settle exactly on the pulse/command value
+	VECTOR3 eErr = errorNeedleTarget - errorNeedleDisp;
+	VECTOR3 rErr = rateNeedleTarget - rateNeedleDisp;
+	if (eErr.x * eErr.x + eErr.y * eErr.y + eErr.z * eErr.z < 1.0e-12)
+		errorNeedleDisp = errorNeedleTarget;
+	if (rErr.x * rErr.x + rErr.y * rErr.y + rErr.z * rErr.z < 1.0e-12)
+		rateNeedleDisp = rateNeedleTarget;
+}
+
 void FDAI::AnimateFDAI(VECTOR3 rates, VECTOR3 errors, UINT animR, UINT animP, UINT animY, UINT errorR, UINT errorP, UINT errorY, UINT rateR, UINT rateP, UINT rateY)
 {
 	double fdai_proc[3];
 	double rate_proc[3];
+	double err_proc[3];
+	static const double FDAI_ERROR_FULLSCALE = 46.0;
 
-	// Drive FDAI ball
+	// Drive FDAI ball from continuous now (RotateBall in Timestep)
 	fdai_proc[0] = now.y / PI2;
 	fdai_proc[1] = now.z / PI2;
 	fdai_proc[2] = now.x / PI2;
@@ -686,21 +750,27 @@ void FDAI::AnimateFDAI(VECTOR3 rates, VECTOR3 errors, UINT animR, UINT animP, UI
 	vessel->SetAnimation(animR, fdai_proc[0]);
 	vessel->SetAnimation(animP, fdai_proc[1]);
 
-	// Drive error needles
-	vessel->SetAnimation(errorR, (errors.x + 46) / 92);
-	vessel->SetAnimation(errorP, (-errors.y + 46) / 92);
-	vessel->SetAnimation(errorY, (errors.z + 46) / 92);
+	// Refresh needle targets every VC frame (CMC pulses / analog errors),
+	// then ease disp with real frame dt and drive animations from disp.
+	SetNeedles(rates, errors);
+	AdvanceNeedles();
 
-	// Drive rate needles
-	rate_proc[0] = (-rates.z + 1) / 2;
-	rate_proc[1] = (-rates.x + 1) / 2;
-	rate_proc[2] = (rates.y + 1) / 2;
-	if (rate_proc[0] < 0) rate_proc[0] = 0;
-	if (rate_proc[1] < 0) rate_proc[1] = 0;
-	if (rate_proc[2] < 0) rate_proc[2] = 0;
-	if (rate_proc[0] > 1) rate_proc[0] = 1;
-	if (rate_proc[1] > 1) rate_proc[1] = 1;
-	if (rate_proc[2] > 1) rate_proc[2] = 1;
+	err_proc[0] = (errorNeedleDisp.x + FDAI_ERROR_FULLSCALE) / (2.0 * FDAI_ERROR_FULLSCALE);
+	err_proc[1] = (-errorNeedleDisp.y + FDAI_ERROR_FULLSCALE) / (2.0 * FDAI_ERROR_FULLSCALE);
+	err_proc[2] = (errorNeedleDisp.z + FDAI_ERROR_FULLSCALE) / (2.0 * FDAI_ERROR_FULLSCALE);
+	if (err_proc[0] < 0.0) err_proc[0] = 0.0; else if (err_proc[0] > 1.0) err_proc[0] = 1.0;
+	if (err_proc[1] < 0.0) err_proc[1] = 0.0; else if (err_proc[1] > 1.0) err_proc[1] = 1.0;
+	if (err_proc[2] < 0.0) err_proc[2] = 0.0; else if (err_proc[2] > 1.0) err_proc[2] = 1.0;
+	vessel->SetAnimation(errorR, err_proc[0]);
+	vessel->SetAnimation(errorP, err_proc[1]);
+	vessel->SetAnimation(errorY, err_proc[2]);
+
+	rate_proc[0] = (-rateNeedleDisp.z + 1.0) / 2.0;
+	rate_proc[1] = (-rateNeedleDisp.x + 1.0) / 2.0;
+	rate_proc[2] = (rateNeedleDisp.y + 1.0) / 2.0;
+	if (rate_proc[0] < 0.0) rate_proc[0] = 0.0; else if (rate_proc[0] > 1.0) rate_proc[0] = 1.0;
+	if (rate_proc[1] < 0.0) rate_proc[1] = 0.0; else if (rate_proc[1] > 1.0) rate_proc[1] = 1.0;
+	if (rate_proc[2] < 0.0) rate_proc[2] = 0.0; else if (rate_proc[2] > 1.0) rate_proc[2] = 1.0;
 	vessel->SetAnimation(rateR, rate_proc[0]);
 	vessel->SetAnimation(rateP, rate_proc[1]);
 	vessel->SetAnimation(rateY, rate_proc[2]);
