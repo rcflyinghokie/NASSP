@@ -22,6 +22,8 @@
 
   **************************************************************************/
 
+// VC animation changes by Zed, made with help from Grok (xAI).
+
 // To force Orbitersdk.h to use <fstream> in any compiler version
 #pragma include_alias( <fstream.h>, <fstream> )
 #include "Orbitersdk.h"
@@ -2035,6 +2037,10 @@ SaturnEMSDvSetSwitch::SaturnEMSDvSetSwitch(Sound &clicksound) : ClickSound(click
 	anim_emsdvsetswitch = -1;
 	grp = 0;
 	dvswitchrot = NULL;
+	dvAnimState = 0.5;
+	dvAnimFrom = 0.5;
+	dvAnimStartT = 0.0;
+	dvAnimTarget = -1;
 }
 
 SaturnEMSDvSetSwitch::~SaturnEMSDvSetSwitch()
@@ -2120,27 +2126,82 @@ void SaturnEMSDvSetSwitch::DefineVCAnimations(UINT vc_idx)
 	sat->AddAnimationComponent(anim_emsdvsetswitch, 0.0f, 1.0f, dvswitchrot);
 }
 
+double SaturnEMSDvSetSwitch::PositionToAnim01(int pos)
+{
+	switch (pos) {
+	case 1: return 1.0;
+	case 2: return 0.75;
+	case 3: return 0.0;
+	case 4: return 0.25;
+	default: return 0.5;
+	}
+}
+
+void SaturnEMSDvSetSwitch::SyncDvSetAnimation()
+{
+	const double target = PositionToAnim01(position);
+	dvAnimState = target;
+	dvAnimFrom = target;
+	dvAnimStartT = 0.0;
+	dvAnimTarget = position;
+	if (sat && anim_emsdvsetswitch != (UINT)-1) {
+		sat->SetAnimation(anim_emsdvsetswitch, dvAnimState);
+	}
+}
+
+// Duration of EMS dV-set 5-pos throw (seconds); springy momentary switch.
+static const double EMS_DVSET_ANIM_SEC = 0.10;
+
+void SaturnEMSDvSetSwitch::UpdateDvSetAnimation(double /*dt*/)
+{
+	if (!sat || anim_emsdvsetswitch == (UINT)-1) {
+		return;
+	}
+
+	const int want = position;
+	const double dest = PositionToAnim01(want);
+	const double now = oapiGetSimTime();
+
+	if (dvAnimTarget < 0) {
+		SyncDvSetAnimation();
+		return;
+	}
+
+	if (want != dvAnimTarget) {
+		dvAnimFrom = dvAnimState;
+		dvAnimTarget = want;
+		dvAnimStartT = now;
+	}
+
+	if (dvAnimState == dest && dvAnimFrom == dest) {
+		sat->SetAnimation(anim_emsdvsetswitch, dvAnimState);
+		return;
+	}
+
+	double p = (now - dvAnimStartT) / EMS_DVSET_ANIM_SEC;
+	if (p >= 1.0) {
+		p = 1.0;
+		dvAnimFrom = dest;
+		dvAnimState = dest;
+	} else {
+		if (p < 0.0) p = 0.0;
+		const double s = p * p * (3.0 - 2.0 * p);
+		dvAnimState = dvAnimFrom + (dest - dvAnimFrom) * s;
+	}
+	sat->SetAnimation(anim_emsdvsetswitch, dvAnimState);
+}
+
+void SaturnEMSDvSetSwitch::OnPostStep(double SimT, double DeltaT, double MJD)
+{
+	UpdateDvSetAnimation(DeltaT);
+}
+
 void SaturnEMSDvSetSwitch::DrawSwitchVC(int id, int event, SURFHANDLE surf)
 {
-	if (anim_emsdvsetswitch != -1) {
-		switch ((int)GetPosition()) {
-		case 1:
-			sat->SetAnimation(anim_emsdvsetswitch, 1.0);
-			break;
-		case 2:
-			sat->SetAnimation(anim_emsdvsetswitch, 0.75);
-			break;
-		case 3:
-			sat->SetAnimation(anim_emsdvsetswitch, 0.0);
-			break;
-		case 4:
-			sat->SetAnimation(anim_emsdvsetswitch, 0.25);
-			break;
-		default:
-			sat->SetAnimation(anim_emsdvsetswitch, 0.5);
-			break;
-		}
-	}
+	if (anim_emsdvsetswitch == (UINT)-1) return;
+
+	// REDRAW_ALWAYS: advance lerp here (not a PanelSwitchItem / OnPostStep).
+	UpdateDvSetAnimation(0.0);
 }
 
 bool SaturnCabinPressureReliefLever::CheckMouseClickVC(int event, VECTOR3 &p) {
@@ -2148,6 +2209,16 @@ bool SaturnCabinPressureReliefLever::CheckMouseClickVC(int event, VECTOR3 &p) {
 	int my = (int)(p.y * (y + height));
 
 	return CheckMouseClick(event, mx, my);
+}
+
+SaturnGuardedCabinPressureReliefLever::SaturnGuardedCabinPressureReliefLever()
+{
+	guardState = 0;
+	guardAnim = -1;
+	guardAnimState = 0.0;
+	guardAnimFrom = 0.0;
+	guardAnimStartT = 0.0;
+	guardAnimTarget = -1;
 }
 
 void SaturnGuardedCabinPressureReliefLever::InitGuard(SURFHANDLE surf, SoundLib *soundlib)
@@ -2168,11 +2239,72 @@ void SaturnGuardedCabinPressureReliefLever::DrawSwitchVC(int id, int event, SURF
 
 	ThumbwheelSwitch::DrawSwitchVC(id, event, surf);
 
-	if (guardState > 0) {
-		OurVessel->SetAnimation(guardAnim, 1.0);
+	if (guardAnim == (UINT)-1) return;
+
+	if (guardAnimTarget < 0) {
+		SyncGuardAnimation();
 	} else {
-		OurVessel->SetAnimation(guardAnim, 0.0);
+		OurVessel->SetAnimation(guardAnim, guardAnimState);
 	}
+}
+
+static const double CABIN_RELIEF_GUARD_ANIM_SEC = 0.18;
+
+void SaturnGuardedCabinPressureReliefLever::SyncGuardAnimation()
+{
+	const double target = guardState ? 1.0 : 0.0;
+	guardAnimState = target;
+	guardAnimFrom = target;
+	guardAnimStartT = 0.0;
+	guardAnimTarget = guardState ? 1 : 0;
+	if (OurVessel && guardAnim != (UINT)-1) {
+		OurVessel->SetAnimation(guardAnim, guardAnimState);
+	}
+}
+
+void SaturnGuardedCabinPressureReliefLever::UpdateGuardAnimation(double /*dt*/)
+{
+	if (!OurVessel || guardAnim == (UINT)-1) {
+		return;
+	}
+
+	const int want = guardState ? 1 : 0;
+	const double dest = want ? 1.0 : 0.0;
+	const double now = oapiGetSimTime();
+
+	if (guardAnimTarget < 0) {
+		SyncGuardAnimation();
+		return;
+	}
+
+	if (want != guardAnimTarget) {
+		guardAnimFrom = guardAnimState;
+		guardAnimTarget = want;
+		guardAnimStartT = now;
+	}
+
+	if (guardAnimState == dest && guardAnimFrom == dest) {
+		OurVessel->SetAnimation(guardAnim, guardAnimState);
+		return;
+	}
+
+	double p = (now - guardAnimStartT) / CABIN_RELIEF_GUARD_ANIM_SEC;
+	if (p >= 1.0) {
+		p = 1.0;
+		guardAnimFrom = dest;
+		guardAnimState = dest;
+	} else {
+		if (p < 0.0) p = 0.0;
+		const double s = p * p * (3.0 - 2.0 * p);
+		guardAnimState = guardAnimFrom + (dest - guardAnimFrom) * s;
+	}
+	OurVessel->SetAnimation(guardAnim, guardAnimState);
+}
+
+void SaturnGuardedCabinPressureReliefLever::OnPostStep(double SimT, double DeltaT, double MJD)
+{
+	UpdateThumbwheelAnimation(DeltaT);
+	UpdateGuardAnimation(DeltaT);
 }
 
 bool SaturnGuardedCabinPressureReliefLever::CheckMouseClick(int event, int mx, int my)
@@ -2256,6 +2388,8 @@ void SaturnGuardedCabinPressureReliefLever::LoadState(char *line)
 	if (!strnicmp(buffer, name, strlen(name))) {
 		state = st;
 		guardState = gst;
+		twAnimTarget = -1;    // snap thumbwheel visual on scenario load
+		guardAnimTarget = -1; // snap guard visual on scenario load
 	}
 }
 

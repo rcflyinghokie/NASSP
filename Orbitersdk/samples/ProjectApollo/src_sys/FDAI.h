@@ -22,6 +22,8 @@
 
   **************************************************************************/
 
+// VC animation changes by Zed, made with help from Grok (xAI).
+
 /// \bug Avoids bug in VC++
 #pragma once
 
@@ -41,6 +43,7 @@ public:
 		SURFHANDLE hFDAIRoll, SURFHANDLE hFDAIOff, SURFHANDLE hFDAINeedles, int smooth);
 	void AnimateFDAI(VECTOR3 rates, VECTOR3 errors, UINT animR, UINT animP, UINT animY, UINT errorR, UINT errorP, UINT errorY, UINT rateR, UINT rateP, UINT rateY);
 	void SetAttitude(VECTOR3 attitude);
+	void SetNeedles(VECTOR3 rates, VECTOR3 errors);
 
 	void SaveState(FILEHANDLE scn, char *start_str, char *end_str);
 	void LoadState(FILEHANDLE scn, char *end_str);
@@ -58,7 +61,10 @@ protected:
 	int init;
 	int list_name; //we store the rendering into a display list
 	VECTOR3 now, target, lastRates, lastErrors, lastPaintAtt;
+	VECTOR3 errorNeedleTarget, rateNeedleTarget; // commanded (like ball target)
+	VECTOR3 errorNeedleDisp, rateNeedleDisp;     // displayed (like ball now)
 	double lastPaintTime;
+	double lastNeedleSysTime;
 
 	//some stuff for OpenGL
 	HDC hDC2;
@@ -77,6 +83,7 @@ protected:
 
 	void InitGL();
 	void RotateBall(double simdt);
+	void AdvanceNeedles(); // ease disp toward needle targets (sys-time exp)
 	void MoveBall2D();
 	int LoadOGLBitmap(char *filename);
 

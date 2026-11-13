@@ -22,6 +22,8 @@
 
   **************************************************************************/
 
+// VC animation changes by Zed, made with help from Grok (xAI).
+
 #if !defined(_PA_CSMCOMPUTER_H)
 #define _PA_CSMCOMPUTER_H
 
@@ -207,7 +209,7 @@ public:
 	bool OpticsVCDualViewFlashing;
 	bool ViewOpticsPanels;											// For hiding the Optics Panel122 and DSKY
 protected:
-	bool PaintDisplay(SURFHANDLE surf, SURFHANDLE digits, int value, int xTexMul = 1);
+	bool PaintDisplay(SURFHANDLE surf, SURFHANDLE digits, double value, int xTexMul = 1);
 	void TelescopeServoDrive(double dt, double sxt_angle, double &sct_angle, double &sct_rate);
 
 	// struct for storing the original vertices from the mesh
