@@ -605,7 +605,8 @@ void LEM::SetView() {
 			break;
 
 		case LMVIEW_RDVZWIN:
-			v = _V(-0.58, -0.05, 1.004) + ofs;
+			//v = _V(-0.58, -0.05, 1.004) + ofs;
+			v = _V(-0.57745, -0.05, 0.99) + ofs;
 			SetCameraDefaultDirection(_V(0.0, 1.0, 0.0));
 			v.x += vcFreeCamx;
 			v.y += vcFreeCamz;
