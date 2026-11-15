@@ -22,6 +22,8 @@
 
   **************************** Revision History ****************************/
 
+// VC animation changes by Zed, made with help from Grok (xAI).
+
 #if !defined(_PA_ECS_H)
 #define _PA_ECS_H
 
@@ -270,6 +272,17 @@ protected:
 	UINT anim_gearboxsel;
 	UINT anim_actuatorsel;
 	UINT anim_ventvalve;
+
+	// Smooth VC handle/valve detents (custom SetAnimation paths; visual only)
+	double gearboxAnimState, gearboxAnimFrom, gearboxAnimStartT;
+	int gearboxAnimTarget;
+	double actuatorAnimState, actuatorAnimFrom, actuatorAnimStartT;
+	int actuatorAnimTarget;
+	double ventAnimState, ventAnimFrom, ventAnimStartT;
+	int ventAnimTarget;
+
+	void SyncHandleAnims();
+	void UpdateHandleAnims();
 };
 
 // Class to manage the Boost Protective Cover hatch animation
@@ -400,8 +413,17 @@ protected:
 
 	RotationalSwitch *pressureequalvalve;
 
+	AnimState2 fwdhatch_state;
+
 	UINT anim_FwdHatchVC;
 	UINT anim_pressequalvlv;
+
+	// Smooth pressure-equal rotary (custom SetAnimation path; visual only)
+	double peqAnimState, peqAnimFrom, peqAnimStartT;
+	int peqAnimTarget;
+
+	void SyncPeqAnim();
+	void UpdatePeqAnim();
 };
 
 class SaturnPressureEqualizationValve

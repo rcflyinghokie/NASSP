@@ -22,6 +22,8 @@
 
   **************************************************************************/
 
+// VC animation changes by Zed, made with help from Grok (xAI).
+
 
 #pragma once
 
@@ -115,6 +117,21 @@ public:
 
 protected:
 	virtual void CountingThroughZero(double &t);
+
+	// Physical drum-roll animation state (not persisted).
+	void UpdateDrumAnim();
+	void BltDrumDigitVert(SURFHANDLE surf, SURFHANDLE digits, int dx, int dy,
+		int fromDigit, int toDigit, double p, int digitW, int digitH, int srcStepX, bool newFromBottom) const;
+	void BltDrumDigitHorz(SURFHANDLE surf, SURFHANDLE digits, int dx, int dy,
+		int fromDigit, int toDigit, double p, int digitW, int digitH, int srcStepX, bool newFromBottom) const;
+
+	int animFromMin;
+	int animFromSec;
+	int animToMin;
+	int animToSec;
+	double animStartSimT;
+	bool animActive;
+	double drumRollP; // 0 = from, 1 = to
 };
 
 //
