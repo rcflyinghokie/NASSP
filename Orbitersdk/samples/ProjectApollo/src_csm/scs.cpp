@@ -5146,12 +5146,12 @@ void EMS::TimeStep(double simdt) {
 
 void EMS::SystemTimestep(double simdt) {
 
-	if (IsPowered() && !IsOff()) 
+	if (IsPowered() && !IsOff())
 	{
 		DCPower.DrawPower(93.28);	// see CSM Systems Handbook
 	}
 
-	if (IsNumDisplayPowered() && !IsOff()) 
+	if (IsNumDisplayPowered() && !IsOff())
 	{
 		numericsPower->DrawPower((numericsPower->Voltage() / 115.0) * (4.0 * 7.0 * 0.022)); //TBD: Needs to be power per lit segment
 	}
@@ -5387,7 +5387,7 @@ bool EMS::IsDecimalPointBlanked()
 
 bool EMS::IsPowered() {
 
-	return DCPower.Voltage() > SP_MIN_DCVOLTAGE; 
+	return DCPower.Voltage() > SP_MIN_DCVOLTAGE;
 }
 
 bool EMS::IsNumDisplayPowered() {
