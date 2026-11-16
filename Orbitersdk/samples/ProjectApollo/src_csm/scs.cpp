@@ -4827,7 +4827,7 @@ extern GDIParams g_Param;
 
 
 
-EMS::EMS(PanelSDK &p) : DCPower(0, p), 
+EMS::EMS(PanelSDK &p) : DCPower(0, p),
 	Fixed_115_6VAC_Output("Fixed EMS AC Transformer", 6.0) {
 
 	status = EMS_STATUS_OFF;
