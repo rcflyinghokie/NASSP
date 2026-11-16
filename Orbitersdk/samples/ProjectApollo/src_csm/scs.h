@@ -854,6 +854,8 @@ public:
 	bool IsdVMode();
 	bool WriteScrollToFile();
 	bool IsDecimalPointBlanked();
+	bool IsNumDisplayPowered();
+	bool IsScrollRSIDisplayPowered();
 
 	void DefineVCAnimations(UINT vc_idx);
 	void SetReference(const VECTOR3& ref, const VECTOR3& _dir);
@@ -862,9 +864,9 @@ public:
 	
 protected:
 	bool IsPowered();
-	bool IsNumDisplayPowered();
-	bool IsScrollRSIDisplayPowered();
-	
+	void ScrollRSILighting();
+	void CoilLogic();
+
 	void AccelerometerTimeStep(double simdt);
 	double xacc, xaccG, constG;
 	double vinert;
