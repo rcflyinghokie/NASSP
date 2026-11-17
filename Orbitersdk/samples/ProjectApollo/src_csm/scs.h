@@ -866,7 +866,7 @@ protected:
 	bool IsPowered();
 	void ScrollRSILighting();
 	void CoilLogic();
-
+	
 	void AccelerometerTimeStep(double simdt);
 	double xacc, xaccG, constG;
 	double vinert;
