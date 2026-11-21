@@ -923,14 +923,15 @@ void CMOptics::UpdateOpticsCustomCam(VECTOR3 camPos, VECTOR3 camDir, VECTOR3 cam
 	gcCore* pCore = gcGetCoreInterface();
 	if (pCore) {
 		// This custom camera is also supposed to show surface labels to assist in P23 on landmarks.
-		// The flag for that is fefined here to allow builds against old Orbiter versions, where this is not part of the public API.
+		// The flag for that is defined here to allow builds against old Orbiter versions, where this is not part of the public API.
 		// Might replace later when builds against newer Orbiter versions are common.
 		static const unsigned int SurfaceLabelFlag = 0x0100;
 
 		// Scaling factor for the Superimposing Custom Camera best match so far is 0.905
-		// This should be normaly (1.5 * RAD) but it's not working. Earlier tests was 1.073, but this was before i matched the 3D FOV to the 2D.
-		//sat->hOpticsCustomCam = pCore->SetupCustomCamera(sat->hOpticsCustomCam, oapiCameraTarget(), camPos, camDir, camUp, 0.905 * RAD, sat->srf[Saturn::SRF_VC_OPTICS_TMP_CUSTOMCAM], CUSTOMCAM_DEFAULTS);
+		// This should be normaly (1.5 * RAD) but it's not working. Earlier tests was 1.073, but this was before I matched the 3D FOV to the 2D.
+		// 
 		//sat->hOpticsCustomCam = pCore->SetupCustomCamera(sat->hOpticsCustomCam, oapiCameraTarget(), camPos, camDir, camUp, 0.905 * RAD, sat->srfOpticsCustomCam, CUSTOMCAM_DEFAULTS | SurfaceLabelFlag);
+		//sat->hOpticsCustomCam = pCore->SetupCustomCamera(sat->hOpticsCustomCam, oapiCameraTarget(), camPos, camDir, camUp, 0.905 * RAD, sat->srf[Saturn::SRF_VC_OPTICS_TMP_CUSTOMCAM], CUSTOMCAM_DEFAULTS);
 		sat->hOpticsCustomCam = pCore->SetupCustomCamera(sat->hOpticsCustomCam, oapiCameraTarget(), camPos, camDir, camUp, 0.905 * RAD, sat->srf[Saturn::SRF_VC_OPTICS_TMP_CUSTOMCAM], CUSTOMCAM_DEFAULTS | SurfaceLabelFlag);
 
 		// We dynamically load the scaling function since the Orbiter installation might not have it.
