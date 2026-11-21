@@ -4949,6 +4949,9 @@ void EMS::TimeStep(double simdt) {
 	double position;
 	double dV;
 
+	CoilLogic();
+	ScrollRSILighting();
+
 	//Accelerometer Timestep
 	AccelerometerTimeStep(simdt);
 
@@ -5185,11 +5188,9 @@ void EMS::TimeStep(double simdt) {
 		//sprintf(oapiDebugString(), "ScrollPosition %f", ScrollPosition);
 	}
 
-	CoilLogic();
-	ScrollRSILighting();
 	RotateRSI(simdt);
 
-	sprintf(oapiDebugString(), "Is Scroll Powered %d Scroll/RSI Voltage: %lf K1: %d K2: %d K3: %d K4 %d SW: %d", IsScrollRSIDisplayPowered(), Fixed_115_6VAC_Output.Voltage(), K1, K2, K3, K4, sat->EMSFunctionSwitch.GetState());
+	//sprintf(oapiDebugString(), "Is Scroll Powered %d Scroll/RSI Voltage: %lf K1: %d K2: %d K3: %d K4 %d SW: %d", IsScrollRSIDisplayPowered(), Fixed_115_6VAC_Output.Voltage(), K1, K2, K3, K4, sat->EMSFunctionSwitch.GetState());
 }
 
 void EMS::SystemTimestep(double simdt) {
