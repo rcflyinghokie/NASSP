@@ -4969,6 +4969,10 @@ void EMS::TimeStep(double simdt) {
 		LiftVectLightOn = 0;
 	}
 
+	// Scroll & RSI Lighting
+	CoilLogic();
+	ScrollRSILighting();
+
 	// Turn on reset
 	if (status == EMS_STATUS_OFF && sat->EMSFunctionSwitch.GetState() != 0) {
 		SwitchChanged();
