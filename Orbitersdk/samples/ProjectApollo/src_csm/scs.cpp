@@ -5509,10 +5509,11 @@ void EMS::LoadState(FILEHANDLE scn) {
 		if (!strnicmp(line, EMS_END_STRING, sizeof(EMS_END_STRING))){
 			break;
 		}
-		if (!strnicmp (line, "STATUS", 6)) {
+
+		if (!strnicmp(line, "STATUS", 6)) {
 			sscanf(line + 6, "%i", &status);
 		}
-		else if (!strnicmp(line, "RELAYS", 6)){
+		else if (!strnicmp(line, "RELAYS", 6)) {
 			sscanf(line + 6, "%i %i %i %i", &inttemp[0], &inttemp[1], &inttemp[2], &inttemp[3]);
 
 			K1 = (inttemp[0] != 0);
@@ -5520,7 +5521,8 @@ void EMS::LoadState(FILEHANDLE scn) {
 			K3 = (inttemp[2] != 0);
 			K4 = (inttemp[3] != 0);
 
-		}  else if (!strnicmp (line, "DVRANGECOUNTER", 14)) {
+		}
+		else if (!strnicmp (line, "DVRANGECOUNTER", 14)) {
 			sscanf(line + 14, "%lf", &dVRangeCounter);
 		} else if (!strnicmp (line, "VINERTIAL", 9)) {
 			sscanf(line + 9, "%lf", &vinert);
