@@ -357,9 +357,13 @@ void Saturn::SystemsInit() {
 	LogicPowerSwitch.WireSourcesToBuses(1, &SCSLogicBus2Feeder, &SCSLogicBus2);
 	LogicPowerSwitch.WireSourcesToBuses(2, &SCSLogicBus3Feeder, &SCSLogicBus3);
 
+	//
 	// Lighting
-	Panelsdk.AddElectrical(&dsky.Variable_250VAC_Output, false);
+	//
+
+	Panelsdk.AddElectrical(&dsky.Variable_250VAC_Output, false); //DSKY Segment Transformers
 	Panelsdk.AddElectrical(&dsky2.Variable_250VAC_Output, false);
+	Panelsdk.AddElectrical(&ems.Fixed_115_6VAC_Output, false); //EMS: RSI & Scroll Transformer
 
 	//
 	// Generic power source for switches, tied to both Bus A and
@@ -492,7 +496,7 @@ void Saturn::SystemsInit() {
 	rjec.Init(this);
 	eca.Init(this);
 	tvsa.Init(this);
-	ems.Init(this, &EMSMnACircuitBraker, &EMSMnBCircuitBraker, &NumericRotarySwitch, &LightingNumIntLMDCCB);
+	ems.Init(this, &EMSMnACircuitBraker, &EMSMnBCircuitBraker, &LeftNumericLights.Variable_0_115VAC_Num_Output, &LightingNumIntLEBCB);
 	ordeal.Init(&ORDEALEarthSwitch, &OrdealAc2CircuitBraker, &OrdealMnBCircuitBraker, &ORDEALAltSetRotary, &ORDEALModeSwitch, &ORDEALSlewSwitch, &ORDEALFDAI1Switch, &ORDEALFDAI2Switch, &ORDEALLightingSwitch);
 	mechanicalAccelerometer.Init(this);
 
