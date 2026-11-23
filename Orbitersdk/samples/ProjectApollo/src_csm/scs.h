@@ -870,8 +870,8 @@ public:
 	
 protected:
 	bool IsPowered();
-	void ScrollRSILighting();
 	void CoilLogic();
+	void ScrollRSILighting();
 	
 	void AccelerometerTimeStep(double simdt);
 	double xacc, xaccG, constG;

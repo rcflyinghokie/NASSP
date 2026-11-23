@@ -4207,6 +4207,7 @@ protected:
 	int fwdhatchidx;
 	int opticscoveridx;
 	int cmdocktgtidx;
+	int cmdocktgtvcidx;
 	int simbaypanelidx;
 	UINT vcidx;
 	int seatsfoldedidx;
