@@ -648,6 +648,7 @@ public:
 		SRF_VC_OPTICS_P122,
 		SRF_VC_OPTICS_CUSTOMCAM,
 		SRF_VC_4DSKY_LEB,
+		SRF_VC_OPTICS_TMP_CUSTOMCAM,
 
 		//
 		// NSURF MUST BE THE LAST ENTRY HERE. PUT ANY NEW SURFACE IDS ABOVE THIS LINE
@@ -4113,6 +4114,7 @@ protected:
 	int fwdhatchidx;
 	int opticscoveridx;
 	int cmdocktgtidx;
+	int cmdocktgtvcidx;
 	int simbaypanelidx;
 	UINT vcidx;
 	int seatsfoldedidx;
@@ -4363,7 +4365,6 @@ protected:
 #endif
 
 	CAMERAHANDLE hOpticsCustomCam = NULL;
-	SURFHANDLE srfOpticsCustomCam;
 	
 	//
 	// Systems functions.
