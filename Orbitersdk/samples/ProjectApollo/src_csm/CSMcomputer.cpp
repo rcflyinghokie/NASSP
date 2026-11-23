@@ -929,7 +929,7 @@ void CMOptics::UpdateOpticsCustomCam(VECTOR3 camPos, VECTOR3 camDir, VECTOR3 cam
 
 		// Scaling factor for the Superimposing Custom Camera best match so far is 0.905
 		// This should be normaly (1.5 * RAD) but it's not working. Earlier tests was 1.073, but this was before I matched the 3D FOV to the 2D.
-		// 
+
 		//sat->hOpticsCustomCam = pCore->SetupCustomCamera(sat->hOpticsCustomCam, oapiCameraTarget(), camPos, camDir, camUp, 0.905 * RAD, sat->srfOpticsCustomCam, CUSTOMCAM_DEFAULTS | SurfaceLabelFlag);
 		//sat->hOpticsCustomCam = pCore->SetupCustomCamera(sat->hOpticsCustomCam, oapiCameraTarget(), camPos, camDir, camUp, 0.905 * RAD, sat->srf[Saturn::SRF_VC_OPTICS_TMP_CUSTOMCAM], CUSTOMCAM_DEFAULTS);
 		sat->hOpticsCustomCam = pCore->SetupCustomCamera(sat->hOpticsCustomCam, oapiCameraTarget(), camPos, camDir, camUp, 0.905 * RAD, sat->srf[Saturn::SRF_VC_OPTICS_TMP_CUSTOMCAM], CUSTOMCAM_DEFAULTS | SurfaceLabelFlag);
