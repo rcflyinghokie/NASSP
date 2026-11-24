@@ -176,7 +176,9 @@ XRSound/
 ##Extra stuff to ignore
 CMakeLists.txt
 LICENSE
+SPICE.ERR
 /*.dll
 /Cache/
 /Fonts/
+/Kernels/
 /*.ttf
